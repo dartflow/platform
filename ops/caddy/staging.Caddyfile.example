@@ -1,0 +1,8 @@
+# Template only: never choose a port without checking the DG host inventory.
+# Validate the complete root-owned Caddy configuration before a managed reload.
+staging.dartflow.nl {
+    # Caddy >= 2.8.0. Preserve this when integrating the DG access-log policy.
+    @sensitive path /auth/callback /api/auth/* /scherm/* /api/screen/*
+    log_skip @sensitive
+    reverse_proxy 127.0.0.1:<verified-loopback-port>
+}

@@ -1,0 +1,185 @@
+.df-shell {
+  --df-sidebar-width: 224px;
+  --df-shell-line: #342d23;
+  --df-shell-gold: #edc776;
+  --df-shell-muted: #a9a095;
+}
+.df-shell .df-sidebar {
+  width: var(--df-sidebar-width);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 19px 13px 12px;
+  border-right-color: var(--df-shell-line);
+}
+.df-shell .df-main { margin-left: var(--df-sidebar-width); }
+.df-sidebar__head { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+.df-sidebar__head .df-brand { min-height: 0; padding: 0; margin: 0; flex: 1; justify-content: flex-start; }
+.df-sidebar__head .df-brand img { display: block; width: min(100%, 168px); height: 44px; object-position: left center; }
+.df-menu-close { display: none; }
+.df-role {
+  display: grid;
+  grid-template-columns: .86fr 1.14fr;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--df-shell-line);
+  border-radius: 8px;
+  background: #171612;
+}
+.df-role button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--df-shell-muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.df-role button[aria-pressed="true"] { color: #f5d895; border-color: #8c6a36; background: #332919; }
+.df-role .icon { width: 14px; height: 14px; }
+.df-sidebar .df-nav { min-height: 0; display: flex; flex-direction: column; gap: 13px; padding: 0 3px 4px 0; }
+.df-nav__group { display: grid; gap: 3px; }
+.df-nav__label { padding: 0 9px 3px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .14em; color: #b3a58e; }
+.df-nav .df-nav__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 37px;
+  padding: 6px 9px;
+  text-decoration: none;
+  font-size: 12px;
+  line-height: 1.24;
+  border-radius: 6px;
+}
+.df-nav__link .icon { width: 17px; height: 17px; flex: 0 0 auto; }
+.df-nav .df-drawer-search { display: none; }
+.df-sidebar__foot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-top: 1px solid var(--df-shell-line);
+  padding: 10px 7px 0;
+  color: var(--df-shell-muted);
+  font-size: 10px;
+}
+.df-sidebar__foot i { width: 6px; height: 6px; border-radius: 50%; background: #d3a953; }
+.df-sidebar__foot small { margin-left: auto; color: #9d907c; font-size: 10px; }
+
+.df-shell .df-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  gap: clamp(10px, 2.2vw, 28px);
+  padding-inline: clamp(15px, 2.2vw, 34px);
+  border-bottom-color: var(--df-shell-line);
+  background: #121110f5;
+  backdrop-filter: blur(12px);
+}
+.df-topbar__identity { min-width: 0; display: grid; gap: 1px; margin-right: auto; }
+.df-topbar__mode { color: var(--df-shell-muted); font-size: 9px; font-weight: 750; text-transform: uppercase; letter-spacing: .16em; }
+.df-breadcrumb { display: flex; align-items: baseline; gap: 7px; min-width: 0; color: #a89a85; font-size: 12px; }
+.df-breadcrumb a { text-decoration: none; }
+.df-breadcrumb a:hover { color: var(--df-shell-gold); }
+.df-breadcrumb strong { min-width: 0; color: #f3e8d4; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.df-scope {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: min(280px, 30vw);
+  padding: 2px 8px 2px 10px;
+  border: 1px solid #554635;
+  border-radius: 7px;
+  background: #211b14;
+}
+.df-scope .icon { width: 16px; height: 16px; flex: 0 0 auto; color: var(--df-shell-gold); }
+.df-scope__label { color: var(--df-shell-muted); font-size: 10px; }
+.df-scope select { width: 100%; min-width: 0; max-width: 220px; min-height: 32px; border: 0; background: #211b14; color: #f3e8d4; font-size: 12px; font-weight: 700; text-overflow: ellipsis; }
+.df-top-actions { flex: 0 0 auto; }
+.df-topbar .df-profile { padding-right: 0; }
+.df-topbar .df-profile > .icon { width: 13px; }
+.df-shell .df-content { max-width: 1480px; margin: 0 auto; padding-block: 20px 32px; }
+.df-content:focus { outline: none; }
+.df-subnav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0 0 20px;
+  padding: 4px;
+  border: 1px solid var(--df-shell-line);
+  border-radius: 9px;
+  background: #171614;
+  scrollbar-width: thin;
+  scrollbar-color: #625030 transparent;
+}
+.df-subnav__link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-height: 39px;
+  padding: 6px 11px;
+  border-radius: 6px;
+  color: #c1b6a5;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.df-subnav__link:hover { background: #242016; color: #f4d795; }
+.df-subnav__link.active { color: #f6d895; background: #342a1b; box-shadow: inset 0 0 0 1px #7a5f35; }
+.df-subnav__link .icon { width: 15px; height: 15px; }
+.df-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px 16px;
+  margin-top: 28px;
+  padding: 14px 0;
+  border-top: 1px solid var(--df-shell-line);
+  color: var(--df-shell-muted);
+  font-size: 10px;
+}
+.df-skip { position: fixed; top: 8px; left: 8px; z-index: 70; padding: 8px 12px; border-radius: 5px; background: #f8db96; color: #16110a; transform: translateY(-150%); }
+.df-skip:focus { transform: none; }
+
+@media (max-width: 1100px) {
+  .df-shell { --df-sidebar-width: 200px; }
+  .df-scope__label { display: none; }
+  .df-topbar .df-profile .profile-label { display: none; }
+}
+@media (max-width: 760px) {
+  .df-shell .df-main { margin-left: 0; }
+  .df-shell .df-sidebar { width: min(290px, 87vw); z-index: 45; }
+  .df-sidebar__head .df-brand img { width: 151px; }
+  .df-menu-close { display: grid; }
+  .df-nav .df-nav__link { min-height: 43px; font-size: 13px; }
+  .df-nav .df-drawer-search { display: flex; }
+  .df-shell .df-topbar { height: auto; min-height: 61px; padding: 8px 11px; gap: 8px; }
+  .df-topbar__identity { display: none; }
+  .df-topbar .df-mobile-brand { margin: 0 auto 0 0; min-width: 0; }
+  .df-topbar .df-mobile-brand .mobile-lockup { width: clamp(68px, 22vw, 104px); height: 34px; }
+  .df-scope { flex: 0 1 40vw; max-width: 40vw; padding-inline: 5px; gap: 4px; }
+  .df-scope .icon { width: 12px; height: 12px; }
+  .df-scope select { max-width: 100%; min-height: 37px; font-size: 11px; }
+  .df-topbar .df-search { display: none; }
+  .df-topbar .df-profile > .icon { display: none; }
+  .df-shell .df-content { padding: 12px 13px calc(81px + env(safe-area-inset-bottom)); }
+  .df-subnav { margin-bottom: 14px; }
+  .df-subnav__link { min-height: 43px; }
+  .df-shell .df-bottom button { min-width: 0; min-height: 51px; padding-inline: 2px; font-size: 9px; line-height: 1.1; overflow-wrap: anywhere; }
+  .df-shell .df-bottom button .icon { margin-bottom: 2px; }
+}
+@media (max-width: 370px) {
+  .df-topbar .df-profile { display: none; }
+  .df-scope { max-width: 44vw; flex-basis: 44vw; }
+}

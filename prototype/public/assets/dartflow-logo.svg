@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 552 180" fill="none" role="img" aria-labelledby="logo-title logo-desc">
+  <title id="logo-title">Dartflow</title>
+  <desc id="logo-desc">Een gouden, gekroond dartschild naast het Dartflow-woordmerk.</desc>
+  <defs>
+    <linearGradient id="wordmark" x1="0" y1="0" x2="0" y2="74" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff0b8"/>
+      <stop offset=".48" stop-color="#e8c773"/>
+      <stop offset=".55" stop-color="#d1a650"/>
+      <stop offset="1" stop-color="#b27a2f"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0 12) scale(.78)"><defs><linearGradient id="rim" x1="20" y1="30" x2="145" y2="180" gradientUnits="userSpaceOnUse"><stop stop-color="#9b6829"/><stop offset=".18" stop-color="#fff0af"/><stop offset=".33" stop-color="#d7ad50"/><stop offset=".55" stop-color="#9d702d"/><stop offset=".75" stop-color="#f7d884"/><stop offset="1" stop-color="#ad772d"/></linearGradient><linearGradient id="flight" x1="42" y1="62" x2="106" y2="125" gradientUnits="userSpaceOnUse"><stop stop-color="#fff0b9"/><stop offset=".43" stop-color="#dfba69"/><stop offset="1" stop-color="#aa7629"/></linearGradient><linearGradient id="crown" x1="46" y1="9" x2="105" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#ffed9e"/><stop offset=".6" stop-color="#cf9c3c"/><stop offset="1" stop-color="#f4d789"/></linearGradient></defs><path d="m49 13 19 13L80 3l12 23 19-13-10 26H59Z" fill="url(#crown)" stroke="#f3d88c" stroke-width="1"/><path d="m20 52 60-15 60 15-5 87-55 53-55-53Z" fill="url(#rim)"/><path d="m27 58 53-13 53 13-5 77-48 47-48-47Z" fill="#0d0e10"/><path d="m20 52 60-15 60 15-7 6-53-13-53 13Z" fill="#f8e0a0"/><path d="m80 45 53 13-5 77-48 47v10l55-53 5-87-7 6" fill="#ae7b2d" opacity=".75"/><path d="m80 59-32 15 6 34 26 20Z" fill="url(#flight)"/><path d="m80 59 32 15-6 34-26 20Z" fill="#c99942"/><path d="m80 59 32 15-6 34-26 20" stroke="#f8dfa0" stroke-width="1.2"/><path d="m80 59-32 15 6 34 26 20" stroke="#f8dfa0" stroke-width="1.2"/><path d="M79 59h2v118l-1 14-1-14Z" fill="#ffe7a0"/><path d="M82 128v49l-2 14 6-17-2-45Z" fill="#ad7e32"/><path d="m31 61 49-12 49 12" stroke="#eed08b" stroke-width=".5" opacity=".5"/></g>
+  <g transform="translate(134 52) skewX(-8)" fill="url(#wordmark)" fill-rule="evenodd" stroke="#f9dfa0" stroke-width=".65" stroke-linejoin="round">
+    <path d="M0 0h27l16 12v50L27 74H0Zm13 13v48h10l7-6V19l-7-6Z" transform="translate(0)"/>
+    <path d="M16 0h15l16 74H33l-3-15H16l-3 15H0Zm3 47h9l-4.5-25Z" transform="translate(50)"/>
+    <path d="M0 0h30l13 11v25L32 47l13 27H30L18 48h-5v26H0Zm13 13v22h12l5-4V17l-5-4Z" transform="translate(104)"/>
+    <path d="M0 0h44v13H29v61H15V13H0Z" transform="translate(156)"/>
+    <path d="M0 0h39v13H13v17h22v13H13v31H0Z" transform="translate(207)"/>
+    <path d="M0 0h14v61h24v13H0Z" transform="translate(253)"/>
+    <path d="M12 0h22l12 12v50L34 74H12L0 62V12Zm6 13-5 5v38l5 5h10l5-5V18l-5-5Z" transform="translate(298)"/>
+    <path d="M0 0h13l5 49 5-34h9l5 34 5-49h13l-9 74H32l-4.5-30L23 74H9Z" transform="translate(351)"/>
+  </g>
+</svg>

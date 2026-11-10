@@ -1,0 +1,30 @@
+# Template only. Replace every <...> using the approved DG inventory.
+# Install/reload via the existing, reviewed DG infrastructure repository.
+[Unit]
+Description=Dartflow staging (<verified-site-id>)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=<verified-app-account>
+Group=<verified-app-group>
+WorkingDirectory=/srv/sites/<verified-site-id>/current
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+EnvironmentFile=/etc/dg-sites/<verified-site-id>/runtime.env
+# Standalone format: public/ and .next/static/ are included in the release.
+ExecStart=<absolute-pinned-node-binary> /srv/sites/<verified-site-id>/current/server.js
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+# Review the Next cache requirement against actual enabled features.
+ReadWritePaths=<verified-dedicated-cache-directory>
+
+[Install]
+WantedBy=multi-user.target

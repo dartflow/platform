@@ -1,0 +1,70 @@
+{
+  "status": "open",
+  "environment": "staging",
+  "origin": "https://staging.dartflow.nl",
+  "repository": null,
+  "defaultBranch": null,
+  "allowedRefs": [],
+  "siteId": null,
+  "host": {
+    "id": null,
+    "hostname": null,
+    "providerProject": null,
+    "region": null,
+    "baselineRevision": null,
+    "architecture": null,
+    "tailscaleName": null,
+    "hostKeyReference": null,
+    "firewallReference": null
+  },
+  "runner": {
+    "name": null,
+    "scope": null,
+    "labels": [],
+    "uid": null,
+    "workspace": null,
+    "service": null
+  },
+  "runtime": {
+    "account": null,
+    "service": null,
+    "loopbackPort": null,
+    "nodeBinary": null,
+    "nodeVersion": null,
+    "runtimeEnvReference": null,
+    "cacheDirectory": null
+  },
+  "capacity": {
+    "minFreeBytes": null,
+    "minFreeInodes": null,
+    "buildMemoryBudgetBytes": null,
+    "releaseRetention": null,
+    "hostBuildLock": null,
+    "siteDeployLock": null
+  },
+  "backend": {
+    "projectRef": null,
+    "migrationVersion": null,
+    "appRole": null,
+    "databaseSecretReference": null,
+    "approvedTestAccountReferences": [],
+    "approvedMailRecipients": []
+  },
+  "recovery": {
+    "backupPolicyReference": null,
+    "restoreProofReference": null,
+    "rpo": null,
+    "rto": null,
+    "contact": null
+  },
+  "deployContract": {
+    "approved": false,
+    "masterDocumentReference": null,
+    "wrapperSourceReference": null,
+    "wrapperSha256": null,
+    "adapterSourceReference": null,
+    "allowedActions": [],
+    "immutableSourceMechanism": null,
+    "credentialTransferMechanism": null
+  }
+}
