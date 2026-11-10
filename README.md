@@ -19,7 +19,7 @@ Open **http://localhost:3000/inloggen**. Kies één van de duidelijk gemarkeerde
 
 Ontbreken PostgreSQL-serverbinaries op Ubuntu, dan kan het lokale script het serverpakket zonder root uitpakken: `DARTFLOW_DOWNLOAD_LOCAL_POSTGRES=1 npm run db:start`. Bestaande database-inhoud wordt niet vervangen. De lokale wachtwoorden worden willekeurig aangemaakt in genegeerde bestanden met modus 0600. `npm run db:stop` stopt uitsluitend deze lokale instance. `npm run db:reset` wist uitsluitend de expliciet gecontroleerde lokale fixture-database en seedt daarna opnieuw.
 
-Op de huidige ontwikkelhost zijn de lokale database en de browser voor controles wegens beperkte schijfruimte onder `/dev/shm/dartflow-*` geplaatst. Deze tijdelijke gegevens verdwijnen bij herstart van de host. Bron, dependencies, build en lockfile staan in de repository. De tijdelijke database-root staat in `.env.local`; verwijder die lokale regel vóór een nieuwe persistente setup en herhaal `db:start`, `db:migrate` en `db:seed`.
+De lokale database staat persistent in de genegeerde map `.local/postgres`. Na een hostherstart start je deze opnieuw met `npm run db:start`; bestaande data blijft bewaard. De browser voor controles is op deze ontwikkelhost tijdelijk onder `/dev/shm/dartflow-browsers` geïnstalleerd. Installeer die na een hostherstart opnieuw met `npx playwright install chromium`. Bron, dependencies, build en lockfile staan in de repository.
 
 ## Pilot doorlopen
 

@@ -1,0 +1,23 @@
+{
+  "verifiedAt": "2026-11-10T10:46:45.122Z",
+  "sourceSha": "7d8dff64be15489d397ca7069814b403538beb26",
+  "node": "v24.18.0",
+  "health": {
+    "status": "ok",
+    "mode": "local",
+    "sha": "7d8dff64be15489d397ca7069814b403538beb26"
+  },
+  "ready": {
+    "status": "ready",
+    "database": "ok",
+    "schemaVersion": 1,
+    "auth": "local-only",
+    "sha": "7d8dff64be15489d397ca7069814b403538beb26"
+  },
+  "newTests": 25,
+  "prototypeTests": 26,
+  "browserTests": 2,
+  "physicalDeviceAcceptance": "Open",
+  "externalStagingAcceptance": "Open",
+  "localDatabasePersistence": "disk; restarted and ready"
+}
