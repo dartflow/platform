@@ -54,6 +54,8 @@ De applicatiebackup vóór migratie is op de doelhost gemaakt en in een aparte t
 
 Echte Google-login, ontvangst/verificatie van OTP, Resend-bezorging en ondertekende bezorgwebhooks blijven open tot de eigenaar deze providers heeft geconfigureerd. Ook de aangemelde hosted kernflows, twee echte telefoons, een apart Sprint-scherm en fysieke offline-/mediapilot zijn nog niet geaccepteerd. De mailinstellingen beginnen in Log; een geslaagde lokale transportmock telt niet als provideracceptatie.
 
+Op 11 november om 15:07 UTC is precies één toegestane OTP-aanvraag voor `info@dgwebservices.nl` via de publieke staging-UI gedaan. Het code-invoerscherm verscheen met de uniforme HTTP 200-reactie. De aansluitende databasecontrole vond één echte, nog onbevestigde Auth-identiteit en nul profielen/eigenaarsrollen. Verzending, ontvangst en verificatie zijn hiermee niet bewezen; er zijn geen codes verzameld. Zie [het aanvraagbewijs](../docs/evidence/v15-staging-otp-request-2026-11-11.json).
+
 De native relay draait met afzonderlijke credentials en poorten voor beide omgevingen. Zelfproeven op de VPS bewijzen authenticatie, omgevingsscheiding en weigering van private peers. Externe proefpakketten bereikten de publieke doelinterface niet, terwijl gelijktijdig TCP443 wel aankwam. De meting onderscheidt worker-egress en provider-ingress nog niet definitief. Zie [TURN-bewijs](../docs/evidence/v15-turn-native-2026-11-11.json) en [routediagnose](../docs/evidence/v15-turn-route-2026-11-11.json).
 
 Voor de resterende acceptatie zijn deze eigenaarshandelingen nodig:

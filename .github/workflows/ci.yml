@@ -22,6 +22,7 @@ jobs:
       DARTFLOW_DATA_MODE: local
       DARTFLOW_APP_ORIGIN: http://localhost:3000
       DARTFLOW_RELEASE_SHA: ${{ github.sha }}
+      DARTFLOW_PG_BIN: /usr/lib/postgresql/16/bin
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -35,16 +36,13 @@ jobs:
           npm install --global npm@11.16.0
           test "$(npm --version)" = "$(cat .npm-version)"
           npm ci
-      - name: Use existing official Ubuntu archive mirrors
+      - name: Verify preinstalled PostgreSQL 16
         run: |
-          test -f /etc/apt/apt-mirrors.txt
-          grep -Eq '^https://archive\.ubuntu\.com/ubuntu(/|[[:space:]]|$)' /etc/apt/apt-mirrors.txt
-          grep -Eq '^https://security\.ubuntu\.com/ubuntu(/|[[:space:]]|$)' /etc/apt/apt-mirrors.txt
-          sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
-      - name: Install PostgreSQL 16 server for isolated fixture tests
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends postgresql-16
+          for executable in initdb pg_ctl postgres; do
+            test -x "$DARTFLOW_PG_BIN/$executable"
+          done
+          "$DARTFLOW_PG_BIN/postgres" --version |
+            grep -Eq '^postgres \(PostgreSQL\) 16\.'
       - name: Start isolated local test database
         run: |
           npm run db:start
@@ -62,7 +60,11 @@ jobs:
           python3 -B tests/runtime-boundaries-test.py
           python3 -B tests/host-upgrade-test.py
       - run: npm run build
-      - run: npx --no-install playwright install --with-deps chromium
+      - name: Install pinned Chromium
+        run: |
+          test -z "${PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS:-}"
+          test -z "${DARTFLOW_BROWSER_PATH:-}"
+          npx --no-install playwright install chromium
       - run: npm run test:e2e
       - name: Package standalone candidate
         run: node ops/package-release.mjs

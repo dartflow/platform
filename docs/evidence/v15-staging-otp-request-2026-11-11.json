@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-11-11T15:07:25.753Z",
+  "origin": "https://staging.dartflow.nl",
+  "expectedEmail": "info@dgwebservices.nl",
+  "scope": "Exactly one authorized public UI OTP request. No retry, code collection, verification, Google action, provider change, user-role grant or browser/network storage collection.",
+  "maximumRequests": 1,
+  "requestCount": 1,
+  "deliveryProven": false,
+  "verificationPerformed": false,
+  "identityBefore": {
+    "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+    "releaseId": "43038238892-1",
+    "buildConfigId": "staging-2026-11-11-v15-1",
+    "runtimeConfigId": "staging-2026-11-11-v15-1"
+  },
+  "submittedAt": "2026-11-11T15:07:27.146Z",
+  "result": "ui_request_accepted",
+  "http": {
+    "status": 200,
+    "observedAt": "2026-11-11T15:07:28.748Z"
+  },
+  "ui": {
+    "codeEntryShown": true,
+    "errorPresent": false,
+    "message": "Je ontvangt een inlogcode op info@dgwebservices.nl. Controleer ook je spammap."
+  },
+  "identityAfter": {
+    "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+    "releaseId": "43038238892-1",
+    "buildConfigId": "staging-2026-11-11-v15-1",
+    "runtimeConfigId": "staging-2026-11-11-v15-1"
+  },
+  "interpretation": "The OTP endpoint intentionally returns a uniform valid-address response. HTTP 200 and code-entry UI do not prove provider acceptance, sending, delivery, a received code or a verified owner identity. An unverified Auth identity may have been created; this was not inspected.",
+  "subsequentDatabaseObservation": {
+    "source": "read-only Supabase execute_sql after this request",
+    "authUsers": 1,
+    "ownerIdentities": 1,
+    "ownerEmailConfirmed": false,
+    "profiles": 0,
+    "ownerRoles": 0,
+    "otpOrSessionTokensCollected": false
+  }
+}
