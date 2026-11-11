@@ -1,0 +1,546 @@
+{
+  "sourceSha": "e0ce637d1302a8254bf5461200cc71889d93cd08",
+  "ci": {
+    "runId": 43112429937,
+    "jobId": 130831672674,
+    "event": "push",
+    "conclusion": "success",
+    "url": "https://github.com/dartflow/platform/actions/runs/43112429937",
+    "applicationTests": {
+      "pass": 166,
+      "fail": 0,
+      "skip": 0
+    },
+    "browserTests": {
+      "pass": 17,
+      "fail": 0
+    },
+    "prototypeTests": {
+      "pass": 46
+    },
+    "deployerTests": {
+      "pass": 57
+    },
+    "build": "pass",
+    "typecheck": "pass",
+    "lint": "pass",
+    "boundaryTests": "pass"
+  },
+  "stagingDeployment": {
+    "runId": 43113116356,
+    "releaseId": "43113116356-1",
+    "configId": "staging-2026-11-11-v15-mail-1",
+    "conclusion": "success",
+    "url": "https://github.com/dartflow/platform/actions/runs/43113116356"
+  },
+  "migration": {
+    "file": "20261111221655_board_screen_devices.sql",
+    "sha256": "acdcbd256f9f70eab68e501afad86e2f56010ff748dc29b976815c34d88143e8",
+    "project": "dsnqnvbckkqpzadblshu",
+    "result": {
+      "success": true
+    },
+    "businessBefore": [
+      {
+        "business_fields_sha256": "ee571136258638c69cb503fbe5b30be9f45b25f2a6c9425ae5cdfc56ccd8a890",
+        "profiles": 3,
+        "matches": 1,
+        "visits": 8,
+        "results": 0
+      }
+    ],
+    "businessAfter": [
+      {
+        "business_fields_sha256": "ee571136258638c69cb503fbe5b30be9f45b25f2a6c9425ae5cdfc56ccd8a890",
+        "profiles": 3,
+        "matches": 1,
+        "visits": 8,
+        "results": 0
+      }
+    ],
+    "schema": [
+      {
+        "device_feature": 1,
+        "private_tables": 47,
+        "rls_tables": 47,
+        "device_count": 0,
+        "runtime_select": true,
+        "runtime_insert": true,
+        "runtime_pair_update": true,
+        "runtime_revoke_update": true,
+        "runtime_extend_expiry": false
+      }
+    ],
+    "publicRoleGrants": [
+      {
+        "rolname": "anon",
+        "device_select": false,
+        "device_insert": false,
+        "token_update": false,
+        "revoke_update": false
+      },
+      {
+        "rolname": "authenticated",
+        "device_select": false,
+        "device_insert": false,
+        "token_update": false,
+        "revoke_update": false
+      },
+      {
+        "rolname": "service_role",
+        "device_select": false,
+        "device_insert": false,
+        "token_update": false,
+        "revoke_update": false
+      }
+    ],
+    "postAdvisors": {
+      "lints": [
+        {
+          "name": "rls_enabled_no_policy",
+          "title": "RLS Enabled No Policy",
+          "level": "INFO",
+          "facing": "EXTERNAL",
+          "categories": [
+            "SECURITY"
+          ],
+          "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+          "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+          "count": 1,
+          "findings": [
+            {
+              "detail": "Table \\`dartflow_private.owner_bootstrap\\` has RLS enabled, but no policies exist",
+              "metadata": {
+                "name": "owner_bootstrap",
+                "type": "table",
+                "schema": "dartflow_private"
+              },
+              "observed_at": "2026-11-11T22:36:05.917Z"
+            }
+          ]
+        },
+        {
+          "name": "auth_leaked_password_protection",
+          "title": "Leaked Password Protection Disabled",
+          "level": "WARN",
+          "facing": "EXTERNAL",
+          "categories": [
+            "SECURITY"
+          ],
+          "description": "Leaked password protection is currently disabled.",
+          "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+          "count": 1,
+          "findings": [
+            {
+              "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+              "metadata": {
+                "type": "auth",
+                "entity": "Auth"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "businessHashUnchanged": true
+  },
+  "backupProof": "pwa-sprint-staging-backup-2026-11-11.json",
+  "automatedAccounts": {
+    "scope": "Local fixture only",
+    "names": [
+      "Danny Goldenbelt",
+      "Michael de Groot",
+      "Raymond van Dijk"
+    ],
+    "viewports": [
+      "320x568",
+      "390x844",
+      "540x960"
+    ],
+    "providerLoginProven": false,
+    "nativeInstallPromptSimulated": true,
+    "actualOsInstallationProven": false
+  },
+  "manualAcceptance": {
+    "actualOsInstallation": false,
+    "physicalIosAndroidTabletOrTvTest": false,
+    "actualHostedScoreEntry": false,
+    "actualHostedPrivatePairing": false,
+    "physicalPowerRecovery": false,
+    "hardwareModelsProvided": false
+  },
+  "productionChanged": false,
+  "newGithubSecretsOrVariables": false,
+  "recordedAt": "2026-11-11T22:39:34.923310+00:00",
+  "hostVerification": {
+    "checkedAt": "2026-11-11T22:38:36.590572+00:00",
+    "host": "dg-nxttrack-01",
+    "sites": {
+      "staging": {
+        "current": "releases/e0ce637d1302-43113116356-1",
+        "service": {
+          "MainPID": "116844",
+          "ActiveState": "active",
+          "ActiveEnterTimestamp": "Wed 2026-11-11 23:38:13 CET"
+        },
+        "loopback": {
+          "health": {
+            "status": 200,
+            "body": {
+              "status": "ok",
+              "mode": "supabase",
+              "sha": "e0ce637d1302a8254bf5461200cc71889d93cd08",
+              "releaseId": "43113116356-1",
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1"
+            }
+          },
+          "ready": {
+            "status": 200,
+            "body": {
+              "status": "ready",
+              "database": "ok",
+              "schemaVersion": 1,
+              "auth": "reachable",
+              "sha": "e0ce637d1302a8254bf5461200cc71889d93cd08",
+              "releaseId": "43113116356-1",
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1"
+            }
+          }
+        },
+        "public": {
+          "health": {
+            "status": 200,
+            "body": {
+              "status": "ok",
+              "mode": "supabase",
+              "sha": "e0ce637d1302a8254bf5461200cc71889d93cd08",
+              "releaseId": "43113116356-1",
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1"
+            }
+          },
+          "ready": {
+            "status": 200,
+            "body": {
+              "status": "ready",
+              "database": "ok",
+              "schemaVersion": 1,
+              "auth": "reachable",
+              "sha": "e0ce637d1302a8254bf5461200cc71889d93cd08",
+              "releaseId": "43113116356-1",
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1"
+            }
+          }
+        },
+        "loadedMailBoundaries": {
+          "DARTFLOW_MAIL_ALLOWED_FROM": "noreply@dartflow.nl",
+          "DARTFLOW_MAIL_ALLOWED_REPLY_TO": "support@dartflow.nl",
+          "DARTFLOW_MAIL_TEST_RECIPIENTS": "info@dgwebservices.nl",
+          "DARTFLOW_MAIL_MAX_MODE": "test"
+        },
+        "mailTimer": "active"
+      },
+      "production": {
+        "current": "releases/aa7ac5e49de1-43102459247-1",
+        "service": {
+          "MainPID": "112078",
+          "ActiveState": "active",
+          "ActiveEnterTimestamp": "Wed 2026-11-11 22:24:31 CET"
+        },
+        "loopback": {
+          "health": {
+            "status": 200,
+            "body": {
+              "status": "ok",
+              "mode": "supabase",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43102459247-1",
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1"
+            }
+          },
+          "ready": {
+            "status": 200,
+            "body": {
+              "status": "ready",
+              "database": "ok",
+              "schemaVersion": 1,
+              "auth": "reachable",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43102459247-1",
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1"
+            }
+          }
+        },
+        "public": {
+          "health": {
+            "status": 200,
+            "body": {
+              "status": "ok",
+              "mode": "supabase",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43102459247-1",
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1"
+            }
+          },
+          "ready": {
+            "status": 200,
+            "body": {
+              "status": "ready",
+              "database": "ok",
+              "schemaVersion": 1,
+              "auth": "reachable",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43102459247-1",
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1"
+            }
+          }
+        },
+        "loadedMailBoundaries": {
+          "DARTFLOW_MAIL_ALLOWED_FROM": "noreply@dartflow.nl",
+          "DARTFLOW_MAIL_ALLOWED_REPLY_TO": "support@dartflow.nl",
+          "DARTFLOW_MAIL_TEST_RECIPIENTS": "info@dgwebservices.nl",
+          "DARTFLOW_MAIL_MAX_MODE": "live"
+        },
+        "mailTimer": "active"
+      }
+    },
+    "otherApplication": {
+      "health": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+          "releaseId": "43026808427-1",
+          "configVersion": "staging-2026-11-11-v2",
+          "checks": [
+            "http"
+          ]
+        }
+      },
+      "service": {
+        "MainPID": "70911",
+        "ActiveState": "active",
+        "ActiveEnterTimestamp": "Wed 2026-11-11 14:14:47 CET"
+      },
+      "current": "releases/f1550dd028ef-43026808427-1"
+    },
+    "sharedLock": {
+      "device": 29,
+      "inode": 6
+    }
+  },
+  "hostedSmoke": {
+    "checkedAt": "2026-11-11T22:38:50.543Z",
+    "origin": "https://staging.dartflow.nl",
+    "sha": "e0ce637d1302a8254bf5461200cc71889d93cd08",
+    "releaseId": "43113116356-1",
+    "configId": "staging-2026-11-11-v15-mail-1",
+    "scope": "Read-only hosted routes/manifests, anonymous display and browser-local fallback binding. No hosted login, pairing code, scoring, mail, data mutation or OS installation.",
+    "before": {
+      "health": {
+        "status": 200,
+        "sha": "e0ce637d1302a8254bf5461200cc71889d93cd08",
+        "releaseId": "43113116356-1",
+        "configId": "staging-2026-11-11-v15-mail-1"
+      },
+      "ready": {
+        "status": 200,
+        "sha": "e0ce637d1302a8254bf5461200cc71889d93cd08",
+        "releaseId": "43113116356-1",
+        "configId": "staging-2026-11-11-v15-mail-1"
+      }
+    },
+    "after": {
+      "health": {
+        "status": 200,
+        "sha": "e0ce637d1302a8254bf5461200cc71889d93cd08",
+        "releaseId": "43113116356-1",
+        "configId": "staging-2026-11-11-v15-mail-1"
+      },
+      "ready": {
+        "status": 200,
+        "sha": "e0ce637d1302a8254bf5461200cc71889d93cd08",
+        "releaseId": "43113116356-1",
+        "configId": "staging-2026-11-11-v15-mail-1"
+      }
+    },
+    "manifests": [
+      {
+        "url": "/speler/manifest.webmanifest",
+        "id": "/speler",
+        "start_url": "/speler",
+        "scope": "/",
+        "display": "standalone",
+        "icons192And512": true,
+        "noCookieWritten": true
+      },
+      {
+        "url": "/scorebord/manifest.webmanifest",
+        "id": "/scorebord",
+        "start_url": "/scorebord",
+        "scope": "/scorebord",
+        "display": "standalone",
+        "icons192And512": true,
+        "noCookieWritten": true
+      },
+      {
+        "url": "/api/board-screens/6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83/manifest.webmanifest",
+        "id": "/baanscherm/6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83",
+        "start_url": "/baanscherm/6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83",
+        "scope": "/baanscherm/6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83",
+        "display": "standalone",
+        "icons192And512": true,
+        "noCookieWritten": true
+      },
+      {
+        "url": "/api/board-screens/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3/manifest.webmanifest",
+        "id": "/baanscherm/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+        "start_url": "/baanscherm/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+        "scope": "/baanscherm/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+        "display": "standalone",
+        "icons192And512": true,
+        "noCookieWritten": true
+      }
+    ],
+    "views": [
+      {
+        "width": 390,
+        "flow": "public-existing-board-qr-offline-and-recovery",
+        "boardId": "6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+        "correctManifest": true,
+        "noPlayerSessionRequest": true,
+        "noHorizontalOverflow": true,
+        "noScoreMutation": true
+      },
+      {
+        "width": 390,
+        "flow": "private-existing-board-requires-device",
+        "boardId": "6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83",
+        "correctManifest": true,
+        "noPlayerSessionRequest": true,
+        "noHorizontalOverflow": true,
+        "noScoreMutation": true
+      },
+      {
+        "width": 390,
+        "flow": "scoreboard-explicit-local-binding-reopen-and-other-board-isolation",
+        "noHostedRecordCreated": true,
+        "persistentBrowserLocalBinding": true,
+        "manifestUnchanged": true
+      },
+      {
+        "width": 390,
+        "flow": "player-start-to-real-login",
+        "correctNext": true,
+        "noFixtureAccounts": true,
+        "loginSubmitted": false,
+        "googleFollowed": false
+      },
+      {
+        "width": 390,
+        "flow": "request-boundaries",
+        "authActions": 0,
+        "mutations": 0,
+        "foreignRequests": 0,
+        "sessionRequests": 1,
+        "pageErrors": 0
+      },
+      {
+        "width": 540,
+        "flow": "public-existing-board-qr-offline-and-recovery",
+        "boardId": "6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+        "correctManifest": true,
+        "noPlayerSessionRequest": true,
+        "noHorizontalOverflow": true,
+        "noScoreMutation": true
+      },
+      {
+        "width": 540,
+        "flow": "private-existing-board-requires-device",
+        "boardId": "6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83",
+        "correctManifest": true,
+        "noPlayerSessionRequest": true,
+        "noHorizontalOverflow": true,
+        "noScoreMutation": true
+      },
+      {
+        "width": 540,
+        "flow": "scoreboard-explicit-local-binding-reopen-and-other-board-isolation",
+        "noHostedRecordCreated": true,
+        "persistentBrowserLocalBinding": true,
+        "manifestUnchanged": true
+      },
+      {
+        "width": 540,
+        "flow": "player-start-to-real-login",
+        "correctNext": true,
+        "noFixtureAccounts": true,
+        "loginSubmitted": false,
+        "googleFollowed": false
+      },
+      {
+        "width": 540,
+        "flow": "request-boundaries",
+        "authActions": 0,
+        "mutations": 0,
+        "foreignRequests": 0,
+        "sessionRequests": 1,
+        "pageErrors": 0
+      }
+    ],
+    "actualOsInstallationProven": false,
+    "actualIosAndroidOrTvDeviceProven": false,
+    "actualHostedScoreEntryProven": false,
+    "actualHostedPrivatePairingProven": false,
+    "hostedRecordsCreated": false,
+    "authenticatedPlayerSessionCreated": false,
+    "actualHostedLiveMatchObserved": false,
+    "publicBoardStateObserved": "available",
+    "browserVersion": "156.0.8078.4"
+  },
+  "finalSqlReadback": {
+    "productionSchemaUnchanged": [
+      {
+        "device_table_absent": true,
+        "device_feature_absent": true,
+        "private_tables": 46,
+        "profiles": 0,
+        "matches": 0
+      }
+    ],
+    "stagingCountsAfterDeployment": [
+      {
+        "device_count": 0,
+        "profiles": 3,
+        "matches": 1,
+        "visits": 8,
+        "results": 0
+      }
+    ]
+  },
+  "isolation": {
+    "productionCurrentProcessAndPublicLoopbackIdentityUnchanged": true,
+    "otherApplicationProcessAndIdentityUnchanged": true,
+    "sharedLockDeviceAndInodeUnchanged": true,
+    "sharedLock": {
+      "device": 29,
+      "inode": 6
+    }
+  },
+  "advisorInterpretation": "No new advisor finding. Existing owner_bootstrap RLS/no-policy INFO is intentional denial; existing Auth leaked-password-protection WARN is unchanged. No provider or password-policy configuration was modified."
+}

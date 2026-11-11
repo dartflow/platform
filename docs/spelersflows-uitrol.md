@@ -2,7 +2,9 @@
 
 Deze wijziging bouwt voort op v15 en de vaste verenigingsbanen. De normale routes, geverifieerde Supabase-authenticatie en releasecontrole blijven leidend.
 
-## Actieve uitrolstatus
+De onderstaande vastlegging hoort bij de oplevering van deze vier spelersflows om 21:25 UTC. De latere stagingrelease met installeerbare apps en scoreconsole staat in [het actuele PWA-/Sprint-rapport](pwa-sprint-uitrol.md).
+
+## Uitrolstatus van deze versie
 
 De bron `aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6` heeft de vereiste native [CI-run 43101115753](https://github.com/dartflow/platform/actions/runs/43101115753) met **Verify** doorlopen: 152 applicatie- en databasetests, alle twaalf browserregressies, build, TypeScript, ESLint en de bestaande prototype-, deployer- en grenscontroles zijn geslaagd. De regressie voor de gezamenlijke momentopname van revisie en deelnemersstatus zit in deze bron.
 
