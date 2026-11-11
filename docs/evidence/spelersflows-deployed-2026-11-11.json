@@ -1,0 +1,838 @@
+{
+  "schema": 1,
+  "sourceSha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+  "nativeCi": {
+    "id": 43101115753,
+    "url": "https://github.com/dartflow/platform/actions/runs/43101115753",
+    "event": "push",
+    "conclusion": "success",
+    "applicationTests": {
+      "pass": 152,
+      "fail": 0,
+      "skip": 0
+    },
+    "browserTests": {
+      "pass": 12,
+      "fail": 0
+    },
+    "prototypeTests": 46,
+    "nativeDeployerTests": 57,
+    "productionBuild": "pass",
+    "typecheck": "pass",
+    "lint": "pass",
+    "runnerAndRuntimeBoundaryTests": "pass"
+  },
+  "stagingDeployment": {
+    "id": 43101809775,
+    "releaseId": "43101809775-1",
+    "configId": "staging-2026-11-11-v15-mail-1",
+    "conclusion": "success"
+  },
+  "productionDeployment": {
+    "id": 43102459247,
+    "releaseId": "43102459247-1",
+    "configId": "production-2026-11-11-v15-mail-1",
+    "conclusion": "success"
+  },
+  "migrations": {
+    "staging": [
+      "per_player_scoring",
+      "short_invitation_codes",
+      "required_scoreboard_names"
+    ],
+    "production": [
+      "v15_platform_expansion",
+      "v15_privilege_replay_guards",
+      "standalone_club_boards",
+      "per_player_scoring",
+      "short_invitation_codes",
+      "required_scoreboard_names"
+    ],
+    "appliedVia": "connected Supabase management tool, with owner-approved scope and reviewed SQL",
+    "historyNote": "Staging required_scoreboard_names metadata insert collided with a same-second migration history version after DDL committed. Verified committed column/marker, then idempotently reapplied successfully with a later history timestamp. Production applications were spaced and all six succeeded without retries.",
+    "results": {
+      "four_flow_staging_preserved_before": [
+        {
+          "preserved_match_fields_sha256": "7ae5fc98fb37a48c861237d677a1eb74c95535aa20085ddd4fa8b87305e0b1a6",
+          "visits": 8,
+          "results": 0,
+          "profiles": 3,
+          "clubs": 2
+        }
+      ],
+      "four_flow_staging_preserved_after": [
+        {
+          "preserved_match_fields_sha256": "7ae5fc98fb37a48c861237d677a1eb74c95535aa20085ddd4fa8b87305e0b1a6",
+          "visits": 8,
+          "results": 0,
+          "profiles": 3,
+          "clubs": 2
+        }
+      ],
+      "four_flow_production_schema_verified_counts": [
+        {
+          "features": {
+            "v15": 15,
+            "club_boards": 1,
+            "display_names": 1,
+            "short_invitations": 1,
+            "per_player_scoring": 1
+          },
+          "private_tables": 46,
+          "rls_tables": 46,
+          "profiles": 0,
+          "clubs": 0,
+          "matches": 0,
+          "visits": 0,
+          "results": 0,
+          "runtime_confirm_update": true,
+          "runtime_has_any_requested_invite_table_privilege": true
+        }
+      ],
+      "four_flow_production_schema_verified": [
+        {
+          "rolname": "authenticated",
+          "invite_select": false,
+          "bootstrap_select": false
+        },
+        {
+          "rolname": "anon",
+          "invite_select": false,
+          "bootstrap_select": false
+        },
+        {
+          "rolname": "service_role",
+          "invite_select": false,
+          "bootstrap_select": false
+        },
+        {
+          "rolname": "dartflow_app",
+          "invite_select": true,
+          "bootstrap_select": false
+        }
+      ],
+      "four_flow_production_post_migration_advisors": {
+        "lints": [
+          {
+            "name": "rls_enabled_no_policy",
+            "title": "RLS Enabled No Policy",
+            "level": "INFO",
+            "facing": "EXTERNAL",
+            "categories": [
+              "SECURITY"
+            ],
+            "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+            "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+            "count": 1,
+            "findings": [
+              {
+                "detail": "Table \\`dartflow_private.owner_bootstrap\\` has RLS enabled, but no policies exist",
+                "metadata": {
+                  "name": "owner_bootstrap",
+                  "type": "table",
+                  "schema": "dartflow_private"
+                },
+                "observed_at": "2026-11-11T21:22:54.465Z"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "backups": "spelersflows-predeploy-backup-2026-11-11.json",
+  "acceptance": {
+    "actualHostedInvitationJoinProven": false,
+    "actualHostedDisplayNameRegistrationProven": false,
+    "actualHostedCameraSwitchProven": false,
+    "actualHostedPerPlayerScoringProven": false,
+    "actualPhysicalIosOrAndroidProven": false,
+    "actualLoginOrProviderRegistrationProven": false,
+    "localAccounts": [
+      "Danny Goldenbelt",
+      "Michael de Groot",
+      "Raymond van Dijk",
+      "Speler andere club"
+    ],
+    "temporaryLocalDisplayNames": [
+      "Noor Dart",
+      "Sam Dart"
+    ],
+    "localCameraProof": "Native WebRTC between two Chromium contexts with generated video/audio tracks; remote frames change and audio continues. No physical camera or mobile OS proof.",
+    "hostedAccountsUsed": [],
+    "physicalDevicesUsed": [],
+    "mailSentForThisChange": false
+  },
+  "obsoleteActionsRuns": {
+    "ids": [
+      43095319680,
+      43096044898,
+      43096546716
+    ],
+    "normalCancelHttpStatus": 409,
+    "forceCancelHttpStatus": 409,
+    "removed": false,
+    "blockCurrentRelease": false,
+    "externalSupportMessageSent": false
+  },
+  "recordedAt": "2026-11-11T21:25:54.965585+00:00",
+  "hostVerification": {
+    "checkedAt": "2026-11-11T21:25:54.965585+00:00",
+    "host": "dg-nxttrack-01",
+    "sites": {
+      "staging": {
+        "current": "releases/aa7ac5e49de1-43101809775-1",
+        "service": {
+          "MainPID": "111424",
+          "ActiveState": "active",
+          "ActiveEnterTimestamp": "Wed 2026-11-11 22:20:06 CET"
+        },
+        "loopback": {
+          "health": {
+            "status": 200,
+            "body": {
+              "status": "ok",
+              "mode": "supabase",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43101809775-1",
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1"
+            }
+          },
+          "ready": {
+            "status": 200,
+            "body": {
+              "status": "ready",
+              "database": "ok",
+              "schemaVersion": 1,
+              "auth": "reachable",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43101809775-1",
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1"
+            }
+          }
+        },
+        "public": {
+          "health": {
+            "status": 200,
+            "body": {
+              "status": "ok",
+              "mode": "supabase",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43101809775-1",
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1"
+            }
+          },
+          "ready": {
+            "status": 200,
+            "body": {
+              "status": "ready",
+              "database": "ok",
+              "schemaVersion": 1,
+              "auth": "reachable",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43101809775-1",
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1"
+            }
+          }
+        },
+        "loadedMailBoundaries": {
+          "DARTFLOW_MAIL_ALLOWED_FROM": "noreply@dartflow.nl",
+          "DARTFLOW_MAIL_ALLOWED_REPLY_TO": "support@dartflow.nl",
+          "DARTFLOW_MAIL_TEST_RECIPIENTS": "info@dgwebservices.nl",
+          "DARTFLOW_MAIL_MAX_MODE": "test"
+        },
+        "mailTimer": "active"
+      },
+      "production": {
+        "current": "releases/aa7ac5e49de1-43102459247-1",
+        "service": {
+          "MainPID": "112078",
+          "ActiveState": "active",
+          "ActiveEnterTimestamp": "Wed 2026-11-11 22:24:31 CET"
+        },
+        "loopback": {
+          "health": {
+            "status": 200,
+            "body": {
+              "status": "ok",
+              "mode": "supabase",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43102459247-1",
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1"
+            }
+          },
+          "ready": {
+            "status": 200,
+            "body": {
+              "status": "ready",
+              "database": "ok",
+              "schemaVersion": 1,
+              "auth": "reachable",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43102459247-1",
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1"
+            }
+          }
+        },
+        "public": {
+          "health": {
+            "status": 200,
+            "body": {
+              "status": "ok",
+              "mode": "supabase",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43102459247-1",
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1"
+            }
+          },
+          "ready": {
+            "status": 200,
+            "body": {
+              "status": "ready",
+              "database": "ok",
+              "schemaVersion": 1,
+              "auth": "reachable",
+              "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+              "releaseId": "43102459247-1",
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1"
+            }
+          }
+        },
+        "loadedMailBoundaries": {
+          "DARTFLOW_MAIL_ALLOWED_FROM": "noreply@dartflow.nl",
+          "DARTFLOW_MAIL_ALLOWED_REPLY_TO": "support@dartflow.nl",
+          "DARTFLOW_MAIL_TEST_RECIPIENTS": "info@dgwebservices.nl",
+          "DARTFLOW_MAIL_MAX_MODE": "live"
+        },
+        "mailTimer": "active"
+      }
+    },
+    "otherApplication": {
+      "health": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+          "releaseId": "43026808427-1",
+          "configVersion": "staging-2026-11-11-v2",
+          "checks": [
+            "http"
+          ]
+        }
+      },
+      "service": {
+        "MainPID": "70911",
+        "ActiveState": "active",
+        "ActiveEnterTimestamp": "Wed 2026-11-11 14:14:47 CET"
+      },
+      "current": "releases/f1550dd028ef-43026808427-1"
+    },
+    "sharedLock": {
+      "device": 29,
+      "inode": 6
+    }
+  },
+  "isolation": {
+    "otherApplicationIdentityProcessAndCurrentUnchanged": true,
+    "stagingProcessUnchangedDuringProductionDeployment": true,
+    "sharedLockDeviceAndInodeUnchanged": true,
+    "sharedLock": {
+      "device": 29,
+      "inode": 6
+    }
+  },
+  "publicBrowserSmoke": {
+    "staging": {
+      "scope": "Anonymous public UI and authorization checks only; no hosted records, authentication, invitation resolution, provider registration, media permission or sending actions.",
+      "environment": "staging",
+      "origin": "https://staging.dartflow.nl",
+      "checkedAt": "2026-11-11T21:21:33.908Z",
+      "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+      "releaseId": "43101809775-1",
+      "configId": "staging-2026-11-11-v15-mail-1",
+      "before": {
+        "health": {
+          "status": 200,
+          "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+          "releaseId": "43101809775-1",
+          "configId": "staging-2026-11-11-v15-mail-1"
+        },
+        "ready": {
+          "status": 200,
+          "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+          "releaseId": "43101809775-1",
+          "configId": "staging-2026-11-11-v15-mail-1"
+        }
+      },
+      "after": {
+        "health": {
+          "status": 200,
+          "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+          "releaseId": "43101809775-1",
+          "configId": "staging-2026-11-11-v15-mail-1"
+        },
+        "ready": {
+          "status": 200,
+          "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+          "releaseId": "43101809775-1",
+          "configId": "staging-2026-11-11-v15-mail-1"
+        }
+      },
+      "privateEndpoints": [
+        {
+          "resource": "unknown-private-match",
+          "method": "GET",
+          "status": 401,
+          "privateFieldsAbsent": true
+        },
+        {
+          "resource": "unknown-match-invitation",
+          "method": "GET",
+          "status": 401,
+          "privateFieldsAbsent": true
+        }
+      ],
+      "views": [
+        {
+          "width": 390,
+          "flow": "short-link-to-anonymous-login",
+          "status": 200,
+          "inputCodeCase": "lowercase",
+          "localNextPreserved": true,
+          "welcomeNoOverflow": true,
+          "loginNoOverflow": true,
+          "emailInputPresent": true,
+          "googleLinkPresent": true,
+          "googleNextPreserved": true,
+          "existingSessionShortcutAbsent": true,
+          "anonymousHostedSession": true,
+          "formSubmitted": false,
+          "googleLinkFollowed": false,
+          "invitationResolved": false,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 2,
+          "pageErrors": 0
+        },
+        {
+          "width": 390,
+          "flow": "unknown-public-club-board-screen",
+          "status": 200,
+          "publicApiStatus": 404,
+          "clearUnavailableMessage": true,
+          "publicNoOverflow": true,
+          "noSessionRequest": true,
+          "noAuthPermissionRequested": true,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 0,
+          "pageErrors": 0
+        },
+        {
+          "width": 390,
+          "flow": "unknown-board-qr-to-anonymous-login",
+          "status": 200,
+          "localNextPreserved": true,
+          "qrLoginNoOverflow": true,
+          "emailInputPresent": true,
+          "googleLinkPresent": true,
+          "formSubmitted": false,
+          "googleLinkFollowed": false,
+          "boardStartedOrJoined": false,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 2,
+          "pageErrors": 0
+        },
+        {
+          "width": 540,
+          "flow": "short-link-to-anonymous-login",
+          "status": 200,
+          "inputCodeCase": "lowercase",
+          "localNextPreserved": true,
+          "welcomeNoOverflow": true,
+          "loginNoOverflow": true,
+          "emailInputPresent": true,
+          "googleLinkPresent": true,
+          "googleNextPreserved": true,
+          "existingSessionShortcutAbsent": true,
+          "anonymousHostedSession": true,
+          "formSubmitted": false,
+          "googleLinkFollowed": false,
+          "invitationResolved": false,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 2,
+          "pageErrors": 0
+        },
+        {
+          "width": 540,
+          "flow": "unknown-public-club-board-screen",
+          "status": 200,
+          "publicApiStatus": 404,
+          "clearUnavailableMessage": true,
+          "publicNoOverflow": true,
+          "noSessionRequest": true,
+          "noAuthPermissionRequested": true,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 0,
+          "pageErrors": 0
+        },
+        {
+          "width": 540,
+          "flow": "unknown-board-qr-to-anonymous-login",
+          "status": 200,
+          "localNextPreserved": true,
+          "qrLoginNoOverflow": true,
+          "emailInputPresent": true,
+          "googleLinkPresent": true,
+          "formSubmitted": false,
+          "googleLinkFollowed": false,
+          "boardStartedOrJoined": false,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 2,
+          "pageErrors": 0
+        }
+      ],
+      "actualHostedInvitationJoinProven": false,
+      "actualHostedDisplayNameRegistrationProven": false,
+      "actualHostedCameraSwitchProven": false,
+      "actualHostedPerPlayerScoringProven": false,
+      "actualPhysicalIosOrAndroidProven": false,
+      "actualLoginOrProviderRegistrationProven": false,
+      "hostedRecordCreated": false,
+      "authenticatedSessionCreated": false,
+      "mailSent": false,
+      "mockSessionUsed": false,
+      "unknownBoardEndpoint": {
+        "status": 404,
+        "privateFieldsAbsent": true,
+        "noAuthCookieWritten": true,
+        "recordCreated": false
+      },
+      "browserVersion": "156.0.8078.4"
+    },
+    "production": {
+      "scope": "Anonymous public UI and authorization checks only; no hosted records, authentication, invitation resolution, provider registration, media permission or sending actions.",
+      "environment": "production",
+      "origin": "https://dartflow.nl",
+      "checkedAt": "2026-11-11T21:25:12.912Z",
+      "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+      "releaseId": "43102459247-1",
+      "configId": "production-2026-11-11-v15-mail-1",
+      "before": {
+        "health": {
+          "status": 200,
+          "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+          "releaseId": "43102459247-1",
+          "configId": "production-2026-11-11-v15-mail-1"
+        },
+        "ready": {
+          "status": 200,
+          "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+          "releaseId": "43102459247-1",
+          "configId": "production-2026-11-11-v15-mail-1"
+        }
+      },
+      "after": {
+        "health": {
+          "status": 200,
+          "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+          "releaseId": "43102459247-1",
+          "configId": "production-2026-11-11-v15-mail-1"
+        },
+        "ready": {
+          "status": 200,
+          "sha": "aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6",
+          "releaseId": "43102459247-1",
+          "configId": "production-2026-11-11-v15-mail-1"
+        }
+      },
+      "privateEndpoints": [
+        {
+          "resource": "unknown-private-match",
+          "method": "GET",
+          "status": 401,
+          "privateFieldsAbsent": true
+        },
+        {
+          "resource": "unknown-match-invitation",
+          "method": "GET",
+          "status": 401,
+          "privateFieldsAbsent": true
+        }
+      ],
+      "views": [
+        {
+          "width": 390,
+          "flow": "short-link-to-anonymous-login",
+          "status": 200,
+          "inputCodeCase": "lowercase",
+          "localNextPreserved": true,
+          "welcomeNoOverflow": true,
+          "loginNoOverflow": true,
+          "emailInputPresent": true,
+          "googleLinkPresent": true,
+          "googleNextPreserved": true,
+          "existingSessionShortcutAbsent": true,
+          "anonymousHostedSession": true,
+          "formSubmitted": false,
+          "googleLinkFollowed": false,
+          "invitationResolved": false,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 2,
+          "pageErrors": 0
+        },
+        {
+          "width": 390,
+          "flow": "unknown-public-club-board-screen",
+          "status": 200,
+          "publicApiStatus": 404,
+          "clearUnavailableMessage": true,
+          "publicNoOverflow": true,
+          "noSessionRequest": true,
+          "noAuthPermissionRequested": true,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 0,
+          "pageErrors": 0
+        },
+        {
+          "width": 390,
+          "flow": "unknown-board-qr-to-anonymous-login",
+          "status": 200,
+          "localNextPreserved": true,
+          "qrLoginNoOverflow": true,
+          "emailInputPresent": true,
+          "googleLinkPresent": true,
+          "formSubmitted": false,
+          "googleLinkFollowed": false,
+          "boardStartedOrJoined": false,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 2,
+          "pageErrors": 0
+        },
+        {
+          "width": 540,
+          "flow": "short-link-to-anonymous-login",
+          "status": 200,
+          "inputCodeCase": "lowercase",
+          "localNextPreserved": true,
+          "welcomeNoOverflow": true,
+          "loginNoOverflow": true,
+          "emailInputPresent": true,
+          "googleLinkPresent": true,
+          "googleNextPreserved": true,
+          "existingSessionShortcutAbsent": true,
+          "anonymousHostedSession": true,
+          "formSubmitted": false,
+          "googleLinkFollowed": false,
+          "invitationResolved": false,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 2,
+          "pageErrors": 0
+        },
+        {
+          "width": 540,
+          "flow": "unknown-public-club-board-screen",
+          "status": 200,
+          "publicApiStatus": 404,
+          "clearUnavailableMessage": true,
+          "publicNoOverflow": true,
+          "noSessionRequest": true,
+          "noAuthPermissionRequested": true,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 0,
+          "pageErrors": 0
+        },
+        {
+          "width": 540,
+          "flow": "unknown-board-qr-to-anonymous-login",
+          "status": 200,
+          "localNextPreserved": true,
+          "qrLoginNoOverflow": true,
+          "emailInputPresent": true,
+          "googleLinkPresent": true,
+          "formSubmitted": false,
+          "googleLinkFollowed": false,
+          "boardStartedOrJoined": false,
+          "blockedAuthActions": 0,
+          "blockedMutations": 0,
+          "blockedForeignRequests": 0,
+          "sessionRequests": 2,
+          "pageErrors": 0
+        }
+      ],
+      "actualHostedInvitationJoinProven": false,
+      "actualHostedDisplayNameRegistrationProven": false,
+      "actualHostedCameraSwitchProven": false,
+      "actualHostedPerPlayerScoringProven": false,
+      "actualPhysicalIosOrAndroidProven": false,
+      "actualLoginOrProviderRegistrationProven": false,
+      "hostedRecordCreated": false,
+      "authenticatedSessionCreated": false,
+      "mailSent": false,
+      "mockSessionUsed": false,
+      "unknownBoardEndpoint": {
+        "status": 404,
+        "privateFieldsAbsent": true,
+        "noAuthCookieWritten": true,
+        "recordCreated": false
+      },
+      "browserVersion": "156.0.8078.4"
+    }
+  },
+  "finalOperatorChecks": {
+    "productionSenderWrite": [
+      {
+        "sender_configuration": {
+          "environment": "production",
+          "revision": 1,
+          "from": {
+            "name": "DartFlow",
+            "address": "noreply@dartflow.nl"
+          },
+          "replyTo": "support@dartflow.nl",
+          "mode": "log",
+          "testRecipientCount": 0,
+          "auditRecordWritten": true,
+          "credentialsChanged": false,
+          "mailSent": false
+        }
+      }
+    ],
+    "productionMailTimerAndService": {
+      "chunk_id": "194bfe",
+      "wall_time_seconds": 0.738992428,
+      "exit_code": 0,
+      "original_token_count": 62,
+      "output": "LastTriggerUSec=Wed 2026-11-11 22:25:15 CET\nResult=success\nId=dartflow-mail-production.timer\nActiveState=active\nUnitFileState=enabled\n\nResult=success\nExecMainStatus=0\nId=dartflow-mail-production.service\nActiveState=inactive\nUnitFileState=static\n"
+    },
+    "stagingFinalPreservation": [
+      {
+        "preserved_match_fields_sha256": "7ae5fc98fb37a48c861237d677a1eb74c95535aa20085ddd4fa8b87305e0b1a6",
+        "visits": 8,
+        "results": 0,
+        "profiles": 3,
+        "clubs": 2
+      }
+    ],
+    "productionFinalCounts": [
+      {
+        "profiles": 0,
+        "clubs": 0,
+        "matches": 0,
+        "visits": 0,
+        "results": 0,
+        "outbox_count": 0,
+        "credential_count": 0
+      }
+    ],
+    "invitationAndBootstrapPrivileges": {
+      "staging": [
+        {
+          "rolname": "anon",
+          "invitation_select": false,
+          "invitation_insert": false,
+          "invitation_update": false,
+          "invitation_delete": false,
+          "owner_bootstrap_select": false
+        },
+        {
+          "rolname": "authenticated",
+          "invitation_select": false,
+          "invitation_insert": false,
+          "invitation_update": false,
+          "invitation_delete": false,
+          "owner_bootstrap_select": false
+        },
+        {
+          "rolname": "dartflow_app",
+          "invitation_select": true,
+          "invitation_insert": true,
+          "invitation_update": false,
+          "invitation_delete": true,
+          "owner_bootstrap_select": false
+        },
+        {
+          "rolname": "service_role",
+          "invitation_select": false,
+          "invitation_insert": false,
+          "invitation_update": false,
+          "invitation_delete": false,
+          "owner_bootstrap_select": false
+        }
+      ],
+      "production": [
+        {
+          "rolname": "anon",
+          "invitation_select": false,
+          "invitation_insert": false,
+          "invitation_update": false,
+          "invitation_delete": false,
+          "owner_bootstrap_select": false
+        },
+        {
+          "rolname": "authenticated",
+          "invitation_select": false,
+          "invitation_insert": false,
+          "invitation_update": false,
+          "invitation_delete": false,
+          "owner_bootstrap_select": false
+        },
+        {
+          "rolname": "dartflow_app",
+          "invitation_select": true,
+          "invitation_insert": true,
+          "invitation_update": false,
+          "invitation_delete": true,
+          "owner_bootstrap_select": false
+        },
+        {
+          "rolname": "service_role",
+          "invitation_select": false,
+          "invitation_insert": false,
+          "invitation_update": false,
+          "invitation_delete": false,
+          "owner_bootstrap_select": false
+        }
+      ]
+    },
+    "privilegeInterpretation": "Runtime has SELECT, INSERT and DELETE on invitation codes; UPDATE is intentionally absent. Public API roles have no code-table privileges. The SQL comma-list privilege predicate only proves any requested privilege, so the final per-privilege readback is authoritative."
+  },
+  "productionSecurityAdvisorInterpretation": "Only INFO: owner_bootstrap intentionally has RLS and no runtime/public access policies. No policy is added to this administrator-only bootstrap allowlist. See the linked advisor remediation and the explicit role-denial verification.",
+  "mailBoundary": "Application sender configured in each environment. App mail remains Log with no app provider credentials. Supabase Auth SMTP sender/templates were not modified by these operations."
+}
