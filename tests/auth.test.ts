@@ -7,6 +7,9 @@ test('login intent only accepts explicit internal routes and immutable match ide
   assert.equal(safeNext('/wedstrijd/30000000-0000-4000-8000-000000000001'),'/wedstrijd/30000000-0000-4000-8000-000000000001');
   assert.equal(safeNext('/baan/B1'),'/baan/B1');
   assert.equal(safeNext('/app/platform/integraties'),'/app/platform/integraties');
+  const clubBoards='/app/clubs/30000000-0000-4000-8000-000000000001/banen';
+  assert.equal(safeNext(clubBoards),clubBoards);
+  for(const invalid of [clubBoards+'?next=https://evil.example',clubBoards+'/extra',clubBoards.replace('/banen','/admin'),'/app/clubs/unknown/banen'])assert.equal(safeNext(invalid),'/');
   const invitation='/app/lobby/30000000-0000-4000-8000-000000000001?code=abcdefghijklmnopqrstuvwx';
   assert.equal(safeNext(invitation),invitation);
   const studio='/app/venue-cast/studio?event=30000000-0000-4000-8000-000000000001';

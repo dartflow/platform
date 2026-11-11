@@ -32,6 +32,8 @@ De lokale database staat persistent in de genegeerde map `.local/postgres`. Na e
 
 Een netwerkfout bewaart de onbevestigde actie met haar oorspronkelijke ID. Een herhaling telt geen tweede beurt. Bij een gewijzigde revisie verschijnt een zichtbaar conflict. Het scherm en de telefoons pollen dezelfde servergegevens en verversen na reconnect of terugkeer uit de achtergrond.
 
+Voor vrij spelen met een vaste verenigingsbaan gebruik je **Verenigingen → jouw vereniging → Banen → Baan toevoegen**. Elke baan heeft een permanente speel-QR en een afzonderlijk alleen-lezen baanscherm. Kies iedereen met een DartFlow-account of alleen verenigingsleden; een competitie of toernooi is hiervoor niet nodig. Zie [de handleiding voor verenigingsbanen](docs/verenigingsbanen.md).
+
 ## Controleren
 
 ```bash

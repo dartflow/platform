@@ -1,0 +1,306 @@
+{
+  "appCurrentSourcePidAndStartUnchanged": true,
+  "backups": [
+    {
+      "archive": {
+        "bytes": 141434,
+        "directoryMode": "0o700",
+        "fileMode": "0o600",
+        "indexVerified": true,
+        "indexedTables": 43,
+        "path": "/var/backups/dartflow/club-boards-staging-20261111T200950900131Z/dartflow-staging.dump",
+        "rootOwned": true,
+        "sha256": "5eacbf7f06280582264cd2985f65cc7222879d3aaa0d73529e686346778dc216"
+      },
+      "capture": {
+        "capturedAt": "2026-11-11T20:09:50.754094+00:00",
+        "coreSchema": 1,
+        "dumpUsesSameExportedSnapshotAsCounts": true,
+        "isolation": "repeatable read read only",
+        "latestCounts": {
+          "action_receipts": 0,
+          "audit_events": 0,
+          "auth_limits": 6,
+          "boards": 4,
+          "club_memberships": 1,
+          "clubs": 1,
+          "entries": 0,
+          "event_staff": 1,
+          "events": 1,
+          "feature_versions": 1,
+          "integration_audit": 1,
+          "integration_credentials": 0,
+          "integration_settings": 1,
+          "mail_events": 2,
+          "mail_outbox": 2,
+          "mail_policies": 0,
+          "mail_preferences": 0,
+          "mail_provider_events": 0,
+          "mail_suppressions": 0,
+          "mail_template_versions": 0,
+          "mail_templates": 0,
+          "match_confirmations": 0,
+          "match_players": 0,
+          "match_results": 0,
+          "matches": 0,
+          "platform_audit": 5,
+          "platform_cast_grants": 0,
+          "platform_entities": 5,
+          "platform_match_links": 0,
+          "platform_members": 5,
+          "platform_messages": 0,
+          "platform_preferences": 0,
+          "platform_receipts": 5,
+          "platform_registrations": 0,
+          "platform_relationships": 0,
+          "platform_reports": 0,
+          "platform_roles": 1,
+          "platform_signals": 0,
+          "profiles": 2,
+          "schema_migrations": 1,
+          "screen_capabilities": 2,
+          "standings": 0,
+          "visits": 0
+        },
+        "latestCountsEqualSnapshot": true,
+        "privateTables": 44,
+        "readableTablesWithRls": 43,
+        "rowCounts": {
+          "action_receipts": 0,
+          "audit_events": 0,
+          "auth_limits": 6,
+          "boards": 4,
+          "club_memberships": 1,
+          "clubs": 1,
+          "entries": 0,
+          "event_staff": 1,
+          "events": 1,
+          "feature_versions": 1,
+          "integration_audit": 1,
+          "integration_credentials": 0,
+          "integration_settings": 1,
+          "mail_events": 2,
+          "mail_outbox": 2,
+          "mail_policies": 0,
+          "mail_preferences": 0,
+          "mail_provider_events": 0,
+          "mail_suppressions": 0,
+          "mail_template_versions": 0,
+          "mail_templates": 0,
+          "match_confirmations": 0,
+          "match_players": 0,
+          "match_results": 0,
+          "matches": 0,
+          "platform_audit": 5,
+          "platform_cast_grants": 0,
+          "platform_entities": 5,
+          "platform_match_links": 0,
+          "platform_members": 5,
+          "platform_messages": 0,
+          "platform_preferences": 0,
+          "platform_receipts": 5,
+          "platform_registrations": 0,
+          "platform_relationships": 0,
+          "platform_reports": 0,
+          "platform_roles": 1,
+          "platform_signals": 0,
+          "profiles": 2,
+          "schema_migrations": 1,
+          "screen_capabilities": 2,
+          "standings": 0,
+          "visits": 0
+        },
+        "runtimeReadableTables": 43,
+        "sameSnapshotCountsRechecked": true,
+        "snapshotIdentifierStored": false,
+        "v15MarkerTableExists": true
+      },
+      "connection": {
+        "ca": "/usr/local/share/dg-certificates/supabase-prod-ca-bundle.crt",
+        "credentialsInArgvOrOutput": false,
+        "role": "dartflow_app",
+        "sameProjectValidated": true,
+        "tls": "verify-full"
+      },
+      "environment": "staging",
+      "excludedUnreadableTables": [
+        "owner_bootstrap"
+      ],
+      "exclusionReason": "Protected owner bootstrap has no runtime SELECT; privileges and invitation are unchanged",
+      "projectRef": "dsnqnvbckkqpzadblshu",
+      "restoreLimits": "Use reviewed schema/migrations and separately preserved owner-bootstrap/Auth/provider state; the restricted staging archive excludes the owner-bootstrap table.",
+      "scope": "dartflow_private objects and runtime-visible application rows only; not a full Supabase/Auth/managed-service backup"
+    },
+    {
+      "archive": {
+        "bytes": 51658,
+        "directoryMode": "0o700",
+        "fileMode": "0o600",
+        "indexVerified": true,
+        "indexedTables": 18,
+        "path": "/var/backups/dartflow/club-boards-production-20261111T200955366529Z/dartflow-production.dump",
+        "rootOwned": true,
+        "sha256": "af0b52b093ec6b6565a2d04f234d8f964ea1eb6df399a2e1429d2ad4d31a2d05"
+      },
+      "capture": {
+        "capturedAt": "2026-11-11T20:09:55.242509+00:00",
+        "coreSchema": 1,
+        "dumpUsesSameExportedSnapshotAsCounts": true,
+        "isolation": "repeatable read read only",
+        "latestCounts": {
+          "action_receipts": 0,
+          "audit_events": 0,
+          "auth_limits": 3,
+          "boards": 0,
+          "club_memberships": 0,
+          "clubs": 0,
+          "entries": 0,
+          "event_staff": 0,
+          "events": 0,
+          "match_confirmations": 0,
+          "match_players": 0,
+          "match_results": 0,
+          "matches": 0,
+          "profiles": 0,
+          "schema_migrations": 1,
+          "screen_capabilities": 0,
+          "standings": 0,
+          "visits": 0
+        },
+        "latestCountsEqualSnapshot": true,
+        "privateTables": 18,
+        "readableTablesWithRls": 18,
+        "rowCounts": {
+          "action_receipts": 0,
+          "audit_events": 0,
+          "auth_limits": 3,
+          "boards": 0,
+          "club_memberships": 0,
+          "clubs": 0,
+          "entries": 0,
+          "event_staff": 0,
+          "events": 0,
+          "match_confirmations": 0,
+          "match_players": 0,
+          "match_results": 0,
+          "matches": 0,
+          "profiles": 0,
+          "schema_migrations": 1,
+          "screen_capabilities": 0,
+          "standings": 0,
+          "visits": 0
+        },
+        "runtimeReadableTables": 18,
+        "sameSnapshotCountsRechecked": true,
+        "snapshotIdentifierStored": false,
+        "v15MarkerTableExists": false
+      },
+      "connection": {
+        "ca": "/usr/local/share/dg-certificates/supabase-prod-ca-bundle.crt",
+        "credentialsInArgvOrOutput": false,
+        "role": "dartflow_app",
+        "sameProjectValidated": true,
+        "tls": "verify-full"
+      },
+      "environment": "production",
+      "excludedUnreadableTables": [],
+      "exclusionReason": null,
+      "projectRef": "wlrnowuownakqqgjxnbb",
+      "restoreLimits": "App-schema scope only; Supabase Auth, sessions, provider configuration and cluster roles are excluded.",
+      "scope": "dartflow_private objects and runtime-visible application rows only; not a full Supabase/Auth/managed-service backup"
+    }
+  ],
+  "existingSharedLock": {
+    "device": 29,
+    "inode": 6,
+    "preserved": true
+  },
+  "operations": {
+    "appsActivatedOrRestarted": false,
+    "authOrProviderConfigurationChanged": false,
+    "createdOnlyNewProtectedBackupDirectoriesAndArchives": true,
+    "databaseReadsOnly": true,
+    "mailOrOtpSent": false,
+    "roleGrantsChanged": false,
+    "schemaChanged": false
+  },
+  "priorProductionBackupUnchanged": true,
+  "priorProductionRestoreEvidence": "docs/evidence/v15-production-backup-2026-11-11.json",
+  "recordedAt": "2026-11-11T20:09:58.288612+00:00",
+  "scope": "Fresh restricted application backups before standalone club-board migrations; no application activation or database schema changes",
+  "servicesAfter": {
+    "dartflow-production": {
+      "current": "releases/4634852c17cc-42995766522-1",
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 10:32:39 CET",
+        "ActiveState": "active",
+        "MainPID": "64473"
+      }
+    },
+    "dartflow-staging": {
+      "current": "releases/e8317d22fcb7-43074167296-1",
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 19:06:06 CET",
+        "ActiveState": "active",
+        "MainPID": "101136"
+      }
+    },
+    "milobingo-staging": {
+      "current": "releases/f1550dd028ef-43026808427-1",
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 14:14:47 CET",
+        "ActiveState": "active",
+        "MainPID": "70911"
+      }
+    }
+  },
+  "servicesBefore": {
+    "dartflow-production": {
+      "current": "releases/4634852c17cc-42995766522-1",
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 10:32:39 CET",
+        "ActiveState": "active",
+        "MainPID": "64473"
+      }
+    },
+    "dartflow-staging": {
+      "current": "releases/e8317d22fcb7-43074167296-1",
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 19:06:06 CET",
+        "ActiveState": "active",
+        "MainPID": "101136"
+      }
+    },
+    "milobingo-staging": {
+      "current": "releases/f1550dd028ef-43026808427-1",
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 14:14:47 CET",
+        "ActiveState": "active",
+        "MainPID": "70911"
+      }
+    }
+  },
+  "productionRestoreDrill": {
+    "result": "passed",
+    "target": "Unique isolated local PostgreSQL16 scratch database; main fixture untouched",
+    "restored": {
+      "core": 1,
+      "tables": 18,
+      "rls_tables": 18,
+      "profiles": 0,
+      "clubs": 0,
+      "events": 0,
+      "boards": 0,
+      "matches": 0
+    },
+    "scratchDatabaseRemoved": true,
+    "credentialsInArgvOrOutput": false,
+    "sourceArchive": "/var/backups/dartflow/club-boards-production-20261111T200955366529Z/dartflow-production.dump",
+    "formatAdaptation": {
+      "psqlRestrictMarkersRemoved": 2,
+      "transactionTimeoutSessionSettingsRemoved": 1,
+      "schemaRowsAndGrantsPreserved": true
+    },
+    "archiveDigestVerifiedBeforeTransfer": true
+  }
+}

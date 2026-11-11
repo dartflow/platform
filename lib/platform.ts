@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { database, eventAccess, executeMatchCommand, getMatch, getProfile } from './db';
 import { DomainError, matchView } from './domain';
 import {boardAction}from'./platform-boards';
+import {clubBoardAction,listClubBoards,revalidateClubBoardCommand}from'./club-boards';
 import { autoAssign, competitionAction } from './platform-competitions';
 import { advanceFixtures, newTraining, standings, trainingAction } from './platform-domain';
 import { socialAction } from './platform-social';
@@ -25,19 +26,22 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
     if (receipts.length) {
       if (receipts[0].payload_hash !== payloadHash) throw new DomainError('request_reused', 'Dit aanvraag-ID is eerder met andere gegevens gebruikt.', 409);
       const response=receipts[0].response as PlatformResponse;
+      await revalidateClubBoardCommand(client,actor,command,response);
       if(['board.start','board.screen'].includes(command.action.type)){
         const scope=await client.query('select event_id from dartflow_private.boards where id=$1',[uuid(command.action.boardId)]);
         if(!scope.rows.length)throw new DomainError('not_found','Deze baan bestaat niet.',404);
         await eventAccess(client,actor,scope.rows[0].event_id);
       }
       if(response.entity){const row=await entity(client,response.entity.id);const m=await member(client,row.id,actor);
+        if(typeof row.state.boardId==='string'&&typeof row.state.eventId==='string')await eventAccess(client,actor,row.state.eventId);
         if(m?.status==='banned'||(row.club_id&&!(await isClubMember(client,row.club_id,actor)))||await blocked(client,actor,row.owner_id)||(row.visibility==='private'&&row.owner_id!==actor&&!m?.status.match(/^(active|invited|pending|waitlisted)$/)))throw new DomainError('forbidden','Je hebt geen toegang meer tot dit onderdeel.',403);
       }
       return response;
     }
     const action = command.action;
     let result: PlatformResponse | null = null;
-    if(['board.start','board.screen'].includes(action.type))result=await boardAction(client,actor,command);
+    if(action.type.startsWith('club-board.'))result=await clubBoardAction(client,actor,command);
+    else if(['board.start','board.screen'].includes(action.type))result=await boardAction(client,actor,command);
     else if (action.type === 'invitation.resolve') {
       if(typeof action.code!=='string'||action.code.length>100)throw new DomainError('invalid_invitation','Deze uitnodiging is ongeldig.',404);
       const candidate=await client.query<EntityRow>("select * from dartflow_private.platform_entities where invite_hash=$1 and invite_expires_at>now()",[hash(action.code)]);
@@ -179,18 +183,19 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
     exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and e.kind='tournament') as offline_supported
     from dartflow_private.matches m left join dartflow_private.club_memberships c on c.club_id=m.club_id and c.user_id=$1
     where (exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$1) or m.state->>'delegatedWriterId'=$1::text)
-    and (c.user_id is not null or (exists(select 1 from dartflow_private.entries x where x.event_id=m.event_id and x.user_id=$1 and x.status='registered') and exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and ((e.kind='lobby' and e.state->>'boardId' is null) or (e.kind in ('league','tournament') and (e.club_id is null or e.state->>'eligibility' in ('all','code'))))))) order by m.updated_at desc,m.id limit 200`,[actor]);
-  const matches=ownMatchRows.map(row=>({...matchView(row.state,actor,row.can_manage===true),offlineSupported:row.offline_supported}));
+    and (exists(select 1 from dartflow_private.club_boards cb where cb.event_id=m.event_id) or c.user_id is not null or (exists(select 1 from dartflow_private.entries x where x.event_id=m.event_id and x.user_id=$1 and x.status='registered') and exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and ((e.kind='lobby' and e.state->>'boardId' is null) or (e.kind in ('league','tournament') and (e.club_id is null or e.state->>'eligibility' in ('all','code'))))))) order by m.updated_at desc,m.id limit 200`,[actor]);
+  const matches=[];for(const row of ownMatchRows){try{const access=await eventAccess(client,actor,row.state.eventId);matches.push({...matchView(row.state,actor,access.canManage),offlineSupported:row.offline_supported});}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}
+  const clubBoards=await listClubBoards(client,actor,list.filter(e=>e.kind==='club').map(e=>e.id));
   const {rows:ownHistory}=await client.query<{snapshot:ResultView}>('select r.snapshot from dartflow_private.match_results r join dartflow_private.match_players p on p.match_id=r.match_id where p.user_id=$1 order by r.created_at desc,r.match_id limit 200',[actor]);
   const history=ownHistory.map(row=>row.snapshot);
   const statistics=await getPlatformStatistics(actor);
-  return { profile,matches,history, players: people, clubs: list.filter(e => e.kind === 'club'), rooms: list.filter(e => e.kind === 'room'), trainings: list.filter(e => e.kind === 'training'), leagues: list.filter(e => e.kind === 'league'), tournaments: list.filter(e => e.kind === 'tournament'), lobbies: list.filter(e => e.kind === 'lobby'), friends, blocked: relationships.filter(r => r.kind === 'block' && r.source_id === actor).map(r => ({ id: r.target_id, name: r.name })), preferences: prefs[0] ?? { discoverable: true, allowRequests: true }, messages,registrations,reports,canManageRegistrations,statistics };
+  return { profile,matches,history,clubBoards, players: people, clubs: list.filter(e => e.kind === 'club'), rooms: list.filter(e => e.kind === 'room'), trainings: list.filter(e => e.kind === 'training'), leagues: list.filter(e => e.kind === 'league'), tournaments: list.filter(e => e.kind === 'tournament'), lobbies: list.filter(e => e.kind === 'lobby'), friends, blocked: relationships.filter(r => r.kind === 'block' && r.source_id === actor).map(r => ({ id: r.target_id, name: r.name })), preferences: prefs[0] ?? { discoverable: true, allowRequests: true }, messages,registrations,reports,canManageRegistrations,statistics };
 }
 export async function signalAccess(client: Client, actor: string, matchId: string): Promise<string[]> {
-  const { rows } = await client.query<{ user_id: string }>(`select mp.user_id from dartflow_private.match_players mp join dartflow_private.matches m on m.id=mp.match_id
-    where m.id=$1 and exists(select 1 from dartflow_private.match_players own where own.match_id=m.id and own.user_id=$2)
-    and (exists(select 1 from dartflow_private.club_memberships c where c.club_id=m.club_id and c.user_id=$2) or (exists(select 1 from dartflow_private.entries x where x.event_id=m.event_id and x.user_id=$2 and x.status='registered') and exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and ((e.kind='lobby' and e.state->>'boardId' is null) or (e.kind in ('league','tournament') and (e.club_id is null or e.state->>'eligibility' in ('all','code')))))))`, [uuid(matchId), uuid(actor)]);
+  const { rows } = await client.query<{ user_id: string;event_id:string }>(`select mp.user_id,m.event_id from dartflow_private.match_players mp join dartflow_private.matches m on m.id=mp.match_id
+    where m.id=$1 and exists(select 1 from dartflow_private.match_players own where own.match_id=m.id and own.user_id=$2)`, [uuid(matchId), uuid(actor)]);
   if (rows.length !== 2) throw new DomainError('forbidden', 'Alleen de twee spelers hebben toegang tot deze wedstrijdverbinding.', 403);
+  await eventAccess(client,actor,rows[0].event_id);
   const players=rows.map(r => r.user_id);
   if(await blocked(client,players[0],players[1]))throw new DomainError('blocked','Deze verbinding is geblokkeerd.',403);
   return players;

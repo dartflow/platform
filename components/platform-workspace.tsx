@@ -7,7 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Overview, Profile, MatchView, ResultView } from "@/lib/types";
+import type { Overview, Profile, MatchView, ResultView, ClubBoardView } from "@/lib/types";
+import { ClubBoardQr } from "./club-board-screen";
 import MailWorkspace from "./mail-workspace";
 import IntegrationsPanel from "./integrations-panel";
 import { MailPreferences } from "./mail-policy-panel";
@@ -38,6 +39,7 @@ type Platform = {
   history?: ResultView[];
   players: Profile[];
   clubs: Entity[];
+  clubBoards?: ClubBoardView[];
   rooms: Entity[];
   trainings: Entity[];
   leagues: Entity[];
@@ -267,6 +269,7 @@ function Field({
   required = false,
   defaultValue,
   disabled = false,
+  maxLength,
   children,
 }: {
   label: string;
@@ -275,6 +278,7 @@ function Field({
   required?: boolean;
   defaultValue?: string | number;
   disabled?: boolean;
+  maxLength?: number;
   children?: ReactNode;
 }) {
   return (
@@ -296,6 +300,7 @@ function Field({
           defaultValue={defaultValue}
           required={required}
           disabled={disabled}
+          maxLength={maxLength}
         />
       )}
     </label>
@@ -536,7 +541,7 @@ export default function PlatformWorkspace({
       ) : page === "friends" ? (
         <Friends data={data} command={command} busy={busy} />
       ) : page === "clubs" ? (
-        <Clubs data={data} id={id} command={command} busy={busy} />
+        <Clubs data={data} id={id} section={pieces[2]} command={command} busy={busy} />
       ) : page === "community" ? (
         <Rooms data={data} id={id} command={command} busy={busy} />
       ) : [
@@ -1482,11 +1487,13 @@ function Friends({
 function Clubs({
   data,
   id,
+  section,
   command,
   busy,
 }: {
   data: Platform;
   id?: string;
+  section?: string;
   command: Command;
   busy: boolean;
 }) {
@@ -1496,6 +1503,11 @@ function Clubs({
   if (entity) {
     const own = entity.members.find((m) => m.id === data.profile.id);
     const manager = entity.canManage === true;
+    if (section === "banen") return <>
+      <Title title={entity.name} actions={<Link to="clubs">Alle verenigingen</Link>}>{text(entity.state.description)}</Title>
+      <ClubNavigation id={entity.id} boards />
+      <ClubBoards club={entity} boards={(data.clubBoards || []).filter(board => board.clubId === entity.id)} command={command} busy={busy} />
+    </>;
     return (
       <>
         <Title
@@ -1504,6 +1516,7 @@ function Clubs({
         >
           {text(entity.state.description)}
         </Title>
+        <ClubNavigation id={entity.id} />
         <ShareInvitation section="clubs" id={entity.id} />
         {manager && (
           <EntitySettings entity={entity} command={command} busy={busy} />
@@ -1715,6 +1728,39 @@ function Clubs({
       </div>
     </>
   );
+}
+function ClubNavigation({ id, boards = false }: { id: string; boards?: boolean }) {
+  return <nav className="button-row club-navigation" aria-label="Vereniging">
+    <a className={`button ${boards ? "ghost" : "gold"}`} href={`/app/clubs/${id}`} aria-current={!boards ? "page" : undefined}>Vereniging</a>
+    <a className={`button ${boards ? "gold" : "ghost"}`} href={`/app/clubs/${id}/banen`} aria-current={boards ? "page" : undefined}>Banen</a>
+  </nav>;
+}
+function ClubBoards({ club, boards, command, busy }: { club: Entity; boards: ClubBoardView[]; command: Command; busy: boolean }) {
+  const [adding, setAdding] = useState(false);
+  return <>
+    <section className="panel club-boards-intro">
+      <div className="section-heading"><div><h2>Vaste verenigingsbanen</h2><p>Een eigen scorebord en vaste QR voor ieder fysiek dartbord. Je kunt direct spelen met een DartFlow-account, zonder evenementinschrijving.</p></div>{club.canManage && <Button primary disabled={busy} onClick={() => setAdding(!adding)}>{adding ? "Toevoegen sluiten" : "Baan toevoegen"}</Button>}</div>
+      <p>Het alleen-lezen baanscherm is zichtbaar voor iedereen met de schermlink. Wie mag spelen, bepaal je per baan.</p>
+    </section>
+    {adding && club.canManage && <Form title="Baan toevoegen" submit="Baan aanmaken" busy={busy} onSubmit={async form => {
+      const result = await command({ type: "club-board.create", clubId: club.id, name: text(form.get("name")), access: text(form.get("access"), "all") });
+      if (result?.id) setAdding(false);
+    }}><Field label="Naam van de baan" name="name" required maxLength={80} /><Field label="Wie mag spelen?" name="access" defaultValue="all"><option value="all">Iedereen met een DartFlow-account</option><option value="club">Alleen leden van deze vereniging</option></Field></Form>}
+    <div className="club-boards-grid">{boards.length ? boards.map(board => <ClubBoardCard key={board.id} board={board} command={command} busy={busy} />) : <section className="panel"><Empty>Deze vereniging heeft nog geen vaste banen. Een beheerder kan een baan toevoegen.</Empty></section>}</div>
+  </>;
+}
+function ClubBoardCard({ board, command, busy }: { board: ClubBoardView; command: Command; busy: boolean }) {
+  const [name, setName] = useState(board.name);
+  const [access, setAccess] = useState(board.access);
+  useEffect(() => setName(board.name), [board.name]);
+  useEffect(() => setAccess(board.access), [board.access]);
+  return <article className="panel club-board-card" aria-label={board.name}>
+    <div className="section-heading"><h2>{board.name}</h2><span className="badge" data-live={board.occupied}>{board.blocked ? "Geblokkeerd" : board.occupied ? "Bezet" : "Vrij"}</span></div>
+    <p>{board.access === "club" ? "Alleen leden van deze vereniging" : "Iedereen met een DartFlow-account"}</p>
+    <ClubBoardQr boardId={board.id} />
+    <a className="button gold" href={board.screenUrl} target="_blank" rel="noopener noreferrer">Open alleen-lezen baanscherm ↗</a>
+    {board.canManage && <details className="club-board-settings"><summary>Baan beheren</summary><form onSubmit={event => { event.preventDefault(); void command({ type: "club-board.update", boardId: board.id, name, access }); }}><fieldset disabled={busy}><legend>Instellingen van {board.name}</legend><label className="field">Baannaam<input required maxLength={80} value={name} onChange={event => setName(event.target.value)} /></label><label className="field">Wie mag spelen?<select value={access} onChange={event => setAccess(event.target.value as 'all' | 'club')}><option value="all">Iedereen met een DartFlow-account</option><option value="club">Alleen leden van deze vereniging</option></select></label><button className="button gold">Baaninstellingen opslaan</button></fieldset></form><Button disabled={busy} onClick={() => void command({ type: "club-board.update", boardId: board.id, blocked: !board.blocked })}>{board.blocked ? "Baan vrijgeven" : "Baan blokkeren"}</Button></details>}
+  </article>;
 }
 function Rooms({
   data,

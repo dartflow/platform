@@ -10,6 +10,7 @@ import {
 } from "react";
 import PlatformWorkspace from "./platform-workspace";
 import SprintDisplay from "./sprint-display";
+import ClubBoardScreen from "./club-board-screen";
 import PublicCast from "./public-cast";
 import ReadOnlyAlias from "./read-only-alias";
 import { MediaRoom } from "./media-room";
@@ -428,7 +429,7 @@ export default function DartflowApp() {
   const [clubId, setClubId] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const session = usePolled<Session>(
-    path && !path.startsWith("/scherm/") && !path.startsWith("/cast/")
+    path && !path.startsWith("/scherm/") && !path.startsWith("/cast/") && !path.startsWith("/baanscherm/")
       ? "/api/session"
       : null,
   );
@@ -452,6 +453,8 @@ export default function DartflowApp() {
     return <PublicCast token={path.split("/")[2]} />;
   if (path.startsWith("/scherm/"))
     return <PublicScreen token={path.split("/")[2]} />;
+  if (path.startsWith("/baanscherm/"))
+    return <ClubBoardScreen boardId={path.split("/")[2]} />;
   const readOnlyAlias = path.match(/^\/app\/(spectator|overlay)\/([^/]+)$/);
   if (readOnlyAlias)
     return (
@@ -478,13 +481,13 @@ export default function DartflowApp() {
         <div className="auth-card">
           <Badge>WELKOM</Badge>
           <h1>Welkom bij DartFlow.</h1>
-          <p>Log in om jouw speeldag, wedstrijden en vereniging te openen.</p>
+          <p>{path.startsWith("/baan/") ? "Registreer of meld je aan met je eigen DartFlow-account om op deze baan te spelen." : "Log in om jouw speeldag, wedstrijden en vereniging te openen."}</p>
           {session.error && <div className="notice error">{session.error}</div>}
           <a
             className="button gold full"
             href={`/inloggen?next=${encodeURIComponent(path)}`}
           >
-            Inloggen <Icon name="arrow" />
+            {path.startsWith("/baan/") ? "Registreren of aanmelden" : "Inloggen"} <Icon name="arrow" />
           </a>
         </div>
       </div>
@@ -1362,8 +1365,9 @@ function BoardPage({
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState("");
   const lookup = usePolled<{
-    board: { id: string; name: string; occupied: boolean };
+    board: { id: string; name: string; occupied: boolean; blocked?: boolean; access?: 'all' | 'club' };
     event: { id: string; name: string };
+    club?: { id: string; name: string };
     matchId?: string;
     practiceId?: string;
     pendingLobbyId?: string;
@@ -1430,7 +1434,7 @@ function BoardPage({
     eventId: data.event.id,
     name: data.board.name,
     blocked:
-      overview.boards.find((board) => board.id === boardId)?.blocked || false,
+      data.board.blocked || overview.boards.find((board) => board.id === boardId)?.blocked || false,
     matchId: data.matchId || null,
   };
   const context: Overview = {
@@ -1492,28 +1496,32 @@ function BoardPage({
   return (
     <>
       <Heading kicker="BAANMODUS" title={board.name}>
-        {data.event.name}
+        {data.club?.name || data.event.name}
       </Heading>
       <div className="panel board-wait">
         <img src="/assets/dartboard.svg" alt="Dartbord" />
         <Empty
           title={
-            data.pendingLobbyId
+            data.board.blocked
+              ? "Deze baan is tijdelijk geblokkeerd"
+              : data.pendingLobbyId
               ? "Samen aan dit bord"
               : data.board.occupied
                 ? "Deze baan is bezet"
                 : "De baan staat klaar"
           }
         >
-          {data.pendingLobbyId
+          {data.board.blocked
+            ? "De vereniging heeft deze baan tijdelijk buiten gebruik gezet."
+            : data.pendingLobbyId
             ? "De eerste speler heeft deze baan klaargezet. Meld je aan als tweede speler."
             : data.board.occupied
               ? "Er wordt op deze baan een andere partij gespeeld. Jouw eigen wedstrijd wordt getoond zodra je aan de beurt bent."
               : data.canStart
-                ? "Kies je spelvorm en begin op dit bord. Een ingeplande of gereserveerde baan blijft bij de wedstrijdleiding."
+                ? data.club ? "Kies je spelvorm en begin op dit bord met je eigen account. Je hoeft je niet voor een evenement in te schrijven." : "Kies je spelvorm en begin op dit bord. Een ingeplande of gereserveerde baan blijft bij de wedstrijdleiding."
                 : "De wedstrijdleiding koppelt de volgende partij aan deze baan. Deze vaste QR blijft naar dezelfde baan wijzen."}
         </Empty>
-        {data.pendingLobbyId ? (
+        {!data.board.blocked && data.pendingLobbyId ? (
           <div className="board-start">
             <h2>Een speler wacht aan dit bord</h2>
             <p>
@@ -1534,7 +1542,7 @@ function BoardPage({
               {busy ? "Aanmelden…" : "Meedoen aan deze baan"}
             </button>
           </div>
-        ) : data.canStart ? (
+        ) : !data.board.blocked && data.canStart ? (
           <form
             className="board-start"
             onSubmit={(event) => {
@@ -1610,8 +1618,8 @@ function BoardPage({
             {actionError}
           </p>
         )}
-        <a className="button ghost" href="/app/events">
-          Bekijk je speeldag ↗
+        <a className="button ghost" href={data.club ? `/app/clubs/${data.club.id}` : "/app/events"}>
+          {data.club ? "Bekijk de vereniging" : "Bekijk je speeldag"} ↗
         </a>
       </div>
     </>

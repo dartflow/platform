@@ -1,4 +1,5 @@
 export type Role = 'organizer' | 'player';
+export type { ClubBoardView,ClubBoardScreenView } from './platform-types';
 export type Profile = { id: string; name: string; email?: string; role?: Role };
 export type Club = { id: string; name: string; role: Role };
 export type Settings = { startScore: 301 | 501 | 701; bestOfLegs: number; bestOfSets: number; legLimit?: number };

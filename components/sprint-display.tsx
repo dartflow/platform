@@ -12,10 +12,12 @@ export default function SprintDisplay({
   snapshot,
   stale,
   qr,
+  scanInstruction,
 }: {
   snapshot: PublicSnapshot;
   stale: boolean;
   qr: ReactNode;
+  scanInstruction?: string;
 }) {
   const match = snapshot.match as SnapshotMatch;
   const scroll = useRef<HTMLDivElement>(null);
@@ -284,7 +286,7 @@ export default function SprintDisplay({
                 {match.settings.bestOfLegs} legs
               </p>
               <p className="sprint-writer">
-                {match.writerId ? (
+                {scanInstruction || (match.writerId ? (
                   <>
                     <strong>
                       {match.players.find((p) => p.id === match.writerId)
@@ -294,7 +296,7 @@ export default function SprintDisplay({
                   </>
                 ) : (
                   "Score-invoer via telefoon"
-                )}
+                ))}
               </p>
             </div>
             <button

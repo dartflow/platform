@@ -26,6 +26,7 @@ export function safeNext(value: unknown): string {
   if (/^\/app(?:\/(?:play|practice|lobby|events|friends|community|mymatches|settings|dashboard|operations|manage|leagues|tournaments|hall|players|registrations|matches|rankings|statistics|camera|pools|knockout))?$/.test(value)) return value;
   if (value==='/app/platform/integraties' || /^\/app\/venue-cast\/(?:studio|hall|obs|public)$/.test(value) || /^\/app\/venue(?:\/(?:entries|boards|schedule))?$/.test(value)) return value;
   if(new RegExp(`^/app/(?:clubs|community|lobby|leagues|tournaments|training|match|hall|spectator|overlay)/${id}$`).test(value))return value;
+  if(new RegExp(`^/app/clubs/${id}/banen$`).test(value))return value;
   if (/^\/wedstrijd\/[a-f0-9-]{36}$/.test(value) || /^\/baan\/(?:B[1-9][0-9]?|[a-f0-9-]{36})$/.test(value)) return value;
   return '/';
 }

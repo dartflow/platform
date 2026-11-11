@@ -20,4 +20,4 @@ export async function proxy(request:NextRequest) {
   await client.auth.getClaims();
   return response;
 }
-export const config={matcher:['/((?!_next/static|_next/image|assets|favicon.ico|api/health|api/screen).*)']};
+export const config={matcher:['/((?!_next/static|_next/image|assets|favicon.ico|api/health|api/screen|api/club-boards|baanscherm).*)']};

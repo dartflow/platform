@@ -14,6 +14,7 @@ import { ensureAuthProfile } from '@/lib/accounts';
 import { handleIntegrationPublic, handleIntegrations, workerTokenMatches } from '@/lib/integrations';
 import { getPlatformOverview, executePlatformCommand, getPlatformMessages, getMatchSignals, sendMatchSignal, reconcilePlatformResults, reconcilePlatformCalls, getPlatformCast, getPlatformStatistics, exportPlatformCsv, replayMatchCommands, getMatchChat, sendMatchChat } from '@/lib/platform';
 import { mediaConfiguration } from '@/lib/media';
+import { getClubBoardScreen } from '@/lib/club-boards';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -134,6 +135,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     return NextResponse.redirect(data.url,{headers:{'Cache-Control':'private, no-store'}});
   }
   if (method==='GET' && parts[0]==='screen' && parts.length===2) return json(await getPublicSnapshot(parts[1]));
+  if (method==='GET' && parts[0]==='club-boards' && uuid(parts[1]) && parts[2]==='screen' && parts.length===3) return json(await getClubBoardScreen(parts[1]));
   if (method==='GET' && parts[0]==='platform' && parts[1]==='cast' && parts.length===3) return json(await getPlatformCast(parts[2]));
   const actor=await requireActor(request);
   const integration=await handleIntegrations(request,actor.id,parts);

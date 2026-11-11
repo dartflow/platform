@@ -1,4 +1,7 @@
-import type { Game, MatchView, Profile,ResultView, Settings } from './types';
+import type { Game, MatchView, Profile, PublicSnapshot,ResultView, Settings } from './types';
+
+export type ClubBoardView = { id:string;clubId:string;name:string;access:'all'|'club';blocked:boolean;occupied:boolean;canManage:boolean;playUrl:string;screenUrl:string };
+export type ClubBoardScreenView = {board:Omit<ClubBoardView,'clubId'|'canManage'>&{clubName:string};status:'available'|'waiting'|'playing'|'blocked';snapshot:PublicSnapshot};
 
 export type PlatformKind = 'training' | 'club' | 'room' | 'lobby' | 'league' | 'tournament';
 export type PlatformMember = { id: string; name: string; role: string; status: string; attributes: Record<string, unknown> };
@@ -13,6 +16,6 @@ export type PlatformState = {
 };
 export type PlatformEntity = { id: string; kind: PlatformKind; name: string; ownerId: string; clubId: string | null; visibility: string; revision: number; state: PlatformState; members: PlatformMember[]; canManage: boolean };
 export type PlatformMessage = { id: string; authorId: string; authorName: string; body: string; createdAt: string };
-export type PlatformOverview = { profile: Profile;matches:MatchView[];history:ResultView[]; players: Profile[]; clubs: PlatformEntity[]; rooms: PlatformEntity[]; trainings: PlatformEntity[]; leagues: PlatformEntity[]; tournaments: PlatformEntity[]; lobbies: PlatformEntity[]; friends: (Profile & { status: 'friend' | 'incoming' | 'outgoing'; favorite: boolean })[]; blocked: Profile[]; preferences: { discoverable: boolean; allowRequests: boolean }; messages: Record<string, PlatformMessage[]>;registrations: {userId:string;name:string;status:string;reason:string|null}[];reports:{id:string;reporterId:string;reporterName:string;targetId:string|null;roomId:string|null;roomName:string;reason:string;status:string;decision:string|null;canManage:boolean}[];canManageRegistrations:boolean;statistics:{played:number;won:number;drawn:number;average:number;oneEighties:number;highestFinish:number;totalDarts:number;trainingSessions:number} };
+export type PlatformOverview = { profile: Profile;matches:MatchView[];history:ResultView[]; players: Profile[]; clubs: PlatformEntity[];clubBoards:ClubBoardView[]; rooms: PlatformEntity[]; trainings: PlatformEntity[]; leagues: PlatformEntity[]; tournaments: PlatformEntity[]; lobbies: PlatformEntity[]; friends: (Profile & { status: 'friend' | 'incoming' | 'outgoing'; favorite: boolean })[]; blocked: Profile[]; preferences: { discoverable: boolean; allowRequests: boolean }; messages: Record<string, PlatformMessage[]>;registrations: {userId:string;name:string;status:string;reason:string|null}[];reports:{id:string;reporterId:string;reporterName:string;targetId:string|null;roomId:string|null;roomName:string;reason:string;status:string;decision:string|null;canManage:boolean}[];canManageRegistrations:boolean;statistics:{played:number;won:number;drawn:number;average:number;oneEighties:number;highestFinish:number;totalDarts:number;trainingSessions:number} };
 export type PlatformCommand = { requestId: string; expectedRevision?: number; action: { type: string; [key: string]: unknown } };
 export type PlatformResponse = { ok: true; id?: string; matchId?: string; code?: string; entity?: PlatformEntity; [key: string]: unknown };
