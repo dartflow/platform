@@ -4,7 +4,7 @@ Native Next.js-app voor de eerste clubavondpilot, voorbereid op **https://stagin
 
 ## Lokaal starten
 
-Vereist: Node **24.18.0**, npm, PostgreSQL 16-serverbinaries en een vrije lokale poort 55432. De projectafhankelijkheden en lockfile zijn vastgelegd.
+Vereist: Node **24.18.0**, npm **11.16.0**, PostgreSQL 16-serverbinaries en een vrije lokale poort 55432. De toolchain, projectafhankelijkheden en lockfile zijn vastgelegd.
 
 ```bash
 npm ci
@@ -38,6 +38,7 @@ Een netwerkfout bewaart de onbevestigde actie met haar oorspronkelijke ID. Een h
 npm run typecheck
 npm run lint
 npm test
+npm run test:deploy
 npm run test:prototype
 npm run build
 npx playwright install chromium
@@ -48,7 +49,9 @@ Database- en browsertests gebruiken geïsoleerde synthetische fixtures in de lok
 
 ## GitHub en hosting
 
-De **exacte GitHub-variabelen en secrets**, providerlocaties, callbacks en uitrolvolgorde staan in [docs/deployment.md](docs/deployment.md). De actieve workflows bouwen en testen kandidaten. De native deploytemplate blijft gesloten totdat de bestaande DG-deployinterface en doelhost zijn geverifieerd. Er worden geen poorten, Linux-accounts, SSH-secrets of wrapperflags verzonnen.
+De **exacte GitHub-configuratie**, providerlocaties, callbacks en uitrolvolgorde staan in [docs/deployment.md](docs/deployment.md). Er zijn concrete handmatige deploy-/rollbackworkflows en een afzonderlijke native DartFlow-broker. De policy weigert uitvoering zolang repository/integratiebranch en de hostinstallatie niet zijn geverifieerd (`nativeEnabled: false`). De native route gebruikt geen zelf aan te maken GitHub-secrets; alleen de optionele inspectieartifactworkflow leest vier publieke environmentvariabelen. Databasecredentials blijven in een immutable root-only hostbundel.
+
+Doelhost en Milo-baseline zijn via een bestaande readonly-runnerjob gecontroleerd; Milo is niet gewijzigd. Eigen DartFlow-accounts en runnerlabels zijn voorgestelde nieuwe installatiekeuzes, en de kandidaatpoort 4174 is nog niet gereserveerd. De echte repository, beheer-SSH, stagingbackend en correcte DNS/TLS ontbreken nog. Zie [de actuele hostinventaris](docs/host-inventory.md) en [het releaseonderzoek](docs/release-reference.md).
 
 De app gebruikt Supabase voor hosted Auth. Het score- en rechtenmodel draait in servercode binnen PostgreSQL-transacties met een beperkte `dartflow_app`-verbinding. De private tabellen zijn niet beschikbaar via Supabase Data API. Browsergebruikers krijgen geen databasecredential of verhoogde Supabase-key. Migraties/seed gebruiken een apart beheeraccount, buiten de app-runtime. Zie [docs/architecture.md](docs/architecture.md).
 

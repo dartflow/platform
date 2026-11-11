@@ -1,6 +1,54 @@
-# Acceptatierapport Dartflow staging
+# Acceptatierapport DartFlow staging
 
-Uitgevoerd op **10 november 2026 vanaf 11:24 CET (Europe/Amsterdam)**; exact afrondingstijdstip staat in `docs/evidence/verification.json`. Geteste applicatiebron: **`7d8dff64be15489d397ca7069814b403538beb26`**, branch `codex/staging`. De volgende documentatiecommit voegt uitsluitend dit bewijs en lokale gebruiksinformatie toe. Dit rapport bewijst de lokale stagingkandidaat; externe stagingacceptatie blijft apart Open.
+Bijgewerkt op **11 november 2026 (Europe/Amsterdam)**. De nieuwe native releaseketen is lokaal geïmplementeerd en getest, maar **niet op de doel-VPS geïnstalleerd of als DartFlow-release uitgevoerd**. Repository/integratiebranch, beheer-SSH en eigen stagingbackend ontbreken; DNS/TLS is onjuist. `ops/release-policy.json` houdt daarom de identiteit leeg en `nativeEnabled: false`.
+
+De functionele tabellen verderop bewaren het **historische lokale appbewijs van 10 november**, bron **`7d8dff64be15489d397ca7069814b403538beb26`**, branch `codex/staging`; exact toenmalig afrondingstijdstip staat in `docs/evidence/verification.json`. Die resultaten keuren de nieuwe releasecode of een externe stagingomgeving niet automatisch goed. De definitieve bron-SHA en aanvullende complete verificatieregistratie voor de nieuwe wijzigingen worden na afronding door de hoofdtaak toegevoegd.
+
+## Gevraagde oplevering: actuele stand op 11 november
+
+| Nr. | Gevraagd resultaat | Werkelijk behaalde status |
+|---|---|---|
+| 1 | Werkende staging-URL | **Niet behaald.** Beoogd `https://staging.dartflow.nl`; huidige DNS verwijst naar andere ingress en TLS dekt de hostnaam niet. Geen echte DartFlow-release uitgevoerd |
+| 2 | Repository, integratiebranch, volledige release-SHA, CI/deploy | **Open.** Exacte DartFlow-doelrepo ontbreekt, remote niet geconfigureerd; geen DartFlow-CI-/deployrun of externe release-SHA. Voorgestelde integratiebranch `main` wordt pas na projectverificatie vastgelegd |
+| 3 | Host, runnerlabels, accounts, site/service/poort | Host **`dg-nxttrack-01` bevestigd**. Nieuwe voorgestelde runner `dg-nxttrack-01-dartflow-staging`, labels `dg-nxttrack-01,dartflow,staging`, accounts `run-dart-stg/build-dart-stg/app-dart-stg`, site `/srv/sites/dartflow-staging`, service `dartflow-staging.service`: **nog niet geïnstalleerd**. Poort 4174 had geen listener in de inspectie maar is niet gereserveerd; 4173 blijft Milo |
+| 4 | Actieve app en configuratie-ID | **Geen DartFlow-release/configbundel actief.** Code koppelt elke verzegelde release aan een immutable hostbundel en config-ID; echte configuratiewaarden ontbreken |
+| 5 | Health/readiness, login/wedstrijd en rollback | Nieuwe lokale controles hieronder; historische lokale pilot verderop. **Echte staging-Auth, wedstrijdflow en hostrollback Open**; readiness niet kunstmatig aangepast |
+| 6 | Milo functioneert na afloop | **Pass binnen meetbereik.** Readonly vóór- en nameting bevestigen dezelfde gezonde release, actieve service en `127.0.0.1:4173`; er is niets aan Milo gewijzigd. Dit is geen nieuwe volledige Milo-gebruikersacceptatie |
+| 7 | Wijzigingen, blokkades en normale procedure | Concrete broker/entry/extractor/rootpolicy, workflowgate/deploy/rollback, npm-pin, release-/configmetadata en tests aanwezig. Procedure in `docs/deployment.md` en `ops/deploy-contract.md`; ontbrekende repo/toegang/backend/DNS/TLS expliciet open |
+
+## Nieuwe releaseverificatie, 11 november
+
+| Controle | Status | Bewijs en grens |
+|---|---|---|
+| Onafhankelijke rootgate op echte GitHub-metadata | Pass | Alleen-lezen geaccepteerd: Milo-bron `729d962b7401b100ce9cacb94ce4e4da16a699f2`, eigen [CI 42802522209](https://github.com/milobingo/platform/actions/runs/42802522209), job `verify`. Werkelijk geweigerd: latere documentatie-SHA `67e1039a270488601c5e010da4eb25b1c7619812` zonder eigen exacte CI. Geen DartFlow-CI en geen deploy |
+| Releasepoort/-identiteit/-packagingtests | Pass lokaal | Hoofdtaak rapporteert 40 geslaagde tests; definitieve bron-/commandoregistratie wordt aangevuld |
+| Native brokergrenzen en fout-/herstelpaden | Pass lokaal | 39 native tests geslaagd; echte bronarchive-/filesystemfixtures en geïsoleerde callbacks. Dit voert geen systemd-/sudo-/providerdeploy uit |
+| Vier GitHub-workflows | Pass voor syntax | Actionlint `1.7.12`: alle vier workflows/GitHub-expressies geldig, voorgestelde runnerlabels geconfigureerd; shellcheck hierbij uitgeschakeld. Geen GitHub-configuratie of workflowbestand extern geplaatst |
+| Locked install/build zonder runtimegeheim | Pass lokaal | Geïsoleerde `npm ci` en volledige standalone-build met synthetische publieke configuratie; geen database-runtimeomgeving |
+| Smoke van die isolated build | Pass voor geteste grens | `/api/health` HTTP 200; `/api/ready` HTTP 503 zoals vereist zonder databaseconfiguratie. Dit is **geen database-readinessacceptatie** |
+| Prototype-regressiecontrole | Pass lokaal | Op 11 november opnieuw 26/26 geslaagd; de aangeleverde prototypebron blijft een referentie, geen native release |
+| Broncredentialscontrole | Pass voor gecontroleerde bestanden | Hoofdtaak controleerde 179 bronbestanden: geen lek van lokale databasecredentials; definitieve bron-SHA wordt hieronder vastgelegd |
+| Native installatie en eigen runner | Open | Geen bevoegde beheerlogin; geen accounts, sudo-policy, units, bundels, labels of portregistratie op de host aangebracht |
+| Eigen DB/Auth-project en least privilege | Open | Projectref/publishable key/DB-geheim/testaccounts ontbreken. Werkelijke rolflags, lidmaatschappen en DDL-/tabelrechten nog te verifiëren; accountnaam alleen is geen privilegebewijs |
+| Publieke DartFlow-health/readiness | Fail voor huidige route | DNS A `185.151.30.138`, AAAA `2a07:7800::138`; TLS-hostnaam fout. Na Caddy-bootstrap A naar `128.140.93.95`, AAAA naar geverifieerd `2a01:4f8:c015:60a6::1` of oude AAAA verwijderen |
+| Echte OTP/Google/score/herladen | Open | Lokale fixturepilot vervangt geen echte Supabase-identiteit of providerconfiguratie |
+| Echte lockbezetting/activatiefout/rollback/restore | Open | Lokale faalinjectie aanwezig; doelhostproef en compatibele app/configrollback niet uitgevoerd. Geen destructieve migratie of automatische databaserestore onderdeel van gewone deploy |
+
+Milo's vóórmeting: [Inspect 42943887248](https://github.com/milobingo/platform/actions/runs/42943887248), 03:08:16–03:08:22 CET; nameting: [Inspect 42945932719](https://github.com/milobingo/platform/actions/runs/42945932719), **03:25:37–03:25:42 CET**, beide `completed/success` op workflowbron `67e1039a270488601c5e010da4eb25b1c7619812`. Service loaded/active, app `app-mil-stg`, werkmap `current/.next/standalone`, bijbehorend envpad en Caddy actief; listener `127.0.0.1:4173`. Entryhash blijft `aee3e1e2e76f05d99f668ed7c756802da82033c4983216b90d7ea50de9f49bc7`. Bij de nameting: `143154008064` vrije bytes en `9743083` vrije inodes. Publiek HTTPS HTTP 200/TLS-verificatie 0 via `128.140.93.95`, met ongewijzigde revision `729d962b7401b100ce9cacb94ce4e4da16a699f2`, release `42804436092-1`, configuratie `staging-2026-11-05-v1`. Zie `docs/host-inventory.md` voor de precieze meetgrenzen.
+
+### Definitieve nieuwe lokale bronregistratie
+
+Deze velden worden door de hoofdtaak na de broncommit en laatste build/browsercontrole ingevuld. Zij zijn geen ontbrekende externe stagingacceptatie die met lokale tests kan worden afgevinkt.
+
+| Vastlegging | Eindresultaat |
+|---|---|
+| Volledige nieuwe lokale bron-SHA / branch | Nog in te vullen na de broncommit |
+| Volledige typecheck/lint/unit/native/prototype-testregistratie | Nog in te vullen met definitieve commandoregel, aantallen, tijdstip en bewijs |
+| Build-/standalone-artifact en bron-/configidentiteit | Nog in te vullen na de laatste build op die bron |
+| Laatste browserpilot / viewportmatrix op die bron | Nog in te vullen met echte uitkomst; historische resultaten hieronder blijven apart |
+| Eindstatus GitHub-remote / nativeEnabled / externe deploy | Repo nog onbevestigd, remote niet ingesteld, `nativeEnabled:false`, geen DartFlow-deploy; alleen aanpassen wanneer werkelijk uitgevoerd |
+
+## Historisch lokaal appbewijs, 10 november
 
 | Onderdeel | Waarde / bewijs |
 |---|---|
@@ -12,11 +60,11 @@ Uitgevoerd op **10 november 2026 vanaf 11:24 CET (Europe/Amsterdam)**; exact afr
 | Releasepakket | `artifacts/dartflow-7d8dff64be15489d397ca7069814b403538beb26-local.tgz`, bijbehorende `.sha256` en manifest |
 | Bronverificatie | Lokale commit; geen geverifieerde GitHub-run. Manifest `sourceVerified:false` |
 | Doelrepo / branchbeleid | Open — geen Git-remote en geen geverifieerde Dartflow-doelrepo in de verbonden GitHub-inventaris |
-| Host / site-ID / appuser / runner / poort / wrapper | Open — DG-hostprofiel en geïnstalleerde deployinterface ontbreken |
+| Host / site-ID / appuser / runner / poort / wrapper | Toen Open; actuele hostinspectie en voorgestelde afzonderlijke DartFlow-installatie staan hierboven. Nieuwe broker nog niet geïnstalleerd |
 | Supabase stagingproject | Open — beide verbonden accounts alleen-lezen geïnventariseerd; geen Dartflow-project aangewezen |
 | HTTPS / provideracceptatie / herstel | Open — geen externe uitrol, providerwijziging, uitgaande testmail of VPS-mutatie uitgevoerd |
 
-## Lokale verificatie
+## Historische lokale verificatie
 
 | Controle | Status | Bewijs, 10 november 2026 |
 |---|---|---|

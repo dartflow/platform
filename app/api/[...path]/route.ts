@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { createHash } from 'node:crypto';
 import { actorId, isLocalRequest, LOCAL_USERS, loginLocal, logout, saveIntent, consumeIntent, supabaseServer } from '@/lib/auth';
 import { appConfig, safeNext } from '@/lib/config';
+import { releaseIdentity } from '@/lib/release';
 import { checkDatabaseReady, getProfile, getOverview, getMatch, executeMatchCommand, executeEventCommand, getPublicSnapshot, createScreen, revokeScreen, consumeRateLimit } from '@/lib/db';
 import { DomainError } from '@/lib/domain';
 import type { EventAction, MatchAction } from '@/lib/types';
@@ -49,7 +50,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if (method!=='GET') csrf(request);
   if (method==='GET' && path==='health') {
     const config=appConfig();
-    return json({status:'ok',mode:config.mode,sha:process.env.DARTFLOW_RELEASE_SHA || 'local-unreleased'});
+    return json({status:'ok',mode:config.mode,...releaseIdentity()});
   }
   if (method==='GET' && path==='ready') {
     // A real query verifies runtime connectivity. Auth readiness is separately measured.
@@ -63,7 +64,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
       if (!response.ok) return json({status:'unavailable',database:'ok',auth:'unavailable'},503);
       auth='reachable';
     }
-    return json({status:'ready',database:'ok',schemaVersion:readiness.schemaVersion,auth,sha:process.env.DARTFLOW_RELEASE_SHA || 'local-unreleased'});
+    return json({status:'ready',database:'ok',schemaVersion:readiness.schemaVersion,auth,...releaseIdentity()});
   }
   if (method==='GET' && path==='session') {
     const config=appConfig(); const id=await actorId(request); const user=id ? await getProfile(id) : null;

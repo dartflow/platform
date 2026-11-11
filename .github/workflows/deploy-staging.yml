@@ -1,0 +1,86 @@
+name: Deploy DartFlow staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full lowercase 40-character SHA with successful integration-branch CI
+        required: true
+        type: string
+      config_id:
+        description: Existing immutable host configuration version
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: dartflow-staging-activation
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify immutable release
+    runs-on: ubuntu-24.04
+    environment: staging
+    timeout-minutes: 5
+    outputs:
+      source_sha: ${{ steps.gate.outputs.source_sha }}
+      ci_run_url: ${{ steps.gate.outputs.ci_run_url }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+      - name: Verify fixed repository, integration branch, SHA and required CI attempt
+        id: gate
+        env:
+          SOURCE_SHA: ${{ inputs.sha }}
+          GH_TOKEN: ${{ github.token }}
+          DARTFLOW_REQUIRE_NATIVE: "1"
+        run: node ops/assert-ci.mjs
+      - name: Validate configuration identifier
+        env:
+          CONFIG_ID: ${{ inputs.config_id }}
+        run: |
+          [[ "$CONFIG_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$ ]]
+
+  deploy:
+    name: Build and activate on target VPS
+    needs: verify
+    environment: staging
+    runs-on: [self-hosted, Linux, X64, dg-nxttrack-01, dartflow, staging]
+    timeout-minutes: 35
+    steps:
+      # There is intentionally no checkout of application code on the runner.
+      # The installed root-owned broker verifies CI independently, downloads the
+      # exact GitHub source archive and builds in the separate build account.
+      - name: Verify dedicated runner boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(hostname)" = dg-nxttrack-01
+          test "$(id -un)" = run-dart-stg
+          test "$RUNNER_NAME" = dg-nxttrack-01-dartflow-staging
+          test -x /usr/local/bin/dg-dartflow-deploy
+          test -r /usr/local/libexec/dartflow-retry-deploy.mjs
+      - name: Invoke fixed broker, retrying only host-lock conflicts
+        env:
+          SOURCE_SHA: ${{ needs.verify.outputs.source_sha }}
+          CONFIG_ID: ${{ inputs.config_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          /opt/node-v24.18.0-linux-x64/bin/node /usr/local/libexec/dartflow-retry-deploy.mjs deploy "$SOURCE_SHA" "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" "$CONFIG_ID"
+      - name: Record release evidence
+        env:
+          SOURCE_SHA: ${{ needs.verify.outputs.source_sha }}
+          CI_RUN_URL: ${{ needs.verify.outputs.ci_run_url }}
+          CONFIG_ID: ${{ inputs.config_id }}
+        run: |
+          printf 'DartFlow source: %s\nConfiguration: %s\nCI: %s\nOrigin: https://staging.dartflow.nl\n' "$SOURCE_SHA" "$CONFIG_ID" "$CI_RUN_URL" >> "$GITHUB_STEP_SUMMARY"

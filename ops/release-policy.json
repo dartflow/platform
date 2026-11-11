@@ -1,0 +1,9 @@
+{
+  "repository": null,
+  "integrationBranch": null,
+  "requiredChecks": [{"workflow":"ci.yml","jobs":["Verify"],"events":["push"]}],
+  "nativeEnabled": false,
+  "targetHost": "dg-nxttrack-01",
+  "site": "dartflow-staging",
+  "origin": "https://staging.dartflow.nl"
+}

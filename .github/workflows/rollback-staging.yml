@@ -1,0 +1,50 @@
+name: Roll back DartFlow staging
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: Existing sealed healthy release directory identifier (sha12-run-attempt)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: dartflow-staging-activation
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    environment: staging
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify trusted workflow ref and installed native contract
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          python3 -I - <<'PY'
+          import json,os,re
+          with open('ops/release-policy.json') as source: policy=json.load(source)
+          assert policy.get('nativeEnabled') is True, 'Native contract not installed and verified'
+          assert policy.get('repository') == os.environ['GITHUB_REPOSITORY'], 'Wrong repository'
+          assert policy.get('integrationBranch') and os.environ['GITHUB_REF'] == 'refs/heads/'+policy['integrationBranch'], 'Wrong integration branch'
+          assert re.fullmatch(r'[a-f0-9]{12}-[1-9][0-9]{0,19}-[1-9][0-9]{0,9}',os.environ['RELEASE_ID']), 'Invalid known release identifier'
+          PY
+  rollback:
+    needs: verify
+    environment: staging
+    runs-on: [self-hosted, Linux, X64, dg-nxttrack-01, dartflow, staging]
+    timeout-minutes: 10
+    steps:
+      - name: Restore a known sealed app and its matching configuration
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          set -euo pipefail
+          test "$(hostname)" = dg-nxttrack-01
+          test "$(id -un)" = run-dart-stg
+          test "$RUNNER_NAME" = dg-nxttrack-01-dartflow-staging
+          /opt/node-v24.18.0-linux-x64/bin/node /usr/local/libexec/dartflow-retry-deploy.mjs rollback "$RELEASE_ID"

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "repository": null,
+  "integrationBranch": null,
+  "requiredChecks": [{"workflow": "ci.yml", "jobs": ["Verify"], "events": ["push"]}],
+  "backend": {"projectRef": null},
+  "port": null,
+  "node": null,
+  "npm": null,
+  "gateSha256": null,
+  "extractorSha256": null,
+  "accounts": {
+    "run-dart-stg": {"uid": null, "gid": null},
+    "build-dart-stg": {"uid": null, "gid": null},
+    "app-dart-stg": {"uid": null, "gid": null}
+  },
+  "allowedConfigIds": [],
+  "minFreeBytes": 4294967296,
+  "minFreeInodes": 50000,
+  "maxSourceBytes": 1073741824,
+  "maxSourceFiles": 100000,
+  "maxArtifactBytes": 2147483648,
+  "maxArtifactFiles": 150000,
+  "buildMemoryMax": "3G",
+  "buildCpuQuota": "100%",
+  "buildTimeoutSeconds": 1800,
+  "healthAttempts": 15,
+  "healthPauseSeconds": 2,
+  "serviceTimeoutSeconds": 45
+}

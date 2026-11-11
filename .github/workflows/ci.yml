@@ -30,7 +30,11 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - name: Install repository-pinned npm and locked dependencies
+        run: |
+          npm install --global npm@11.16.0
+          test "$(npm --version)" = "$(cat .npm-version)"
+          npm ci
       - name: Install PostgreSQL 16 server for isolated fixture tests
         run: |
           sudo apt-get update
@@ -43,6 +47,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run test:deploy
       - run: npm run build
       - run: npx --no-install playwright install --with-deps chromium
       - run: npm run test:e2e

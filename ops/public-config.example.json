@@ -1,0 +1,6 @@
+{
+  "DARTFLOW_APP_ORIGIN": "https://staging.dartflow.nl",
+  "DARTFLOW_DATA_MODE": "supabase",
+  "NEXT_PUBLIC_SUPABASE_URL": "https://<verified-dartflow-project-ref>.supabase.co",
+  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_<verified-staging-publishable-key>"
+}

@@ -1,23 +1,14 @@
-import assert from 'node:assert/strict';
-
-const { SOURCE_SHA, GITHUB_REPOSITORY, DEFAULT_BRANCH, GH_TOKEN } = process.env;
-assert.match(SOURCE_SHA ?? '', /^[0-9a-f]{40}$/, 'Full candidate SHA required');
-assert.match(GITHUB_REPOSITORY ?? '', /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/, 'Repository required');
-assert.ok(DEFAULT_BRANCH && GH_TOKEN, 'Default branch and read-only GitHub token required');
-
-const endpoint = new URL(`https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs`);
-endpoint.searchParams.set('head_sha', SOURCE_SHA);
-endpoint.searchParams.set('event', 'push');
-endpoint.searchParams.set('per_page', '100');
-const response = await fetch(endpoint, {
-  headers: { Authorization: `Bearer ${GH_TOKEN}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
-  signal: AbortSignal.timeout(15_000),
-});
-assert.ok(response.ok, `CI metadata unavailable (${response.status})`);
-const data = await response.json();
-const success = data.workflow_runs?.find((run) => run.head_sha === SOURCE_SHA
-  && run.head_branch === DEFAULT_BRANCH && run.event === 'push'
-  && run.status === 'completed' && run.conclusion === 'success'
-  && run.head_repository?.full_name === GITHUB_REPOSITORY);
-assert.ok(success, 'No successful default-branch push CI run for this exact SHA');
-console.log(`Verified CI run ${success.id} for ${SOURCE_SHA}`);
+import {readFile} from 'node:fs/promises';
+import {ReleaseGateError,verifyRelease} from './release-gate.mjs';
+try {
+  const policy=JSON.parse(await readFile(new URL('./release-policy.json',import.meta.url),'utf8'));
+  if(!policy.repository || !policy.integrationBranch)throw new ReleaseGateError('Record the verified DartFlow repository and integration branch before a release');
+  if(process.env.GITHUB_REPOSITORY!==policy.repository || process.env.GITHUB_REF!==`refs/heads/${policy.integrationBranch}`)throw new ReleaseGateError('Dispatch must use the recorded repository and integration branch');
+  if(process.env.DARTFLOW_REQUIRE_NATIVE==='1' && policy.nativeEnabled!==true)throw new ReleaseGateError('Native host contract is not yet installed and verified');
+  const result=await verifyRelease({...policy,sha:process.env.SOURCE_SHA,githubToken:process.env.GH_TOKEN});
+  if(process.env.GITHUB_OUTPUT) {
+    const {appendFile}=await import('node:fs/promises');
+    await appendFile(process.env.GITHUB_OUTPUT,`source_sha=${result.sha}\nrepository=${result.repository}\nintegration_branch=${result.integrationBranch}\nci_run_url=${result.ciRunUrl}\n`);
+  }
+  console.log(JSON.stringify(result));
+}catch(error){console.error(error instanceof ReleaseGateError?error.message:'Release policy verification failed');process.exitCode=1;}

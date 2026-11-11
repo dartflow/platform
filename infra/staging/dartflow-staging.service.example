@@ -1,0 +1,36 @@
+# Proposed dedicated identity, not an installed account. Install only after host review.
+[Unit]
+Description=Dartflow staging native release
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=/srv/sites/dartflow-staging
+
+[Service]
+Type=simple
+User=app-dart-stg
+Group=app-dart-stg
+WorkingDirectory=/srv/sites/dartflow-staging/current
+# The protected immutable bundle supplies only DARTFLOW_DATABASE_URL.
+EnvironmentFile=/srv/sites/dartflow-staging/current/.runtime.env
+# This sealed file supplies public config + exact SHA/run/config identities.
+EnvironmentFile=/srv/sites/dartflow-staging/current/.release.env
+ExecStart=/opt/node-v24.18.0-linux-x64/bin/node /srv/sites/dartflow-staging/current/server.js
+Restart=on-failure
+RestartSec=3
+TimeoutStartSec=45
+TimeoutStopSec=30
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ProtectProc=invisible
+RestrictSUIDSGID=yes
+CapabilityBoundingSet=
+TasksMax=256
+MemoryMax=1G
+ReadWritePaths=/srv/sites/dartflow-staging/shared
+SyslogIdentifier=dartflow-staging
+
+[Install]
+WantedBy=multi-user.target

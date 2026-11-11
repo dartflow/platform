@@ -1,0 +1,6 @@
+# Labels required by the dedicated DartFlow runner contract; installation pending.
+self-hosted-runner:
+  labels:
+    - dg-nxttrack-01
+    - dartflow
+    - staging

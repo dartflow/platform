@@ -40,8 +40,8 @@ test('two players, an organizer and independent screen complete the authoritativ
   const manager=await browser.newContext(),p1=await browser.newContext({viewport:{width:390,height:844}}),p2=await browser.newContext({viewport:{width:360,height:780}}),screen=await browser.newContext({viewport:{width:540,height:960}});
   const m=await manager.newPage(),a=await p1.newPage(),b=await p2.newPage(),display=await screen.newPage();
   await login(m,'Danny Goldenbelt'); await login(a,'Michael de Groot','/evenementen'); await login(b,'Raymond van Dijk','/evenementen');
-  await mkdir('docs/evidence',{recursive:true});
-  await m.setViewportSize({width:1440,height:1000});await m.screenshot({path:'docs/evidence/dashboard.png',fullPage:true});
+  await mkdir('test-results/evidence',{recursive:true});
+  await m.setViewportSize({width:1440,height:1000});await m.screenshot({path:'test-results/evidence/dashboard.png',fullPage:true});
   for(const page of [a,b]) await page.locator('article').filter({has:page.getByRole('heading',{name:eventName,exact:true})}).getByRole('button',{name:'Ik ben aanwezig'}).click();
   const plan=await manager.request.post(`/api/events/${eventId}/actions`,{headers:{Origin:origin},data:{type:'plan',playerIds:[ids.p1,ids.p2],settings:{startScore:301,bestOfLegs:1,bestOfSets:1}}});expect(plan.status()).toBe(200);
   const {matchId}=await plan.json(); let state=await (await manager.request.get(`/api/matches/${matchId}`)).json() as MatchView;
@@ -54,7 +54,7 @@ test('two players, an organizer and independent screen complete the authoritativ
   await a.getByRole('textbox',{name:'Bezoekscore'}).fill('180');await a.getByRole('button',{name:'Score invoeren',exact:true}).click();
   await expect(display.locator('.screen-player').first().locator('strong').first()).toHaveText('121');
   await expect(b.locator('.remaining').first()).toHaveText('121');
-  await a.screenshot({path:'docs/evidence/mobile-score.png',fullPage:true});await display.screenshot({path:'docs/evidence/vertical-screen.png',fullPage:true});
+  await a.screenshot({path:'test-results/evidence/mobile-score.png',fullPage:true});await display.screenshot({path:'test-results/evidence/vertical-screen.png',fullPage:true});
   await b.getByRole('button',{name:'Schrijven overnemen'}).click();await expect(b.getByRole('textbox',{name:'Bezoekscore'})).toBeVisible();
   await expect(a.getByRole('textbox',{name:'Bezoekscore'})).toHaveCount(0);
   await b.getByRole('textbox',{name:'Bezoekscore'}).fill('60');await b.getByRole('button',{name:'Score invoeren',exact:true}).click();

@@ -1,78 +1,70 @@
 name: Staging candidate
-
 on:
   workflow_dispatch:
     inputs:
       sha:
-        description: Full 40-character commit SHA with successful push CI on the default branch
+        description: Full 40-character commit SHA accepted by required CI
         required: true
         type: string
-
+      config_id:
+        description: Immutable staging build/runtime configuration identifier
+        required: true
+        type: string
 permissions:
   contents: read
   actions: read
-
 concurrency:
   group: staging-candidate
   cancel-in-progress: false
-
 jobs:
   prepare:
-    name: Build staging artifact (no deployment)
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    name: Build inspection artifact (no deployment)
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
     environment: staging
-    env:
-      SOURCE_SHA: ${{ inputs.sha }}
-      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-      NEXT_TELEMETRY_DISABLED: "1"
+    timeout-minutes: 20
     steps:
-      - name: Validate immutable candidate
-        shell: bash
-        run: |
-          set -euo pipefail
-          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'A full lowercase commit SHA is required.' >&2; exit 1; }
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: control/.nvmrc
+      - name: Gate exact source before checking it out
+        env:
+          SOURCE_SHA: ${{ inputs.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: node control/ops/assert-ci.mjs
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ inputs.sha }}
-          fetch-depth: 0
+          path: candidate
           persist-credentials: false
-      - name: Verify default-branch ancestry and successful CI
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Use repository-pinned npm
+        working-directory: candidate
         run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          git merge-base --is-ancestor "$SOURCE_SHA" "origin/$DEFAULT_BRANCH"
-          node ops/assert-ci.mjs
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - name: Build with staging public configuration
+          npm install --global npm@11.16.0
+          test "$(npm --version)" = "$(cat .npm-version)"
+          npm ci
+      - name: Build with staging public configuration only
+        working-directory: candidate
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           DARTFLOW_APP_ORIGIN: ${{ vars.DARTFLOW_APP_ORIGIN }}
           DARTFLOW_DATA_MODE: ${{ vars.DARTFLOW_DATA_MODE }}
           DARTFLOW_RELEASE_SHA: ${{ inputs.sha }}
+          DARTFLOW_BUILD_CONFIG_ID: ${{ inputs.config_id }}
+          DARTFLOW_RUNTIME_CONFIG_ID: ${{ inputs.config_id }}
+          NEXT_TELEMETRY_DISABLED: "1"
         run: |
-          set -euo pipefail
           node ops/validate-staging-env.mjs
           npm run build
           node ops/package-release.mjs
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: staging-${{ inputs.sha }}
-          path: artifacts/*
+          name: staging-inspection-${{ inputs.sha }}
+          path: candidate/artifacts/*
           if-no-files-found: error
           retention-days: 14
-      - name: Explain candidate status
-        run: |
-          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
-          Staging artifact prepared. No host, DNS, database, provider or runtime was changed.
-          Native deployment remains gated on the approved DG host profile and verified deploy contract.
-          See docs/deployment.md and ops/deploy-contract.md.
-          EOF
