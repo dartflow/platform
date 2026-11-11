@@ -19,7 +19,7 @@ export function integrationRuntime() {
  const list=(value:string|undefined)=>new Set((value||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean));
  const maxMode=process.env.DARTFLOW_MAIL_MAX_MODE||'log';
  if(!['log','test','live'].includes(maxMode)) throw new DomainError('mail_policy','De mailgrens is ongeldig.',503);
- return {environment:env,projectRef,origin:config.origin,allowedFrom:list(process.env.DARTFLOW_MAIL_ALLOWED_FROM),testAllowlist:list(process.env.DARTFLOW_MAIL_TEST_RECIPIENTS),maxMode:maxMode as MailMode};
+ return {environment:env,projectRef,origin:config.origin,allowedFrom:list(process.env.DARTFLOW_MAIL_ALLOWED_FROM),allowedReplyTo:list(process.env.DARTFLOW_MAIL_ALLOWED_REPLY_TO),testAllowlist:list(process.env.DARTFLOW_MAIL_TEST_RECIPIENTS),maxMode:maxMode as MailMode};
 }
 function encryptionKey() { const value=process.env.DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY||''; const key=Buffer.from(value,'base64'); if(!/^[A-Za-z0-9+/]{43}=$/.test(value)||key.length!==32) throw new DomainError('encryption_unconfigured','De beveiligde credentialopslag is nog niet ingericht.',503); return key; }
 export function encryptCredential(secret:string,kind:CredentialKind):Envelope {

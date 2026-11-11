@@ -4,9 +4,17 @@ Deze werkinstructie is voor Danny als platformeigenaar en voor de bevoegde DG-wo
 
 **Actuele stand op 11 november 2026:** Danny heeft Google Auth en Resend SMTP in Supabase toegevoegd en `info@dgwebservices.nl` aangewezen als eigenaar en toegestane echte testontvanger. Google en e-mail zijn in beide projecten ingeschakeld, met afzonderlijke Google-webclient-ID's en de juiste Google→Supabase-callback. De [nieuwe effectieve redirectcontrole](evidence/v15-auth-redirect-corrected-2026-11-11.json) bevestigt nu voor beide projecten de eigen HTTPS Site URL én `/auth/callback`; Danny meldt dat Google-login werkt. De eerdere localhost-fout is daarmee hersteld. Dit staat los van acceptatie van de toegewezen eigenaar en de afzonderlijke productiecanary. Het [eerdere redirectbewijs](evidence/v15-google-redirects-2026-11-11.json) en de [provider-readiness](evidence/v15-provider-readiness-2026-11-11.json) blijven historische momentopnamen.
 
-Custom SMTP is door Danny als ingericht gemeld. De ontvangen standaardbevestigingsmail toont dat de Auth-templates nog naar de DartFlow-codeflow moeten worden omgezet; hieronder staan beide gereviewde HTML-bronnen en de exacte installatie. De Auth-identiteit van de toegewezen eigenaar is inmiddels geverifieerd, maar zijn DartFlow-profiel en eigenaarrol ontbreken nog; de eenmalige uitnodiging staat open. De eigenaar moet zelf met een actuele e-mailcode inloggen om de app-inschrijving af te ronden. Codeverificatie en sessiebehoud zijn nog niet geaccepteerd. De stagingmetadata bevat nog geen DartFlow Resend-appsleutel of webhookcredential en geen integratie-instellingen; applicatiemail staat in **Log**. In beide omgevingen ontbreekt het projectgebonden Management-token. Dat token is nodig voor Google-configuratiebeheer vanuit DartFlow, **niet voor een echte Google-login met de al ingerichte Supabase-provider**.
+Custom SMTP is door Danny als ingericht gemeld. De eerdere standaardbevestigingsmail miste de OTP-code; hieronder staan beide gereviewde HTML-bronnen en de exacte installatie. De daadwerkelijke templateplaatsing is nog niet bevestigd. De [nieuwe eigenaarcontrole](evidence/v15-reauth-diagnosis-2026-11-11.json) vindt inmiddels de aangewezen eigenaarrol en een echte OTP-sessie. De eerdere momentopname zonder app-profiel of eigenaarrol is historisch. Bij de nieuwe foutmelding was de laatste OTP-bevestiging 1226 seconden oud en viel die buiten de beheertermijn van 900 seconden. Een nieuwe beheerbevestiging en de succesvolle opslag van integratiecredentials moeten nog worden gecontroleerd. De stagingmetadata bevat nog geen DartFlow Resend-appsleutel of webhookcredential en geen integratie-instellingen; applicatiemail staat in **Log**. In beide omgevingen ontbreekt het projectgebonden Management-token. Dat token is nodig voor Google-configuratiebeheer vanuit DartFlow, **niet voor een echte Google-login met de al ingerichte Supabase-provider**.
 
 De verduidelijkte code-invoer is op staging geactiveerd als bron `62529cc56e29024f3fe49cdb019a5f9a051b0bc7`, release `43061111506-1`. De invoer ondersteunde al 6–10 cijfers; de misleidende zes-nullenplaceholder is vervangen door uitleg om de volledige code over te nemen. De [mobiele UI-controle](evidence/v15-auth-ui-browser-2026-11-11.json) bevestigt acht behouden cijfers en zichtbare hulptekst op 320 en 390 pixels, met een lokale fixture. De echte OTP-verificatie volgt na plaatsing van de mailtemplates.
+
+## Beveiligde instellingen opnieuw bevestigen
+
+Sleutels en providerinstellingen wijzigen vraagt een actuele eigenaarrol en een door Supabase geverifieerde aanmeldmethode van maximaal vijftien minuten oud. Gewoon opnieuw een pagina openen of een toegangstoken verversen vernieuwt die termijn niet. De [diagnose](evidence/v15-reauth-diagnosis-2026-11-11.json) toont een bestaande eigenaar met een verlopen beheerbevestiging; MFA stond uit.
+
+Het herstel maakt een nieuwe OTP- of Google-aanmelding expliciet bereikbaar in een apart tabblad. Houd het oorspronkelijke Integraties-tabblad open: de ingevulde waarden blijven uitsluitend in het geheugen van dat tabblad. Voltooi de aanmelding in het nieuwe tabblad, ga terug naar het oorspronkelijke tabblad en kies zelf opnieuw **Instellingen opslaan**. De app bewaart sleutels niet in browseropslag of URL's en probeert een mislukte opslag niet automatisch opnieuw. Sleutelvelden worden pas na een bevestigde succesvolle opslag leeggemaakt. Google uitschakelen vraagt specifiek een nieuwe e-mailcode; een Google-aanmelding vervangt dat herstelbewijs niet.
+
+Deze herstelwijziging wordt als nieuwe stagingrelease uitgerold; de hierboven vastgelegde `62529cc`-release blijft de voorafgaande actieve versie totdat het nieuwe deploybewijs beschikbaar is.
 
 ## Herstelpad: Google-login stuurt naar localhost
 
@@ -70,8 +78,10 @@ Danny heeft deze Supabase-inrichting inmiddels gemeld als uitgevoerd. Onderstaan
    | Poort | `465` voor impliciete TLS, of `587` voor STARTTLS volgens de gekozen configuratie |
    | Gebruikersnaam | `resend` |
    | Wachtwoord | De eigen SMTP-verzendsleutel van deze omgeving |
-   | Afzender | Het gekozen adres op het geverifieerde verzenddomein |
+   | Afzender / Sender email | `noreply@dartflow.nl` op het geverifieerde domein `dartflow.nl` |
    | Afzendernaam | `DartFlow Staging` of `DartFlow` |
+
+   Bij een bestaande SMTP-koppeling wijzig je **Sender email** naar `noreply@dartflow.nl` en behoud je de werkende SMTP-host, poort, gebruikersnaam en sleutel. Doe dit afzonderlijk in [het stagingproject](https://supabase.com/dashboard/project/dsnqnvbckkqpzadblshu) en [het productieproject](https://supabase.com/dashboard/project/wlrnowuownakqqgjxnbb), bij **Authentication → Email → SMTP Settings**. De gekoppelde worker-tool kan dit Auth-configuratieveld niet schrijven en beide projectgebonden Management-tokens ontbreken nog; deze wijziging is daarom niet door de worker toegepast. Controleer na opslaan een nieuwe echte Auth-mail op het From-adres. De [Resend Supabase SMTP-handleiding](https://resend.com/docs/send-with-supabase-smtp) beschrijft het afzonderlijke afzenderveld.
 
 4. Installeer de hieronder beschreven **Confirm sign up**- én **Magic Link**-templates met `{{ .Token }}`. De code neemt de ingestelde lengte van Supabase over; de template legt geen cijfertal of geldigheidsduur vast. Verander voor deze templatecorrectie geen OTP-lengte, vervaltijd of bestaande SMTP-credentials.
 5. Open [de staginglogin](https://staging.dartflow.nl/inloggen?next=/app/platform/integraties) en vraag voor `info@dgwebservices.nl` een echte code aan. Vul uitsluitend de ontvangen code zelf in dezelfde browser in; verzamel of deel de code niet via chat, logs of bewijsbestanden. Herhaal de test later afzonderlijk op productie.
@@ -153,11 +163,13 @@ Een fout of time-out na een providerwijziging kan een onzekere externe uitkomst 
 
 ### Verzenddomein en afzender
 
-Danny verifieert het gekozen verzenddomein in Resend en controleert SPF, DKIM en het afgesproken DMARC-beleid. `info@dgwebservices.nl` is de toegestane testontvanger. Het is pas een werkende afzender als het betrokken verzenddomein daadwerkelijk bij Resend geverifieerd is én de runtime dit afzenderadres toestaat. De [Resend-domeinhandleiding](https://resend.com/docs/dashboard/domains/introduction) beschrijft verificatie en afzonderlijke subdomeinen.
+Danny verifieert `dartflow.nl` in Resend en controleert SPF, DKIM en het afgesproken DMARC-beleid. De afgesproken applicatieafzender is **DartFlow <noreply@dartflow.nl>**, met `support@dartflow.nl` als antwoordadres. `info@dgwebservices.nl` is de toegestane testontvanger. Het is pas een werkende afzender als het betrokken verzenddomein daadwerkelijk bij Resend geverifieerd is én de runtime dit afzenderadres toestaat. De [Resend-domeinhandleiding](https://resend.com/docs/dashboard/domains/introduction) beschrijft verificatie en afzonderlijke subdomeinen.
 
 Maak daarna per omgeving een eigen app-sleutel met uitsluitend verzendrechten, waar ondersteund beperkt tot het geverifieerde verzenddomein. Gebruik hiervoor geen SMTP-sleutel opnieuw.
 
 De gemelde Resend SMTP-inrichting bij Supabase dekt uitsluitend Auth-mail. De onafhankelijke stagingcontrole vond nog geen app-API-sleutel of webhookcredential in DartFlow. Onderstaande app-mailstappen blijven daarom nodig, inclusief de echte bezorg- en webhookproef.
+
+De [nieuwe beschermde mailbundels](evidence/v15-reauth-mail-host-prepared-2026-11-11.json) zijn voorbereid als `staging-2026-11-11-v15-mail-1` en `production-2026-11-11-v15-mail-1`. Ze staan uitsluitend `noreply@dartflow.nl` als From toe en behandelen `support@dartflow.nl` apart als Reply-To. De echte testontvanger blijft uitsluitend `info@dgwebservices.nl`. Deze voorbereiding activeert geen apprelease, wijzigt Supabase SMTP niet en bewijst geen echte bezorging.
 
 ### Sleutels en instellingen invoeren
 
@@ -199,7 +211,8 @@ Dit zijn serverwaarden; de native releaseketen maakt hiervoor een eigen configur
 | `DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY` | Afzonderlijke base64-gecodeerde 32-byte sleutel per omgeving; worker genereert en beschermt |
 | `DARTFLOW_MAIL_WORKER_TOKEN` | Eigen sterk worker-token per omgeving; worker genereert en beschermt |
 | `DARTFLOW_MAIL_MAX_MODE` | Bovengrens `test` op staging en `live` op productie; verandert de initiële Log-instelling niet |
-| `DARTFLOW_MAIL_ALLOWED_FROM` | Exact toegestane afzenderadressen; afgestemd met Danny en het geverifieerde domein |
+| `DARTFLOW_MAIL_ALLOWED_FROM` | Exact `noreply@dartflow.nl` in de nieuwe mailbundels; providerverificatie blijft vereist |
+| `DARTFLOW_MAIL_ALLOWED_REPLY_TO` | Afzonderlijke exacte grens `support@dartflow.nl`; verleent geen verzend- of testontvangerrecht |
 | `DARTFLOW_MAIL_TEST_RECIPIENTS` | Exacte runtimegrens; aangewezen adres `info@dgwebservices.nl` |
 | `SUPABASE_MANAGEMENT_TOKEN` | Eigen projectgebonden PAT voor Google-configuratiebeheer vanuit de app; Danny verleent, worker plaatst server-side. Niet vereist voor Google-login |
 | `DARTFLOW_ADMIN_REQUIRE_MFA` | Alleen afdwingen wanneer de gekozen eigenaar-MFA ook is ingericht en getest |

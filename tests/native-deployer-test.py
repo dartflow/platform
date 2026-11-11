@@ -639,6 +639,8 @@ class CompleteReleaseFixture(unittest.TestCase):
         self.assertNotIn(TOKEN, str(argv))
         self.assertNotIn(TOKEN, str(values))
         self.assertNotIn('DARTFLOW_DATABASE_URL', str(values))
+        self.assertNotIn('DARTFLOW_MAIL_ALLOWED_REPLY_TO', str(values))
+        self.assertNotIn('support@dartflow.nl', str(values))
         if stage == 'extract':
             extractor.extract(stdin, work / 'source', policy['maxSourceBytes'], policy['maxSourceFiles'])
         elif stage == 'versions':
@@ -671,6 +673,10 @@ class CompleteReleaseFixture(unittest.TestCase):
             return deploy.deploy_release(self.policy, SHA, RUN, CONFIG, TOKEN, gate=self.gate, download=self.download, build=self.build, activate_release=self.activate)
 
     def test_full_pipeline_gates_exact_source_builds_without_secrets_and_seals_bound_config(self):
+        with (self.bundle / 'runtime.env').open('a') as stream:
+            stream.write('DARTFLOW_MAIL_ALLOWED_FROM=noreply@dartflow.nl\n'
+                         'DARTFLOW_MAIL_ALLOWED_REPLY_TO=support@dartflow.nl\n'
+                         'DARTFLOW_MAIL_TEST_RECIPIENTS=info@dgwebservices.nl\n')
         result = self.run_release()
         self.assertEqual(result['status'], 'passed')
         self.assertEqual(self.events, ['gate', 'download', 'extract', 'versions', 'install', 'build', 'activate', 'restart'])
@@ -680,6 +686,9 @@ class CompleteReleaseFixture(unittest.TestCase):
         self.assertEqual(meta['sha'], SHA)
         self.assertEqual(meta['configId'], CONFIG)
         self.assertEqual(meta['toolchain']['npm'], '11.16.0')
+        active_runtime = (self.site / 'current' / '.runtime.env').read_text()
+        self.assertEqual(deploy.runtime_values(active_runtime, public())['DARTFLOW_MAIL_ALLOWED_REPLY_TO'], 'support@dartflow.nl')
+        self.assertEqual(meta['runtimeConfigHash'], hashlib.sha256(active_runtime.encode()).hexdigest())
         self.assertEqual(list(self.build_root.iterdir()), [])
         for path in self.root.rglob('*'):
             if path.is_file() and not path.is_symlink():

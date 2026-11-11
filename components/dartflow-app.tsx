@@ -2476,8 +2476,11 @@ function Login({ session }: { session: Session | null }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [next, setNext] = useState("/app");
+  const [reauth, setReauth] = useState<"recent" | "otp" | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
+    const recovery = params.get("reauth");
+    setReauth(recovery === "otp" ? "otp" : recovery === "1" ? "recent" : null);
     const target = params.get("next");
     if (
       target?.startsWith("/") &&
@@ -2547,15 +2550,18 @@ function Login({ session }: { session: Session | null }) {
       <div className="auth-card">
         <Badge>WELKOM BIJ DARTFLOW</Badge>
         <h1>
-          Jouw volgende partij
-          <br />
-          begint hier.
+          {reauth ? "Bevestig je aanmelding" : <>Jouw volgende partij<br />begint hier.</>}
         </h1>
         <p>
           {sent
             ? `Je ontvangt een inlogcode op ${email}. Controleer ook je spammap.`
+            : reauth === "otp"
+              ? "Meld je opnieuw aan met een e-mailcode om Google veilig uit te schakelen."
+              : reauth
+                ? "Meld je opnieuw aan met hetzelfde eigenaarsaccount om je beveiligde wijziging af te ronden."
             : "Eén account voor je club, de speeldag en je scorekaart."}
         </p>
+        {reauth && <p className="notice">Voltooi een nieuwe aanmelding. Laat het oorspronkelijke tabblad Integraties open en keer daarna terug naar dat tabblad om je instellingen opnieuw op te slaan.</p>}
         <form onSubmit={submit}>
           <label className="field" htmlFor="login-email">
             E-mailadres
@@ -2628,14 +2634,14 @@ function Login({ session }: { session: Session | null }) {
             </div>
           )}
         </form>
-        {!sent && (
+        {!sent && reauth !== "otp" && (
           <>
             <div className="auth-divider">
               <span>of</span>
             </div>
             <a
               className="button google full"
-              href={`/api/auth/google?next=${encodeURIComponent(next)}`}
+              href={`/api/auth/google?next=${encodeURIComponent(next)}${reauth ? "&reauth=1" : ""}`}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -2659,7 +2665,7 @@ function Login({ session }: { session: Session | null }) {
             </a>
           </>
         )}
-        {session?.user && (
+        {session?.user && !reauth && (
           <a className="text-link auth-back" href={next}>
             Terug als {session.user.name}
             <Icon name="arrow" />

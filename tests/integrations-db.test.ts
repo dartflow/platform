@@ -8,20 +8,29 @@ import { closeDatabase, database } from '../lib/db';
 import { MAIL_CATALOG } from '../lib/integrations-catalog';
 import { integrationTransaction, storeCredential } from '../lib/integrations-core';
 import { enqueueDomainMail, listMailLog, listMailTemplates, planMailReminders, processMailBatch, receiveResendWebhook, senderSettings, updateMailTemplate, updateMailPolicy } from '../lib/integrations-mail';
-import { getGoogleSettings, getResendSettings, updateGoogleSettings } from '../lib/integrations';
+import { getGoogleSettings, getResendSettings, updateGoogleSettings, updateResendSettings } from '../lib/integrations';
 try{process.loadEnvFile('.env.local');}catch{/* CI injects loopback URLs. */}
 const loopback=(value:string|undefined)=>{try{return !!value&&['localhost','127.0.0.1','[::1]'].includes(new URL(value).hostname);}catch{return false;}};
 const configured=process.env.DARTFLOW_DATA_MODE==='local'&&loopback(process.env.DARTFLOW_DATABASE_ADMIN_URL)&&loopback(process.env.DARTFLOW_DATABASE_URL);
 test('durable mail verifies transactions, scope, CAS, immutable snapshots, provider deduplication and signed webhooks',{skip:!configured},async t=>{
- const previous={DARTFLOW_ENV:process.env.DARTFLOW_ENV,DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY:process.env.DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY,DARTFLOW_MAIL_MAX_MODE:process.env.DARTFLOW_MAIL_MAX_MODE,DARTFLOW_MAIL_ALLOWED_FROM:process.env.DARTFLOW_MAIL_ALLOWED_FROM,DARTFLOW_MAIL_TEST_RECIPIENTS:process.env.DARTFLOW_MAIL_TEST_RECIPIENTS};
+ const previous={DARTFLOW_ENV:process.env.DARTFLOW_ENV,DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY:process.env.DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY,DARTFLOW_MAIL_MAX_MODE:process.env.DARTFLOW_MAIL_MAX_MODE,DARTFLOW_MAIL_ALLOWED_FROM:process.env.DARTFLOW_MAIL_ALLOWED_FROM,DARTFLOW_MAIL_ALLOWED_REPLY_TO:process.env.DARTFLOW_MAIL_ALLOWED_REPLY_TO,DARTFLOW_MAIL_TEST_RECIPIENTS:process.env.DARTFLOW_MAIL_TEST_RECIPIENTS};
  process.env.DARTFLOW_ENV='development';process.env.DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY=randomBytes(32).toString('base64');process.env.DARTFLOW_MAIL_MAX_MODE='test';
- const suffix=randomUUID(),actor=randomUUID(),player=randomUUID(),outsider=randomUUID(),club=randomUUID(),scope=`club:${club}`,address=`test-${suffix}@example.com`,from=`sender-${suffix}@example.com`;
- process.env.DARTFLOW_MAIL_ALLOWED_FROM=from;process.env.DARTFLOW_MAIL_TEST_RECIPIENTS=address;
+ const suffix=randomUUID(),actor=randomUUID(),player=randomUUID(),outsider=randomUUID(),club=randomUUID(),scope=`club:${club}`,address=`test-${suffix}@example.com`,from=`sender-${suffix}@example.com`,replyTo=`support-${suffix}@example.com`;
+ process.env.DARTFLOW_MAIL_ALLOWED_FROM=from;process.env.DARTFLOW_MAIL_ALLOWED_REPLY_TO=replyTo;process.env.DARTFLOW_MAIL_TEST_RECIPIENTS=address;
  const entityId=randomUUID(),fixtureId=randomUUID();const owner=new pg.Client({connectionString:process.env.DARTFLOW_DATABASE_ADMIN_URL});await owner.connect();const ids:string[]=[];
  try{
   for(const [id,name,email]of [[actor,'Mail owner',`owner-${suffix}@example.com`],[player,'Mail player',address],[outsider,'Mail outsider',`outsider-${suffix}@example.com`]])await owner.query('insert into dartflow_private.profiles(id,name,email,email_verified) values($1,$2,$3,true)',[id,name,email]);
   await owner.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'owner')",[actor]);await owner.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[club,`Mail ${suffix}`]);await owner.query("insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,'organizer')",[club,actor]);
   await t.test('current server roles enforce owner credentials and cross-club log/template access',async()=>{await assert.rejects(getResendSettings(player),{code:'owner_required'});await assert.rejects(listMailTemplates(outsider,scope),{code:'mail_forbidden'});await assert.rejects(listMailLog(player,scope),{code:'mail_forbidden'});const settings=await getResendSettings(actor);assert.equal('apiKey'in settings,false);assert.equal('webhookSigningSecret'in settings,false);});
+  await t.test('a separately allowed Reply-To cannot become a sender or test recipient',async()=>{
+   const prior=await getResendSettings(actor);
+   const saved=await updateResendSettings(actor,{expectedRevision:prior.revision,from:{name:'DartFlow fixture',address:from},replyTo,testRecipients:[address]});
+   assert.equal((await getResendSettings(actor)).replyTo,replyTo);
+   await assert.rejects(updateResendSettings(actor,{expectedRevision:saved.revision,from:{name:'DartFlow fixture',address:replyTo}}),{code:'sender_boundary'});
+   await assert.rejects(updateResendSettings(actor,{expectedRevision:saved.revision,testRecipients:[replyTo]}),{code:'test_recipient_boundary'});
+   await assert.rejects(updateResendSettings(actor,{expectedRevision:saved.revision,replyTo:`unlisted-${suffix}@example.com`}),{code:'reply_to_boundary'});
+   assert.equal((await getResendSettings(actor)).revision,saved.revision);
+  });
   await t.test('club publication uses CAS and reset restores inherited platform defaults',async()=>{const base=MAIL_CATALOG.find(row=>row.id==='welcome')!;const draft=await updateMailTemplate(actor,'welcome',{scope,expectedRevision:0,fields:{...base.fields,title:'Club greeting'}},'draft');assert.equal(draft.revision,1);await assert.rejects(updateMailTemplate(actor,'welcome',{scope,expectedRevision:0,fields:base.fields},'draft'),{code:'revision_conflict'});await updateMailTemplate(actor,'welcome',{scope,expectedRevision:1},'publish');let view=await listMailTemplates(actor,scope);assert.equal(view.templates.find(row=>row.id==='welcome')?.fields.title,'Club greeting');await updateMailTemplate(actor,'welcome',{scope,expectedRevision:2},'reset');view=await listMailTemplates(actor,scope);assert.equal(view.templates.find(row=>row.id==='welcome')?.fields.title,base.fields.title);assert.equal(view.templates.find(row=>row.id==='welcome')?.publishedVersion,2);});
   const event={id:`fixture:${suffix}:welcome`,templateId:'welcome',scope,recipientId:player,variables:{name:'Player'}};
   await t.test('enqueue shares the business transaction and duplicate event payload cannot change',async()=>{const client=await database().connect();try{await client.query('begin');const rolled=await enqueueDomainMail(client,{...event,id:`rollback:${suffix}`});await client.query('rollback');assert.equal((await owner.query('select 1 from dartflow_private.mail_outbox where id=$1',[rolled])).rowCount,0);assert.equal((await owner.query('select 1 from dartflow_private.mail_events where event_id=$1',[`rollback:${suffix}`])).rowCount,0);}finally{client.release();}

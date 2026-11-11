@@ -1,0 +1,43 @@
+{
+  "observedAt": "2026-11-11T17:54:19.234564Z",
+  "environment": "staging",
+  "projectRef": "dsnqnvbckkqpzadblshu",
+  "scope": "Configured platform owner only; no other identities inspected",
+  "databaseObservation": {
+    "source": "Supabase MCP read-only aggregate joined owner-filtered auth.users, auth.sessions, auth.mfa_amr_claims and platform_roles; no identifiers or credentials selected",
+    "ownerRoleCount": 1,
+    "observedSessionCount": 1,
+    "assurance": "aal1",
+    "sessionAgeSeconds": 1226,
+    "sessionUpdatedAgeSeconds": 1226,
+    "authenticationMethod": "otp",
+    "methodCreatedAgeSeconds": 1226,
+    "methodUpdatedAgeSeconds": 1226
+  },
+  "runtimeObservation": {
+    "observedAt": "2026-11-11T17:54:44.440369Z",
+    "source": "SSH read-only boolean projection of the active protected staging runtime bundle",
+    "adminRequiresMfa": false
+  },
+  "diagnosis": {
+    "recentAuthenticationWindowSeconds": 900,
+    "observedAuthenticationIsRecent": false,
+    "authorizationResultForObservedMethod": "reauth_required is expected",
+    "newerCompletedAuthenticationObserved": false,
+    "missingAmrDemonstrated": false,
+    "uiFindings": [
+      "Integration API helper discarded the structured reauth error code",
+      "Credential drafts were cleared on failed saves, including reauth_required",
+      "Existing-session navigation could return without completing a new authentication"
+    ],
+    "fixBoundary": "Provide an explicit new OTP/Google roundtrip and preserve drafts only in the existing tab memory. Retain the 15-minute server AMR check; token issuance/refresh and user metadata never renew this window."
+  },
+  "limits": [
+    "No browser JWT, cookie, code or token was read or stored",
+    "Database observations describe Auth session metadata, not a captured browser request",
+    "No hosted role, schema, Auth configuration or provider credential was changed",
+    "No email or OTP request was sent by this diagnostic",
+    "This does not establish successful end-user reauthentication or Resend delivery acceptance"
+  ],
+  "primaryReference": "https://supabase.com/docs/guides/auth/jwt-fields"
+}

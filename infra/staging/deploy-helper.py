@@ -337,7 +337,7 @@ def validate_database(value, public):
 def runtime_values(text, public):
     """Parse a fixed server-only allowlist using an unambiguous EnvironmentFile subset."""
     allowed = {'DARTFLOW_DATABASE_URL', 'DARTFLOW_ENV', 'DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY',
-               'DARTFLOW_MAIL_ALLOWED_FROM', 'DARTFLOW_MAIL_TEST_RECIPIENTS', 'DARTFLOW_MAIL_MAX_MODE',
+               'DARTFLOW_MAIL_ALLOWED_FROM', 'DARTFLOW_MAIL_ALLOWED_REPLY_TO', 'DARTFLOW_MAIL_TEST_RECIPIENTS', 'DARTFLOW_MAIL_MAX_MODE',
                'DARTFLOW_MAIL_WORKER_TOKEN', 'DARTFLOW_ADMIN_REQUIRE_MFA', 'SUPABASE_MANAGEMENT_TOKEN',
                'DARTFLOW_TURN_SECRET', 'DARTFLOW_TURN_URLS'}
     result = {}
@@ -368,9 +368,9 @@ def runtime_values(text, public):
             require(re.fullmatch(r'[A-Za-z0-9+/]{43}=', result[key]), 'Expected per-environment 256-bit key')
     if 'DARTFLOW_MAIL_WORKER_TOKEN' in result:
         require(re.fullmatch('[a-f0-9]{64}', result['DARTFLOW_MAIL_WORKER_TOKEN']), 'Invalid mail worker token')
-    for key in ['DARTFLOW_MAIL_ALLOWED_FROM', 'DARTFLOW_MAIL_TEST_RECIPIENTS']:
+    for key in ['DARTFLOW_MAIL_ALLOWED_FROM', 'DARTFLOW_MAIL_ALLOWED_REPLY_TO', 'DARTFLOW_MAIL_TEST_RECIPIENTS']:
         if key in result:
-            require(all(re.fullmatch(r'[^@,\s]+@[^@,\s]+\.[^@,\s]+', address) for address in result[key].split(',')), 'Invalid mail boundary')
+            require(all(re.fullmatch(r'[^@,\s<>]+@[^@,\s<>]+\.[^@,\s<>]+', address) for address in result[key].split(',')), 'Invalid mail boundary')
     if 'DARTFLOW_TURN_URLS' in result:
         require(all(re.fullmatch(r'turns?:[A-Za-z0-9.\[\]:-]+(?:\?transport=(?:udp|tcp))?', url) for url in result['DARTFLOW_TURN_URLS'].split(',')), 'Invalid TURN endpoint')
     return result

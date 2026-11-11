@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { database, consumeRateLimit } from './db';
 import { appConfig } from './config';
 import { hasFreshOtpRecoveryProof } from './google-proof';
+import { hasRecentVerifiedAuthentication } from './reauth';
 import { DomainError } from './domain';
 import { emailAddress, exactKeys, integrationRuntime, integrationTransaction, ownerAccess, storeCredential, textField, type MailMode } from './integrations-core';
 import { getMailPolicy, getMailPreferences, listMailLog, listMailTemplates, mailAudit, processMailBatch, receiveResendWebhook, retryMail, senderSettings, testMail, updateMailPolicy, updateMailPreferences, updateMailTemplate } from './integrations-mail';
@@ -18,9 +19,7 @@ function csrf(request:Request) {if(request.headers.get('origin')!==appConfig().o
 async function recentOwner(actor:string,requireOtpRecovery=false) {
  await ownerAccess(actor);if(appConfig().mode==='local')return;
  const {supabaseServer}=await import('./auth');const client=await supabaseServer();const {data,error}=await client.auth.getClaims();const claims=data?.claims;
- const authTimes=[Number(claims?.auth_time),...(Array.isArray(claims?.amr)?claims.amr.map((entry:{timestamp?:number;method?:string})=>entry.method!=='token_refresh'?Number(entry.timestamp):0):[])].filter(value=>Number.isFinite(value)&&value>0);
- const fresh=authTimes.some(value=>Date.now()/1000-value>=0&&Date.now()/1000-value<=900);
- if(error||claims?.sub!==actor||!fresh||process.env.DARTFLOW_ADMIN_REQUIRE_MFA==='true'&&claims.aal!=='aal2')throw new DomainError('reauth_required','Log opnieuw in om beveiligde instellingen te wijzigen.',403);
+ if(error||!hasRecentVerifiedAuthentication(actor,claims,{requireMfa:process.env.DARTFLOW_ADMIN_REQUIRE_MFA==='true'}))throw new DomainError('reauth_required','Log opnieuw in om beveiligde instellingen te wijzigen.',403);
  if(requireOtpRecovery&&!hasFreshOtpRecoveryProof(actor,claims))throw new DomainError('google_recovery_otp_required','Log eerst opnieuw in met een e-mailcode voordat je Google uitschakelt.',403);
 }
 async function limitOwner(actor:string) {const rate=await consumeRateLimit(`integration:${integrationRuntime().environment}:${actor}`,20,600);if(!rate.allowed)throw new DomainError('rate_limited','Wacht voordat je opnieuw instellingen wijzigt.',429);}
@@ -37,7 +36,7 @@ export async function updateResendSettings(actor:string,input:Record<string,unkn
  return integrationTransaction(async client=>{await ownerAccess(actor,client);await client.query('select pg_advisory_xact_lock(hashtext($1))',[`resend:${runtime.environment}`]);const old=await client.query("select revision from dartflow_private.integration_settings where environment=$1 and provider='resend' for update",[runtime.environment]);const revision=old.rows[0]?.revision||0;if(input.expectedRevision!==revision)throw new DomainError('revision_conflict','De instellingen zijn gewijzigd. Vernieuw de pagina.',409);const next=await senderSettings(client);
   if(input.mode!==undefined){if(!['log','test','live'].includes(String(input.mode)))throw new DomainError('mail_mode','Ongeldige verzendmodus.');const mode=input.mode as MailMode;if({log:0,test:1,live:2}[mode]>{log:0,test:1,live:2}[runtime.maxMode])throw new DomainError('mail_mode_boundary','De runtime staat deze verzendmodus niet toe.',403);next.mode=mode;}
   if(input.from!==undefined){if(!input.from||typeof input.from!=='object'||Array.isArray(input.from))throw new DomainError('sender','Kies een toegestane afzender.');const from=input.from as Record<string,unknown>;exactKeys(from,['name','address']);const address=emailAddress(from.address);if(!runtime.allowedFrom.has(address))throw new DomainError('sender_boundary','Deze afzender staat niet in de runtimegrens.',403);const name=textField(from.name,80);if(/[<>]/.test(name))throw new DomainError('sender','Gebruik een afzendernaam zonder haaktekens.');next.from={name,address};}
-  if(input.replyTo!==undefined){const address=input.replyTo===null?null:emailAddress(input.replyTo);if(address&&!runtime.allowedFrom.has(address)&&!runtime.testAllowlist.has(address))throw new DomainError('reply_to_boundary','Gebruik een toegestaan antwoordadres.',403);next.replyTo=address;}
+  if(input.replyTo!==undefined){const address=input.replyTo===null?null:emailAddress(input.replyTo);if(address&&!runtime.allowedFrom.has(address)&&!runtime.allowedReplyTo.has(address)&&!runtime.testAllowlist.has(address))throw new DomainError('reply_to_boundary','Gebruik een toegestaan antwoordadres.',403);next.replyTo=address;}
   if(input.testRecipients!==undefined){if(!Array.isArray(input.testRecipients)||input.testRecipients.length>20)throw new DomainError('test_recipients','Kies maximaal twintig testadressen.');const addresses=[...new Set(input.testRecipients.map(emailAddress))];if(addresses.some(value=>!runtime.testAllowlist.has(value)))throw new DomainError('test_recipient_boundary','Een testadres valt buiten de runtimegrens.',403);next.testRecipients=addresses;}
   if(input.apiKey!==undefined){await storeCredential(client,actor,'resend-api',String(input.apiKey));next.keyStatus='stored';next.lastTest=null;}
   if(input.webhookSigningSecret!==undefined){await storeCredential(client,actor,'resend-webhook',String(input.webhookSigningSecret));next.webhookStatus='stored';next.lastVerifiedWebhookAt=undefined;}

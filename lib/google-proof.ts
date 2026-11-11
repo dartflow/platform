@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { User } from '@supabase/supabase-js';
 import { integrationRuntime } from './integrations-core';
+import { hasRecentVerifiedAuthentication } from './reauth';
 
 export const GOOGLE_ATTEMPT_COOKIE='dartflow-google-attempt';
 const MAX_AGE=600_000;
@@ -8,9 +9,7 @@ const USERINFO='https://openidconnect.googleapis.com/v1/userinfo';
 export type GoogleAttempt={nonce:string;createdAt:number;revision:number;environment:string;projectRef:string};
 /** Call only with claims verified by Supabase Auth, never a decoded client token or user metadata. */
 export function hasFreshOtpRecoveryProof(actor:string,claims:unknown,now=Date.now()):boolean {
- if(!claims||typeof claims!=='object')return false;const verified=claims as {sub?:unknown;amr?:unknown};
- if(verified.sub!==actor||!Array.isArray(verified.amr))return false;
- return verified.amr.some(entry=>entry&&typeof entry==='object'&&entry.method==='otp'&&Number.isSafeInteger(entry.timestamp)&&entry.timestamp>0&&now-entry.timestamp*1000>=0&&now-entry.timestamp*1000<=900_000);
+ return hasRecentVerifiedAuthentication(actor,claims,{now,method:'otp'});
 }
 function signingKey() {const value=process.env.DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY||'';const key=Buffer.from(value,'base64');if(!/^[A-Za-z0-9+/]{43}=$/.test(value)||key.length!==32)throw new Error('Google proof signing is unavailable.');return key;}
 function signature(value:string) {const runtime=integrationRuntime();return createHmac('sha256',signingKey()).update(`dartflow-google-attempt:${runtime.environment}:${runtime.projectRef}:`).update(value).digest('base64url');}

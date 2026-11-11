@@ -1,0 +1,330 @@
+{
+  "after": {
+    "dartflow-production": {
+      "current": "releases/4634852c17cc-42995766522-1",
+      "loopback": {
+        "health": {
+          "body": {
+            "buildConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1",
+            "mode": "supabase",
+            "releaseId": "42995766522-1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        },
+        "ready": {
+          "body": {
+            "auth": "reachable",
+            "buildConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1",
+            "database": "ok",
+            "releaseId": "42995766522-1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "schemaVersion": 1,
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "status": "ready"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 10:32:39 CET",
+        "ActiveState": "active",
+        "MainPID": "64473"
+      }
+    },
+    "dartflow-staging": {
+      "current": "releases/62529cc56e29-43061111506-1",
+      "loopback": {
+        "health": {
+          "body": {
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1",
+            "mode": "supabase",
+            "releaseId": "43061111506-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        },
+        "ready": {
+          "body": {
+            "auth": "reachable",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1",
+            "database": "ok",
+            "releaseId": "43061111506-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "schemaVersion": 1,
+            "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+            "status": "ready"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 17:45:29 CET",
+        "ActiveState": "active",
+        "MainPID": "92576"
+      }
+    },
+    "milobingo-staging": {
+      "current": "releases/f1550dd028ef-43026808427-1",
+      "loopback": {
+        "health": {
+          "body": {
+            "configVersion": "staging-2026-11-11-v2",
+            "releaseId": "43026808427-1",
+            "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 14:14:47 CET",
+        "ActiveState": "active",
+        "MainPID": "70911"
+      }
+    }
+  },
+  "appCurrentSourceAndPidUnchanged": true,
+  "backup": "/var/backups/dartflow/v15-mail-20261111T175636053999Z",
+  "before": {
+    "dartflow-production": {
+      "current": "releases/4634852c17cc-42995766522-1",
+      "loopback": {
+        "health": {
+          "body": {
+            "buildConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1",
+            "mode": "supabase",
+            "releaseId": "42995766522-1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        },
+        "ready": {
+          "body": {
+            "auth": "reachable",
+            "buildConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1",
+            "database": "ok",
+            "releaseId": "42995766522-1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "schemaVersion": 1,
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "status": "ready"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 10:32:39 CET",
+        "ActiveState": "active",
+        "MainPID": "64473"
+      }
+    },
+    "dartflow-staging": {
+      "current": "releases/62529cc56e29-43061111506-1",
+      "loopback": {
+        "health": {
+          "body": {
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1",
+            "mode": "supabase",
+            "releaseId": "43061111506-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        },
+        "ready": {
+          "body": {
+            "auth": "reachable",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1",
+            "database": "ok",
+            "releaseId": "43061111506-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "schemaVersion": 1,
+            "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+            "status": "ready"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 17:45:29 CET",
+        "ActiveState": "active",
+        "MainPID": "92576"
+      }
+    },
+    "milobingo-staging": {
+      "current": "releases/f1550dd028ef-43026808427-1",
+      "loopback": {
+        "health": {
+          "body": {
+            "configVersion": "staging-2026-11-11-v2",
+            "releaseId": "43026808427-1",
+            "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 14:14:47 CET",
+        "ActiveState": "active",
+        "MainPID": "70911"
+      }
+    }
+  },
+  "operations": {
+    "appActivated": false,
+    "credentialValuesOutput": false,
+    "mailOrOtpSent": false,
+    "productionActivated": false,
+    "senderSettingsChanged": false,
+    "sqlExecuted": false,
+    "supabaseAuthConfigChanged": false
+  },
+  "preflightKnownOldRenderSha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+  "prepared": [
+    {
+      "allowedFrom": [
+        "noreply@dartflow.nl"
+      ],
+      "allowedReplyTo": [
+        "support@dartflow.nl"
+      ],
+      "configId": "staging-2026-11-11-v15-mail-1",
+      "directoryMode": "0700",
+      "environment": "staging",
+      "fileMode": "0600",
+      "helperSha256": "10c689a5ea82f494664bcc239dd46924328afba22f39a25722f93573e2d72aa5",
+      "mailMaxMode": "test",
+      "managementTokenPresent": false,
+      "oldBundlesValidatedUnchanged": true,
+      "otherRuntimeValuesUnchanged": true,
+      "path": "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v15-mail-1",
+      "publicBytesUnchanged": true,
+      "runtimeHash": "ee7e3476d324027e8df1f15b428d5c3d37ce53dd76f792c4859ee1c42b655854",
+      "testRecipients": [
+        "info@dgwebservices.nl"
+      ]
+    },
+    {
+      "allowedFrom": [
+        "noreply@dartflow.nl"
+      ],
+      "allowedReplyTo": [
+        "support@dartflow.nl"
+      ],
+      "configId": "production-2026-11-11-v15-mail-1",
+      "directoryMode": "0700",
+      "environment": "production",
+      "fileMode": "0600",
+      "helperSha256": "9b269cd30ee69fae7f1277901cb77cdf7adb27ff53ff20efcee2626dad353f0f",
+      "mailMaxMode": "live",
+      "managementTokenPresent": false,
+      "oldBundlesValidatedUnchanged": true,
+      "otherRuntimeValuesUnchanged": true,
+      "path": "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v15-mail-1",
+      "publicBytesUnchanged": true,
+      "runtimeHash": "2c14494a92470138c2b591af959929576f33fe03d99d57c681a8c51d3fa29079",
+      "testRecipients": [
+        "info@dgwebservices.nl"
+      ]
+    }
+  ],
+  "recordedAt": "2026-11-11T17:56:36.530976+00:00",
+  "scope": "Reviewed broker and immutable sender-boundary preparation only; no app activation or Auth/database/mail mutation",
+  "sharedBuildLock": {
+    "device": 29,
+    "inode": 6,
+    "path": "/run/lock/dg-build.lock",
+    "preserved": true
+  },
+  "status": "prepared",
+  "visudoValidated": true,
+  "independentPublicCheck": {
+    "checkedAt": "2026-11-11T17:56:57.917358+00:00",
+    "source": "Independent worker HTTPS GETs; allowlisted metadata only",
+    "dartflow-staging": {
+      "health": {
+        "httpStatus": 200,
+        "body": {
+          "status": "ok",
+          "mode": "supabase",
+          "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+          "releaseId": "43061111506-1",
+          "buildConfigId": "staging-2026-11-11-v15-1",
+          "runtimeConfigId": "staging-2026-11-11-v15-1",
+          "configId": "staging-2026-11-11-v15-1"
+        }
+      },
+      "ready": {
+        "httpStatus": 200,
+        "body": {
+          "status": "ready",
+          "database": "ok",
+          "schemaVersion": 1,
+          "auth": "reachable",
+          "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+          "releaseId": "43061111506-1",
+          "buildConfigId": "staging-2026-11-11-v15-1",
+          "runtimeConfigId": "staging-2026-11-11-v15-1",
+          "configId": "staging-2026-11-11-v15-1"
+        }
+      }
+    },
+    "dartflow-production": {
+      "health": {
+        "httpStatus": 200,
+        "body": {
+          "status": "ok",
+          "mode": "supabase",
+          "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+          "releaseId": "42995766522-1",
+          "buildConfigId": "production-2026-11-11-v1",
+          "runtimeConfigId": "production-2026-11-11-v1",
+          "configId": "production-2026-11-11-v1"
+        }
+      },
+      "ready": {
+        "httpStatus": 200,
+        "body": {
+          "status": "ready",
+          "database": "ok",
+          "schemaVersion": 1,
+          "auth": "reachable",
+          "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+          "releaseId": "42995766522-1",
+          "buildConfigId": "production-2026-11-11-v1",
+          "runtimeConfigId": "production-2026-11-11-v1",
+          "configId": "production-2026-11-11-v1"
+        }
+      }
+    },
+    "milobingo-staging": {
+      "health": {
+        "httpStatus": 200,
+        "body": {
+          "status": "ok",
+          "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+          "releaseId": "43026808427-1",
+          "configVersion": "staging-2026-11-11-v2"
+        }
+      }
+    }
+  },
+  "publicAndLoopbackIdentityMatch": true
+}

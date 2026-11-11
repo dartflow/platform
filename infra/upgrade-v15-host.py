@@ -283,7 +283,8 @@ def main():
                       'DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY': secret_file(base / 'integrations.key'),
                       'DARTFLOW_MAIL_WORKER_TOKEN': secret_file(base / 'mail-worker.token', 'hex'),
                       'DARTFLOW_MAIL_TEST_RECIPIENTS': 'info@dgwebservices.nl',
-                      'DARTFLOW_MAIL_ALLOWED_FROM': 'info@dgwebservices.nl',
+                      'DARTFLOW_MAIL_ALLOWED_FROM': 'noreply@dartflow.nl',
+                      'DARTFLOW_MAIL_ALLOWED_REPLY_TO': 'support@dartflow.nl',
                       'DARTFLOW_MAIL_MAX_MODE': 'test' if env == 'staging' else 'live',
                       'DARTFLOW_TURN_SECRET': turn,
                       'DARTFLOW_TURN_URLS': ','.join(f'turn:128.140.93.95:{3478 if env == "staging" else 3479}?transport={transport}' for transport in ['udp', 'tcp'])}

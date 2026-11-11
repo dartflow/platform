@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createGoogleAttempt, GOOGLE_ATTEMPT_COOKIE } from '@/lib/google-proof';
+import { googleSignInOptions } from '@/lib/reauth';
 import { googleConfigurationRevision } from '@/lib/integrations';
 import { cookies } from 'next/headers';
 import { createHash } from 'node:crypto';
@@ -127,7 +128,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     let proofAttempt:string|null=null;
     try{proofAttempt=createGoogleAttempt(await googleConfigurationRevision());}catch{/* Optional proof setup never disables a working provider login. */}
     const client=await supabaseServer();
-    const {data,error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:`${config.origin}/auth/callback`}});
+    const {data,error}=await client.auth.signInWithOAuth(googleSignInOptions(config.origin,request.nextUrl.searchParams.get('reauth')));
     if (error || !data.url) return NextResponse.redirect(new URL('/inloggen?error=oauth',config.origin),{headers:{'Cache-Control':'private, no-store'}});
     if(proofAttempt)jar.set(GOOGLE_ATTEMPT_COOKIE,proofAttempt,{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:600});
     return NextResponse.redirect(data.url,{headers:{'Cache-Control':'private, no-store'}});

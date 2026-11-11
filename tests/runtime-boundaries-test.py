@@ -31,6 +31,28 @@ class RuntimeBoundaries(unittest.TestCase):
             with self.subTest(suffix=suffix), self.assertRaises(ValueError):
                 helper.runtime_values(self.base + suffix, self.public)
 
+    def test_reply_to_boundary_is_optional_and_keeps_sender_and_test_recipient_separate(self):
+        self.assertNotIn('DARTFLOW_MAIL_ALLOWED_REPLY_TO', helper.runtime_values(self.base, self.public))
+        settings = ('DARTFLOW_MAIL_ALLOWED_FROM=noreply@dartflow.nl\n'
+                    'DARTFLOW_MAIL_ALLOWED_REPLY_TO=support@dartflow.nl\n'
+                    'DARTFLOW_MAIL_TEST_RECIPIENTS=info@dgwebservices.nl\n')
+        parsed = helper.runtime_values(self.base + settings, self.public)
+        self.assertEqual(parsed['DARTFLOW_MAIL_ALLOWED_FROM'], 'noreply@dartflow.nl')
+        self.assertEqual(parsed['DARTFLOW_MAIL_ALLOWED_REPLY_TO'], 'support@dartflow.nl')
+        self.assertEqual(parsed['DARTFLOW_MAIL_TEST_RECIPIENTS'], 'info@dgwebservices.nl')
+        self.assertNotIn('support@dartflow.nl', parsed['DARTFLOW_MAIL_ALLOWED_FROM'])
+        self.assertNotIn('support@dartflow.nl', parsed['DARTFLOW_MAIL_TEST_RECIPIENTS'])
+
+    def test_reply_to_mailboxes_refuse_headers_empty_entries_and_duplicate_environment_keys(self):
+        for value in ['', 'not-an-email', '<support@dartflow.nl>', 'Support<support@dartflow.nl>',
+                      'support@dartflow.nl,', ',support@dartflow.nl', 'support@dartflow.nl,,other@example.invalid',
+                      'support@dartflow.nl\rBcc:other@example.invalid', 'support@dartflow.nl;Bcc:other@example.invalid']:
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                helper.runtime_values(self.base + 'DARTFLOW_MAIL_ALLOWED_REPLY_TO=' + value + '\n', self.public)
+        with self.assertRaises(ValueError):
+            helper.runtime_values(self.base + 'DARTFLOW_MAIL_ALLOWED_REPLY_TO=support@dartflow.nl\n'
+                                  'DARTFLOW_MAIL_ALLOWED_REPLY_TO=other@example.invalid\n', self.public)
+
     def test_rendered_production_keeps_its_own_environment_and_mail_ceiling(self):
         renderer_path = path.parent / 'render-deployer.py'
         renderer_spec = importlib.util.spec_from_file_location('runtime_renderer', renderer_path)
@@ -40,6 +62,13 @@ class RuntimeBoundaries(unittest.TestCase):
         module.__file__ = str(path)
         exec(compile(renderer.fixed_source(path.read_text(), 'production'), str(path), 'exec'), module.__dict__)
         self.assertEqual(module.runtime_values(self.base + 'DARTFLOW_ENV=production\nDARTFLOW_MAIL_MAX_MODE=live\n', self.public)['DARTFLOW_ENV'], 'production')
+        separate = module.runtime_values(self.base + 'DARTFLOW_ENV=production\nDARTFLOW_MAIL_MAX_MODE=live\n'
+                                         'DARTFLOW_MAIL_ALLOWED_FROM=noreply@dartflow.nl\n'
+                                         'DARTFLOW_MAIL_ALLOWED_REPLY_TO=support@dartflow.nl\n'
+                                         'DARTFLOW_MAIL_TEST_RECIPIENTS=info@dgwebservices.nl\n', self.public)
+        self.assertEqual(separate['DARTFLOW_MAIL_ALLOWED_FROM'], 'noreply@dartflow.nl')
+        self.assertEqual(separate['DARTFLOW_MAIL_ALLOWED_REPLY_TO'], 'support@dartflow.nl')
+        self.assertEqual(separate['DARTFLOW_MAIL_TEST_RECIPIENTS'], 'info@dgwebservices.nl')
         with self.assertRaises(ValueError):
             module.runtime_values(self.base + 'DARTFLOW_ENV=staging\n', self.public)
 
