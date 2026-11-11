@@ -1,0 +1,387 @@
+{
+  "format": "dartflow-native-preparation-verification-v1",
+  "verifiedAt": "2026-11-11T02:50:02.770774+00:00",
+  "timezone": "Europe/Amsterdam",
+  "scope": "local verification; no DartFlow target installation or deployment",
+  "source": {
+    "sha": "5c5d898cdc1eb923d22e9ad1217cf01d8e6e92fd",
+    "branch": "codex/staging",
+    "cleanWhenPackaged": true,
+    "githubRepository": null,
+    "integrationBranch": null,
+    "ciRunUrl": null,
+    "deployRunUrl": null
+  },
+  "toolchain": {
+    "node": "24.18.0",
+    "npm": "11.16.0",
+    "next": "16.4.6",
+    "postgresLocal": "16.15",
+    "browser": "Chrome for Testing 158.0.8127.18"
+  },
+  "tests": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "passed": true
+    },
+    "lint": {
+      "command": "npm run lint",
+      "passed": true
+    },
+    "appAndRelease": {
+      "command": "npm test",
+      "passed": 40,
+      "failed": 0,
+      "skipped": 0
+    },
+    "nativeDeployment": {
+      "command": "npm run test:deploy",
+      "passed": 46,
+      "failed": 0,
+      "skipped": 0,
+      "systemdTargetIntegrationPerformed": false
+    },
+    "prototype": {
+      "command": "npm run test:prototype",
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    "browser": {
+      "command": "npm run test:e2e",
+      "passed": 2,
+      "failed": 0,
+      "durationSeconds": 23.3,
+      "syntheticLocalIdentities": true,
+      "realSupabaseLoginTested": false
+    },
+    "workflows": {
+      "tool": "actionlint",
+      "version": "1.7.12",
+      "files": 4,
+      "passed": true,
+      "shellcheckEnabled": false
+    }
+  },
+  "build": {
+    "command": "npm run build",
+    "passed": true,
+    "sourceSha": "5c5d898cdc1eb923d22e9ad1217cf01d8e6e92fd",
+    "mode": "local",
+    "configId": "local-2026-11-11",
+    "standalone": true,
+    "tracingExcludesPrivateState": true,
+    "publicConfigHash": "ba50c360bd91c7ad6cb8e24af47a556ac816a71fd1350fc5de074a505fd837b5"
+  },
+  "isolatedBuild": {
+    "passed": true,
+    "scope": "synthetic public Supabase configuration, no real provider project",
+    "lockedInstall": "npm ci",
+    "build": "npm run build",
+    "runtimeDatabaseEnvironmentProvided": false,
+    "healthHttp": 200,
+    "readyHttp": 503,
+    "readyFailureExpectedWithoutDatabase": true,
+    "runtimeEnvFilesPresent": false,
+    "trackedPlaceholderExamplesPresent": true
+  },
+  "localRuntime": {
+    "origin": "http://localhost:3000",
+    "listen": "127.0.0.1:3000",
+    "mode": "local",
+    "health": {
+      "http": 200,
+      "status": "ok",
+      "sha": "5c5d898cdc1eb923d22e9ad1217cf01d8e6e92fd",
+      "releaseId": null,
+      "buildConfigId": "local-2026-11-11",
+      "runtimeConfigId": "local-2026-11-11",
+      "configId": "local-2026-11-11"
+    },
+    "ready": {
+      "http": 200,
+      "status": "ready",
+      "database": "ok",
+      "schemaVersion": 1,
+      "auth": "local-only",
+      "sha": "5c5d898cdc1eb923d22e9ad1217cf01d8e6e92fd",
+      "releaseId": null,
+      "buildConfigId": "local-2026-11-11",
+      "runtimeConfigId": "local-2026-11-11",
+      "configId": "local-2026-11-11"
+    }
+  },
+  "inspectionArtifact": {
+    "path": "artifacts/dartflow-5c5d898cdc1eb923d22e9ad1217cf01d8e6e92fd-local.tgz",
+    "sha256": "e6e96bfe5c7917c2a6e266591687e3f511b2fa074ed5581740088f1f8e6d8e85",
+    "sourceVerified": "clean local Git source only; no GitHub CI/deployment acceptance",
+    "manifest": {
+      "format": "dartflow-next-standalone-v1",
+      "sourceSha": "5c5d898cdc1eb923d22e9ad1217cf01d8e6e92fd",
+      "sourceVerified": true,
+      "runId": "local",
+      "runUrl": null,
+      "createdAt": "2026-11-11T02:47:43.699Z",
+      "node": "v24.18.0",
+      "next": "16.4.6",
+      "lockfileSha256": "93143c3f48adbde6984e9824ef6f7e784a50e698ed10148e13bb63fdbb25955c",
+      "dataMode": "local",
+      "appOrigin": "http://localhost:3000",
+      "configId": "local-2026-11-11",
+      "buildConfigSha256": "ba50c360bd91c7ad6cb8e24af47a556ac816a71fd1350fc5de074a505fd837b5",
+      "runtimeConfigId": "local-2026-11-11",
+      "hostId": null,
+      "baselineRevision": null,
+      "wrapperRevision": null
+    },
+    "unpackedSmoke": {
+      "passed": true,
+      "loopbackPort": 3108,
+      "healthHttp": 200,
+      "readyHttp": 200,
+      "assetPath": "/assets/dartflow-logo.svg",
+      "assetHttp": 200,
+      "assetContentType": "image/svg+xml",
+      "assetBytesMatchPackage": true,
+      "processStopped": true
+    },
+    "regularNativeDeploymentInput": false
+  },
+  "credentialScan": {
+    "scope": "known local database connection strings and passwords; archive excludes .env*, .local and .git",
+    "sourceFilesAtBuildCommit": 181,
+    "serverTraceFiles": 8,
+    "artifactFiles": 2166,
+    "matches": 0
+  },
+  "liveReadOnlyGateReference": {
+    "repository": "milobingo/platform",
+    "acceptedSha": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+    "acceptedCiUrl": "https://github.com/milobingo/platform/actions/runs/42802522209",
+    "rejectedSha": "67e1039a270488601c5e010da4eb25b1c7619812",
+    "rejectionReason": "required exact-SHA CI missing",
+    "dartflowAcceptance": false
+  },
+  "milo": {
+    "beforeInspectRun": "https://github.com/milobingo/platform/actions/runs/42943887248",
+    "afterInspectRun": "https://github.com/milobingo/platform/actions/runs/42945932719",
+    "inspectConclusions": "success",
+    "service": "milobingo-staging.service",
+    "serviceState": "active",
+    "listen": "127.0.0.1:4173",
+    "httpsHealth": 200,
+    "tlsVerifyResult": 0,
+    "remoteIp": "128.140.93.95",
+    "revision": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+    "releaseId": "42804436092-1",
+    "configVersion": "staging-2026-11-05-v1",
+    "identityUnchanged": true,
+    "configurationOrReleaseChangedByTask": false,
+    "serviceObservedAt": "2026-11-11T02:25:38Z"
+  },
+  "external": {
+    "origin": "https://staging.dartflow.nl",
+    "host": "dg-nxttrack-01",
+    "installed": false,
+    "nativeEnabled": false,
+    "activeRelease": null,
+    "configId": null,
+    "readyVerified": false,
+    "realAuthMatchPilotVerified": false,
+    "realHostRollbackVerified": false,
+    "systemdLockTransferVerifiedOnHost": false,
+    "currentDns": {
+      "A": "185.151.30.138",
+      "AAAA": "2a07:7800::138"
+    },
+    "httpsResult": "certificate hostname mismatch",
+    "requiredDns": {
+      "A": "128.140.93.95",
+      "AAAA": "2a01:4f8:c015:60a6::1 or remove old AAAA for IPv4-only"
+    },
+    "blockers": [
+      "verified DartFlow repository URL and integration branch",
+      "authorized dg-nxttrack-01 administrator authentication",
+      "dedicated DartFlow staging Supabase project/config/database credential and approved test identities",
+      "DartFlow Caddy bootstrap, DNS correction and TLS acceptance"
+    ]
+  },
+  "sourceChecksums": {
+    "infra/staging/deploy-helper.py": "2c4b15c9009f75e399a923bee40172e33621b8cb24b00f2bd3ea11af5a2949ad",
+    "infra/staging/deploy-entry.py": "45d26b4c9087a2cad33330c660d94836168e0f21122e1695e8cd74f0e0668633",
+    "infra/staging/extract-source.py": "c7405cbd36859966e5876f09756c35488892e4bcd4fdcc133abeaf368e353527",
+    "infra/staging/lock-guardian.py": "a6014e4d4b3d5ce08fbfb2dee1868a5f2e9b6447603480b99305a454d36a39a7",
+    "ops/release-gate.mjs": "2a6278bb8580d03970a2ac0cac6b704eb20a06c60767a126a02fc3bbfff8b564",
+    "ops/retry-deploy.mjs": "aa1336600c50153718717dd873f7abbf995393297927eb66716c51f504a10c82"
+  },
+  "changedFiles": [
+    {
+      "status": "A",
+      "path": ".github/actionlint.yaml"
+    },
+    {
+      "status": "M",
+      "path": ".github/workflows/ci.yml"
+    },
+    {
+      "status": "A",
+      "path": ".github/workflows/deploy-staging.yml"
+    },
+    {
+      "status": "D",
+      "path": ".github/workflows/deploy-staging.yml.example"
+    },
+    {
+      "status": "A",
+      "path": ".github/workflows/rollback-staging.yml"
+    },
+    {
+      "status": "M",
+      "path": ".github/workflows/staging.yml"
+    },
+    {
+      "status": "M",
+      "path": ".gitignore"
+    },
+    {
+      "status": "A",
+      "path": ".npm-version"
+    },
+    {
+      "status": "M",
+      "path": "README.md"
+    },
+    {
+      "status": "M",
+      "path": "app/api/[...path]/route.ts"
+    },
+    {
+      "status": "M",
+      "path": "docs/deployment.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/host-inventory.md"
+    },
+    {
+      "status": "M",
+      "path": "docs/inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/release-reference.md"
+    },
+    {
+      "status": "A",
+      "path": "infra/staging/GUARDIAN.md"
+    },
+    {
+      "status": "A",
+      "path": "infra/staging/dartflow-staging.service.example"
+    },
+    {
+      "status": "A",
+      "path": "infra/staging/dartflow-staging.sudoers.example"
+    },
+    {
+      "status": "A",
+      "path": "infra/staging/deploy-entry.py"
+    },
+    {
+      "status": "A",
+      "path": "infra/staging/deploy-helper.py"
+    },
+    {
+      "status": "A",
+      "path": "infra/staging/deploy-policy.example.json"
+    },
+    {
+      "status": "A",
+      "path": "infra/staging/extract-source.py"
+    },
+    {
+      "status": "A",
+      "path": "infra/staging/lock-guardian.py"
+    },
+    {
+      "status": "A",
+      "path": "lib/release.ts"
+    },
+    {
+      "status": "M",
+      "path": "next.config.ts"
+    },
+    {
+      "status": "M",
+      "path": "ops/assert-ci.mjs"
+    },
+    {
+      "status": "M",
+      "path": "ops/deploy-contract.md"
+    },
+    {
+      "status": "M",
+      "path": "ops/host-profile.staging.example.json"
+    },
+    {
+      "status": "M",
+      "path": "ops/package-release.mjs"
+    },
+    {
+      "status": "A",
+      "path": "ops/public-config.example.json"
+    },
+    {
+      "status": "A",
+      "path": "ops/release-gate.mjs"
+    },
+    {
+      "status": "A",
+      "path": "ops/release-policy.json"
+    },
+    {
+      "status": "A",
+      "path": "ops/retry-deploy.mjs"
+    },
+    {
+      "status": "M",
+      "path": "ops/runtime.env.example"
+    },
+    {
+      "status": "M",
+      "path": "package-lock.json"
+    },
+    {
+      "status": "M",
+      "path": "package.json"
+    },
+    {
+      "status": "M",
+      "path": "scripts/prepare-standalone.mjs"
+    },
+    {
+      "status": "M",
+      "path": "tests/e2e/pilot.spec.ts"
+    },
+    {
+      "status": "A",
+      "path": "tests/native-deployer-test.py"
+    },
+    {
+      "status": "A",
+      "path": "tests/release-gate.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "tests/release-identity.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "tests/release-package.test.ts"
+    },
+    {
+      "status": "M",
+      "path": "voorbeelden/release-acceptatie.md"
+    }
+  ]
+}

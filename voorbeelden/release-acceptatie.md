@@ -2,7 +2,7 @@
 
 Bijgewerkt op **11 november 2026 (Europe/Amsterdam)**. De nieuwe native releaseketen is lokaal geïmplementeerd en getest, maar **niet op de doel-VPS geïnstalleerd of als DartFlow-release uitgevoerd**. Repository/integratiebranch, beheer-SSH en eigen stagingbackend ontbreken; DNS/TLS is onjuist. `ops/release-policy.json` houdt daarom de identiteit leeg en `nativeEnabled: false`.
 
-De functionele tabellen verderop bewaren het **historische lokale appbewijs van 10 november**, bron **`7d8dff64be15489d397ca7069814b403538beb26`**, branch `codex/staging`; exact toenmalig afrondingstijdstip staat in `docs/evidence/verification.json`. Die resultaten keuren de nieuwe releasecode of een externe stagingomgeving niet automatisch goed. De definitieve bron-SHA en aanvullende complete verificatieregistratie voor de nieuwe wijzigingen worden na afronding door de hoofdtaak toegevoegd.
+De functionele tabellen verderop bewaren het **historische lokale appbewijs van 10 november**, bron **`7d8dff64be15489d397ca7069814b403538beb26`**, branch `codex/staging`; exact toenmalig afrondingstijdstip staat in `docs/evidence/verification.json`. Die resultaten keuren de nieuwe releasecode of een externe stagingomgeving niet automatisch goed. De nieuwe lokaal geteste bron is **`5c5d898cdc1eb923d22e9ad1217cf01d8e6e92fd`**. De eindronde liep op 11 november van **03:46:56 tot 03:49 CET**. Het gestructureerde bewijs, bestandslijst en bronchecksums staan in [native-verification-2026-11-11.json](../docs/evidence/native-verification-2026-11-11.json). De daaropvolgende bewijscommit wijzigt uitsluitend documentatie; de draaiende app en het inspectiepakket blijven op de geteste bron.
 
 ## Gevraagde oplevering: actuele stand op 11 november
 
@@ -21,33 +21,37 @@ De functionele tabellen verderop bewaren het **historische lokale appbewijs van 
 | Controle | Status | Bewijs en grens |
 |---|---|---|
 | Onafhankelijke rootgate op echte GitHub-metadata | Pass | Alleen-lezen geaccepteerd: Milo-bron `729d962b7401b100ce9cacb94ce4e4da16a699f2`, eigen [CI 42802522209](https://github.com/milobingo/platform/actions/runs/42802522209), job `verify`. Werkelijk geweigerd: latere documentatie-SHA `67e1039a270488601c5e010da4eb25b1c7619812` zonder eigen exacte CI. Geen DartFlow-CI en geen deploy |
-| Releasepoort/-identiteit/-packagingtests | Pass lokaal | Hoofdtaak rapporteert 40 geslaagde tests; definitieve bron-/commandoregistratie wordt aangevuld |
+| Releasepoort/-identiteit/-packagingtests | Pass lokaal | `npm test`: 40/40 op de nieuwe bron; nul failures/skips. Typecheck en lint slagen eveneens |
 | Native brokergrenzen en fout-/herstelpaden | Pass lokaal | 46 native tests geslaagd; echte bronarchive-/filesystemfixtures, fork/pidfd/SIGKILL/OFD-proeven en geïsoleerde callbacks. Beide locks afzonderlijk getoetst, ook bij vertraagde build- en appclientstart; builder/app ontvangen geen lock-FDs in de procesfixture. Dit voert geen systemd-/sudo-/providerdeploy uit |
 | Vier GitHub-workflows | Pass voor syntax | Actionlint `1.7.12`: alle vier workflows/GitHub-expressies geldig, voorgestelde runnerlabels geconfigureerd; shellcheck hierbij uitgeschakeld. Geen GitHub-configuratie of workflowbestand extern geplaatst |
 | Locked install/build zonder runtimegeheim | Pass lokaal | Geïsoleerde `npm ci` en volledige standalone-build met synthetische publieke configuratie; geen database-runtimeomgeving |
 | Smoke van die isolated build | Pass voor geteste grens | `/api/health` HTTP 200; `/api/ready` HTTP 503 zoals vereist zonder databaseconfiguratie. Dit is **geen database-readinessacceptatie** |
 | Prototype-regressiecontrole | Pass lokaal | Op 11 november opnieuw 26/26 geslaagd; de aangeleverde prototypebron blijft een referentie, geen native release |
-| Broncredentialscontrole | Pass voor gecontroleerde bestanden | Hoofdtaak controleerde 179 bronbestanden: geen lek van lokale databasecredentials; definitieve bron-SHA wordt hieronder vastgelegd |
+| Broncredentialscontrole | Pass voor gecontroleerde bestanden | 181 bestanden van de geteste bron, 8 servertraces en 2.166 pakketbestanden gecontroleerd. Geen bekende lokale DB-verbindingsstrings/-wachtwoorden in bron/pakket; geen .local- of env-bestanden in pakket of servertraces |
 | Native installatie en eigen runner | Open | Geen bevoegde beheerlogin; geen accounts, sudo-policy, units, bundels, labels of portregistratie op de host aangebracht |
 | Eigen DB/Auth-project en least privilege | Open | Projectref/publishable key/DB-geheim/testaccounts ontbreken. Werkelijke rolflags, lidmaatschappen en DDL-/tabelrechten nog te verifiëren; accountnaam alleen is geen privilegebewijs |
 | Publieke DartFlow-health/readiness | Fail voor huidige route | DNS A `185.151.30.138`, AAAA `2a07:7800::138`; TLS-hostnaam fout. Na Caddy-bootstrap A naar `128.140.93.95`, AAAA naar geverifieerd `2a01:4f8:c015:60a6::1` of oude AAAA verwijderen |
 | Echte OTP/Google/score/herladen | Open | Lokale fixturepilot vervangt geen echte Supabase-identiteit of providerconfiguratie |
 | Echte lockbezetting/activatiefout/rollback/restore | Open | Lokale faalinjectie aanwezig; doelhostproef en compatibele app/configrollback niet uitgevoerd. Geen destructieve migratie of automatische databaserestore onderdeel van gewone deploy |
-| Onafhankelijke lockbewaker bij harde helperdood | Hostacceptatie Open | Nieuwe root-owned guardian met gepinde `guardianSha256` houdt dezelfde lockdescriptors, stopt/bevestigt de vier vaste buildunits en wacht pending app-/buildjobs af. Onzekere cleanup houdt locks vast voor rootherstel; geen automatische approllback bij harde helperdood. Echte systemd-FD-overdracht en SIGKILL-proef op de doelhost nog niet uitgevoerd; definitieve lokale guardian-testregistratie volgt bij de hoofdtaak |
+| Onafhankelijke lockbewaker bij harde helperdood | Hostacceptatie Open | Nieuwe root-owned guardian met gepinde `guardianSha256` houdt dezelfde lockdescriptors, stopt/bevestigt de vier vaste buildunits en wacht pending app-/buildjobs af. Onzekere cleanup houdt locks vast voor rootherstel; geen automatische approllback bij harde helperdood. Lokale harde helperdood en vertraagde build-/appclientstart met onafhankelijke lockprobes slagen als onderdeel van 46 tests. Echte systemd-FD-overdracht en SIGKILL-proef op de doelhost blijven Open |
 
 Milo's vóórmeting: [Inspect 42943887248](https://github.com/milobingo/platform/actions/runs/42943887248), 03:08:16–03:08:22 CET; nameting: [Inspect 42945932719](https://github.com/milobingo/platform/actions/runs/42945932719), **03:25:37–03:25:42 CET**, beide `completed/success` op workflowbron `67e1039a270488601c5e010da4eb25b1c7619812`. Service loaded/active, app `app-mil-stg`, werkmap `current/.next/standalone`, bijbehorend envpad en Caddy actief; listener `127.0.0.1:4173`. Entryhash blijft `aee3e1e2e76f05d99f668ed7c756802da82033c4983216b90d7ea50de9f49bc7`. Bij de nameting: `143154008064` vrije bytes en `9743083` vrije inodes. Publiek HTTPS HTTP 200/TLS-verificatie 0 via `128.140.93.95`, met ongewijzigde revision `729d962b7401b100ce9cacb94ce4e4da16a699f2`, release `42804436092-1`, configuratie `staging-2026-11-05-v1`. Zie `docs/host-inventory.md` voor de precieze meetgrenzen.
 
 ### Definitieve nieuwe lokale bronregistratie
 
-Deze velden worden door de hoofdtaak na de broncommit en laatste build/browsercontrole ingevuld. Zij zijn geen ontbrekende externe stagingacceptatie die met lokale tests kan worden afgevinkt.
+De onderstaande metingen zijn uitgevoerd op de schone broncommit. `sourceVerified:true` bewijst hier uitsluitend de overeenkomst met de lokale Git-bron; er is geen DartFlow-GitHub-CI of externe deploy geaccepteerd.
 
 | Vastlegging | Eindresultaat |
 |---|---|
-| Volledige nieuwe lokale bron-SHA / branch | Nog in te vullen na de broncommit |
-| Volledige typecheck/lint/unit/native/prototype-testregistratie | Nog in te vullen met definitieve commandoregel, aantallen, tijdstip en bewijs |
-| Build-/standalone-artifact en bron-/configidentiteit | Nog in te vullen na de laatste build op die bron |
-| Laatste browserpilot / viewportmatrix op die bron | Nog in te vullen met echte uitkomst; historische resultaten hieronder blijven apart |
-| Eindstatus GitHub-remote / nativeEnabled / externe deploy | Repo nog onbevestigd, remote niet ingesteld, `nativeEnabled:false`, geen DartFlow-deploy; alleen aanpassen wanneer werkelijk uitgevoerd |
+| Volledige nieuwe lokale bron-SHA / branch | `5c5d898cdc1eb923d22e9ad1217cf01d8e6e92fd` / `codex/staging` |
+| Volledige typecheck/lint/unit/native/prototype-testregistratie | `npm run typecheck`, `npm run lint`, `npm test` **40/40**, `npm run test:deploy` **46/46**, `npm run test:prototype` **26/26**. Geen failures/skips; volledige ronde op 11 november vanaf 03:46:56 CET |
+| Build-/standalone-artifact en bron-/configidentiteit | `npm run build` en `node ops/package-release.mjs` Pass. `artifacts/dartflow-5c5d898cdc1eb923d22e9ad1217cf01d8e6e92fd-local.tgz`, SHA-256 `e6e96bfe5c7917c2a6e266591687e3f511b2fa074ed5581740088f1f8e6d8e85`. Mode local, build/runtimeconfig `local-2026-11-11`, `sourceVerified:true` |
+| Laatste browserpilot / viewportmatrix op die bron | `npm run test:e2e`: **2/2**, 23,3 s; echte lokale DB met synthetische organisator/twee spelers/scherm, scoren/overname/herladen/offline/retry/uitslag en viewport-/autorisatiematrix. Geen echte Supabase-providerlogin |
+| Eindstatus GitHub-remote / nativeEnabled / externe deploy | Repo en integratiebranch onbevestigd, remote niet ingesteld, `nativeEnabled:false`, geen DartFlow-CI of deployrun en geen actieve externe release |
+
+De lokale productiepreview draait op **http://localhost:3000/inloggen**, uitsluitend `127.0.0.1:3000`. Health en readiness geven beide HTTP 200 met bovenstaande SHA en `local-2026-11-11`; database schemaVersion 1, Auth `local-only`. Het apart uitgepakte inspectiepakket is op poort 3108 gestart en gecontroleerd: health/readiness 200 en `/assets/dartflow-logo.svg` 200 met `image/svg+xml` en exacte pakketbytes. Dat tijdelijke proces is gestopt. De reguliere native deploy blijft een bronbuild op de doelhost, geen kopie van dit lokale pakket.
+
+De huidige build sluit `.local`, `.env*` en `.git` al tijdens Next-tracing uit; de nabehandeling en packager verwijderen private bestanden bovendien recursief. De afzonderlijke synthetische Supabase-build is zonder geladen runtime-env-bestanden of DB-omgeving geslaagd. De echte PostgreSQL-server is lokaal 16.15; Node 24.18.0, npm 11.16.0 en Chrome for Testing 158.0.8127.18 zijn opnieuw gemeten. Milo's publieke health is na de eindronde rond 03:49 CET opnieuw HTTP 200/TLS 0 met dezelfde release/configuratie; de service-/socketmeting blijft de hierboven gedateerde readonly-run.
 
 ## Historisch lokaal appbewijs, 10 november
 
