@@ -125,6 +125,23 @@ test('standalone club boards persist without competitions and isolate open play 
    await assert.rejects(run(member,createAction,createReq),{status:403});await assert.rejects(run(member,action,req),{status:403});await assert.rejects(run(member,{type:'club-board.update',boardId:publicBoard.id,blocked:true}),{status:403});
    await assert.rejects(run(otherOwner,{type:'club-board.update',boardId:publicBoard.id,name:'Cross-club change'}),{status:403});
   });
+  await t.test('a queued creation rechecks the current manager role after waiting for a concurrent demotion',async()=>{
+   await run(admin,{type:'club.role',id:club,userId:member,role:'admin'});
+   const countBefore=Number((await owner.query('select count(*) as n from dartflow_private.club_boards where club_id=$1',[club])).rows[0].n);
+   await owner.query('begin');await owner.query('select id from dartflow_private.platform_entities where id=$1 for update',[club]);
+   const queued=Promise.allSettled([run(member,{type:'club-board.create',clubId:club,name:'Queued demoted-admin board'})]);
+   let blocked=false;
+   for(let attempt=0;attempt<50&&!blocked;attempt++){
+    blocked=Boolean((await owner.query("select exists(select 1 from pg_stat_activity where datname=current_database() and wait_event_type='Lock' and query like 'select id from dartflow_private.platform_entities where id=$1 and kind=%') as blocked")).rows[0].blocked);
+    if(!blocked)await new Promise(resolve=>setTimeout(resolve,10));
+   }
+   assert.equal(blocked,true,'The queued creation must be waiting for the actual club lock.');
+   await owner.query("update dartflow_private.platform_members set role='member' where entity_id=$1 and user_id=$2",[club,member]);
+   await owner.query("update dartflow_private.club_memberships set role='player' where club_id=$1 and user_id=$2",[club,member]);
+   await owner.query('update dartflow_private.platform_entities set revision=revision+1,updated_at=now() where id=$1',[club]);await owner.query('commit');
+   const result=(await queued)[0];assert.equal(result.status,'rejected');assert.equal(result.status==='rejected'?result.reason.status:null,403);
+   assert.equal(Number((await owner.query('select count(*) as n from dartflow_private.club_boards where club_id=$1',[club])).rows[0].n),countBefore);
+  });
   await t.test('a queued open claim rechecks access after a completed restriction and stable QR survives rename and unblock',async()=>{
    const board=await create(club,'Toegangscontrolebaan');
    await owner.query('begin');const row=await owner.query('select event_id from dartflow_private.club_boards where board_id=$1',[board.id]);await owner.query('select id from dartflow_private.events where id=$1 for update',[row.rows[0].event_id]);

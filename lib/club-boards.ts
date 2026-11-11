@@ -54,11 +54,12 @@ export async function clubBoardAction(client:Client,actor:string,command:Platfor
  if(a.type==='club-board.create'){
   const clubId=uuid(a.clubId),name=text(a.name),access=a.access===undefined?'all':a.access;
   if(access!=='all'&&access!=='club')throw new DomainError('invalid_access','Kies iedereen met een account of alleen verenigingsleden.');
-  // The same club entity row is locked by membership/role commands.
+  // Lock before reading membership: a role change may have committed while this waited.
+  await client.query("select id from dartflow_private.platform_entities where id=$1 and kind='club' for update",[clubId]);
   const club=await client.query(`select ce.id from dartflow_private.platform_entities ce
    join dartflow_private.platform_members cm on cm.entity_id=ce.id and cm.user_id=$2 and cm.status='active' and cm.role in ('owner','admin')
    join dartflow_private.club_memberships core on core.club_id=ce.id and core.user_id=$2 and core.role='organizer'
-   where ce.id=$1 and ce.kind='club' and not exists(select 1 from dartflow_private.platform_relationships r where r.kind='block' and ((r.source_id=$2 and r.target_id=ce.owner_id) or(r.target_id=$2 and r.source_id=ce.owner_id))) for update of ce`,[clubId,actor]);
+   where ce.id=$1 and ce.kind='club' and not exists(select 1 from dartflow_private.platform_relationships r where r.kind='block' and ((r.source_id=$2 and r.target_id=ce.owner_id) or(r.target_id=$2 and r.source_id=ce.owner_id)))`,[clubId,actor]);
   if(!club.rowCount)throw new DomainError('forbidden','Alleen de actuele verenigingsbeheerder kan een baan toevoegen.',403);
   const eventId=randomUUID(),boardId=randomUUID();
   await client.query('insert into dartflow_private.events(id,club_id,name,date,capacity) values($1,$2,$3,current_date,128)',[eventId,clubId,`Vrij spelen · ${name}`]);
