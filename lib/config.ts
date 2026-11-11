@@ -21,7 +21,7 @@ export function safeNext(value: unknown): string {
     const tablet=new RegExp(`^/wedstrijd/${id}$`).test(pathname) && query==='tablet=1';
     return invitation || studio || tablet ? value : '/';
   }
-  if (/^\/(?:spelen|evenementen|wedstrijdleiding|clubbeheer|historie)?$/.test(value)) return value;
+  if (/^\/(?:speler|spelen|evenementen|wedstrijdleiding|clubbeheer|historie)?$/.test(value)) return value;
   if (/^\/w\/[A-Za-z0-9]{4}$/.test(value)) return value;
   if (/^\/app(?:\/(?:vandaag|spelen|baan|training|vrienden|clubs|kamers|uitdagingen|competities|toernooien|evenementen|wedstrijdleiding|schermen|mail|integraties|profiel|historie))?$/.test(value)) return value;
   if (/^\/app(?:\/(?:play|practice|lobby|events|friends|community|mymatches|settings|dashboard|operations|manage|leagues|tournaments|hall|players|registrations|matches|rankings|statistics|camera|pools|knockout))?$/.test(value)) return value;

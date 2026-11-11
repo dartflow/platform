@@ -1,3 +1,4 @@
+import {openMatchDetails} from './helpers/score-console';
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import type { MatchView } from '../../lib/types';
@@ -76,7 +77,7 @@ test('camera switching changes actual remote frames without replacing audio, pee
     ownedMatchId=matchId;
     expect(matchId).toMatch(/^[a-f0-9-]{36}$/);
     await matchAction(first,matchId,{type:'accept'});await matchAction(second,matchId,{type:'accept'});const initial=await matchAction(first,matchId,{type:'start'});
-    for(const page of[a,b]){await page.goto(`/wedstrijd/${matchId}`);await page.getByRole('button',{name:'Camera en microfoon testen',exact:true}).click();await expect(page.getByRole('button',{name:'Camera wisselen',exact:true})).toBeEnabled();await page.getByRole('button',{name:'Beeldverbinding starten',exact:true}).click();}
+    for(const page of[a,b]){await page.goto(`/wedstrijd/${matchId}`);await openMatchDetails(page);await page.getByRole('button',{name:'Camera en microfoon testen',exact:true}).click();await expect(page.getByRole('button',{name:'Camera wisselen',exact:true})).toBeEnabled();await page.getByRole('button',{name:'Beeldverbinding starten',exact:true}).click();}
     for(const page of[a,b])await expect(page.getByText('Beeld en geluid verbonden.',{exact:true})).toBeVisible({timeout:20000});
     await expect.poll(async()=>{const rgb=await pixel(b);return rgb[0]>180&&rgb[1]<70&&rgb[2]<70;}).toBe(true);
     const originalAudio=await a.getByLabel('Je eigen camerabeeld',{exact:true}).evaluate((video:HTMLVideoElement)=>(video.srcObject as MediaStream).getAudioTracks()[0].id);

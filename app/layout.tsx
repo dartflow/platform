@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "@/components/pwa-screens.css";
+import { PwaRuntime } from "@/components/pwa-install";
 import LegacyLink from "@/components/legacy-link";
 export const metadata: Metadata = {
   title: "DartFlow",
@@ -21,7 +23,7 @@ export default function RootLayout({
     <html lang="nl">
       <body>
         <LegacyLink />
-        {children}
+        <PwaRuntime>{children}</PwaRuntime>
       </body>
     </html>
   );

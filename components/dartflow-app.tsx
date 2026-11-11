@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import PlatformWorkspace from "./platform-workspace";
+import ScoreConsole from "./score-console";
+import {InstallDartflow} from "./pwa-install";
 import SprintDisplay from "./sprint-display";
 import ClubBoardScreen from "./club-board-screen";
 import PublicCast from "./public-cast";
@@ -514,8 +516,8 @@ export default function DartflowApp() {
   };
   const platformPath = path.startsWith("/app")
     ? path
-    : path === "/spelen"
-      ? "/app/baan"
+    : path === "/spelen" || path === "/speler"
+      ? (path === "/speler" ? "/app/play" : "/app/baan")
       : path === "/evenementen"
         ? "/app/events"
         : path === "/clubbeheer"
@@ -628,6 +630,7 @@ export default function DartflowApp() {
               <span>{n.label}</span>
             </a>
           ))}
+          {!organizing && <InstallDartflow kind="player" />}
         </nav>
         <div className="sidebar-bottom">
           <div className="club-context">
@@ -1666,6 +1669,7 @@ function MatchPage({
   const [reason, setReason] = useState("");
   const [disputing, setDisputing] = useState(false);
   const [correcting, setCorrecting] = useState(false);
+  const [consoleOpen, setConsoleOpen] = useState(true);
   const [boardId, setBoardId] = useState(overview.boards[0]?.id || "");
   const sendingRef = useRef(false);
   const storeKey = `dartflow-action:${user.id}:${id}`;
@@ -1789,8 +1793,156 @@ function MatchPage({
     "Baan toegewezen";
   const disabled = sending || Boolean(pending);
   const winner = match.players.find((p) => p.id === match.winnerId);
+  const matchControls = <>
+            <div className="match-actions">
+              {match.permissions.canPause && (
+                <button
+                  className="button ghost small"
+                  disabled={disabled}
+                  onClick={() => act({ type: "pause" })}
+                >
+                  Wedstrijd pauzeren
+                </button>
+              )}
+              {match.permissions.canResume && (
+                <button
+                  className="button gold small"
+                  disabled={disabled}
+                  onClick={() => act({ type: "resume" })}
+                >
+                  Wedstrijd hervatten
+                </button>
+              )}
+              {match.permissions.canRequestCorrection && (
+                <button
+                  className="button ghost small"
+                  disabled={disabled}
+                  onClick={() => setCorrecting((value) => !value)}
+                >
+                  Correctie aanvragen
+                </button>
+              )}
+              {match.permissions.canTakeOver && (
+                <button
+                  className="button small"
+                  disabled={disabled}
+                  onClick={() => act({ type: "take-over" })}
+                >
+                  <Icon name="sliders" />
+                  Schrijven overnemen
+                </button>
+              )}
+              {match.permissions.canUndo && (
+                <button
+                  className="button ghost small"
+                  disabled={disabled}
+                  onClick={() => act({ type: "undo" })}
+                >
+                  <Icon name="history" />
+                  Laatste bezoek corrigeren
+                </button>
+              )}
+            </div>
+            {match.paused && (
+              <div className="notice" role="status">
+                <strong>Wedstrijd gepauzeerd</strong>
+                <p>
+                  De stand blijft bewaard. Hervat de wedstrijd voordat je verder
+                  scoort.
+                </p>
+              </div>
+            )}
+            {correcting && match.permissions.canRequestCorrection && (
+              <form
+                className="notice"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  act({ type: "request-correction", reason });
+                  setCorrecting(false);
+                }}
+              >
+                <label className="field">
+                  Wat moet er worden gecorrigeerd?
+                  <textarea
+                    value={reason}
+                    onChange={(event) => setReason(event.target.value)}
+                    minLength={3}
+                    maxLength={1000}
+                    required
+                  />
+                </label>
+                <p>
+                  Je tegenstander beoordeelt het verzoek. Tot die beslissing
+                  blijft de score-invoer geblokkeerd.
+                </p>
+                <button
+                  className="button gold small"
+                  disabled={disabled || reason.trim().length < 3}
+                >
+                  Correctieverzoek versturen
+                </button>
+              </form>
+            )}
+            {match.correction && (
+              <div className="notice">
+                <strong>Correctieverzoek</strong>
+                <p>{match.correction.reason}</p>
+                <p>
+                  {match.correction.undoCount} beurt(en) worden bij akkoord
+                  teruggedraaid tot de betreffende eigen beurt.
+                </p>
+                <div className="button-row">
+                  {match.permissions.canAnswerCorrection && (
+                    <>
+                      <button
+                        className="button gold small"
+                        disabled={disabled}
+                        onClick={() =>
+                          act({
+                            type: "approve-correction",
+                            correctionId: match.correction!.id,
+                          })
+                        }
+                      >
+                        Correctie goedkeuren
+                      </button>
+                      <button
+                        className="button ghost small"
+                        disabled={disabled}
+                        onClick={() =>
+                          act({
+                            type: "reject-correction",
+                            correctionId: match.correction!.id,
+                          })
+                        }
+                      >
+                        Correctie afwijzen
+                      </button>
+                    </>
+                  )}
+                  {match.permissions.canCancelCorrection && (
+                    <button
+                      className="button ghost small"
+                      disabled={disabled}
+                      onClick={() =>
+                        act({
+                          type: "cancel-correction",
+                          correctionId: match.correction!.id,
+                        })
+                      }
+                    >
+                      Correctieverzoek intrekken
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+  </>;
+  const activeConsole = consoleOpen && match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore);
   return (
     <>
+      {activeConsole && <ScoreConsole title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={match.players.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} message={actionError || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
+      {match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore) && <button className="button gold full" onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</button>}
       <Heading
         kicker={`${event?.name || "BAANMODUS"}${match.boardId ? ` · ${boardName}` : ""}`}
         title={`${match.players[0].name} — ${match.players[1].name}`}
@@ -2152,149 +2304,7 @@ function MatchPage({
                   )}
               </div>
             )}
-            <div className="match-actions">
-              {match.permissions.canPause && (
-                <button
-                  className="button ghost small"
-                  disabled={disabled}
-                  onClick={() => act({ type: "pause" })}
-                >
-                  Wedstrijd pauzeren
-                </button>
-              )}
-              {match.permissions.canResume && (
-                <button
-                  className="button gold small"
-                  disabled={disabled}
-                  onClick={() => act({ type: "resume" })}
-                >
-                  Wedstrijd hervatten
-                </button>
-              )}
-              {match.permissions.canRequestCorrection && (
-                <button
-                  className="button ghost small"
-                  disabled={disabled}
-                  onClick={() => setCorrecting((value) => !value)}
-                >
-                  Correctie aanvragen
-                </button>
-              )}
-              {match.permissions.canTakeOver && (
-                <button
-                  className="button small"
-                  disabled={disabled}
-                  onClick={() => act({ type: "take-over" })}
-                >
-                  <Icon name="sliders" />
-                  Schrijven overnemen
-                </button>
-              )}
-              {match.permissions.canUndo && (
-                <button
-                  className="button ghost small"
-                  disabled={disabled}
-                  onClick={() => act({ type: "undo" })}
-                >
-                  <Icon name="history" />
-                  Laatste bezoek corrigeren
-                </button>
-              )}
-            </div>
-            {match.paused && (
-              <div className="notice" role="status">
-                <strong>Wedstrijd gepauzeerd</strong>
-                <p>
-                  De stand blijft bewaard. Hervat de wedstrijd voordat je verder
-                  scoort.
-                </p>
-              </div>
-            )}
-            {correcting && match.permissions.canRequestCorrection && (
-              <form
-                className="notice"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  act({ type: "request-correction", reason });
-                  setCorrecting(false);
-                }}
-              >
-                <label className="field">
-                  Wat moet er worden gecorrigeerd?
-                  <textarea
-                    value={reason}
-                    onChange={(event) => setReason(event.target.value)}
-                    minLength={3}
-                    maxLength={1000}
-                    required
-                  />
-                </label>
-                <p>
-                  Je tegenstander beoordeelt het verzoek. Tot die beslissing
-                  blijft de score-invoer geblokkeerd.
-                </p>
-                <button
-                  className="button gold small"
-                  disabled={disabled || reason.trim().length < 3}
-                >
-                  Correctieverzoek versturen
-                </button>
-              </form>
-            )}
-            {match.correction && (
-              <div className="notice">
-                <strong>Correctieverzoek</strong>
-                <p>{match.correction.reason}</p>
-                <p>
-                  {match.correction.undoCount} beurt(en) worden bij akkoord
-                  teruggedraaid tot de betreffende eigen beurt.
-                </p>
-                <div className="button-row">
-                  {match.permissions.canAnswerCorrection && (
-                    <>
-                      <button
-                        className="button gold small"
-                        disabled={disabled}
-                        onClick={() =>
-                          act({
-                            type: "approve-correction",
-                            correctionId: match.correction!.id,
-                          })
-                        }
-                      >
-                        Correctie goedkeuren
-                      </button>
-                      <button
-                        className="button ghost small"
-                        disabled={disabled}
-                        onClick={() =>
-                          act({
-                            type: "reject-correction",
-                            correctionId: match.correction!.id,
-                          })
-                        }
-                      >
-                        Correctie afwijzen
-                      </button>
-                    </>
-                  )}
-                  {match.permissions.canCancelCorrection && (
-                    <button
-                      className="button ghost small"
-                      disabled={disabled}
-                      onClick={() =>
-                        act({
-                          type: "cancel-correction",
-                          correctionId: match.correction!.id,
-                        })
-                      }
-                    >
-                      Correctieverzoek intrekken
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
+            {matchControls}
             <div className="revision-label">
               Stand bijgewerkt · revisie {match.revision}
             </div>

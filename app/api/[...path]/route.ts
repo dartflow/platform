@@ -17,6 +17,7 @@ import { mediaConfiguration } from '@/lib/media';
 import { getClubBoardScreen } from '@/lib/club-boards';
 import {requiresDisplayName} from '@/lib/display-name';
 import {invitationAttemptRequired} from '@/lib/invitations';
+import {BOARD_SCREEN_COOKIE,boardScreenCookiePath,getBoardScreen,listBoardScreenDevices,createBoardScreenDevice,revokeBoardScreenDevice,pairBoardScreenDevice} from '@/lib/board-screens';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -137,6 +138,22 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     return NextResponse.redirect(data.url,{headers:{'Cache-Control':'private, no-store'}});
   }
   if (method==='GET' && parts[0]==='screen' && parts.length===2) return json(await getPublicSnapshot(parts[1]));
+  if(parts[0]==='board-screens' && uuid(parts[1])){
+    if(parts[1]!==parts[1].toLowerCase()){
+      const canonical=new URL(request.url);canonical.pathname=canonical.pathname.replace(parts[1],parts[1].toLowerCase());
+      return NextResponse.redirect(canonical,308);
+    }
+    // A fixed display always uses its independent device credential, never a player session.
+    if(method==='GET' && parts.length===2)return json(await getBoardScreen(parts[1],request.cookies.get(BOARD_SCREEN_COOKIE)?.value));
+    if(method==='POST' && parts.length===3 && parts[2]==='pair'){
+      const address=(request.headers.get('x-forwarded-for')||'loopback').split(',').at(-1)!.trim();
+      await limit(`board-screen-pair:ip:${digest(address)}`,40,60);
+      const data=await body(request);const paired=await pairBoardScreenDevice(parts[1],data.code);
+      const response=json({ok:true});
+      response.cookies.set(BOARD_SCREEN_COOKIE,paired.token,{httpOnly:true,secure:appConfig().secure,sameSite:'strict',path:boardScreenCookiePath(parts[1]),maxAge:paired.maxAge});
+      return response;
+    }
+  }
   if (method==='GET' && parts[0]==='club-boards' && uuid(parts[1]) && parts[2]==='screen' && parts.length===3) return json(await getClubBoardScreen(parts[1]));
   if (method==='GET' && parts[0]==='platform' && parts[1]==='cast' && parts.length===3) return json(await getPlatformCast(parts[2]));
   const actor=await requireActor(request);
@@ -144,6 +161,11 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if(integration)return integration;
   if(method==='GET' && parts[0]==='media' && uuid(parts[1]) && parts.length===2) return json(await mediaConfiguration(actor.id,parts[1]));
   if(method==='GET' && parts[0]==='boards' && uuid(parts[1]) && parts.length===2)return json(await getBoardForActor(actor.id,parts[1]));
+  if(parts[0]==='boards' && uuid(parts[1]) && parts[2]==='screen-devices'){
+    if(method==='GET'&&parts.length===3)return json(await listBoardScreenDevices(actor.id,parts[1]));
+    if(method==='POST'&&parts.length===3)return json(await createBoardScreenDevice(actor.id,parts[1],(await body(request)).name));
+    if(method==='DELETE'&&parts.length===4&&uuid(parts[3])){await revokeBoardScreenDevice(actor.id,parts[1],parts[3]);return json({ok:true});}
+  }
   if(method==='GET' && path==='platform')return json(await getPlatformOverview(actor.id));
   if(method==='POST' && path==='platform/actions'){
     const input=await body(request);

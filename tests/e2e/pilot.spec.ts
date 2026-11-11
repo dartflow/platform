@@ -1,3 +1,4 @@
+import {openMatchDetails} from './helpers/score-console';
 import {
   test,
   expect,
@@ -192,6 +193,7 @@ test("two players, an organizer and independent screen complete the authoritativ
   await m
     .getByRole("button", { name: "Wedstrijd starten", exact: true })
     .click();
+  await openMatchDetails(a);await openMatchDetails(b);
   // Two isolated accounts exchange actual WebRTC media, with browser test devices.
   await p1.grantPermissions(["camera", "microphone"], { origin });
   await p2.grantPermissions(["camera", "microphone"], { origin });
@@ -308,6 +310,7 @@ test("two players, an organizer and independent screen complete the authoritativ
     ).toBe(true);
   }
   await b.reload();
+  await openMatchDetails(b);
   await expect(b.locator(".remaining").nth(1)).toHaveText("241");
   const threeDigitFont = await display
     .locator(".sprint-number")
@@ -611,12 +614,14 @@ test("v15 marketing and server-backed training preserve their own state", async 
     .getByRole("button", { name: "Start training" })
     .click();
   await expect(page).toHaveURL(/\/app\/training\/[a-f0-9-]{36}/);
+  await openMatchDetails(page);
   await page.getByRole("spinbutton").fill("180");
   await page
     .getByRole("button", { name: "Score invoeren", exact: true })
     .click();
   await expect(page.locator(".training-remaining")).toHaveText("321");
   await page.reload();
+  await openMatchDetails(page);
   await expect(page.locator(".training-remaining")).toHaveText("321");
   await page
     .getByRole("button", { name: "Laatste beurt terug", exact: true })

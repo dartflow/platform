@@ -1,5 +1,8 @@
 import DartflowApp from "@/components/dartflow-app";
 import MarketingHome from "@/components/marketing-home";
+import ClubBoardScreen from "@/components/club-board-screen";
+import ScoreboardLauncher from "@/components/scoreboard-launcher";
+import {BOARD_ID_PATTERN, manifestForPath} from "@/lib/pwa";
 import type { Metadata } from "next";
 import { appConfig } from "@/lib/config";
 export const dynamic = "force-dynamic";
@@ -12,6 +15,8 @@ export async function generateMetadata({ params }: Context): Promise<Metadata> {
     return {
       title: "DartFlow · Speelomgeving",
       robots: { index: false, follow: false },
+      appleWebApp: {capable: true, statusBarStyle: "black-translucent", title: path[0] === "scorebord" ? "DartFlow Scorebord" : path[0] === "baanscherm" ? "DartFlow Baanscherm" : "DartFlow Speler"},
+      icons: {icon: "/assets/pwa/player-192.png", apple: path[0] === "baanscherm" || path[0] === "scorebord" ? "/assets/pwa/scoreboard-180.png" : "/assets/pwa/player-180.png"},
     };
   return {
     title: "DartFlow | Online darten, live scorebord en darttoernooien",
@@ -45,9 +50,12 @@ export async function generateMetadata({ params }: Context): Promise<Metadata> {
 }
 export default async function Page({ params }: Context) {
   const path = (await params).path || [];
-  return path.length ? (
-    <DartflowApp />
-  ) : (
-    <MarketingHome origin={appConfig().origin} />
-  );
+  const manifest = manifestForPath(path);
+  const content = path[0] === 'baanscherm' && path.length === 2 && BOARD_ID_PATTERN.test(path[1])
+    ? <ClubBoardScreen boardId={path[1].toLowerCase()} />
+    : path[0] === 'scorebord' && path.length === 1
+      ? <ScoreboardLauncher />
+      : path.length ? <DartflowApp /> : <MarketingHome origin={appConfig().origin} />;
+  return <>{manifest && <link rel="manifest" href={manifest} crossOrigin="use-credentials" />}{content}</>;
+
 }

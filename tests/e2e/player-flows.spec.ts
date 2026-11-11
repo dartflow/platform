@@ -1,3 +1,4 @@
+import {openMatchDetails} from './helpers/score-console';
 import {test,expect,type BrowserContext,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import pg from 'pg';
@@ -39,7 +40,7 @@ test('mandatory profile completion and two-browser turn input cover home, hybrid
       await command(first,{type:'lobby.ready',id:lobby.id});await command(second,{type:'lobby.ready',id:lobby.id});
       const started=await command(first,{type:'lobby.start',id:lobby.id}),id=started.matchId;createdMatches.push(id);
       await matchAction(first,id,{type:'accept'});await matchAction(second,id,{type:'accept'});let state=await matchAction(first,id,{type:'start'});
-      await a.goto(`/wedstrijd/${id}`);await b.goto(`/wedstrijd/${id}`);
+      await a.goto(`/wedstrijd/${id}`);await b.goto(`/wedstrijd/${id}`);await openMatchDetails(a);await openMatchDetails(b);
       await expect(a.getByRole('heading',{name:'Noor Dart — Sam Dart'})).toBeVisible();
       await expect(a.getByLabel('Wedstrijd uitnodiging').getByText(`Wedstrijdcode: ${lobby.code}`,{exact:true})).toBeVisible();await expect(b.getByRole('heading',{name:'Noor Dart — Sam Dart'})).toBeVisible();
       await a.getByLabel('Bezoekscore',{exact:true}).fill('100');await a.getByRole('button',{name:'Score invoeren',exact:true}).click();

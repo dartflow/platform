@@ -34,7 +34,9 @@ Een netwerkfout bewaart de onbevestigde actie met haar oorspronkelijke ID. Een h
 
 Voor vrij spelen met een vaste verenigingsbaan gebruik je **Verenigingen → jouw vereniging → Banen → Baan toevoegen**. Elke baan heeft een permanente speel-QR en een afzonderlijk alleen-lezen baanscherm. Kies iedereen met een DartFlow-account of alleen verenigingsleden; een competitie of toernooi is hiervoor niet nodig. Zie [de handleiding voor verenigingsbanen](docs/verenigingsbanen.md).
 
-De volgende bronwijziging voegt korte uitnodigingen, camera wisselen, eigen beurtinvoer bij thuis/hybride en een verplichte scorebordnaam toe. De lokale controles, nog openstaande stagingacceptatie en uitrolvolgorde staan in [het rapport voor de spelersflows](docs/spelersflows-uitrol.md).
+Korte uitnodigingen, camera wisselen, eigen beurtinvoer bij thuis/hybride en een verplichte scorebordnaam staan beschreven in [het rapport voor de spelersflows](docs/spelersflows-uitrol.md), inclusief de uitgevoerde controles en openstaande fysieke acceptatie.
+
+Voor **DartFlow Speler**, een eigen installeerbaar Sprint-scherm per fysieke baan, de vaste **DartFlow Scorebord**-fallback en kioskherstart gebruik je [de installatiehandleiding](docs/installatie-speler-en-baanschermen.md). Actieve X01-partijen gebruiken één schermvullende scoreconsole voor solo, lokaal en online. De controles en stagingidentiteit staan in [het PWA-/Sprint-uitrolrapport](docs/pwa-sprint-uitrol.md).
 
 ## Controleren
 

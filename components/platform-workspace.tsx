@@ -10,6 +10,8 @@ import {
 import type { Overview, Profile, MatchView, ResultView, ClubBoardView } from "@/lib/types";
 import { ClubBoardQr } from "./club-board-screen";
 import MailWorkspace from "./mail-workspace";
+import ScoreConsole from "./score-console";
+import ScreenDeviceManager from "./screen-device-manager";
 import IntegrationsPanel from "./integrations-panel";
 import { MailPreferences } from "./mail-policy-panel";
 
@@ -70,7 +72,8 @@ type Result = {
 function navigate(path: string) {
   window.location.assign(new URL(path, window.location.origin).href);
 }
-type Command = (action: Action, entity?: Entity) => Promise<Result | undefined>;
+type ImmutableAttempt = {requestId:string;expectedRevision:number};
+type Command = (action: Action, entity?: Entity, attempt?: ImmutableAttempt) => Promise<Result | undefined>;
 
 function inviteDetails(value: string): { id?: string; code: string } {
   const input = value.trim();
@@ -404,6 +407,7 @@ export default function PlatformWorkspace({
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [online, setOnline] = useState(true);
+  const commandInFlight = useRef(false);
   const pendingRefresh = useRef<Promise<void> | null>(null);
   const refresh = useCallback(async (force = false) => {
     if (pendingRefresh.current) {
@@ -428,7 +432,7 @@ export default function PlatformWorkspace({
         setOnline(navigator.onLine);
       } catch (e) {
         setError(
-          e instanceof Error ? e.message : "De verbinding is onderbroken.",
+          e instanceof TypeError ? "De verbinding is onderbroken. Je laatst ontvangen stand blijft zichtbaar." : e instanceof Error ? e.message : "De verbinding is onderbroken.",
         );
         setOnline(navigator.onLine);
       }
@@ -445,15 +449,18 @@ export default function PlatformWorkspace({
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") void refresh();
     }, 2500);
-    const wake = () => void refresh();
+    const wake = () => {setOnline(navigator.onLine);if(navigator.onLine)void refresh();};
     window.addEventListener("online", wake);
+    window.addEventListener("offline", wake);
     return () => {
       clearInterval(timer);
       window.removeEventListener("online", wake);
+      window.removeEventListener("offline", wake);
     };
   }, [refresh]);
-  const command: Command = async (action, entity) => {
-    if (busy) return;
+  const command: Command = async (action, entity, attempt) => {
+    if (commandInFlight.current) return;
+    commandInFlight.current = true;
     setBusy(true);
     setError("");
     setNotice("");
@@ -462,8 +469,8 @@ export default function PlatformWorkspace({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          requestId: crypto.randomUUID(),
-          ...(entity ? { expectedRevision: entity.revision } : {}),
+          requestId: attempt?.requestId || crypto.randomUUID(),
+          ...(attempt ? {expectedRevision:attempt.expectedRevision} : entity ? { expectedRevision: entity.revision } : {}),
           action,
         }),
         signal: AbortSignal.timeout(15000),
@@ -481,9 +488,10 @@ export default function PlatformWorkspace({
         navigate(`/wedstrijd/${encodeURIComponent(result.matchId)}`);
       return result as Result;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "De actie is niet uitgevoerd.");
+      setError(e instanceof TypeError ? "De verbinding is onderbroken. Controleer de stand en probeer je bewaarde actie opnieuw." : e instanceof Error ? e.message : "De actie is niet uitgevoerd.");
       return undefined;
     } finally {
+      commandInFlight.current = false;
       setBusy(false);
     }
   };
@@ -550,7 +558,7 @@ export default function PlatformWorkspace({
       ) : page === "play" || page === "spelen" ? (
         <Play />
       ) : page === "training" ? (
-        <Training data={data} id={id} command={command} busy={busy} />
+        <Training data={data} id={id} command={command} busy={busy} error={error} online={online} />
       ) : page === "practice" || page === "lobby" ? (
         <Lobby data={data} id={id} command={command} busy={busy} />
       ) : page === "friends" ? (
@@ -970,16 +978,40 @@ function Training({
   id,
   command,
   busy,
+  error,
+  online,
 }: {
   data: Platform;
   id?: string;
   command: Command;
   busy: boolean;
+  error: string;
+  online: boolean;
 }) {
   const entity = data.trainings.find((e) => e.id === id);
   const [score, setScore] = useState("");
   const [double, setDouble] = useState(false);
   const [visitDarts, setVisitDarts] = useState("3");
+  const [consoleOpen,setConsoleOpen]=useState(true);
+  const [pendingScore,setPendingScore]=useState<(ImmutableAttempt & {action:Action})|null>(null);
+  const scoreSending=useRef(false);
+  const pendingKey=`dartflow-training-score:${data.profile.id}:${id || ''}`;
+  const draftKey=`dartflow-training-draft:${data.profile.id}:${id || ''}`;
+  useEffect(()=>{
+    try{
+      const saved=sessionStorage.getItem(pendingKey),draft=sessionStorage.getItem(draftKey);
+      if(saved){const pending=JSON.parse(saved) as ImmutableAttempt & {action:Action};if(pending.action.type==='training.score' && pending.action.id===id && typeof pending.requestId==='string' && Number.isSafeInteger(pending.expectedRevision)){setPendingScore(pending);setScore(String(pending.action.score??''));setDouble(pending.action.doubleConfirmed===true);setVisitDarts(String(pending.action.darts||3));}}
+      else if(draft)setScore(draft.replace(/\D/g,'').slice(0,3));
+    }catch{/* Private draft storage is optional. */}
+  },[pendingKey,draftKey,id]);
+  function updateTrainingScore(value:string){const next=value.replace(/\D/g,'').slice(0,3);setScore(next);setDouble(false);try{sessionStorage.setItem(draftKey,next);}catch{/* Optional draft storage. */}}
+  async function submitTrainingScore(){
+    if(!entity||scoreSending.current||busy)return;
+    const pending=pendingScore || {requestId:crypto.randomUUID(),expectedRevision:entity.revision,action:{type:'training.score',id:entity.id,score:number(score),darts:number(visitDarts,3),doubleConfirmed:double}};
+    scoreSending.current=true;setPendingScore(pending);try{sessionStorage.setItem(pendingKey,JSON.stringify(pending));}catch{/* The in-memory attempt still keeps its identity. */}
+    try{const result=await command(pending.action,entity,pending);if(result){setPendingScore(null);setScore('');setDouble(false);try{sessionStorage.removeItem(pendingKey);sessionStorage.removeItem(draftKey);}catch{/* Optional draft storage. */}}}finally{scoreSending.current=false;}
+  }
+
   if (!entity)
     return (
       <>
@@ -1077,6 +1109,13 @@ function Training({
     game.status === "finished";
   return (
     <>
+      {!finished && entity.state.mode !== 'around' && consoleOpen && <ScoreConsole title={entity.name} players={[{id:data.profile.id,name:data.profile.name,remaining:number(remain[0] ?? entity.state.target ?? entity.state.remaining,501)},...(entity.state.mode==='bot'&&remain.length>1?[{id:'dartbot',name:'Dartbot',remaining:number(remain[1])}]:[])]} active={number(game.turn,0)} score={score} onScore={updateTrainingScore} darts={number(visitDarts,3)} onDarts={value=>setVisitDarts(String(value))} finish={score!==''&&number(score)===number(remain[0]??entity.state.remaining??entity.state.target)} doubleConfirmed={double} onDoubleConfirmed={setDouble} canScore={!finished} busy={busy} disabled={busy||Boolean(pendingScore)} offline={!online} message={error || (pendingScore&&!busy?'Controleer de stand. Je bewaarde worp kan met hetzelfde actie-ID opnieuw worden verzonden.':'')} checkout={text(entity.state.checkout||game.checkout)} onBack={()=>setConsoleOpen(false)} onSubmit={()=>void submitTrainingScore()} options={<>
+        {pendingScore&&!busy&&<div className="notice"><p>Dezelfde bewaarde worp opnieuw verzenden boekt nooit een extra beurt.</p><Button onClick={()=>void submitTrainingScore()}>Zelfde worp opnieuw proberen</Button><Button onClick={()=>{setPendingScore(null);try{sessionStorage.removeItem(pendingKey);}catch{/* Optional storage. */}}}>Bewaarde worp verwerpen</Button></div>}
+        <Button disabled={busy||Boolean(pendingScore)||!Array.isArray(entity.state.undo)||!entity.state.undo.length} onClick={()=>void command({type:'training.undo',id:entity.id},entity)}>Laatste beurt terug</Button>
+        <Button disabled={busy||Boolean(pendingScore)} onClick={()=>void command({type:'training.finish',id:entity.id},entity)}>Training bewaren en beëindigen</Button>
+      </>} />}
+      {!finished && entity.state.mode !== 'around' && <Button primary onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</Button>}
+
       <Title
         title={entity.name}
         actions={
@@ -1171,23 +1210,7 @@ function Training({
             </>
           ) : (
             <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const result = await command(
-                  {
-                    type: "training.score",
-                    id: entity.id,
-                    score: number(score),
-                    darts: number(visitDarts, 3),
-                    doubleConfirmed: double,
-                  },
-                  entity,
-                );
-                if (result) {
-                  setScore("");
-                  setDouble(false);
-                }
-              }}
+              onSubmit={async (e) => {e.preventDefault();await submitTrainingScore();}}
             >
               <label className="field">
                 Beurtscore
@@ -1199,8 +1222,8 @@ function Training({
                   inputMode="numeric"
                   required
                   value={score}
-                  onChange={(e) => setScore(e.target.value)}
-                  disabled={finished || busy}
+                  onChange={(e) => updateTrainingScore(e.target.value)}
+                  disabled={finished || busy || Boolean(pendingScore)}
                 />
               </label>
               <label className="field">
@@ -1228,13 +1251,13 @@ function Training({
                   <Button
                     disabled={busy || finished}
                     key={n}
-                    onClick={() => setScore(String(n))}
+                    onClick={() => updateTrainingScore(String(n))}
                   >
                     {n}
                   </Button>
                 ))}
               </div>
-              <button className="button gold full" disabled={busy || finished}>
+              <button className="button gold full" disabled={busy || finished || Boolean(pendingScore)}>
                 {busy ? "Opslaan…" : "Score invoeren"}
               </button>
             </form>
@@ -1270,6 +1293,7 @@ function Training({
             <Button
               disabled={
                 busy ||
+                (finished && typeof entity.state.boardId === "string" && entity.state.boardHeld !== true) ||
                 (entity.state.mode === "around"
                   ? !Array.isArray(entity.state.rounds) ||
                     !entity.state.rounds.length
@@ -1294,6 +1318,7 @@ function Training({
         </section>
         <section className="panel">
           <h2>Trainingsoverzicht</h2>
+          {finished && typeof entity.state.boardId === "string" && entity.state.boardHeld !== true && <p className="muted-copy">Je training en historie zijn bewaard. De baan is weer vrij. Scan de vaste baan-QR om een volgende partij te beginnen.</p>}
           {entity.state.mode === "170" && (
             <p>
               Nog {Math.max(0, 9 - number(list(game.stats)[0]?.darts))} darts in
@@ -1773,7 +1798,8 @@ function ClubBoardCard({ board, command, busy }: { board: ClubBoardView; command
     <div className="section-heading"><h2>{board.name}</h2><span className="badge" data-live={board.occupied}>{board.blocked ? "Geblokkeerd" : board.occupied ? "Bezet" : "Vrij"}</span></div>
     <p>{board.access === "club" ? "Alleen leden van deze vereniging" : "Iedereen met een DartFlow-account"}</p>
     <ClubBoardQr boardId={board.id} />
-    <a className="button gold" href={board.screenUrl} target="_blank" rel="noopener noreferrer">Open alleen-lezen baanscherm ↗</a>
+    <a className="button gold" href={board.screenUrl} target="_blank" rel="noopener noreferrer">Open baanscherm ↗</a>
+    {board.canManage && <ScreenDeviceManager boardId={board.id} boardName={board.name} />}
     {board.canManage && <details className="club-board-settings"><summary>Baan beheren</summary><form onSubmit={event => { event.preventDefault(); void command({ type: "club-board.update", boardId: board.id, name, access }); }}><fieldset disabled={busy}><legend>Instellingen van {board.name}</legend><label className="field">Baannaam<input required maxLength={80} value={name} onChange={event => setName(event.target.value)} /></label><label className="field">Wie mag spelen?<select value={access} onChange={event => setAccess(event.target.value as 'all' | 'club')}><option value="all">Iedereen met een DartFlow-account</option><option value="club">Alleen leden van deze vereniging</option></select></label><button className="button gold">Baaninstellingen opslaan</button></fieldset></form><Button disabled={busy} onClick={() => void command({ type: "club-board.update", boardId: board.id, blocked: !board.blocked })}>{board.blocked ? "Baan vrijgeven" : "Baan blokkeren"}</Button></details>}
   </article>;
 }
@@ -2645,6 +2671,7 @@ function Competitions({
             )}
           </div>
           <div className="workspace-tabs">
+            {manager && <a href="#banen" onClick={()=>{document.querySelector<HTMLDetailsElement>(".competition-settings")?.setAttribute("open","");}}>Banen</a>}
             <a href="#programma">Programma</a>
             <a href="#deelnemers">Deelnemers</a>
             <a href="#stand">Stand</a>
@@ -3171,6 +3198,8 @@ function Operations({
               <a className="button ghost small" href={`/baan/${b.id}`}>
                 Telefoon / QR
               </a>
+              <a className="button ghost small" href={`/baanscherm/${b.id}`} target="_blank" rel="noopener noreferrer">Open baanscherm ↗</a>
+              {overview.permissions.canManage && <ScreenDeviceManager boardId={b.id} boardName={b.name} />}
               {b.matchId && (
                 <>
                   <a
@@ -4090,6 +4119,7 @@ function CompetitionControls({
           mogelijk. Geef lokale tijd op; de server bewaart UTC.
         </p>
       </Form>
+      <h2 id="banen">Toernooiregie · Banen</h2>
       {boards.map((board) => (
         <div className="workspace-row" key={board.id}>
           <div>
@@ -4102,6 +4132,8 @@ function CompetitionControls({
                   : "Vrij"}
             </small>
           </div>
+          <a className="button ghost small" href={`/baanscherm/${board.id}`} target="_blank" rel="noopener noreferrer">Open baanscherm ↗</a>
+          <ScreenDeviceManager boardId={board.id} boardName={board.name} />
           <div className="button-row">
             <Button
               disabled={busy || !!board.matchId}

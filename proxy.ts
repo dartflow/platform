@@ -20,4 +20,6 @@ export async function proxy(request:NextRequest) {
   await client.auth.getClaims();
   return response;
 }
-export const config={matcher:['/((?!_next/static|_next/image|assets|favicon.ico|api/health|api/screen|api/club-boards|baanscherm).*)']};
+// Display pages and their board-scoped device API never refresh a player session.
+// Their separate read-only capability is validated by the display endpoint.
+export const config={matcher:['/((?!_next/static|_next/image|assets|favicon.ico|sw\\.js|speler/manifest\\.webmanifest|scorebord|api/health|api/screen|api/club-boards|api/board-screens|baanscherm).*)']};

@@ -1,3 +1,4 @@
+import {openMatchDetails} from './helpers/score-console';
 import { test, expect, type Page } from "@playwright/test";
 import pg from "pg";
 import { randomUUID } from "node:crypto";
@@ -131,6 +132,7 @@ test("one physical QR binds persisted solo and two real local players to its rea
     .getByRole("button", { name: "Op deze baan starten", exact: true })
     .click();
   await expect(a).toHaveURL(/\/app\/training\/[a-f0-9-]{36}$/);
+  await openMatchDetails(a);
   await a.getByLabel("Beurtscore", { exact: true }).fill("180");
   await a.getByRole("button", { name: "Score invoeren", exact: true }).click();
   await expect(a.locator(".training-remaining")).toHaveText("321");
@@ -158,8 +160,10 @@ test("one physical QR binds persisted solo and two real local players to its rea
     "321",
   );
   await a.goto(`/baan/${boardId}`);
+  await openMatchDetails(a);
   await expect(a.locator(".training-remaining")).toHaveText("321");
   await a.reload();
+  await openMatchDetails(a);
   await expect(a.locator(".training-remaining")).toHaveText("321");
   await a
     .getByRole("button", {
@@ -233,6 +237,7 @@ test("one physical QR binds persisted solo and two real local players to its rea
   await a
     .getByRole("button", { name: "Wedstrijd starten", exact: true })
     .click();
+  await openMatchDetails(a);await openMatchDetails(b);
   await expect(a.locator(".score-form")).toBeVisible();
   await a.locator("#visit-score").fill("100");
   await a.getByRole("button", { name: "Score invoeren", exact: true }).click();

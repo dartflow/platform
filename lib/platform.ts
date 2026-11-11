@@ -82,7 +82,12 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
         if(Number(row.state.boardLeaseUntil??0)<=Date.now()||row.state.boardHeld!==true||occupied.rowCount)throw new DomainError('board_session_expired','Deze baanopstelling is verlopen. Scan de baan opnieuw; je training blijft bewaard.',409);
       }
       row.state = trainingAction(row.state, action);
-      if(typeof row.state.boardId==='string'){if(action.type==='training.finish')row.state.boardHeld=false;else row.state.boardLeaseUntil=Date.now()+30*60_000;}
+      if(typeof row.state.boardId==='string'){
+        // A natural checkout ends this physical session in the same transaction as its score.
+        // Its history stays intact; the released session cannot renew or undo its way onto a new game.
+        if(row.state.completed===true){row.state.boardHeld=false;row.state.boardLeaseUntil=0;}
+        else row.state.boardLeaseUntil=Date.now()+30*60_000;
+      }
       await save(client, row);
       result = { ok: true, id: row.id, entity: await view(client, row, actor) };
     } else result = await socialAction(client, actor, command) ?? await competitionAction(client, actor, command);

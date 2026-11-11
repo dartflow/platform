@@ -1,3 +1,4 @@
+import {openMatchDetails} from './helpers/score-console';
 import { test, expect, type Page, type BrowserContext } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import type { MatchView } from "../../lib/types";
@@ -65,7 +66,7 @@ test("club boards provide permanent registration QR and live read-only scoring w
     await expect(board).toBeVisible();
     const playUrl = await board.getByRole("link", { name: "Open deze baan ↗", exact: true }).getAttribute("href");
     expect(playUrl).toMatch(/^\/baan\/[a-f0-9-]{36}$/);
-    const screenUrl = await board.getByRole("link", { name: "Open alleen-lezen baanscherm", exact: false }).getAttribute("href");
+    const screenUrl = await board.getByRole("link", { name: "Open baanscherm", exact: false }).getAttribute("href");
     expect(screenUrl).toMatch(/^\/baanscherm\/[a-f0-9-]{36}$/);
     await expect(board.getByRole("img", { name: /QR-code:/ })).toHaveAttribute("src", /^data:image\/png/);
     await screen.goto(screenUrl!);
@@ -106,6 +107,7 @@ test("club boards provide permanent registration QR and live read-only scoring w
     await b.getByRole("button", { name: "Ik ben klaar om te spelen", exact: true }).click();
     await expect(a.getByRole("button", { name: "Wedstrijd starten", exact: true })).toBeEnabled();
     await a.getByRole("button", { name: "Wedstrijd starten", exact: true }).click();
+    await openMatchDetails(a);await openMatchDetails(b);
     await a.locator("#visit-score").fill("100");
     await a.getByRole("button", { name: "Score invoeren", exact: true }).click();
     await expect(screen.locator(".sprint-number").first()).toHaveText("201");
