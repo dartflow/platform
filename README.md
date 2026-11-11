@@ -49,6 +49,8 @@ Database- en browsertests gebruiken geïsoleerde synthetische fixtures in de lok
 
 ## GitHub en hosting
 
+De herbruikbare [DG Webservices-uitrolprocedure](docs/dg-webservices-uitrolprocedure.md) beschrijft de volledige route van dev-VPS naar staging en productie, inclusief Supabase, SSH, beheer en herstel. Gebruik voor nieuwe projecten het [projectintakeformulier en de startopdracht](docs/dg-webservices-projectintake.md).
+
 De **exacte GitHub-configuratie**, providerlocaties, callbacks en uitrolvolgorde staan in [docs/deployment.md](docs/deployment.md). De twee native hostcontracten zijn geïnstalleerd en geverifieerd (`nativeEnabled: true`); iedere release vereist daarnaast groene CI voor de exacte bron-SHA. De native route gebruikt geen zelf aan te maken GitHub-secrets; de GitHub-environments bevatten ieder vier publieke variabelen. Databasecredentials blijven in een immutable root-only hostbundel.
 
 De vastgelegde repository is `dartflow/platform`, branch `main`. Staging en productie op `dg-nxttrack-01` zijn via hun eigen workflows geactiveerd met bron-SHA `4634852c17cc7737bec246c0b48310e975a36920`. Productie is afzonderlijk gebouwd met eigen configuratie, na verificatie van de gezonde staging-SHA. Het acceptatierapport scheidt de daadwerkelijke uitrol van de nog open gebruikersacceptatie. Het algemene SSH-beheeraccount met geldigheid tot 11 november 2027 staat beschreven in [SSH-beheer](docs/ssh-management.md).
