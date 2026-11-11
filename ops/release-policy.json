@@ -1,9 +1,12 @@
 {
-  "repository": null,
-  "integrationBranch": null,
+  "repository": "dartflow/platform",
+  "integrationBranch": "main",
   "requiredChecks": [{"workflow":"ci.yml","jobs":["Verify"],"events":["push"]}],
-  "nativeEnabled": false,
+  "nativeEnabled": true,
+  "environment": "staging",
+  "deploymentWorkflow": "deploy-staging.yml",
   "targetHost": "dg-nxttrack-01",
   "site": "dartflow-staging",
-  "origin": "https://staging.dartflow.nl"
+  "origin": "https://staging.dartflow.nl",
+  "supabaseProjectRef": "dsnqnvbckkqpzadblshu"
 }

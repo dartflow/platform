@@ -1,0 +1,26 @@
+{
+  "environment": "production",
+  "supabaseProject": "wlrnowuownakqqgjxnbb",
+  "schemaVersion": 1,
+  "privateTables": 18,
+  "rowLevelSecurityAllTables": true,
+  "runtimeRole": "dartflow_app",
+  "roleFlags": {
+    "superuser": false,
+    "createDb": false,
+    "createRole": false,
+    "inherit": false,
+    "bypassRls": false,
+    "login": true
+  },
+  "runtimeLoginVerifiedOnVps": true,
+  "tls": {
+    "mode": "verify-full",
+    "verifiedCertificateAndHostname": true,
+    "caBundleSha256": "6ecd239038a7db063a6619b71742372ecfe06c0b0ec12a9993fee4445bf0d4d6"
+  },
+  "securityAdvisors": [],
+  "authUsersBefore": 0,
+  "fixtureDataAdded": false,
+  "plaintextCredentialLeftVps": false
+}

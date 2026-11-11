@@ -2,12 +2,25 @@ import {pathToFileURL} from 'node:url';
 export class ReleaseGateError extends Error {}
 const requireValue=(condition,message)=>{if(!condition)throw new ReleaseGateError(message);};
 const shaPattern=/^[a-f0-9]{40}$/;
+async function stagingJson(response) {
+  requireValue(response.body,'Accepted staging release body is missing');
+  const reader=response.body.getReader(),chunks=[];let bytes=0;
+  while(true) {
+    const {done,value}=await reader.read();if(done)break;
+    bytes+=value.byteLength;
+    if(bytes>65536){await reader.cancel();throw new ReleaseGateError('Accepted staging release body exceeds the verification limit');}
+    chunks.push(value);
+  }
+  try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}
+  catch{throw new ReleaseGateError('Accepted staging release body is invalid');}
+}
 export function validateReleaseInput(input) {
   requireValue(input && typeof input==='object','Release policy is missing');
   requireValue(typeof input.repository==='string' && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(input.repository),'Verified repository identity is required');
   requireValue(typeof input.integrationBranch==='string' && /^[A-Za-z0-9][A-Za-z0-9_./-]{0,120}$/.test(input.integrationBranch) && !input.integrationBranch.includes('..') && !input.integrationBranch.endsWith('/'),'Verified integration branch is required');
   requireValue(shaPattern.test(input.sha || ''),'Full lowercase 40-character commit SHA is required');
   requireValue(typeof input.githubToken==='string' && input.githubToken.length>0 && input.githubToken.length<=16384 && !/[\r\n]/.test(input.githubToken),'Read-only GitHub credential is required');
+  requireValue(input.deploymentWorkflow===undefined || ['deploy-staging.yml','deploy-production.yml'].includes(input.deploymentWorkflow),'Fixed deployment workflow is invalid');
   if(input.deploymentRun!==undefined) {
     const run=input.deploymentRun;
     requireValue(run && typeof run==='object' && Object.keys(run).length===2 && /^[1-9][0-9]{0,19}$/.test(run.id || '') && typeof run.id==='string' && Number.isSafeInteger(Number(run.id)) && Number.isSafeInteger(run.attempt) && run.attempt>0,'Deployment run identity is invalid');
@@ -72,8 +85,9 @@ export async function verifyRelease(input,{fetchFn=fetch}={}) {
   let deploymentRunUrl;
   if(input.deploymentRun) {
     const {id,attempt}=input.deploymentRun;
-    const workflow=await api(`${root}/actions/workflows/deploy-staging.yml`);
-    requireValue(workflow.path==='.github/workflows/deploy-staging.yml' && workflow.state==='active' && Number.isSafeInteger(workflow.id),'Native deployment workflow identity differs');
+    const deploymentWorkflow=input.deploymentWorkflow || 'deploy-staging.yml';
+    const workflow=await api(`${root}/actions/workflows/${deploymentWorkflow}`);
+    requireValue(workflow.path===`.github/workflows/${deploymentWorkflow}` && workflow.state==='active' && Number.isSafeInteger(workflow.id),'Native deployment workflow identity differs');
     const run=await api(`${root}/actions/runs/${id}`);
     requireValue(run.id===Number(id) && run.run_attempt===attempt && run.workflow_id===workflow.id && run.event==='workflow_dispatch' && run.head_branch===integrationBranch && run.head_repository?.full_name===repository && (!run.repository || run.repository.full_name===repository) && run.status==='in_progress' && run.conclusion===null && shaPattern.test(run.head_sha || ''),'Native deployment run is missing or differs');
     if(run.head_sha!==branch.commit.sha) {
@@ -82,7 +96,25 @@ export async function verifyRelease(input,{fetchFn=fetch}={}) {
     }
     deploymentRunUrl=`https://github.com/${repository}/actions/runs/${id}`;
   }
-  return {status:'passed',repository,repositoryId:repo.id,integrationBranch,branchHead:branch.commit.sha,sha,ciRunUrl:ciRuns[0].url,ciRuns,...(deploymentRunUrl?{deploymentRunUrl}: {})};
+  let stagingEvidence;
+  if(input.deploymentWorkflow==='deploy-production.yml') {
+    const snapshots=[];
+    for(const endpoint of ['/api/health','/api/ready']) {
+      let response,value;
+      try {
+        response=await fetchFn(new URL(endpoint,'https://staging.dartflow.nl'),{headers:{Accept:'application/json','Cache-Control':'no-cache'},cache:'no-store',signal:AbortSignal.timeout(15000),redirect:'error'});
+        requireValue(response.ok,'Accepted staging release is unavailable');
+        value=await stagingJson(response);
+      }catch(error){throw error instanceof ReleaseGateError?error:new ReleaseGateError('Accepted staging release could not be verified');}
+      requireValue(value?.sha===sha && value.status===(endpoint==='/api/ready'?'ready':'ok'),'Production must use the exact healthy staging SHA');
+      requireValue(/^[1-9][0-9]{0,19}-[1-9][0-9]{0,9}$/.test(value.releaseId || '') && /^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/.test(value.buildConfigId || '') && value.buildConfigId===value.runtimeConfigId,'Accepted staging release identity is incomplete');
+      requireValue(endpoint==='/api/ready' ? value.database==='ok' && value.auth==='reachable' : value.mode==='supabase','Staging must use its real configured backend');
+      snapshots.push(value);
+    }
+    requireValue(snapshots[0].releaseId===snapshots[1].releaseId && snapshots[0].buildConfigId===snapshots[1].buildConfigId,'Staging changed during promotion verification');
+    stagingEvidence={origin:'https://staging.dartflow.nl',sha,releaseId:snapshots[0].releaseId,configId:snapshots[0].buildConfigId};
+  }
+  return {status:'passed',repository,repositoryId:repo.id,integrationBranch,branchHead:branch.commit.sha,sha,ciRunUrl:ciRuns[0].url,ciRuns,...(deploymentRunUrl?{deploymentRunUrl}: {}),...(stagingEvidence?{stagingEvidence}:{})};
 }
 export async function readJsonInput(stream=process.stdin) {
   const chunks=[];let size=0;

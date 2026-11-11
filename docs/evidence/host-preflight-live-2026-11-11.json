@@ -1,0 +1,536 @@
+{
+  "recordedAt": "2026-11-11T08:58:15.563Z",
+  "scope": "Read-only target-host preflight; no host files/services/accounts/configuration modified; no runtime or API credentials read",
+  "hostname": "dg-nxttrack-01",
+  "kernel": "6.8.0-147-generic",
+  "architecture": "x86_64",
+  "os": {
+    "NAME": "Ubuntu",
+    "VERSION_ID": "24.04",
+    "VERSION": "24.04.5 LTS (Noble Numbat)",
+    "ID": "ubuntu"
+  },
+  "toolchain": {
+    "systemd": {
+      "code": 0,
+      "text": [
+        "systemd 255 (255.4-1ubuntu8.18)",
+        "+PAM +AUDIT +SELINUX +APPARMOR +IMA +SMACK +SECCOMP +GCRYPT -GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 -IDN +IPTC +KMOD +LIBCRYPTSETUP +LIBFDISK +PCRE2 -PWQUALITY +P11KIT +QRENCODE +TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD -BPF_FRAMEWORK -XKBCOMMON +UTMP +SYSVINIT default-hierarchy=unified"
+      ]
+    },
+    "node": {
+      "code": 0,
+      "text": [
+        "v24.18.0"
+      ]
+    },
+    "npm": {
+      "code": 0,
+      "text": [
+        "11.16.0"
+      ]
+    },
+    "caddy": {
+      "code": 0,
+      "text": [
+        "v2.11.8 h1:E2pv1BoZ5bJaWqFkU6QvLa21iGAX8bDzlEQG4dDQ/Vc="
+      ]
+    }
+  },
+  "pinned_nodes": [
+    {
+      "path": "/opt/node-v24.18.0-linux-x64/bin/node",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o755",
+      "type": "file",
+      "link": null
+    }
+  ],
+  "services": {
+    "code": 0,
+    "text": "  actions.runner.milobingo-platform.dg-nxttrack-01-nxttrack-staging.service loaded    active   running GitHub Actions Runner (milobingo-platform.dg-nxttrack-01-nxttrack-staging)\n  caddy.service                                                             loaded    active   running Caddy\n  milobingo-staging.service                                                 loaded    active   running Milo & Friends BingoShow staging"
+  },
+  "service_state": {
+    "milobingo-staging.service": {
+      "code": 0,
+      "text": "MainPID=52104\nUser=app-mil-stg\nGroup=app-mil-stg\nActiveState=active\nSubState=running\nFragmentPath=/etc/systemd/system/milobingo-staging.service"
+    },
+    "dartflow-staging.service": {
+      "code": 0,
+      "text": "MainPID=0\nUser=\nGroup=\nActiveState=inactive\nSubState=dead\nFragmentPath="
+    },
+    "dartflow-production.service": {
+      "code": 0,
+      "text": "MainPID=0\nUser=\nGroup=\nActiveState=inactive\nSubState=dead\nFragmentPath="
+    },
+    "caddy.service": {
+      "code": 0,
+      "text": "MainPID=3243\nUser=caddy\nGroup=caddy\nActiveState=active\nSubState=running\nFragmentPath=/usr/lib/systemd/system/caddy.service"
+    }
+  },
+  "accounts": [
+    {
+      "name": "run-mil-stg",
+      "uid": 1001,
+      "gid": 1002,
+      "home": "/home/run-mil-stg",
+      "shell": "/bin/bash",
+      "groups": [
+        "run-mil-stg",
+        "dg-build"
+      ]
+    },
+    {
+      "name": "app-mil-stg",
+      "uid": 996,
+      "gid": 987,
+      "home": "/srv/sites/milobingo-staging",
+      "shell": "/usr/sbin/nologin",
+      "groups": [
+        "app-mil-stg"
+      ]
+    },
+    {
+      "name": "build-mil-stg",
+      "uid": 990,
+      "gid": 983,
+      "home": "/var/lib/dg-build/milobingo-staging",
+      "shell": "/usr/sbin/nologin",
+      "groups": [
+        "build-mil-stg"
+      ]
+    },
+    {
+      "name": "codex-dartflow",
+      "uid": 1005,
+      "gid": 1006,
+      "home": "/home/codex-dartflow",
+      "shell": "/bin/bash",
+      "groups": [
+        "codex-dartflow"
+      ]
+    }
+  ],
+  "listening": {
+    "code": 0,
+    "text": "LISTEN 0      4096                            127.0.0.53%lo:53    0.0.0.0:*\nLISTEN 0      4096                                127.0.0.1:2019  0.0.0.0:*\nLISTEN 0      511                                 127.0.0.1:4173  0.0.0.0:*\nLISTEN 0      4096                 100.111.66.17%tailscale0:55418 0.0.0.0:*\nLISTEN 0      4096                                  0.0.0.0:22    0.0.0.0:*\nLISTEN 0      4096                               127.0.0.54:53    0.0.0.0:*\nLISTEN 0      4096   [fd7a:115c:a1e0::6e32:4212]%tailscale0:46115    [::]:*\nLISTEN 0      4096                                     [::]:22       [::]:*\nLISTEN 0      4096                                        *:80          *:*\nLISTEN 0      4096                                        *:443         *:*"
+  },
+  "memory": {
+    "code": 0,
+    "text": "total        used        free      shared  buff/cache   available\nMem:      8121946112   865603584  2369908736    33345536  5244895232  7256342528\nSwap:              0           0           0"
+  },
+  "cpu": {
+    "logical": 4,
+    "load": [
+      0,
+      0,
+      0
+    ]
+  },
+  "disk": {
+    "/": {
+      "freeBytes": 143155511296,
+      "freeInodes": 9743096
+    },
+    "/srv": {
+      "freeBytes": 143155511296,
+      "freeInodes": 9743096
+    },
+    "/var/lib": {
+      "freeBytes": 143155511296,
+      "freeInodes": 9743096
+    }
+  },
+  "build_locks": [
+    {
+      "path": "/run/lock/dg-build.lock",
+      "owner": "root",
+      "group": "dg-build",
+      "mode": "0o660",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/run/lock/dartflow-staging.deploy.lock",
+      "exists": false
+    },
+    {
+      "path": "/run/lock/dartflow-production.deploy.lock",
+      "exists": false
+    }
+  ],
+  "locks_current": {
+    "code": 0,
+    "text": ""
+  },
+  "site_paths": [
+    {
+      "path": "/srv/sites/milobingo-staging",
+      "owner": "root",
+      "group": "app-mil-stg",
+      "mode": "0o750",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/srv/sites/milobingo-staging/current",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o777",
+      "type": "symlink",
+      "link": "releases/729d962b7401-42804436092-1"
+    },
+    {
+      "path": "/srv/sites/dartflow-staging",
+      "exists": false
+    },
+    {
+      "path": "/srv/sites/dartflow-staging/current",
+      "exists": false
+    },
+    {
+      "path": "/srv/sites/dartflow-production",
+      "exists": false
+    },
+    {
+      "path": "/srv/sites/dartflow-production/current",
+      "exists": false
+    },
+    {
+      "path": "/var/lib/dg-build",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o755",
+      "type": "directory",
+      "link": null
+    }
+  ],
+  "dartflow_config_metadata": [
+    {
+      "path": "/etc/dg-sites/dartflow-staging",
+      "exists": false
+    },
+    {
+      "path": "/etc/dg-sites/dartflow-production",
+      "exists": false
+    }
+  ],
+  "caddy_metadata": [
+    {
+      "path": "/etc/caddy/Caddyfile",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o644",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/etc/caddy/sites-enabled",
+      "exists": false
+    },
+    {
+      "path": "/etc/caddy/sites-available",
+      "exists": false
+    }
+  ],
+  "caddy_routes": [
+    {
+      "path": "/etc/caddy/Caddyfile",
+      "routes": [
+        "import /etc/caddy/sites/*.caddy"
+      ]
+    },
+    {
+      "path": "/etc/caddy/Caddyfile",
+      "routes": [
+        "import /etc/caddy/sites/*.caddy"
+      ]
+    },
+    {
+      "path": "/etc/caddy/sites/milobingo-staging.caddy",
+      "routes": [
+        "milo-staging.dgwebservices.nl {",
+        "reverse_proxy 127.0.0.1:4173 {"
+      ]
+    }
+  ],
+  "runner_service_metadata": {
+    "code": 0,
+    "text": "WorkingDirectory=/home/run-mil-stg\nUser=run-mil-stg\nGroup=\nActiveState=active\nSubState=running\nFragmentPath=/etc/systemd/system/actions.runner.milobingo-platform.dg-nxttrack-01-nxttrack-staging.service"
+  },
+  "runner_config_metadata": [
+    {
+      "path": "/home/run-mil-stg/.runner",
+      "owner": "run-mil-stg",
+      "group": "run-mil-stg",
+      "mode": "0o664",
+      "type": "file",
+      "link": null
+    }
+  ],
+  "host_network_addresses": [
+    {
+      "interface": "lo",
+      "addresses": [
+        {
+          "family": "inet",
+          "address": "127.0.0.1",
+          "scope": "host"
+        },
+        {
+          "family": "inet6",
+          "address": "::1",
+          "scope": "host"
+        }
+      ]
+    },
+    {
+      "interface": "eth0",
+      "addresses": [
+        {
+          "family": "inet",
+          "address": "128.140.93.95",
+          "scope": "global"
+        },
+        {
+          "family": "inet6",
+          "address": "2a01:4f8:c015:60a6::1",
+          "scope": "global"
+        },
+        {
+          "family": "inet6",
+          "address": "fe80::9000:8ff:fe96:7c48",
+          "scope": "link"
+        }
+      ]
+    },
+    {
+      "interface": "tailscale0",
+      "addresses": [
+        {
+          "family": "inet",
+          "address": "100.111.66.17",
+          "scope": "global"
+        },
+        {
+          "family": "inet6",
+          "address": "fd7a:115c:a1e0::6e32:4212",
+          "scope": "global"
+        },
+        {
+          "family": "inet6",
+          "address": "fe80::5f42:c020:fb3c:1a24",
+          "scope": "link"
+        }
+      ]
+    }
+  ],
+  "dns": {
+    "milo-staging.dgwebservices.nl": [
+      "128.140.93.95"
+    ],
+    "staging.dartflow.nl": [
+      "128.140.93.95"
+    ],
+    "dartflow.nl": [
+      "128.140.93.95"
+    ],
+    "www.dartflow.nl": [
+      "128.140.93.95"
+    ]
+  },
+  "milo_https": [
+    {
+      "url": "https://milo-staging.dgwebservices.nl/",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 4834,
+      "json": false
+    },
+    {
+      "url": "https://milo-staging.dgwebservices.nl/api/health",
+      "status": 200,
+      "contentType": "application/json",
+      "bytes": 155,
+      "identity": {
+        "status": "ok",
+        "releaseId": "42804436092-1"
+      },
+      "json": true
+    },
+    {
+      "url": "https://milo-staging.dgwebservices.nl/api/ready",
+      "status": 401,
+      "error": "HTTPError"
+    }
+  ],
+  "milo_loopback": [
+    {
+      "url": "http://127.0.0.1:4173/api/health",
+      "status": 200,
+      "contentType": "application/json",
+      "bytes": 155,
+      "identity": {
+        "status": "ok",
+        "releaseId": "42804436092-1"
+      },
+      "json": true
+    },
+    {
+      "url": "http://127.0.0.1:4173/api/ready",
+      "status": 403,
+      "error": "HTTPError"
+    }
+  ],
+  "milo_release_metadata": [
+    {
+      "path": "/srv/sites/milobingo-staging/current/.release.json",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o600",
+      "type": "file",
+      "link": null,
+      "identity": {
+        "sha": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+        "version": 1
+      }
+    },
+    {
+      "path": "/srv/sites/milobingo-staging/current/release-manifest.json",
+      "exists": false
+    },
+    {
+      "path": "/srv/sites/milobingo-staging/current/package.json",
+      "exists": false
+    }
+  ],
+  "wrapper_metadata": [
+    {
+      "path": "/usr/local/bin/dg-site-deploy",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o755",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/usr/local/sbin/dg-site-deploy",
+      "exists": false
+    },
+    {
+      "path": "/usr/local/libexec/dg-site-deploy",
+      "exists": false
+    },
+    {
+      "path": "/usr/local/libexec/milobingo-deploy-helper",
+      "exists": false
+    }
+  ],
+  "milo_health_public": {
+    "keys": [
+      "checks",
+      "configVersion",
+      "releaseId",
+      "revision",
+      "status"
+    ],
+    "safeIdentity": {
+      "status": "ok",
+      "revision": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+      "releaseId": "42804436092-1"
+    }
+  },
+  "milo_health_loopback": {
+    "keys": [
+      "checks",
+      "configVersion",
+      "releaseId",
+      "revision",
+      "status"
+    ],
+    "safeIdentity": {
+      "status": "ok",
+      "revision": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+      "releaseId": "42804436092-1"
+    }
+  },
+  "milo_runner": {
+    "configKeys": [
+      "agentId",
+      "agentName",
+      "gitHubUrl",
+      "poolId",
+      "poolName",
+      "serverUrl",
+      "serverUrlV2",
+      "useV2Flow",
+      "workFolder"
+    ],
+    "identity": {
+      "agentId": 21,
+      "agentName": "dg-nxttrack-01-nxttrack-staging",
+      "poolId": 1,
+      "poolName": "Default",
+      "gitHubUrl": "https://github.com/milobingo/platform",
+      "workFolder": "_work"
+    }
+  },
+  "port_probes": {
+    "4173": {
+      "connectCode": 0,
+      "meaning": "listening"
+    },
+    "4174": {
+      "connectCode": 111,
+      "meaning": "connection_refused_no_listener"
+    },
+    "4175": {
+      "connectCode": 111,
+      "meaning": "connection_refused_no_listener"
+    }
+  },
+  "miloPublicHealth": {
+    "status": "ok",
+    "revision": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+    "releaseId": "42804436092-1",
+    "configVersion": "staging-2026-11-05-v1",
+    "checks": [
+      "http"
+    ]
+  },
+  "recommendations": {
+    "staging": {
+      "loopback": "127.0.0.1:4174",
+      "portState": "No TCP listener observed; connection refused at measurement time",
+      "sitePath": "/srv/sites/dartflow-staging",
+      "service": "dartflow-staging.service"
+    },
+    "production": {
+      "loopback": "127.0.0.1:4175",
+      "portState": "No TCP listener observed; connection refused at measurement time",
+      "sitePath": "/srv/sites/dartflow-production",
+      "service": "dartflow-production.service"
+    },
+    "preserve": {
+      "miloLoopback": "127.0.0.1:4173",
+      "miloRelease": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+      "miloConfig": "staging-2026-11-05-v1",
+      "caddyImports": "/etc/caddy/sites/*.caddy",
+      "globalBuildLock": "/run/lock/dg-build.lock"
+    },
+    "buildBudget": {
+      "memoryMax": "3G",
+      "cpuQuota": "100%",
+      "requires": "Use existing host-wide nonblocking build lock; verify capacity immediately before building"
+    }
+  },
+  "unverified": [
+    "Actual GitHub runner labels require GitHub-side verification; local .runner identity is not label evidence.",
+    "Dartflow staging and production app/backend/auth/core-flow health are not yet verified.",
+    "Milo /api/ready denies unauthenticated requests (HTTPS401, loopback403); readiness was not bypassed or asserted successful.",
+    "Port availability is a point-in-time observation and must be checked again before service activation.",
+    "DNS resolution was measured through the target host resolver; authoritative DNS TTL/ownership and new Dartflow TLS issuance were not yet checked.",
+    "No Dartflow config directory existed at the measured paths; no alternative secret delivery path was searched."
+  ]
+}

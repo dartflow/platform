@@ -1,6 +1,6 @@
 # Read-only releaseonderzoek: DartFlow en Milo
 
-Momentopname: **11 november 2026**, Europe/Amsterdam. Het repositoryonderzoek gebruikt GitHub-GET-verzoeken en lokale leesacties. Aanvullend heeft de hoofdtaak na bronreview de bestaande veilige hostinspectieworkflow gestart: [Inspect Milo staging 42943887248](https://github.com/milobingo/platform/actions/runs/42943887248), geslaagd. Deze dispatch heeft geen release geactiveerd. Er zijn geen remotes, branches, runners, GitHub-instellingen of hostconfiguraties gewijzigd. Dit document bevat geen credentialwaarden.
+**Historisch onderzoek van 11 november 2026**, Europe/Amsterdam. In een latere geautoriseerde fase zijn de echte repository `dartflow/platform`, integratiebranch `main`, beheer-SSH/sudo en afzonderlijke staging-/productieprojecten beschikbaar gekomen. De oude ontbrekende-identiteitconclusies hieronder horen bij de eerste momentopname; actuele configuratie staat in `docs/deployment.md` en beide `ops/release-policy*.json`-bestanden. Het oorspronkelijke onderzoek gebruikte GitHub-GET-verzoeken en lokale leesacties, plus de vooraf beoordeelde veilige inspectiedispatch [42943887248](https://github.com/milobingo/platform/actions/runs/42943887248). Die inspectie activeerde geen release of hostconfiguratie. Dit document bevat geen credentialwaarden.
 
 ## DartFlow: doelrepository nog niet vastgesteld
 

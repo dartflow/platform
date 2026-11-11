@@ -1,14 +1,28 @@
 # DartFlow native broker: vast contract en installatiestatus
 
-**11 november 2026 — lokaal geïmplementeerd, niet op de VPS geïnstalleerd.** De actieve workflowbestanden bestaan, maar `ops/release-policy.json` bevat nog `repository: null`, `integrationBranch: null`, `nativeEnabled: false`. De workflow stopt daardoor vóór de dedicated runner. De echte repository, hostbootstraptoegang en eigen stagingbackend ontbreken; DNS wijst nog verkeerd. Zie `docs/deployment.md` voor de praktische installatie-/releaseprocedure en `docs/host-inventory.md` voor actuele metingen.
+De vaste repository/integratiebranch zijn **`dartflow/platform` / `main`**. De gebruiker heeft staging én productie op `dg-nxttrack-01` geautoriseerd; beheer-SSH/sudo en twee eigen backendprojecten zijn beschikbaar. `ops/release-policy.json` en `ops/release-policy.production.json` beschrijven de afzonderlijke omgevingen. Elke `nativeEnabled` blijft `false` totdat de hoofdtaak de betreffende hostbootstrap heeft geverifieerd. Actieve release-/installatieresultaten worden afzonderlijk vastgelegd; een gerenderd bestand is geen installatiebewijs. Zie `docs/deployment.md` voor beide procedures en het acceptatierapport voor de werkelijk behaalde status.
 
 ## Vaste scope
 
-De nieuwe broker bedient uitsluitend host `dg-nxttrack-01`, site `/srv/sites/dartflow-staging` en service `dartflow-staging.service`. Nieuwe voorgestelde identiteiten zijn `run-dart-stg`, `build-dart-stg`, `app-dart-stg`; zij zijn nog niet aangemaakt. De runnernaam wordt `dg-nxttrack-01-dartflow-staging` en selectielabels worden `self-hosted,Linux,X64,dg-nxttrack-01,dartflow,staging`. Werkelijke UID/GID's, runnerregistratie en poort worden pas na inventarisatie vastgelegd. `4174` was op 03:08 CET niet gebonden, maar is niet gereserveerd. `4173` blijft Milo's poort.
+`infra/staging/render-deployer.py` maakt twee afzonderlijke vaste brokervarianten voor review; het script installeert of activeert ze niet. De geïnstalleerde runnerinterface heeft geen omgevingskeuze.
+
+| Grens | Staging | Productie |
+|---|---|---|
+| Site/service | `dartflow-staging` | `dartflow-production` |
+| Origin | `https://staging.dartflow.nl` | `https://dartflow.nl` |
+| Backendproject | `dsnqnvbckkqpzadblshu` | `wlrnowuownakqqgjxnbb` |
+| Runner/build/app | `run-dart-stg` / `build-dart-stg` / `app-dart-stg` | `run-dart-prd` / `build-dart-prd` / `app-dart-prd` |
+| Runnernaam | `dg-nxttrack-01-dartflow-staging` | `dg-nxttrack-01-dartflow-production` |
+| Extra runnerlabels | `dg-nxttrack-01,dartflow,staging` | `dg-nxttrack-01,dartflow,production` |
+| Nieuwe contractpoort | `4174` | `4175` |
+
+Beide varianten zijn aan host `dg-nxttrack-01` gebonden. Sitepaden zijn `/srv/sites/<site>`, services `<site>.service`. Werkelijke UID/GID's, registratie en poortbezetting worden bij de bevoegde bootstrap gecontroleerd en vastgelegd. `4173` blijft Milo's poort.
 
 Milo's `/usr/local/bin/dg-site-deploy` en helper blijven ongewijzigd. Hun actuele entryhash en beperkte sudo-policy zijn via readonly-run [42943887248](https://github.com/milobingo/platform/actions/runs/42943887248) bevestigd. DartFlow krijgt een aparte entry en helper; hij gebruikt uitsluitend dezelfde bestaande globale buildlock.
 
-## Geïnstalleerde grens na bevoegde bootstrap
+## Vaste installatiebestemmingen
+
+Onderstaande stagingpaden blijven behouden. De productierender gebruikt eigen bestanden: entry `/usr/local/bin/dg-dartflow-production-deploy`, helper `/usr/local/libexec/dg-dartflow-production-deploy-helper`, gate `dartflow-production-release-gate.mjs`, extractor `dartflow-production-extract-source.py` en guardian `dartflow-production-lock-guardian.py` onder `/usr/local/libexec`. De retrycopy heet `dartflow-production-retry-deploy.mjs`. Rootpolicy/configbundels staan onder `/etc/dg-sites/dartflow-production/`; alle modes en bevoegdheidsgrenzen gelden afzonderlijk voor beide omgevingen.
 
 | Object | Vast pad / regel |
 |---|---|
@@ -29,6 +43,8 @@ De entry accepteert exact:
 ```text
 dg-dartflow-deploy deploy <lowercase-full-sha> <numeric-run-id>-<attempt> <config_id>
 dg-dartflow-deploy rollback <sha12>-<numeric-run-id>-<attempt>
+dg-dartflow-production-deploy deploy <lowercase-full-sha> <numeric-run-id>-<attempt> <config_id>
+dg-dartflow-production-deploy rollback <sha12>-<numeric-run-id>-<attempt>
 ```
 
 Er is geen invoer voor site, shellopdracht, service, repository-URL, poort of pad. `config_id` is 1–96 tekens met uitsluitend letters/cijfers/punt/underscore/koppelteken en een alfanumeriek begin. Deployment ontvangt begrensde JSON met alleen `githubToken` op stdin; rollback ontvangt `{}`. Het token is het standaard kortlevende workflowtoken. Geen PAT, appsecret of inherited provideromgeving wordt doorgegeven. De helper controleert host, rootprivilege, `SUDO_USER/UID/GID`, vaste argumenten en de rootpolicy opnieuw.
@@ -42,7 +58,9 @@ De hosted workflow draait eerst de vertrouwde gate, vóór applicatiecheckout of
 - Iedere vereiste job in de exacte runpoging moet uniek aanwezig zijn op dezelfde SHA, met `completed/success`. Ontbrekend, skipped, cancelled, failure of pending weigert.
 - De gate controleert de run opnieuw om een gewijzigde poging/status tijdens de verificatie te weigeren. Metadatarequests zijn gepagineerd en begrensd.
 
-De helper levert ook deployrun-ID en poging aan de rootgate. Deze moet een bestaande lopende `workflow_dispatch` van de eigen vaste `deploy-staging.yml` op de integratiebranch zijn, met overeenkomende huidige poging en toegestane controlbron. GitHub geeft de dispatchinputs niet via deze API terug; de controle is dus geen cryptografisch bewijs dat het SHA-inputveld bij de run hoort. De SHA zelf wordt onafhankelijk exact tegen CI en branchafstamming getoetst.
+De helper levert ook zijn vaste workflowidentiteit, deployrun-ID en poging aan de rootgate. Dit moet een bestaande lopende `workflow_dispatch` van `deploy-staging.yml` respectievelijk `deploy-production.yml` op `main` zijn, met overeenkomende huidige poging en toegestane controlbron. GitHub geeft de dispatchinputs niet via deze API terug; de controle is dus geen cryptografisch bewijs dat het SHA-inputveld bij de run hoort. De SHA zelf wordt onafhankelijk exact tegen CI en branchafstamming getoetst.
+
+Productiepromotie controleert hosted én in de productie-rootgate dat de publieke staging-health/readiness exact dezelfde kandidaat-SHA, consistente release-/config-ID's, Supabase-mode en database/Auth-readiness geven. De request-URL's staan vast; GitHub-credentials worden niet naar staging gestuurd, redirects worden geweigerd en de JSON-body is begrensd. De productieomgeving bouwt deze SHA opnieuw met haar eigen backendconfiguratie; er wordt geen stagingartifact gekopieerd.
 
 De rootgate is werkelijk alleen-lezen beproefd tegen Milo's bestaande bekende groene bron `729d962b7401b100ce9cacb94ce4e4da16a699f2` en [CI 42802522209](https://github.com/milobingo/platform/actions/runs/42802522209). Dat is bewijs van de validator/API-route, **geen DartFlow-CI of deployacceptatie**. Milo's verplichte job heet `verify`; DartFlow's job heet `Verify`.
 
@@ -81,7 +99,7 @@ De appunit leest `.runtime.env` en daarna `.release.env` via `current`. Voor act
 
 ## Locking, timeouts en herstel
 
-Zowel deploy als rollback nemen nonblocking eerst `/run/lock/dg-build.lock` en daarna `/run/lock/dartflow-staging.deploy.lock`. De bestaande gedeelde lock wordt niet vervangen of inhoudelijk aangepast. Locks blijven over bron/build/activatie/nacontrole vast. GitHub gebruikt daarnaast voor beide workflows `dartflow-staging-activation`, zonder annulering van een lopende operatie.
+Zowel deploy als rollback nemen nonblocking eerst `/run/lock/dg-build.lock` en daarna `/run/lock/<site>.deploy.lock`, afzonderlijk voor staging/productie. De bestaande gedeelde lock wordt niet vervangen of inhoudelijk aangepast. Locks blijven over bron/build/activatie/nacontrole vast. GitHub gebruikt per omgeving `dartflow-staging-activation` respectievelijk `dartflow-production-activation`, zonder annulering van een lopende operatie. De stagingpaden en unitnamen hieronder zijn het bronvoorbeeld; de productiecopy is vast op haar eigen site/service/accounts gerenderd.
 
 Een afzonderlijke root-owned guardianunit `dg-dartflow-lock-<run-id>-<attempt>.service` neemt dezelfde open-file-descriptions over via systemd `--pipe` op FD 0 en 1. De helper sluit bij cleanup alleen zijn eigen descriptors; hij ontgrendelt de gedeelde open-file-descriptions niet expliciet. De guardian valideert locks en helper-pidfd vóór zijn gereedmelding. De helper wacht daarop vóór bron-/install-/buildcode draait. De vertrouwde `systemd-run --wait`-buildclient en synchrone vaste `systemctl restart/stop`-appclient behouden beide descriptors via `pass_fds`, zodat ook late starts na helperdood beschermd blijven. Builder en app krijgen ze niet via D-Bus, stdio of omgeving; guardiancommands krijgen eigen gecontroleerde stdin/stdout. De guardian heeft geen token/runtimeconfiguratie en geen appactivatietaak. Zie `infra/staging/GUARDIAN.md` voor de gecontroleerde systemd-v255-semantiek en verplichte hostproeven.
 

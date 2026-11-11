@@ -1,0 +1,31 @@
+[Unit]
+Description=Restrict Caddy admin access for fixed Dartflow accounts
+DefaultDependencies=no
+After=local-fs.target nftables.service
+Before=network-pre.target network.target dartflow-staging.service dartflow-production.service dartflow-actions-staging.service dartflow-actions-production.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/python3 -I /usr/local/libexec/dartflow-restrict-caddy-admin.py --apply
+ExecStartPost=/usr/bin/python3 -I /usr/local/libexec/dartflow-restrict-caddy-admin.py --verify
+TimeoutStartSec=45
+User=root
+Group=root
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateNetwork=no
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+CapabilityBoundingSet=CAP_NET_ADMIN
+RestrictAddressFamilies=AF_NETLINK AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

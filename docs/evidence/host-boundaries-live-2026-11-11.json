@@ -1,0 +1,1368 @@
+{
+  "recordedAt": "2026-11-11T09:10:58.366639+00:00",
+  "hostname": "dg-nxttrack-01",
+  "scope": "Read-only permission checks by fork/setuid/os.access; no credential values or fixture files read/written",
+  "runtimeFileMetadata": [
+    {
+      "path": "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v1/runtime.env",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o600",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v1/runtime.env",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o600",
+      "type": "file",
+      "link": null
+    }
+  ],
+  "pathMetadata": [
+    {
+      "path": "/etc/caddy/sites/dartflow-production.caddy",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o644",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/etc/caddy/sites/dartflow-staging.caddy",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o644",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/etc/dg-sites/dartflow-production",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o700",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v1/runtime.env",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o600",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/etc/dg-sites/dartflow-production/deploy.json",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o600",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/etc/dg-sites/dartflow-staging",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o700",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v1/runtime.env",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o600",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/etc/dg-sites/dartflow-staging/deploy.json",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o600",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/etc/systemd/system/dartflow-production.service",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o644",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/etc/systemd/system/dartflow-staging.service",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o644",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/home/run-dart-prd",
+      "owner": "run-dart-prd",
+      "group": "run-dart-prd",
+      "mode": "0o700",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/home/run-dart-stg",
+      "owner": "run-dart-stg",
+      "group": "run-dart-stg",
+      "mode": "0o700",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/srv/sites/dartflow-production",
+      "owner": "root",
+      "group": "app-dart-prd",
+      "mode": "0o750",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/srv/sites/dartflow-production/releases",
+      "owner": "root",
+      "group": "app-dart-prd",
+      "mode": "0o750",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/srv/sites/dartflow-production/shared",
+      "owner": "app-dart-prd",
+      "group": "app-dart-prd",
+      "mode": "0o750",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/srv/sites/dartflow-staging",
+      "owner": "root",
+      "group": "app-dart-stg",
+      "mode": "0o750",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/srv/sites/dartflow-staging/releases",
+      "owner": "root",
+      "group": "app-dart-stg",
+      "mode": "0o750",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/srv/sites/dartflow-staging/shared",
+      "owner": "app-dart-stg",
+      "group": "app-dart-stg",
+      "mode": "0o750",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/srv/sites/milobingo-staging",
+      "owner": "root",
+      "group": "app-mil-stg",
+      "mode": "0o750",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/usr/local/bin/dg-dartflow-deploy",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o755",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/usr/local/bin/dg-dartflow-production-deploy",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o755",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/usr/local/libexec/dg-dartflow-deploy-helper",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o755",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/usr/local/libexec/dg-dartflow-production-deploy-helper",
+      "owner": "root",
+      "group": "root",
+      "mode": "0o755",
+      "type": "file",
+      "link": null
+    },
+    {
+      "path": "/var/lib/dg-build/dartflow-production",
+      "owner": "root",
+      "group": "build-dart-prd",
+      "mode": "0o750",
+      "type": "directory",
+      "link": null
+    },
+    {
+      "path": "/var/lib/dg-build/dartflow-staging",
+      "owner": "root",
+      "group": "build-dart-stg",
+      "mode": "0o750",
+      "type": "directory",
+      "link": null
+    }
+  ],
+  "accounts": {
+    "run-dart-stg": {
+      "uid": 988,
+      "gid": 982,
+      "home": "/home/run-dart-stg",
+      "shell": "/bin/bash",
+      "groups": [
+        "run-dart-stg",
+        "dg-build"
+      ]
+    },
+    "build-dart-stg": {
+      "uid": 987,
+      "gid": 981,
+      "home": "/var/lib/dg-build/dartflow-staging",
+      "shell": "/usr/sbin/nologin",
+      "groups": [
+        "build-dart-stg"
+      ]
+    },
+    "app-dart-stg": {
+      "uid": 986,
+      "gid": 980,
+      "home": "/srv/sites/dartflow-staging",
+      "shell": "/usr/sbin/nologin",
+      "groups": [
+        "app-dart-stg"
+      ]
+    },
+    "run-dart-prd": {
+      "uid": 985,
+      "gid": 979,
+      "home": "/home/run-dart-prd",
+      "shell": "/bin/bash",
+      "groups": [
+        "run-dart-prd",
+        "dg-build"
+      ]
+    },
+    "build-dart-prd": {
+      "uid": 984,
+      "gid": 978,
+      "home": "/var/lib/dg-build/dartflow-production",
+      "shell": "/usr/sbin/nologin",
+      "groups": [
+        "build-dart-prd"
+      ]
+    },
+    "app-dart-prd": {
+      "uid": 983,
+      "gid": 977,
+      "home": "/srv/sites/dartflow-production",
+      "shell": "/usr/sbin/nologin",
+      "groups": [
+        "app-dart-prd"
+      ]
+    }
+  },
+  "access": {
+    "run-dart-stg": {
+      "/etc/caddy/sites/dartflow-production.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/caddy/sites/dartflow-staging.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-production.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-staging.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-prd": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-stg": {
+        "read": true,
+        "write": true,
+        "execute": true
+      },
+      "/srv/sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production/releases": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production/shared": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging/releases": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging/shared": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/milobingo-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/usr/local/bin/dg-dartflow-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/bin/dg-dartflow-production-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-production-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/var/lib/dg-build/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/var/lib/dg-build/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      }
+    },
+    "build-dart-stg": {
+      "/etc/caddy/sites/dartflow-production.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/caddy/sites/dartflow-staging.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-production.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-staging.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-prd": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-stg": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production/releases": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production/shared": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging/releases": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging/shared": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/milobingo-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/usr/local/bin/dg-dartflow-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/bin/dg-dartflow-production-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-production-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/var/lib/dg-build/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/var/lib/dg-build/dartflow-staging": {
+        "read": true,
+        "write": false,
+        "execute": true
+      }
+    },
+    "app-dart-stg": {
+      "/etc/caddy/sites/dartflow-production.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/caddy/sites/dartflow-staging.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-production.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-staging.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-prd": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-stg": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production/releases": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production/shared": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/srv/sites/dartflow-staging/releases": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/srv/sites/dartflow-staging/shared": {
+        "read": true,
+        "write": true,
+        "execute": true
+      },
+      "/srv/sites/milobingo-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/usr/local/bin/dg-dartflow-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/bin/dg-dartflow-production-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-production-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/var/lib/dg-build/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/var/lib/dg-build/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      }
+    },
+    "run-dart-prd": {
+      "/etc/caddy/sites/dartflow-production.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/caddy/sites/dartflow-staging.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-production.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-staging.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-prd": {
+        "read": true,
+        "write": true,
+        "execute": true
+      },
+      "/home/run-dart-stg": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production/releases": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production/shared": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging/releases": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging/shared": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/milobingo-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/usr/local/bin/dg-dartflow-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/bin/dg-dartflow-production-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-production-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/var/lib/dg-build/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/var/lib/dg-build/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      }
+    },
+    "build-dart-prd": {
+      "/etc/caddy/sites/dartflow-production.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/caddy/sites/dartflow-staging.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-production.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-staging.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-prd": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-stg": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production/releases": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production/shared": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging/releases": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging/shared": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/milobingo-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/usr/local/bin/dg-dartflow-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/bin/dg-dartflow-production-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-production-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/var/lib/dg-build/dartflow-production": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/var/lib/dg-build/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      }
+    },
+    "app-dart-prd": {
+      "/etc/caddy/sites/dartflow-production.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/caddy/sites/dartflow-staging.caddy": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-production/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v1/runtime.env": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/dg-sites/dartflow-staging/deploy.json": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-production.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/etc/systemd/system/dartflow-staging.service": {
+        "read": true,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-prd": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/home/run-dart-stg": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-production": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/srv/sites/dartflow-production/releases": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/srv/sites/dartflow-production/shared": {
+        "read": true,
+        "write": true,
+        "execute": true
+      },
+      "/srv/sites/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging/releases": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/dartflow-staging/shared": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/srv/sites/milobingo-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/usr/local/bin/dg-dartflow-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/bin/dg-dartflow-production-deploy": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/usr/local/libexec/dg-dartflow-production-deploy-helper": {
+        "read": true,
+        "write": false,
+        "execute": true
+      },
+      "/var/lib/dg-build/dartflow-production": {
+        "read": false,
+        "write": false,
+        "execute": false
+      },
+      "/var/lib/dg-build/dartflow-staging": {
+        "read": false,
+        "write": false,
+        "execute": false
+      }
+    }
+  },
+  "sudoRules": {
+    "run-dart-stg": {
+      "code": 0,
+      "stdout": "Matching Defaults entries for run-dart-stg on dg-nxttrack-01:\n    env_reset, mail_badpass, secure_path=/usr/local/sbin\\:/usr/local/bin\\:/usr/sbin\\:/usr/bin\\:/sbin\\:/bin\\:/snap/bin, use_pty\n\nUser run-dart-stg may run the following commands on dg-nxttrack-01:\n    (root) NOPASSWD: sha256:8b2c696710b5b378f94bb8dbb16d933d9812e5f114f669b34038ac7a52447b2a /usr/local/libexec/dg-dartflow-deploy-helper ^deploy [a-f0-9]{40} [1-9][0-9]{0\\,19}-[1-9][0-9]{0\\,9} [A-Za-z0-9][A-Za-z0-9_.-]{0\\,95}$\n    (root) NOPASSWD: sha256:8b2c696710b5b378f94bb8dbb16d933d9812e5f114f669b34038ac7a52447b2a /usr/local/libexec/dg-dartflow-deploy-helper ^rollback [a-f0-9]{12}-[1-9][0-9]{0\\,19}-[1-9][0-9]{0\\,9}$",
+      "stderr": ""
+    },
+    "build-dart-stg": {
+      "code": 0,
+      "stdout": "User build-dart-stg is not allowed to run sudo on dg-nxttrack-01.",
+      "stderr": ""
+    },
+    "app-dart-stg": {
+      "code": 0,
+      "stdout": "User app-dart-stg is not allowed to run sudo on dg-nxttrack-01.",
+      "stderr": ""
+    },
+    "run-dart-prd": {
+      "code": 0,
+      "stdout": "Matching Defaults entries for run-dart-prd on dg-nxttrack-01:\n    env_reset, mail_badpass, secure_path=/usr/local/sbin\\:/usr/local/bin\\:/usr/sbin\\:/usr/bin\\:/sbin\\:/bin\\:/snap/bin, use_pty\n\nUser run-dart-prd may run the following commands on dg-nxttrack-01:\n    (root) NOPASSWD: sha256:fa847042b9d8f0d4f8fe9c12629af3313fc0355d6d876ec46d27bdee617a3c48 /usr/local/libexec/dg-dartflow-production-deploy-helper ^deploy [a-f0-9]{40} [1-9][0-9]{0\\,19}-[1-9][0-9]{0\\,9} [A-Za-z0-9][A-Za-z0-9_.-]{0\\,95}$\n    (root) NOPASSWD: sha256:fa847042b9d8f0d4f8fe9c12629af3313fc0355d6d876ec46d27bdee617a3c48 /usr/local/libexec/dg-dartflow-production-deploy-helper ^rollback [a-f0-9]{12}-[1-9][0-9]{0\\,19}-[1-9][0-9]{0\\,9}$",
+      "stderr": ""
+    },
+    "build-dart-prd": {
+      "code": 0,
+      "stdout": "User build-dart-prd is not allowed to run sudo on dg-nxttrack-01.",
+      "stderr": ""
+    },
+    "app-dart-prd": {
+      "code": 0,
+      "stdout": "User app-dart-prd is not allowed to run sudo on dg-nxttrack-01.",
+      "stderr": ""
+    }
+  },
+  "manifestChecks": [
+    {
+      "manifestPath": "/root/dartflow-bootstrap-2026-11-11/staging/manifest.json",
+      "manifestSha256": "679043c0c411a02cef5e4513ba540324c8f4cf2a52121bb2ab21122c530e2497",
+      "environment": "staging",
+      "files": [
+        {
+          "path": "/usr/local/libexec/dg-dartflow-deploy-helper",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "8b2c696710b5b378f94bb8dbb16d933d9812e5f114f669b34038ac7a52447b2a",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/usr/local/libexec/dartflow-extract-source.py",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "c7405cbd36859966e5876f09756c35488892e4bcd4fdcc133abeaf368e353527",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/usr/local/libexec/dartflow-lock-guardian.py",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "89ee918743bbfd6377c2363170c7941bf4da0ad1162b80be89ae39f95d04769a",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/usr/local/libexec/dartflow-probe-lock-lifetime.py",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "87d65997e1b2943c55a73b4264a4b142b81f57d101c2ad8c1bd4f22495f772cd",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/usr/local/libexec/dartflow-release-gate.mjs",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "5d84b5edcf63f79d1b85b92fa135800d0bb8ae9da135dc0590a7a6e51c6a5f5f",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/usr/local/bin/dg-dartflow-deploy",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "e41aa6f1d415a79e9ba8a79086138518f9c6007a560d0dd8850f6c077a6cd5ae",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/etc/sudoers.d/dartflow-staging",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o440",
+          "type": "file",
+          "link": null,
+          "sha256": "54806aa916ab477326a009221f067cb412c4fd80dd0801df710814b377d922b1",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/etc/systemd/system/dartflow-staging.service",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o644",
+          "type": "file",
+          "link": null,
+          "sha256": "17bfa484132ce771f750ad9e35bdaf3af0090f365107e04579e98e9aa0c41246",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/etc/dg-sites/dartflow-staging/deploy.json",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o600",
+          "type": "file",
+          "link": null,
+          "hostPolicyEditsOnly": true
+        }
+      ]
+    },
+    {
+      "manifestPath": "/root/dartflow-bootstrap-2026-11-11/production/manifest.json",
+      "manifestSha256": "b802de6bada843d50cbc4e1b9d999bf052afd965c29af68700bcc8287ed75c14",
+      "environment": "production",
+      "files": [
+        {
+          "path": "/usr/local/libexec/dg-dartflow-production-deploy-helper",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "fa847042b9d8f0d4f8fe9c12629af3313fc0355d6d876ec46d27bdee617a3c48",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/usr/local/libexec/dartflow-production-extract-source.py",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "c7405cbd36859966e5876f09756c35488892e4bcd4fdcc133abeaf368e353527",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/usr/local/libexec/dartflow-production-lock-guardian.py",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "2e6b2b30e3b74462d29ef70e325d693c4463b5b71d4ae06778346121cd013df3",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/usr/local/libexec/dartflow-probe-lock-lifetime.py",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "87d65997e1b2943c55a73b4264a4b142b81f57d101c2ad8c1bd4f22495f772cd",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/usr/local/libexec/dartflow-production-release-gate.mjs",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "5d84b5edcf63f79d1b85b92fa135800d0bb8ae9da135dc0590a7a6e51c6a5f5f",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/usr/local/bin/dg-dartflow-production-deploy",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o755",
+          "type": "file",
+          "link": null,
+          "sha256": "6017f9d30cae611c253abc6bdd3aeb51619bdb91c34adb5295aee8a00de6e229",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/etc/sudoers.d/dartflow-production",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o440",
+          "type": "file",
+          "link": null,
+          "sha256": "761c712b00d23decca001b7c04bf70bb76bcf1eebe6c0c4db4d22fe7bd65686e",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/etc/systemd/system/dartflow-production.service",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o644",
+          "type": "file",
+          "link": null,
+          "sha256": "14f2b3c32e3990285b01e3384c029dee5a6146449a75729f0f2bfbb9816b7ac6",
+          "matchesReviewedManifest": true
+        },
+        {
+          "path": "/etc/dg-sites/dartflow-production/deploy.json",
+          "owner": "root",
+          "group": "root",
+          "mode": "0o600",
+          "type": "file",
+          "link": null,
+          "hostPolicyEditsOnly": true
+        }
+      ]
+    }
+  ],
+  "portChecks": {
+    "4173": {
+      "connectCode": 0,
+      "listening": true
+    },
+    "4174": {
+      "connectCode": 111,
+      "listening": false
+    },
+    "4175": {
+      "connectCode": 111,
+      "listening": false
+    }
+  },
+  "services": {
+    "milobingo-staging.service": {
+      "code": 0,
+      "stdout": "MainPID=52104\nActiveState=active\nSubState=running\nFragmentPath=/etc/systemd/system/milobingo-staging.service",
+      "stderr": ""
+    },
+    "dartflow-staging.service": {
+      "code": 0,
+      "stdout": "MainPID=0\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/dartflow-staging.service",
+      "stderr": ""
+    },
+    "dartflow-production.service": {
+      "code": 0,
+      "stdout": "MainPID=0\nActiveState=inactive\nSubState=dead\nFragmentPath=/etc/systemd/system/dartflow-production.service",
+      "stderr": ""
+    }
+  },
+  "miloCurrent": {
+    "path": "/srv/sites/milobingo-staging/current",
+    "owner": "root",
+    "group": "root",
+    "mode": "0o777",
+    "type": "symlink",
+    "link": "releases/729d962b7401-42804436092-1"
+  },
+  "miloPublicHealth": {
+    "httpStatus": 200,
+    "status": "ok",
+    "revision": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+    "releaseId": "42804436092-1",
+    "configVersion": "staging-2026-11-05-v1"
+  },
+  "networkAdminProbe": {
+    "run-dart-stg": {
+      "reachable": true,
+      "headStatus": 405,
+      "bodyRead": false
+    },
+    "build-dart-stg": {
+      "reachable": true,
+      "headStatus": 405,
+      "bodyRead": false
+    },
+    "app-dart-stg": {
+      "reachable": true,
+      "headStatus": 405,
+      "bodyRead": false
+    },
+    "run-dart-prd": {
+      "reachable": true,
+      "headStatus": 405,
+      "bodyRead": false
+    },
+    "build-dart-prd": {
+      "reachable": true,
+      "headStatus": 405,
+      "bodyRead": false
+    },
+    "app-dart-prd": {
+      "reachable": true,
+      "headStatus": 405,
+      "bodyRead": false
+    }
+  },
+  "summary": {
+    "status": "filesystem_and_sudo_boundaries_passed_network_admin_review_open",
+    "openFindings": ["All six Dartflow UIDs can reach the existing Caddy admin listener at 127.0.0.1:2019 (HEAD /config/ returned405). No response body or credentials were read and no mutation method was attempted. Review admin API access before running untrusted build code."],
+    "failures": [],
+    "checkedAccounts": 6,
+    "runtimeFilesExistAndRootOnly": true,
+    "localReviewedManifestSha256": {
+      "staging": "679043c0c411a02cef5e4513ba540324c8f4cf2a52121bb2ab21122c530e2497",
+      "production": "b802de6bada843d50cbc4e1b9d999bf052afd965c29af68700bcc8287ed75c14"
+    },
+    "notes": [
+      "Permission checks used kernel os.access after setting real UID/GID/supplementary groups; no runtime file content was opened.",
+      "sudo -l -U was evaluated by root; this sudo version returns exit0 even for explicit no-grant output, so denials were checked in text.",
+      "No fixture files or writes were attempted on the target; successful negative permission checks do not replace future release/core-flow acceptance.",
+      "Dartflow services are installed but inactive and ports4174/4175 remain unbound as expected before the first release."
+    ]
+  }
+}

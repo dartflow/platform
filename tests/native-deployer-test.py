@@ -3,6 +3,7 @@
 import array
 import hashlib
 import importlib.util
+import importlib.machinery
 import io
 import json
 import os
@@ -24,7 +25,8 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 
 def load(name, file):
-    spec = importlib.util.spec_from_file_location(name, ROOT / file)
+    path = ROOT / file
+    spec = importlib.util.spec_from_file_location(name, path, loader=importlib.machinery.SourceFileLoader(name, str(path)))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -33,6 +35,8 @@ deploy = load('dartflow_helper', 'infra/staging/deploy-helper.py')
 entry = load('dartflow_entry', 'infra/staging/deploy-entry.py')
 extractor = load('dartflow_extract', 'infra/staging/extract-source.py')
 guardian = load('dartflow_guardian', 'infra/staging/lock-guardian.py')
+renderer = load('dartflow_renderer', 'infra/staging/render-deployer.py')
+proof = load('dartflow_lock_proof', 'infra/staging/probe-lock-lifetime.py')
 SHA, OLD_SHA = 'a' * 40, 'b' * 40
 RUN, OLD_RUN = '10101-1', '20202-1'
 NAME, OLD_NAME = SHA[:12] + '-' + RUN, OLD_SHA[:12] + '-' + OLD_RUN
@@ -143,6 +147,122 @@ class NativeBoundaries(unittest.TestCase):
             file.flush()
             result = subprocess.run(['/usr/sbin/visudo', '-cf', file.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
             self.assertEqual(result.returncode, 0, result.stderr.decode())
+
+
+class FixedEnvironmentRendering(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.outputs, self.modules = {}, {}
+        for environment in ['staging', 'production']:
+            output = self.root / environment
+            manifest = renderer.render(environment, output)
+            self.outputs[environment] = (output, manifest)
+            helper = output / 'usr/local/libexec' / manifest['helper']
+            guard = output / 'usr/local/libexec' / manifest['guardian']
+            self.modules[environment] = (load('rendered_' + environment, helper), load('rendered_guardian_' + environment, guard))
+
+    def test_rendered_copies_pin_reviewed_digests_and_exact_install_paths(self):
+        for environment, (output, manifest) in self.outputs.items():
+            with self.subTest(environment=environment):
+                for path, measured in manifest['files'].items():
+                    self.assertEqual(hashlib.sha256((output / path.lstrip('/')).read_bytes()).hexdigest(), measured['sha256'])
+                helper_hash = manifest['files']['/usr/local/libexec/' + manifest['helper']]['sha256']
+                entry_text = (output / 'usr/local/bin' / manifest['entry']).read_text()
+                sudoers = (output / 'etc/sudoers.d' / manifest['site']).read_text()
+                self.assertIn(helper_hash, entry_text)
+                self.assertIn('sha256:' + helper_hash, sudoers)
+                self.assertNotIn('__REVIEWED_HELPER_SHA256__', entry_text + sudoers)
+                self.assertNotIn(TOKEN, json.dumps(manifest))
+                if Path('/usr/sbin/visudo').exists():
+                    result = subprocess.run(['/usr/sbin/visudo', '-cf', str(output / 'etc/sudoers.d' / manifest['site'])], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+                    self.assertEqual(result.returncode, 0, result.stderr.decode())
+        with self.assertRaises(FileExistsError):
+            renderer.render('production', self.root / 'production')
+        with self.assertRaises(ValueError):
+            renderer.render('custom', self.root / 'custom')
+
+    def test_production_bindings_are_fixed_and_caller_cannot_choose_an_environment(self):
+        stage, _ = self.modules['staging']
+        production, _ = self.modules['production']
+        self.assertEqual((production.SITE, production.PUBLIC_HOST, production.PORT, production.BACKEND_REF), ('dartflow-production', 'dartflow.nl', 4175, 'wlrnowuownakqqgjxnbb'))
+        self.assertEqual((stage.PUBLIC_HOST, stage.PORT, stage.BACKEND_REF), ('staging.dartflow.nl', 4174, 'dsnqnvbckkqpzadblshu'))
+        self.assertEqual((production.REPOSITORY, production.INTEGRATION_BRANCH, production.DEPLOYMENT_WORKFLOW), ('dartflow/platform', 'main', 'deploy-production.yml'))
+        self.assertEqual(production.SIBLING_ACCOUNTS, (stage.RUNNER, stage.BUILDER, stage.APP))
+        self.assertEqual(stage.SIBLING_ACCOUNTS, (production.RUNNER, production.BUILDER, production.APP))
+        for key in ['SITE_ROOT', 'BUILD_ROOT', 'CONFIG_ROOT', 'POLICY', 'SITE_LOCK', 'GATE', 'GUARDIAN', 'EXTRACTOR', 'BUILD_PREFIX', 'GUARDIAN_PREFIX']:
+            self.assertNotEqual(getattr(stage, key), getattr(production, key), key)
+        self.assertEqual(stage.GLOBAL_LOCK, production.GLOBAL_LOCK)
+        for args in [['production', 'deploy', SHA, RUN, CONFIG], ['deploy', SHA, RUN, CONFIG, 'dartflow-staging']]:
+            with self.assertRaises(ValueError):
+                production.arguments(args)
+        with self.assertRaises(ValueError):
+            production.request_body(io.BytesIO(json.dumps({'githubToken': TOKEN, 'environment': 'staging'}).encode()), 'deploy')
+
+    def test_each_fixed_policy_refuses_cross_environment_identity_before_build(self):
+        for environment, (output, manifest) in self.outputs.items():
+            module, _ = self.modules[environment]
+            policy = json.loads((output / 'etc/dg-sites' / manifest['site'] / 'deploy.example.json').read_text())
+            for key, value in [('repository', 'other/platform'), ('integrationBranch', 'feature'), ('port', 4173), ('port', 4174 if environment == 'production' else 4175), ('backend', {'projectRef': 'z' * 20})]:
+                with self.subTest(environment=environment, key=key, value=value), patch.object(module, 'read_json', return_value={**policy, key: value}), self.assertRaises(ValueError):
+                    module.read_policy()
+
+    def test_production_public_config_health_and_gate_use_only_fixed_targets(self):
+        production, _ = self.modules['production']
+        values = {**public(), 'DARTFLOW_APP_ORIGIN': 'https://dartflow.nl', 'NEXT_PUBLIC_SUPABASE_URL': 'https://wlrnowuownakqqgjxnbb.supabase.co'}
+        self.assertEqual(production.public_values(values), values)
+        with self.assertRaises(ValueError):
+            production.public_values(public())
+        identity = {'status': 'ok', 'sha': SHA, 'releaseId': RUN, 'buildConfigId': CONFIG, 'runtimeConfigId': CONFIG}
+        connection = SimpleNamespace(request=lambda *args, **kwargs: None, getresponse=lambda: SimpleNamespace(status=200, read=lambda _: json.dumps(identity).encode()), close=lambda: None)
+        with patch.object(production.http.client, 'HTTPSConnection', return_value=connection) as https:
+            self.assertTrue(production.http_identity({'sha': SHA, 'releaseId': RUN, 'configId': CONFIG, 'port': 4175}, '/api/health', True))
+            https.assert_called_once_with('dartflow.nl', timeout=2)
+        policy = {'repository': 'dartflow/platform', 'integrationBranch': 'main', 'node': '/opt/node/bin/node', 'requiredChecks': [{'workflow': 'ci.yml', 'jobs': ['Verify'], 'events': ['push']}]}
+        evidence = {'status': 'passed', 'sha': SHA, 'ciRunUrl': 'https://github.com/dartflow/platform/actions/runs/123', 'deploymentRunUrl': 'https://github.com/dartflow/platform/actions/runs/' + RUN.split('-')[0]}
+        with patch.object(production.subprocess, 'run', return_value=SimpleNamespace(stdout=json.dumps(evidence).encode())) as run:
+            production.github_gate(policy, SHA, TOKEN, RUN)
+            self.assertEqual(json.loads(run.call_args.kwargs['input'])['deploymentWorkflow'], 'deploy-production.yml')
+            self.assertEqual(run.call_args.args[0][1], '/usr/local/libexec/dartflow-production-release-gate.mjs')
+
+    def test_transient_build_and_guardian_scopes_never_cross_environment(self):
+        policy = {'node': '/opt/node/bin/node', 'npm': '/opt/npm/bin/npm', 'buildTimeoutSeconds': 60, 'buildMemoryMax': '3G', 'buildCpuQuota': '100%'}
+        for environment, (module, guard) in self.modules.items():
+            with self.subTest(environment=environment), patch.object(module, 'BUILD_LOCK_FDS', (31, 32)), patch.object(module, 'command') as command, patch.object(module.subprocess, 'run', return_value=SimpleNamespace(returncode=3)):
+                module.build_command(['npm', 'ci'], Path('/synthetic'), policy, RUN, 'install')
+                argv = command.call_args.args[0]
+                self.assertIn('--unit=' + module.BUILD_PREFIX + RUN + '-install', argv)
+                self.assertIn('--uid=' + module.BUILDER, argv)
+                module.service('restart', {'serviceTimeoutSeconds': 45})
+                self.assertEqual(command.call_args.args[0][-1], module.SERVICE)
+            calls = []
+            def execute(args, **kwargs):
+                calls.append(args)
+                return SimpleNamespace(returncode=0 if 'list-jobs' in args else 3, stdout=b'')
+            self.assertTrue(guard.stop_builds(RUN, execute=execute))
+            self.assertEqual(guard.BUILD_PREFIX, module.BUILD_PREFIX)
+            self.assertEqual(guard.SERVICE, module.SERVICE)
+            self.assertEqual(guard.SITE_LOCK, module.SITE_LOCK)
+            self.assertTrue(all(args[-1].startswith(module.BUILD_PREFIX + RUN) for args in calls if args[1] == 'stop'))
+            def jobs(service):
+                return lambda args, **kwargs: SimpleNamespace(returncode=0 if 'list-jobs' in args else 3, stdout=('123 ' + service + ' restart running\n').encode())
+            self.assertFalse(guard.stop_builds(RUN, execute=jobs(module.SERVICE)))
+            sibling = 'dartflow-production.service' if environment == 'staging' else 'dartflow-staging.service'
+            self.assertTrue(guard.stop_builds(RUN, execute=jobs(sibling)))
+
+    def test_shared_global_lock_blocks_other_environment_before_work(self):
+        stage, _ = self.modules['staging']
+        production, _ = self.modules['production']
+        global_path, stage_path, production_path = [self.root / name for name in ['global.lock', 'stage.lock', 'production.lock']]
+        with patch.object(stage, 'ROOT_UID', os.getuid()), patch.object(production, 'ROOT_UID', os.getuid()):
+            with stage.deployment_locks(global_path, stage_path):
+                with self.assertRaises(production.LockBusy):
+                    with production.deployment_locks(global_path, production_path):
+                        self.fail('Production overlapped staging')
+                self.assertFalse(production_path.exists())
+            with production.deployment_locks(global_path, production_path):
+                pass
 
 
 class SafeSourceAndArtifacts(unittest.TestCase):
@@ -445,6 +565,7 @@ class BuildIsolation(unittest.TestCase):
         self.assertEqual(run.call_args.args[0], [policy['node'], deploy.GATE, '--stdin'])
         self.assertEqual(json.loads(run.call_args.kwargs['input'])['githubToken'], TOKEN)
         self.assertEqual(json.loads(run.call_args.kwargs['input'])['deploymentRun'], {'id': RUN.split('-')[0], 'attempt': 1})
+        self.assertEqual(json.loads(run.call_args.kwargs['input'])['deploymentWorkflow'], 'deploy-staging.yml')
         self.assertNotIn(TOKEN, str(run.call_args.args))
         self.assertNotIn(TOKEN, str(run.call_args.kwargs['env']))
         output['sha'] = OLD_SHA
@@ -599,15 +720,19 @@ class CompleteReleaseFixture(unittest.TestCase):
         self.assertEqual(list((self.site / 'releases').iterdir()), [])
 
     def test_policy_rejects_milo_uids_gids_and_sibling_group_memberships(self):
-        names = [deploy.RUNNER, deploy.BUILDER, deploy.APP, 'run-mil-stg', 'build-mil-stg', 'app-mil-stg']
+        names = [deploy.RUNNER, deploy.BUILDER, deploy.APP, 'run-mil-stg', 'build-mil-stg', 'app-mil-stg', *deploy.SIBLING_ACCOUNTS]
         people = {name: SimpleNamespace(pw_name=name, pw_uid=2001 + i, pw_gid=3001 + i) for i, name in enumerate(names)}
         people['run-mil-stg'].pw_uid = 1001
         self.policy['accounts'] = {name: {'uid': people[name].pw_uid, 'gid': people[name].pw_gid} for name in names[:3]}
-        with patch.object(deploy, 'read_json', return_value=self.policy), patch.object(deploy, 'trusted_tool'), patch.object(deploy, 'file_digest', return_value='c' * 64), patch.object(deploy.pwd, 'getpwnam', side_effect=lambda name: people[name]), patch.object(deploy.os, 'getgrouplist', side_effect=lambda name, gid: [gid]), patch.object(deploy.grp, 'getgrnam', return_value=SimpleNamespace(gr_gid=4444)):
+        with patch.object(deploy, 'REPOSITORY', 'synthetic/dartflow'), patch.object(deploy, 'BACKEND_REF', REF), patch.object(deploy, 'read_json', return_value=self.policy), patch.object(deploy, 'trusted_tool'), patch.object(deploy, 'file_digest', return_value='c' * 64), patch.object(deploy.pwd, 'getpwnam', side_effect=lambda name: people[name]), patch.object(deploy.os, 'getgrouplist', side_effect=lambda name, gid: [gid]), patch.object(deploy.grp, 'getgrnam', return_value=SimpleNamespace(gr_gid=4444)):
             deploy.read_policy()
             people[deploy.BUILDER].pw_uid = 1001
             self.policy['accounts'][deploy.BUILDER]['uid'] = 1001
             with self.assertRaisesRegex(ValueError, 'Milo identities'):
+                deploy.read_policy()
+            people[deploy.BUILDER].pw_uid = people[deploy.SIBLING_ACCOUNTS[1]].pw_uid
+            self.policy['accounts'][deploy.BUILDER]['uid'] = people[deploy.BUILDER].pw_uid
+            with self.assertRaisesRegex(ValueError, 'sibling environment'):
                 deploy.read_policy()
             people[deploy.BUILDER].pw_uid = 2002
             self.policy['accounts'][deploy.BUILDER]['uid'] = 2002
@@ -672,6 +797,57 @@ class TrackedSourceContract(unittest.TestCase):
             self.assertEqual(json.loads((Path(directory) / 'package.json').read_text())['name'], 'dartflow')
 
 
+class HostProofBoundaries(unittest.TestCase):
+    def test_worker_proof_source_is_shared_fixed_and_apps_are_never_selected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'render'
+            manifest = renderer.render('production', output)
+            self.assertIn('/usr/local/libexec/dartflow-probe-lock-lifetime.py', manifest['files'])
+        self.assertEqual(set(proof.TARGETS), {'staging', 'production'})
+        argv = proof.build_argv(deploy, RUN, Path('/synthetic/work'))
+        self.assertIn('--unit=' + deploy.BUILD_PREFIX + RUN + '-build.service', argv)
+        self.assertIn('--uid=build-dart-stg', argv)
+        self.assertIn('--property=RuntimeMaxSec=50', argv)
+        self.assertIn('--property=ExecStop=/usr/bin/sleep 3', argv)
+        self.assertNotIn('dartflow-staging.service', argv)
+        self.assertNotIn('milobingo-staging.service', argv)
+        self.assertEqual(argv[-3:], ['--worker', 'staging', '/synthetic/work'])
+
+    def test_individual_lock_checks_do_not_mask_site_loss(self):
+        with patch.object(proof, 'busy', side_effect=[True, False]) as busy, self.assertRaisesRegex(ValueError, 'Site lock'):
+            proof.locks_busy(deploy)
+        self.assertEqual(busy.call_args_list[0].args[0], deploy.GLOBAL_LOCK)
+        self.assertEqual(busy.call_args_list[1].args[0], deploy.SITE_LOCK)
+
+    def test_proof_control_files_and_evidence_reject_links_and_are_bounded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            (work / 'worker').mkdir()
+            outside = work / 'outside'
+            outside.write_text('private synthetic fixture')
+            control = work / 'permit'
+            control.symlink_to(outside)
+            with self.assertRaises(FileExistsError):
+                proof.control_file(control)
+            evidence = work / 'worker' / 'worker.json'
+            evidence.symlink_to(outside)
+            with self.assertRaises(OSError):
+                proof.worker_evidence(work)
+            evidence.unlink()
+            evidence.write_text('x' * 4097)
+            with self.assertRaises(ValueError):
+                proof.worker_evidence(work)
+            self.assertEqual(outside.read_text(), 'private synthetic fixture')
+
+    def test_proof_job_observation_requires_bounded_trustworthy_exact_unit(self):
+        unit = 'dartflow-production-fd-proof-' + RUN + '.service'
+        with patch.object(proof, 'manager', return_value=SimpleNamespace(returncode=0, stdout=('10 ' + unit + ' restart running\n').encode())):
+            self.assertTrue(proof.job_pending(unit))
+        for payload, code in [(b'not a trustworthy job list', 0), (b'x' * 65536, 0), (b'', 1)]:
+            with patch.object(proof, 'manager', return_value=SimpleNamespace(returncode=code, stdout=payload)), self.assertRaises(ValueError):
+                proof.job_pending(unit)
+
+
 class GuardianLifetime(unittest.TestCase):
     def test_systemd_guardian_receives_only_lock_stdio_and_waits_for_ready(self):
         client = SimpleNamespace(poll=lambda: None)
@@ -704,10 +880,10 @@ class GuardianLifetime(unittest.TestCase):
         self.assertTrue(guardian.stop_builds(RUN, execute=execute()))
         self.assertFalse(guardian.stop_builds(RUN, execute=execute(b'123 dartflow-staging.service restart running\n')))
         self.assertTrue(guardian.stop_builds(RUN, execute=execute(b'123 other-dartflow-staging.service restart running\n')))
-        self.assertFalse(guardian.stop_builds(RUN, execute=execute(b'123 dg-dartflow-build-' + RUN.encode() + b'-build.service start waiting\n')))
+        self.assertFalse(guardian.stop_builds(RUN, execute=execute(b'123 dg-dartflow-staging-build-' + RUN.encode() + b'-build.service start waiting\n')))
         self.assertFalse(guardian.stop_builds(RUN, execute=execute(job_code=1)))
         self.assertFalse(guardian.stop_builds(RUN, execute=execute(b'not a trustworthy job table')))
-        self.assertTrue(all(args[-1].startswith('dg-dartflow-build-' + RUN) for args in calls if args[1] == 'stop'))
+        self.assertTrue(all(args[-1].startswith('dg-dartflow-staging-build-' + RUN) for args in calls if args[1] == 'stop'))
         self.assertFalse(any(args[1] == 'stop' and args[-1] == 'dartflow-staging.service' for args in calls))
 
     def test_guardian_cleanup_failure_keeps_holder_until_a_verified_stop(self):

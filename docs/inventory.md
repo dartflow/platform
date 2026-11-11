@@ -1,6 +1,6 @@
 # DartFlow staging: inventaris en open uitvoeringspoorten
 
-Momentopname: **11 november 2026**, Europe/Amsterdam. Geheimwaarden staan uitsluitend in de beheerde secretvoorziening; dit bestand bevat alleen identiteit, bronverwijzingen en status.
+**Historische eerste momentopname van 11 november 2026**, Europe/Amsterdam. Aanvullend is inmiddels `dartflow/platform` / `main` vastgesteld, beheer-SSH/sudo beschikbaar en zijn eigen projecten bevestigd: staging `dsnqnvbckkqpzadblshu`, productie `wlrnowuownakqqgjxnbb`. De gebruiker heeft beide uitrollen geautoriseerd. De vroegere open repo-/toegangspunten hieronder beschrijven de eerste onderzoeksfase. De actuele tweeenvironmentprocedure staat in `docs/deployment.md`; daadwerkelijke installatie-/release-/testresultaten worden in het acceptatierapport bijgewerkt. Geheimwaarden blijven buiten deze bestanden.
 
 | Onderdeel | Status | Bron / vervolgstap |
 |---|---|---|

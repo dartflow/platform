@@ -1,0 +1,74 @@
+{
+  "accounts": {
+    "app-dart-prd": {
+      "gid": 977,
+      "uid": 983
+    },
+    "app-dart-stg": {
+      "gid": 980,
+      "uid": 986
+    },
+    "build-dart-prd": {
+      "gid": 978,
+      "uid": 984
+    },
+    "build-dart-stg": {
+      "gid": 981,
+      "uid": 987
+    },
+    "run-dart-prd": {
+      "gid": 979,
+      "uid": 985
+    },
+    "run-dart-stg": {
+      "gid": 982,
+      "uid": 988
+    }
+  },
+  "caddyFiles": [
+    "/etc/caddy/sites/dartflow-staging.caddy",
+    "/etc/caddy/sites/dartflow-production.caddy"
+  ],
+  "dartflowServicesStarted": false,
+  "hostname": "dg-nxttrack-01",
+  "installedFiles": [
+    "/usr/local/share/dg-certificates/supabase-prod-ca-bundle.crt",
+    "/usr/local/bin/dg-dartflow-deploy",
+    "/usr/local/libexec/dg-dartflow-deploy-helper",
+    "/usr/local/libexec/dartflow-extract-source.py",
+    "/usr/local/libexec/dartflow-lock-guardian.py",
+    "/usr/local/libexec/dartflow-release-gate.mjs",
+    "/usr/local/libexec/dartflow-probe-lock-lifetime.py",
+    "/etc/sudoers.d/dartflow-staging",
+    "/etc/systemd/system/dartflow-staging.service",
+    "/etc/dg-sites/dartflow-staging/deploy.json",
+    "/run/lock/dartflow-staging.deploy.lock",
+    "/usr/local/bin/dg-dartflow-production-deploy",
+    "/usr/local/libexec/dg-dartflow-production-deploy-helper",
+    "/usr/local/libexec/dartflow-production-extract-source.py",
+    "/usr/local/libexec/dartflow-production-lock-guardian.py",
+    "/usr/local/libexec/dartflow-production-release-gate.mjs",
+    "/etc/sudoers.d/dartflow-production",
+    "/etc/systemd/system/dartflow-production.service",
+    "/etc/dg-sites/dartflow-production/deploy.json",
+    "/run/lock/dartflow-production.deploy.lock"
+  ],
+  "miloBaselinePreserved": {
+    "current": "releases/729d962b7401-42804436092-1",
+    "files": {
+      "/etc/caddy/sites/milobingo-staging.caddy": "5768de11ddfa25d7bf72052fc3099d283d0a0676903caf0405d3b7ab8b10918e",
+      "/etc/systemd/system/milobingo-staging.service": "bf87320ca8c307bf69fdd9d97511f0129348d050edd516bd38efc6ad37333402",
+      "/usr/local/bin/dg-site-deploy": "aee3e1e2e76f05d99f668ed7c756802da82033c4983216b90d7ea50de9f49bc7"
+    },
+    "health": {
+      "configVersion": "staging-2026-11-05-v1",
+      "releaseId": "42804436092-1",
+      "revision": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+      "status": "ok"
+    },
+    "serviceState": "52104\nactive\nrunning"
+  },
+  "runnersRegistered": false,
+  "runtimeSecretsCreated": false,
+  "status": "bootstrapped_not_deployed"
+}

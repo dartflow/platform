@@ -1,6 +1,6 @@
-# Dartflow · lokale staging
+# Dartflow
 
-Native Next.js-app voor de eerste clubavondpilot, voorbereid op **https://staging.dartflow.nl**. De app draait lokaal; de VPS is niet gewijzigd en er is geen externe stagingrelease uitgevoerd.
+Native Next.js-app voor de eerste clubavondpilot, met lokale ontwikkeling en afzonderlijke omgevingen op **https://staging.dartflow.nl** en **https://dartflow.nl**. Het installatie- en uitrolbewijs staat in `docs/evidence/` en `voorbeelden/release-acceptatie.md`.
 
 ## Lokaal starten
 
@@ -49,9 +49,9 @@ Database- en browsertests gebruiken geïsoleerde synthetische fixtures in de lok
 
 ## GitHub en hosting
 
-De **exacte GitHub-configuratie**, providerlocaties, callbacks en uitrolvolgorde staan in [docs/deployment.md](docs/deployment.md). Er zijn concrete handmatige deploy-/rollbackworkflows en een afzonderlijke native DartFlow-broker. De policy weigert uitvoering zolang repository/integratiebranch en de hostinstallatie niet zijn geverifieerd (`nativeEnabled: false`). De native route gebruikt geen zelf aan te maken GitHub-secrets; alleen de optionele inspectieartifactworkflow leest vier publieke environmentvariabelen. Databasecredentials blijven in een immutable root-only hostbundel.
+De **exacte GitHub-configuratie**, providerlocaties, callbacks en uitrolvolgorde staan in [docs/deployment.md](docs/deployment.md). De twee native hostcontracten zijn geïnstalleerd en geverifieerd (`nativeEnabled: true`); iedere release vereist daarnaast groene CI voor de exacte bron-SHA. De native route gebruikt geen zelf aan te maken GitHub-secrets; de GitHub-environments bevatten ieder vier publieke variabelen. Databasecredentials blijven in een immutable root-only hostbundel.
 
-Doelhost en Milo-baseline zijn via een bestaande readonly-runnerjob gecontroleerd; Milo is niet gewijzigd. Eigen DartFlow-accounts en runnerlabels zijn voorgestelde nieuwe installatiekeuzes, en de kandidaatpoort 4174 is nog niet gereserveerd. De echte repository, beheer-SSH, stagingbackend en correcte DNS/TLS ontbreken nog. Zie [de actuele hostinventaris](docs/host-inventory.md) en [het releaseonderzoek](docs/release-reference.md).
+De vastgelegde repository is `dartflow/platform`, branch `main`. De gebruiker heeft staging en productie op `dg-nxttrack-01` geautoriseerd; beheer-SSH/sudo en eigen Supabase-projecten zijn beschikbaar. Er zijn afzonderlijke deploy-/rollbackworkflows, runneraccounts en hostconfiguraties voor `https://staging.dartflow.nl` en `https://dartflow.nl`; productie gebruikt exact de gezonde staging-SHA en bouwt opnieuw met eigen configuratie. `nativeEnabled` wordt per omgeving pas na geverifieerde bootstrap geactiveerd. De hoofdtaak legt de werkelijk uitgevoerde installatie, release- en gebruikersacceptatie vast; eerdere ontbrekende-toegangmeldingen in de historische inventaris zijn daarmee gedateerde waarnemingen.
 
 De app gebruikt Supabase voor hosted Auth. Het score- en rechtenmodel draait in servercode binnen PostgreSQL-transacties met een beperkte `dartflow_app`-verbinding. De private tabellen zijn niet beschikbaar via Supabase Data API. Browsergebruikers krijgen geen databasecredential of verhoogde Supabase-key. Migraties/seed gebruiken een apart beheeraccount, buiten de app-runtime. Zie [docs/architecture.md](docs/architecture.md).
 

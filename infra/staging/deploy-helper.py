@@ -28,6 +28,15 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 SITE = 'dartflow-staging'
 HOST = 'dg-nxttrack-01'
+PUBLIC_HOST = 'staging.dartflow.nl'
+PORT = 4174
+REPOSITORY = 'dartflow/platform'
+INTEGRATION_BRANCH = 'main'
+DEPLOYMENT_WORKFLOW = 'deploy-staging.yml'
+BACKEND_REF = 'dsnqnvbckkqpzadblshu'
+BUILD_PREFIX = 'dg-dartflow-staging-build-'
+GUARDIAN_PREFIX = 'dg-dartflow-staging-lock-'
+SIBLING_ACCOUNTS = ('run-dart-prd', 'build-dart-prd', 'app-dart-prd')
 SERVICE = SITE + '.service'
 RUNNER = 'run-dart-stg'
 BUILDER = 'build-dart-stg'
@@ -248,14 +257,14 @@ def read_policy():
     policy = read_json(POLICY)
     fields = {'version', 'repository', 'integrationBranch', 'requiredChecks', 'port', 'node', 'npm', 'gateSha256', 'extractorSha256', 'guardianSha256', 'backend', 'accounts', 'allowedConfigIds', 'minFreeBytes', 'minFreeInodes', 'maxSourceBytes', 'maxSourceFiles', 'maxArtifactBytes', 'maxArtifactFiles', 'buildMemoryMax', 'buildCpuQuota', 'buildTimeoutSeconds', 'healthAttempts', 'healthPauseSeconds', 'serviceTimeoutSeconds'}
     require(isinstance(policy, dict) and set(policy) == fields and policy['version'] == 1, 'Incomplete fixed policy')
-    require(isinstance(policy['repository'], str) and re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', policy['repository']), 'Missing verified repository')
-    require(isinstance(policy['integrationBranch'], str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_./-]{0,99}', policy['integrationBranch']) and '..' not in policy['integrationBranch'], 'Missing integration branch')
-    require(isinstance(policy['backend'], dict) and set(policy['backend']) == {'projectRef'} and isinstance(policy['backend']['projectRef'], str) and re.fullmatch('[a-z0-9]{20}', policy['backend']['projectRef']), 'Missing dedicated Dartflow backend identity')
+    require(policy['repository'] == REPOSITORY, 'Wrong fixed repository')
+    require(policy['integrationBranch'] == INTEGRATION_BRANCH, 'Wrong fixed integration branch')
+    require(isinstance(policy['backend'], dict) and set(policy['backend']) == {'projectRef'} and isinstance(policy['backend']['projectRef'], str) and policy['backend']['projectRef'] == BACKEND_REF, 'Missing dedicated Dartflow backend identity')
     checks = policy['requiredChecks']
     require(isinstance(checks, list) and 1 <= len(checks) <= 10, 'Missing exact CI policy')
     for check in checks:
         require(isinstance(check, dict) and set(check) == {'workflow', 'jobs', 'events'} and re.fullmatch(r'[A-Za-z0-9_.-]+\.ya?ml', check.get('workflow', '')) and isinstance(check['jobs'], list) and check['jobs'] and all(isinstance(j, str) and 1 <= len(j) <= 120 for j in check['jobs']) and check['events'] == ['push'], 'Unsafe required checks')
-    require(type(policy['port']) is int and 1024 <= policy['port'] <= 65535 and policy['port'] != 4173, 'Missing verified free port')
+    require(type(policy['port']) is int and policy['port'] == PORT and PORT != 4173, 'Wrong fixed environment port')
     for name in ['node', 'npm']:
         trusted_tool(policy[name])
         require(os.access(policy[name], os.X_OK), 'Pinned tool unavailable')
@@ -269,9 +278,14 @@ def read_policy():
         require(accounts[person.pw_name] == {'uid': person.pw_uid, 'gid': person.pw_gid} and person.pw_uid != 0, 'Dedicated account identity differs')
     require(len({p.pw_uid for p in actual}) == 3 and len({p.pw_gid for p in actual}) == 3, 'Accounts must be isolated')
     siblings = [pwd.getpwnam(name) for name in ['run-mil-stg', 'build-mil-stg', 'app-mil-stg']]
+    for name in SIBLING_ACCOUNTS:
+        try:
+            siblings.append(pwd.getpwnam(name))
+        except KeyError:
+            pass  # The other dedicated environment need not be installed yet.
     reserved_uids = {1001, 990, 996} | {p.pw_uid for p in siblings}
     reserved_gids = {1002, 983, 987} | {p.pw_gid for p in siblings}
-    require(not {p.pw_uid for p in actual} & reserved_uids and not {p.pw_gid for p in actual} & reserved_gids, 'Milo identities cannot be reused')
+    require(not {p.pw_uid for p in actual} & reserved_uids and not {p.pw_gid for p in actual} & reserved_gids, 'Milo identities or sibling environment identities cannot be reused')
     for person in actual:
         allowed = {person.pw_gid}
         if person.pw_name == RUNNER:
@@ -299,7 +313,7 @@ def request_body(stream, operation):
 
 def public_values(values):
     require(isinstance(values, dict) and set(values) == set(PUBLIC_KEYS) and all(isinstance(v, str) and 1 <= len(v) <= 4096 and all(33 <= ord(c) < 127 for c in v) for v in values.values()), 'Invalid public configuration')
-    require(values['DARTFLOW_APP_ORIGIN'] == 'https://staging.dartflow.nl' and values['DARTFLOW_DATA_MODE'] == 'supabase', 'Wrong staging origin or mode')
+    require(values['DARTFLOW_APP_ORIGIN'] == 'https://' + PUBLIC_HOST and values['DARTFLOW_DATA_MODE'] == 'supabase', 'Wrong fixed environment origin or mode')
     parsed = urlsplit(values['NEXT_PUBLIC_SUPABASE_URL'])
     require(parsed.scheme == 'https' and parsed.hostname and re.fullmatch(r'[a-z0-9]{20}\.supabase\.co', parsed.hostname) and not parsed.username and not parsed.password and not parsed.port and parsed.path in ['', '/'] and not parsed.query and not parsed.fragment, 'Wrong public backend origin')
     require(values['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'].startswith('sb_publishable_'), 'Wrong public key type')
@@ -396,7 +410,7 @@ def start_guardian(lock_fds, run, policy):
     require(re.fullmatch(RUN_RE, run), 'Invalid guardian run')
     trusted_path(GUARDIAN)
     require(file_digest(GUARDIAN) == policy['guardianSha256'], 'Guardian digest differs')
-    unit = 'dg-dartflow-lock-' + run + '.service'
+    unit = GUARDIAN_PREFIX + run + '.service'
     start = Path('/proc/self/stat').read_text().rsplit(')', 1)[1].split()[19]
     args = ['/usr/bin/systemd-run', '--quiet', '--wait', '--collect', '--pipe', '--service-type=notify', '--unit=' + unit, '--uid=root', '--gid=root', '--property=NotifyAccess=main', '--property=TimeoutStartSec=10', '--property=TimeoutStopSec=infinity', '--property=KillMode=process', '--property=NoNewPrivileges=yes', '--property=ProtectSystem=strict', '--property=ProtectHome=yes', '--property=PrivateTmp=yes', '--property=CapabilityBoundingSet=', '--property=TasksMax=32', '--property=MemoryMax=64M', '--property=CPUQuota=10%', '/usr/bin/python3', '-I', str(GUARDIAN), run, str(os.getpid()), start]
     process = subprocess.Popen(args, stdin=lock_fds[0], stdout=lock_fds[1], stderr=subprocess.DEVNULL, env=CLEAN_ENV, close_fds=True)
@@ -432,7 +446,7 @@ def command(argv, **options):
 
 def github_gate(policy, sha, token, run):
     run_id, attempt = run.split('-')
-    payload = {'repository': policy['repository'], 'integrationBranch': policy['integrationBranch'], 'sha': sha, 'requiredChecks': policy['requiredChecks'], 'githubToken': token, 'deploymentRun': {'id': run_id, 'attempt': int(attempt)}}
+    payload = {'repository': policy['repository'], 'integrationBranch': policy['integrationBranch'], 'sha': sha, 'requiredChecks': policy['requiredChecks'], 'githubToken': token, 'deploymentRun': {'id': run_id, 'attempt': int(attempt)}, 'deploymentWorkflow': DEPLOYMENT_WORKFLOW}
     result = subprocess.run([policy['node'], GATE, '--stdin'], input=json.dumps(payload).encode(), env=CLEAN_ENV, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=90, check=True)
     require(len(result.stdout) <= 65536, 'Oversized release-gate evidence')
     evidence = json.loads(result.stdout, object_pairs_hook=unique_object)
@@ -486,7 +500,7 @@ def build_command(argv, work, policy, run, stage, values=None, stdin=None):
     if values:
         require(set(values) <= set(PUBLIC_KEYS) | {'DARTFLOW_RELEASE_SHA', 'DARTFLOW_RELEASE_ID', 'DARTFLOW_BUILD_CONFIG_ID', 'DARTFLOW_RUNTIME_CONFIG_ID'}, 'Build secret or unknown variable refused')
         env.update(values)
-    unit = 'dg-dartflow-build-' + run + '-' + stage
+    unit = BUILD_PREFIX + run + '-' + stage
     args = ['/usr/bin/systemd-run', '--quiet', '--wait', '--collect', '--pipe', '--service-type=exec', '--unit=' + unit, '--uid=' + BUILDER, '--gid=' + BUILDER, '--working-directory=' + str(work / 'source'), '--property=KillMode=control-group', '--property=RuntimeMaxSec=' + str(policy['buildTimeoutSeconds']), '--property=TimeoutStopSec=10', '--property=UMask=0077', '--property=NoNewPrivileges=yes', '--property=ProtectSystem=strict', '--property=ProtectHome=yes', '--property=PrivateTmp=yes', '--property=ProtectProc=invisible', '--property=RestrictSUIDSGID=yes', '--property=CapabilityBoundingSet=', '--property=TasksMax=256', '--property=MemoryMax=' + policy['buildMemoryMax'], '--property=CPUQuota=' + policy['buildCpuQuota'], '--property=InaccessiblePaths=/etc/dg-sites /srv/sites /home/' + RUNNER, '--property=ReadWritePaths=' + str(work), '/usr/bin/env', '-i', *[key + '=' + value for key, value in env.items()], *argv]
     try:
         # systemd v255 preserves these extra FDs in the trusted --wait client.
@@ -542,9 +556,9 @@ def metadata(root, name, policy):
 
 
 def http_identity(meta, endpoint, public=False):
-    connection = http.client.HTTPSConnection('staging.dartflow.nl', timeout=2) if public else http.client.HTTPConnection('127.0.0.1', meta['port'], timeout=2)
+    connection = http.client.HTTPSConnection(PUBLIC_HOST, timeout=2) if public else http.client.HTTPConnection('127.0.0.1', meta['port'], timeout=2)
     try:
-        connection.request('GET', endpoint, headers={'Host': 'staging.dartflow.nl', 'Cache-Control': 'no-cache'})
+        connection.request('GET', endpoint, headers={'Host': PUBLIC_HOST, 'Cache-Control': 'no-cache'})
         response = connection.getresponse()
         raw = response.read(65537)
         if response.status != 200 or len(raw) > 65536:

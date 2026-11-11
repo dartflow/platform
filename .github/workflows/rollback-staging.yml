@@ -28,6 +28,7 @@ jobs:
           python3 -I - <<'PY'
           import json,os,re
           with open('ops/release-policy.json') as source: policy=json.load(source)
+          assert policy.get('environment') == 'staging' and policy.get('deploymentWorkflow') == 'deploy-staging.yml', 'Wrong fixed environment'
           assert policy.get('nativeEnabled') is True, 'Native contract not installed and verified'
           assert policy.get('repository') == os.environ['GITHUB_REPOSITORY'], 'Wrong repository'
           assert policy.get('integrationBranch') and os.environ['GITHUB_REF'] == 'refs/heads/'+policy['integrationBranch'], 'Wrong integration branch'

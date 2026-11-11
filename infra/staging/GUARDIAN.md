@@ -1,8 +1,10 @@
 # Dartflow lockhouder: installatie- en herstelgrens
 
-Deze bron is lokaal voorbereid en offline getest. Er is geen guardian op de doelhost geïnstalleerd of gestart. `nativeEnabled` blijft uit totdat de echte hostproef hieronder is uitgevoerd.
+Deze bron is lokaal voorbereid en offline getest. De hostproef moet per geïnstalleerde omgeving expliciet zijn bewezen voordat native deployment wordt vrijgegeven. Zie [RENDERING.md](RENDERING.md) voor de twee vaste copies, installatiecontract en uitvoerbaar hostproefcommando.
 
-De roothelper start vóór bron-/packagecode een afzonderlijke root-owned transient service `dg-dartflow-lock-<run-id>-<attempt>.service`. De vaste executable is `/usr/local/libexec/dartflow-lock-guardian.py`, afkomstig uit `lock-guardian.py`, root:root `0755`. De root-only deploypolicy moet de beoordeelde `guardianSha256` bevatten. Ook de gewijzigde helperdigest en de gerenderde entry-/sudoers-digests moeten opnieuw worden vastgelegd. De runner krijgt geen directe sudo-regel voor deze guardian of voor `systemd-run`.
+Dit document noemt de stagingnamen; de productioncopy heeft uitsluitend de vaste `dartflow-production`-namen en eigen scopes uit `RENDERING.md`. Beide delen dezelfde hostbrede buildlock.
+
+De roothelper start vóór bron-/packagecode een afzonderlijke root-owned transient service `dg-dartflow-staging-lock-<run-id>-<attempt>.service`. De vaste executable is `/usr/local/libexec/dartflow-lock-guardian.py`, afkomstig uit `lock-guardian.py`, root:root `0755`. De root-only deploypolicy moet de beoordeelde `guardianSha256` bevatten. Ook de gewijzigde helperdigest en de gerenderde entry-/sudoers-digests moeten opnieuw worden vastgelegd. De runner krijgt geen directe sudo-regel voor deze guardian of voor `systemd-run`.
 
 De guardian ontvangt de **bestaande open-file descriptions** van `/run/lock/dg-build.lock` en `/run/lock/dartflow-staging.deploy.lock` via respectievelijk stdin en stdout van `systemd-run --pipe`. Hij schrijft nooit op deze descriptors. Er worden geen token, runtimecredential, publieke configuratie of repositorycode doorgegeven. De helper begint pas nadat de `Type=notify`-service `active/running` meldt; de guardian heeft dan beide descriptors, de helperidentiteit/starttijd en diens `pidfd` gecontroleerd. Hij draait buiten de runner-/helpercgroup.
 
@@ -11,15 +13,15 @@ Ook de vertrouwde **`systemd-run --wait`-buildclient** bewaart beide lockdescrip
 Bij helperdood via `pidfd`, of een normale eindaanvraag via `SIGUSR1`, stopt de guardian uitsluitend deze vier vaste units voor dezelfde run:
 
 ```text
-dg-dartflow-build-<run>-extract.service
-dg-dartflow-build-<run>-versions.service
-dg-dartflow-build-<run>-install.service
-dg-dartflow-build-<run>-build.service
+dg-dartflow-staging-build-<run>-extract.service
+dg-dartflow-staging-build-<run>-versions.service
+dg-dartflow-staging-build-<run>-install.service
+dg-dartflow-staging-build-<run>-build.service
 ```
 
 Elke stop-/statusaanroep heeft een deadline. Vrijgave vereist voor alle vier `is-active`-exitcode `3` of `4`, plus een betrouwbaar gelezen, volledige `systemctl list-jobs --no-legend --no-pager --full` zonder job voor deze buildunits of voor exact `dartflow-staging.service`. Een nog lopende app-restart/-stop mag afronden; de guardian stopt geen gezonde app en raakt Milo niet aan. Bij een fout of onzekere status blijft hij de locks vasthouden en probeert hij de begrensde controle opnieuw. Zijn stop-timeout is daarom bewust oneindig; er is geen `RuntimeMaxSec` die de lockhouder voortijdig kan wegschieten. De normale helper wacht begrensd op afronding en rapporteert anders een fout die rootherstel vereist.
 
-Voor handmatig herstel leest de bevoegde beheerder de status van de exacte guardian, de vier buildunits en de volledige joblijst. Rond of stop uitsluitend de betrokken Dartflow-buildunits; laat de bestaande appjob gecontroleerd afronden. Zodra geen build of appjob meer loopt, kan de beheerder de betreffende guardian met `systemctl kill --kill-whom=main --signal=SIGUSR1 dg-dartflow-lock-<run>.service` opnieuw om de afsluitcontrole vragen en wachten tot hij inactief/verdwenen is. Verwijder, vervang of truncate de lockbestanden nooit. Forceer geen `SIGKILL` op een lockhouder zolang een betrokken client, build of appjob nog loopt.
+Voor handmatig herstel leest de bevoegde beheerder de status van de exacte guardian, de vier buildunits en de volledige joblijst. Rond of stop uitsluitend de betrokken Dartflow-buildunits; laat de bestaande appjob gecontroleerd afronden. Zodra geen build of appjob meer loopt, kan de beheerder de betreffende guardian met `systemctl kill --kill-whom=main --signal=SIGUSR1 dg-dartflow-staging-lock-<run>.service` opnieuw om de afsluitcontrole vragen en wachten tot hij inactief/verdwenen is. Verwijder, vervang of truncate de lockbestanden nooit. Forceer geen `SIGKILL` op een lockhouder zolang een betrokken client, build of appjob nog loopt.
 
 Een harde helperdood tijdens activatie kan buiten Python-exceptionrollback vallen. Na zo'n incident zijn appstatus, de exacte actieve SHA/configuratie en beide health-/readinesspaden opnieuw te controleren; zo nodig volgt de begrensde rollback naar een bekende verzegelde release. De guardian claimt geen crashherstel van applicatiestatus. Gelijktijdig hard beëindigen van **alle** root-lockhouders, inclusief guardian en vertrouwde clients, valt buiten deze garantie.
 

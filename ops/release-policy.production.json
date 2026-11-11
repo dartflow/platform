@@ -1,0 +1,12 @@
+{
+  "repository": "dartflow/platform",
+  "integrationBranch": "main",
+  "requiredChecks": [{"workflow":"ci.yml","jobs":["Verify"],"events":["push"]}],
+  "nativeEnabled": true,
+  "environment": "production",
+  "deploymentWorkflow": "deploy-production.yml",
+  "targetHost": "dg-nxttrack-01",
+  "site": "dartflow-production",
+  "origin": "https://dartflow.nl",
+  "supabaseProjectRef": "wlrnowuownakqqgjxnbb"
+}

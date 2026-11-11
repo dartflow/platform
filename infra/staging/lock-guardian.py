@@ -19,6 +19,8 @@ import time
 
 RUN_RE = r'[1-9][0-9]{0,19}-[1-9][0-9]{0,9}'
 STAGES = ('extract', 'versions', 'install', 'build')
+SERVICE = 'dartflow-staging.service'
+BUILD_PREFIX = 'dg-dartflow-staging-build-'
 CLEAN_ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C.UTF-8'}
 GLOBAL_LOCK = Path('/run/lock/dg-build.lock')
 SITE_LOCK = Path('/run/lock/dartflow-staging.deploy.lock')
@@ -58,7 +60,7 @@ def stop_builds(run, execute=subprocess.run):
     """Every command has a deadline; inability to prove a stop never releases locks."""
     safe = True
     for stage in STAGES:
-        unit = 'dg-dartflow-build-' + run + '-' + stage + '.service'
+        unit = BUILD_PREFIX + run + '-' + stage + '.service'
         try:
             execute(['/usr/bin/systemctl', 'stop', unit], env=CLEAN_ENV, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=12, check=False)
         except (OSError, subprocess.SubprocessError):
@@ -79,7 +81,7 @@ def stop_builds(run, execute=subprocess.run):
             if len(fields) < 4 or not fields[0].isdigit():
                 return False
             # Do not stop a healthy app: let a manager-side restart/stop finish.
-            if fields[1] == 'dartflow-staging.service' or fields[1] in ['dg-dartflow-build-' + run + '-' + stage + '.service' for stage in STAGES]:
+            if fields[1] == SERVICE or fields[1] in [BUILD_PREFIX + run + '-' + stage + '.service' for stage in STAGES]:
                 return False
     except (OSError, ValueError, subprocess.SubprocessError):
         return False

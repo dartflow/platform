@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "environment": "production",
+  "run": "9100000060631-1",
+  "unit": "dg-dartflow-production-build-9100000060631-1-build.service",
+  "guardian": "dg-dartflow-production-lock-9100000060631-1.service",
+  "observedBlocked": {
+    "guardianStatusText": "Build or app-job cleanup blocked; deployment locks retained; root recovery required",
+    "guardianState": "active/running",
+    "buildState": "deactivating/stop",
+    "globalLock": "busy",
+    "siteLock": "busy",
+    "stopJob": "pending"
+  },
+  "rootRecovery": "SIGKILL only synthetic build cgroup",
+  "final": {
+    "build": "stopped",
+    "guardian": "stopped",
+    "globalLock": "free",
+    "siteLock": "free"
+  },
+  "seconds": 19.417,
+  "proofSha256": "0e807dc0c153b0fc0f77e91d77a437c22afb913cb97b1574b4bbbf6f0155328f"
+}

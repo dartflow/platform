@@ -1,0 +1,147 @@
+{
+  "recordedAt": "2026-11-11T09:20:07.779683+00:00",
+  "hostname": "dg-nxttrack-01",
+  "scope": "Read-only socket HEAD/status/dependency/digest checks; no API response bodies or credential files read; no fixtures or mutations",
+  "headProbes": {
+    "root": {
+      "uid": 0,
+      "bodyRead": false,
+      "reachable": true,
+      "httpStatus": 405
+    },
+    "run-mil-stg": {
+      "uid": 1001,
+      "bodyRead": false,
+      "reachable": true,
+      "httpStatus": 405
+    },
+    "build-mil-stg": {
+      "uid": 990,
+      "bodyRead": false,
+      "reachable": true,
+      "httpStatus": 405
+    },
+    "app-mil-stg": {
+      "uid": 996,
+      "bodyRead": false,
+      "reachable": true,
+      "httpStatus": 405
+    },
+    "run-dart-stg": {
+      "uid": 988,
+      "bodyRead": false,
+      "reachable": false,
+      "error": "ConnectionRefusedError"
+    },
+    "build-dart-stg": {
+      "uid": 987,
+      "bodyRead": false,
+      "reachable": false,
+      "error": "ConnectionRefusedError"
+    },
+    "app-dart-stg": {
+      "uid": 986,
+      "bodyRead": false,
+      "reachable": false,
+      "error": "ConnectionRefusedError"
+    },
+    "run-dart-prd": {
+      "uid": 985,
+      "bodyRead": false,
+      "reachable": false,
+      "error": "ConnectionRefusedError"
+    },
+    "build-dart-prd": {
+      "uid": 984,
+      "bodyRead": false,
+      "reachable": false,
+      "error": "ConnectionRefusedError"
+    },
+    "app-dart-prd": {
+      "uid": 983,
+      "bodyRead": false,
+      "reachable": false,
+      "error": "ConnectionRefusedError"
+    }
+  },
+  "consumerDependencies": {
+    "dartflow-staging.service": {
+      "code": 0,
+      "stdout": "Requires=sysinit.target dartflow-admin-guard.service system.slice -.mount\nAfter=dartflow-admin-guard.service basic.target -.mount systemd-tmpfiles-setup.service network-online.target systemd-journald.socket sysinit.target system.slice tmp.mount\nDropInPaths=/etc/systemd/system/dartflow-staging.service.d/20-admin-guard.conf",
+      "stderr": ""
+    },
+    "dartflow-production.service": {
+      "code": 0,
+      "stdout": "Requires=system.slice -.mount dartflow-admin-guard.service sysinit.target\nAfter=system.slice sysinit.target basic.target systemd-tmpfiles-setup.service network-online.target systemd-journald.socket tmp.mount dartflow-admin-guard.service -.mount\nDropInPaths=/etc/systemd/system/dartflow-production.service.d/20-admin-guard.conf",
+      "stderr": ""
+    },
+    "dartflow-actions-staging.service": {
+      "code": 0,
+      "stdout": "Requires=system.slice -.mount dartflow-admin-guard.service sysinit.target\nAfter=sysinit.target system.slice network-online.target basic.target systemd-journald.socket -.mount dartflow-admin-guard.service\nDropInPaths=/etc/systemd/system/dartflow-actions-staging.service.d/20-admin-guard.conf",
+      "stderr": ""
+    },
+    "dartflow-actions-production.service": {
+      "code": 0,
+      "stdout": "Requires=sysinit.target dartflow-admin-guard.service system.slice -.mount\nAfter=network-online.target systemd-journald.socket system.slice dartflow-admin-guard.service -.mount basic.target sysinit.target\nDropInPaths=/etc/systemd/system/dartflow-actions-production.service.d/20-admin-guard.conf",
+      "stderr": ""
+    }
+  },
+  "guardVerify": {
+    "code": 0,
+    "stdout": "{\"accounts\": {\"app-dart-prd\": 983, \"app-dart-stg\": 986, \"build-dart-prd\": 984, \"build-dart-stg\": 987, \"run-dart-prd\": 985, \"run-dart-stg\": 988}, \"chain\": \"output\", \"destinationPort\": 2019, \"destinations\": [\"127.0.0.0/8\", \"::1\"], \"expectedSha256\": \"bcdf9630036c78425c12a86034c49c3b42c2abe2104186054daf1df8e3ddfd94\", \"family\": \"inet\", \"host\": \"dg-nxttrack-01\", \"miloAndRootExcluded\": true, \"status\": \"already_exact\", \"table\": \"dartflow_admin_guard\"}",
+    "stderr": ""
+  },
+  "guardState": {
+    "code": 0,
+    "stdout": "ExecMainStatus=0\nBefore=dartflow-actions-staging.service dartflow-production.service dartflow-actions-production.service dartflow-staging.service network-pre.target network.target\nAfter=systemd-tmpfiles-setup.service tmp.mount systemd-journald.socket system.slice nftables.service local-fs.target -.mount\nActiveState=active\nSubState=exited\nFragmentPath=/etc/systemd/system/dartflow-admin-guard.service\nUnitFileState=enabled",
+    "stderr": ""
+  },
+  "miloService": {
+    "code": 0,
+    "stdout": "MainPID=52104\nActiveState=active\nSubState=running",
+    "stderr": ""
+  },
+  "miloCurrent": "releases/729d962b7401-42804436092-1",
+  "miloFileDigests": {
+    "/usr/local/bin/dg-site-deploy": "aee3e1e2e76f05d99f668ed7c756802da82033c4983216b90d7ea50de9f49bc7",
+    "/etc/systemd/system/milobingo-staging.service": "bf87320ca8c307bf69fdd9d97511f0129348d050edd516bd38efc6ad37333402",
+    "/etc/caddy/sites/milobingo-staging.caddy": "5768de11ddfa25d7bf72052fc3099d283d0a0676903caf0405d3b7ab8b10918e"
+  },
+  "miloPublicHealth": {
+    "httpStatus": 200,
+    "status": "ok",
+    "revision": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+    "releaseId": "42804436092-1",
+    "configVersion": "staging-2026-11-05-v1"
+  },
+  "ports": {
+    "4173": {
+      "connectCode": 0,
+      "listening": true
+    },
+    "4174": {
+      "connectCode": 111,
+      "listening": false
+    },
+    "4175": {
+      "connectCode": 111,
+      "listening": false
+    }
+  },
+  "rebootPerformed": false,
+  "summary": {
+    "status": "passed",
+    "failures": [],
+    "blockedDartflowAccounts": 6,
+    "allowedRootAndMiloAccounts": 4,
+    "allFourConsumerDependenciesLoaded": true,
+    "exactIpv4Ipv6TableVerified": true,
+    "persistentUnitEnabledAndLoaded": true,
+    "miloBaselinePreserved": true,
+    "resolvesEvidence": "docs/evidence/host-boundaries-live-2026-11-11.json networkAdminReview",
+    "unverified": [
+      "Actual reboot and post-reboot effect were not performed; enabled/active/dependency checks do not assert that reboot acceptance happened.",
+      "The six-UID HEAD effect was measured on the existing IPv4 listener. IPv6 rule exactness was verified through nft state; no IPv6 test listener was introduced."
+    ]
+  }
+}
