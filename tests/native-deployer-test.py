@@ -579,7 +579,8 @@ class CompleteReleaseFixture(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.site, self.build_root, self.config_root = [self.root / name for name in ['site', 'build', 'configs']]
         for directory in [self.site, self.site / 'releases', self.build_root, self.config_root]:
-            directory.mkdir(exist_ok=True)
+            directory.mkdir(mode=0o750, exist_ok=True)
+            directory.chmod(0o750)
         self.bundle = self.config_root / CONFIG
         self.bundle.mkdir(mode=0o700)
         (self.bundle / 'public.json').write_text(json.dumps(public()))
