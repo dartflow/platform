@@ -1,0 +1,57 @@
+{
+  "recordedAt": "2026-11-11T18:07:30Z",
+  "scope": "Authorized operator sets the requested staging app sender after verified activation; independent readback and audit metadata only",
+  "sourceSha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+  "releaseId": "43074167296-1",
+  "configId": "staging-2026-11-11-v15-mail-1",
+  "authorization": "User explicitly requested noreply@dartflow.nl; existing screenshot supplied support@dartflow.nl as Reply-To",
+  "operation": {
+    "environment": "staging",
+    "operatorAuditActor": "system/null; no owner identity impersonated",
+    "kind": "operator-mail-sender",
+    "settingsMutation": "Only requested From and Reply-To replaced on existing records; initial absent record starts Log with no selected test recipients",
+    "existingCredentialRecordsChanged": false,
+    "ownerRolesChanged": false,
+    "appModeCeilingChanged": false,
+    "productionChanged": false,
+    "supabaseAuthSmtpChanged": false,
+    "emailSent": false
+  },
+  "updateResult": {
+    "environment": "staging",
+    "revision": 1,
+    "from": {
+      "name": "DartFlow",
+      "address": "noreply@dartflow.nl"
+    },
+    "replyTo": "support@dartflow.nl",
+    "mode": "log",
+    "testRecipientCount": 0,
+    "auditRecordWritten": true,
+    "credentialsChanged": false,
+    "mailSent": false
+  },
+  "independentReadback": {
+    "environment": "staging",
+    "revision": 1,
+    "from": {
+      "name": "DartFlow",
+      "address": "noreply@dartflow.nl"
+    },
+    "replyTo": "support@dartflow.nl",
+    "mode": "log",
+    "testRecipientCount": 0,
+    "credentialKinds": [],
+    "matchingAuditRecordCount": 1,
+    "appFromCorrect": true,
+    "replyToCorrect": true
+  },
+  "acceptance": {
+    "senderStoredAndAudited": true,
+    "realProviderDeliveryProven": false,
+    "newOwnerReauthenticationProven": false,
+    "supabaseAuthSenderChangePerformed": false,
+    "productionSenderSettingWritten": false
+  },
+  "limits": "No Resend app API key or webhook secret is stored. App mail remains Log. Supabase SMTP sender requires separate owner Dashboard/config access; production still runs the prior app."
+}

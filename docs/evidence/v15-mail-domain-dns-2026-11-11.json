@@ -1,0 +1,36 @@
+{
+  "checkedAt": "2026-11-11T18:03:23.424129+00:00",
+  "scope": "Public DNS for usual Resend DKIM and default send subdomain; not a Resend account verification or delivery test",
+  "requestedSender": "noreply@dartflow.nl",
+  "resolver": "Google Public DNS HTTPS",
+  "checks": [
+    {
+      "name": "resend._domainkey.dartflow.nl",
+      "recordType": "TXT",
+      "dnsStatus": 0,
+      "answerCount": 1,
+      "dkimPresent": true
+    },
+    {
+      "name": "send.dartflow.nl",
+      "recordType": "TXT",
+      "dnsStatus": 0,
+      "answerCount": 1,
+      "dkimPresent": false,
+      "spfPresent": true
+    },
+    {
+      "name": "send.dartflow.nl",
+      "recordType": "MX",
+      "dnsStatus": 0,
+      "answerCount": 1,
+      "mailExchangers": [
+        "10 feedback.forge.rmta.net."
+      ]
+    }
+  ],
+  "verificationStatusKnown": false,
+  "emailSent": false,
+  "limits": "A provider may use different configured records or selectors. These DNS observations alone do not establish provider verification or successful delivery.",
+  "resendAccountVerificationProven": false
+}

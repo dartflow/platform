@@ -1,0 +1,265 @@
+{
+  "recordedAt": "2026-11-11T18:07:22.467Z",
+  "scope": "Reauthentication UI and mail-boundary staging activation; independent read-only verification, no production promotion or provider/user acceptance claim",
+  "deployment": {
+    "runUrl": "https://github.com/dartflow/platform/actions/runs/43074167296",
+    "runId": 43074167296,
+    "attempt": 1,
+    "event": "workflow_dispatch",
+    "workflowHeadSha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+    "status": "completed",
+    "conclusion": "success",
+    "createdAt": "2026-11-11T18:04:01Z",
+    "completedAt": "2026-11-11T18:06:16Z",
+    "jobs": [
+      {
+        "id": 130709546077,
+        "name": "Verify immutable release",
+        "conclusion": "success",
+        "completedAt": "2026-11-11T18:04:19Z"
+      },
+      {
+        "id": 130709701229,
+        "name": "Build and activate on target VPS",
+        "conclusion": "success",
+        "completedAt": "2026-11-11T18:06:15Z"
+      }
+    ],
+    "workflowAndBrokerGateEvidence": [
+      {
+        "ciRunUrl": "https://github.com/dartflow/platform/actions/runs/43073501502",
+        "sha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+        "status": "passed"
+      },
+      {
+        "ciRunUrl": "https://github.com/dartflow/platform/actions/runs/43073501502",
+        "configId": "staging-2026-11-11-v15-mail-1",
+        "releaseId": "43074167296-1",
+        "sha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+        "status": "passed"
+      }
+    ]
+  },
+  "independentHostCheck": {
+    "caddyActive": true,
+    "checkedAt": "2026-11-11T18:06:50.949818+00:00",
+    "host": "dg-nxttrack-01",
+    "milo": {
+      "current": "releases/f1550dd028ef-43026808427-1",
+      "loopback": {
+        "health": {
+          "body": {
+            "configVersion": "staging-2026-11-11-v2",
+            "releaseId": "43026808427-1",
+            "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 14:14:47 CET",
+        "ActiveState": "active",
+        "MainPID": "70911"
+      }
+    },
+    "production": {
+      "current": "releases/4634852c17cc-42995766522-1",
+      "loadedRuntimeMail": {
+        "allowedFrom": null,
+        "allowedReplyTo": null,
+        "configId": "production-2026-11-11-v1",
+        "maxMode": null,
+        "testRecipients": null
+      },
+      "loopback": {
+        "health": {
+          "body": {
+            "buildConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1",
+            "mode": "supabase",
+            "releaseId": "42995766522-1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        },
+        "ready": {
+          "body": {
+            "auth": "reachable",
+            "buildConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1",
+            "database": "ok",
+            "releaseId": "42995766522-1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "schemaVersion": 1,
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "status": "ready"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 10:32:39 CET",
+        "ActiveState": "active",
+        "MainPID": "64473"
+      }
+    },
+    "source": "SSH read-only: current symlinks, service metadata, loopback endpoints and loaded mail boundary/config keys only",
+    "staging": {
+      "current": "releases/e8317d22fcb7-43074167296-1",
+      "loadedRuntimeMail": {
+        "allowedFrom": "noreply@dartflow.nl",
+        "allowedReplyTo": "support@dartflow.nl",
+        "configId": "staging-2026-11-11-v15-mail-1",
+        "maxMode": "test",
+        "testRecipients": "info@dgwebservices.nl"
+      },
+      "loopback": {
+        "health": {
+          "body": {
+            "buildConfigId": "staging-2026-11-11-v15-mail-1",
+            "configId": "staging-2026-11-11-v15-mail-1",
+            "mode": "supabase",
+            "releaseId": "43074167296-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+            "sha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        },
+        "ready": {
+          "body": {
+            "auth": "reachable",
+            "buildConfigId": "staging-2026-11-11-v15-mail-1",
+            "configId": "staging-2026-11-11-v15-mail-1",
+            "database": "ok",
+            "releaseId": "43074167296-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+            "schemaVersion": 1,
+            "sha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+            "status": "ready"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 19:06:06 CET",
+        "ActiveState": "active",
+        "MainPID": "101136"
+      }
+    }
+  },
+  "independentPublicCheck": {
+    "checkedAt": "2026-11-11T18:06:49.691834+00:00",
+    "milo": {
+      "health": {
+        "body": {
+          "configVersion": "staging-2026-11-11-v2",
+          "releaseId": "43026808427-1",
+          "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+          "status": "ok"
+        },
+        "httpStatus": 200
+      }
+    },
+    "production": {
+      "health": {
+        "body": {
+          "buildConfigId": "production-2026-11-11-v1",
+          "configId": "production-2026-11-11-v1",
+          "mode": "supabase",
+          "releaseId": "42995766522-1",
+          "runtimeConfigId": "production-2026-11-11-v1",
+          "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+          "status": "ok"
+        },
+        "httpStatus": 200
+      },
+      "ready": {
+        "body": {
+          "auth": "reachable",
+          "buildConfigId": "production-2026-11-11-v1",
+          "configId": "production-2026-11-11-v1",
+          "database": "ok",
+          "releaseId": "42995766522-1",
+          "runtimeConfigId": "production-2026-11-11-v1",
+          "schemaVersion": 1,
+          "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+          "status": "ready"
+        },
+        "httpStatus": 200
+      }
+    },
+    "source": "Independent worker HTTPS GETs; allowlisted health/readiness metadata only",
+    "staging": {
+      "health": {
+        "body": {
+          "buildConfigId": "staging-2026-11-11-v15-mail-1",
+          "configId": "staging-2026-11-11-v15-mail-1",
+          "mode": "supabase",
+          "releaseId": "43074167296-1",
+          "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+          "sha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+          "status": "ok"
+        },
+        "httpStatus": 200
+      },
+      "ready": {
+        "body": {
+          "auth": "reachable",
+          "buildConfigId": "staging-2026-11-11-v15-mail-1",
+          "configId": "staging-2026-11-11-v15-mail-1",
+          "database": "ok",
+          "releaseId": "43074167296-1",
+          "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+          "schemaVersion": 1,
+          "sha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+          "status": "ready"
+        },
+        "httpStatus": 200
+      }
+    }
+  },
+  "preservation": {
+    "baselineEvidence": "docs/evidence/v15-reauth-mail-host-prepared-2026-11-11.json",
+    "production": {
+      "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+      "releaseId": "42995766522-1",
+      "configId": "production-2026-11-11-v1",
+      "mainPid": "64473",
+      "serviceStart": "Wed 2026-11-11 10:32:39 CET",
+      "currentSourceReleaseConfigPidAndStartUnchanged": true
+    },
+    "milo": {
+      "sha": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+      "releaseId": "43026808427-1",
+      "configId": "staging-2026-11-11-v2",
+      "mainPid": "70911",
+      "serviceStart": "Wed 2026-11-11 14:14:47 CET",
+      "currentSourceReleaseConfigPidAndStartUnchanged": true
+    }
+  },
+  "validation": {
+    "exactSourceReleaseAndConfigMatchPublicAndLoopback": true,
+    "loadedRuntimeMailMatchesPreparedBoundary": true,
+    "stagingDatabaseReady": true,
+    "stagingAuthReachable": true,
+    "productionAndMiloPublicAndLoopbackHealthy": true
+  },
+  "limits": [
+    "Activation and health/readiness do not establish a successful fresh user reauthentication, Google owner login or provider delivery.",
+    "Loaded runtime From/Reply-To/test boundaries do not prove an app-sender settings update or Resend/Supabase SMTP configuration.",
+    "No callback code, OTP, cookie, session credential or provider secret is included in this evidence."
+  ],
+  "operationsByThisObserver": {
+    "readOnlyWorkflowHttpAndHostChecks": true,
+    "credentialValuesOutput": false,
+    "hostMutations": false,
+    "directSqlExecuted": false,
+    "authOrProviderConfigurationChanged": false,
+    "mailOrOtpRequested": false,
+    "productionDeployed": false
+  }
+}

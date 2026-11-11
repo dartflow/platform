@@ -1,0 +1,219 @@
+{
+  "recordedAt": "2026-11-11T18:04:02.341Z",
+  "scope": "Successful CI for reauthentication recovery and separate noreply From/support Reply-To boundaries; not hosted activation, successful reauthentication or mail acceptance",
+  "sourceSha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+  "run": {
+    "databaseId": 43073501502,
+    "status": "completed",
+    "conclusion": "success",
+    "event": "push",
+    "createdAt": "2026-11-11T18:00:00Z",
+    "updatedAt": "2026-11-11T18:03:26Z",
+    "url": "https://github.com/dartflow/platform/actions/runs/43073501502"
+  },
+  "jobs": [
+    {
+      "id": 130707279272,
+      "name": "Verify",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-11-11T18:00:03Z",
+      "completedAt": "2026-11-11T18:03:25Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install repository-pinned npm and locked dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify preinstalled PostgreSQL 16",
+          "conclusion": "success"
+        },
+        {
+          "name": "Start isolated local test database",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run typecheck",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run lint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm test",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:prototype",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:deploy",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify privileged bootstrap contracts without host mutations",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify Auth redirect probe without network requests",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run build",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install pinned Chromium",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:e2e",
+          "conclusion": "success"
+        },
+        {
+          "name": "Package standalone candidate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop local test database",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "expired": false,
+      "id": 13880335273,
+      "name": "ci-e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+      "sizeBytes": 15912063
+    }
+  ],
+  "testSummary": [
+    {
+      "step": "Run npm test",
+      "summary": "\u2139 tests 104"
+    },
+    {
+      "step": "Run npm test",
+      "summary": "\u2139 suites 0"
+    },
+    {
+      "step": "Run npm test",
+      "summary": "\u2139 pass 104"
+    },
+    {
+      "step": "Run npm test",
+      "summary": "\u2139 fail 0"
+    },
+    {
+      "step": "Run npm test",
+      "summary": "\u2139 cancelled 0"
+    },
+    {
+      "step": "Run npm test",
+      "summary": "\u2139 skipped 0"
+    },
+    {
+      "step": "Run npm test",
+      "summary": "\u2139 todo 0"
+    },
+    {
+      "step": "Run npm run test:prototype",
+      "summary": "\u2139 tests 46"
+    },
+    {
+      "step": "Run npm run test:prototype",
+      "summary": "\u2139 suites 0"
+    },
+    {
+      "step": "Run npm run test:prototype",
+      "summary": "\u2139 pass 46"
+    },
+    {
+      "step": "Run npm run test:prototype",
+      "summary": "\u2139 fail 0"
+    },
+    {
+      "step": "Run npm run test:prototype",
+      "summary": "\u2139 cancelled 0"
+    },
+    {
+      "step": "Run npm run test:prototype",
+      "summary": "\u2139 skipped 0"
+    },
+    {
+      "step": "Run npm run test:prototype",
+      "summary": "\u2139 todo 0"
+    },
+    {
+      "step": "Run npm run test:deploy",
+      "summary": "Ran 57 tests in 0.550s"
+    },
+    {
+      "step": "Verify privileged bootstrap contracts without host mutations",
+      "summary": "Ran 8 tests in 0.057s"
+    },
+    {
+      "step": "Verify privileged bootstrap contracts without host mutations",
+      "summary": "Ran 6 tests in 0.002s"
+    },
+    {
+      "step": "Verify privileged bootstrap contracts without host mutations",
+      "summary": "Ran 5 tests in 0.012s"
+    },
+    {
+      "step": "Verify privileged bootstrap contracts without host mutations",
+      "summary": "Ran 10 tests in 0.004s"
+    },
+    {
+      "step": "Verify privileged bootstrap contracts without host mutations",
+      "summary": "Ran 8 tests in 0.006s"
+    },
+    {
+      "step": "Verify Auth redirect probe without network requests",
+      "summary": "Ran 8 tests in 0.003s"
+    },
+    {
+      "step": "Run npm run test:e2e",
+      "summary": "8 passed (1.3m)"
+    }
+  ],
+  "operationsByThisObserver": {
+    "readOnlyGitHubChecks": true,
+    "deploymentStarted": false,
+    "hostConfigurationChanged": false,
+    "authOrMailRequested": false,
+    "rawLogsOrCredentialsStored": false
+  }
+}
