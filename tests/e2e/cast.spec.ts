@@ -183,9 +183,16 @@ test("a pending tournament application needs real approval and preserves editabl
   await expect(
     applicant.getByRole("button", { name: "Ik ben aanwezig", exact: true }),
   ).toBeEnabled();
+  const checkedIn = applicant.waitForResponse((response) => {
+    if (!response.url().endsWith('/api/platform/actions') || response.request().method() !== 'POST') return false;
+    return response.request().postDataJSON()?.action?.type === 'competition.checkin';
+  });
   await applicant
     .getByRole("button", { name: "Ik ben aanwezig", exact: true })
     .click();
+  const checkInResponse=await checkedIn;
+  expect(checkInResponse.status(),await checkInResponse.text()).toBe(200);
+  await page.bringToFront();
   await expect(row.getByText("Ingecheckt", { exact: true })).toBeVisible();
   page.once("dialog", (dialog) =>
     dialog.accept("Deze aanmelding is na overleg met de speler ingetrokken."),

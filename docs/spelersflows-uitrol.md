@@ -11,7 +11,7 @@ Deze wijziging bouwt voort op v15 en de vaste verenigingsbanen. De normale route
 
 ## Uitgevoerde lokale controles
 
-De productiebuild, TypeScript en ESLint slagen. Alle 151 applicatie- en databasetests slagen zonder skips op een schone lokale fixture. De bestaande prototype- en deployercontroles slagen: 46 prototypecases en 57 native deployercases. De afzonderlijke runner-, cleanup-, runtime-, upgrade-, TURN- en Auth-grenscontroles slagen eveneens. De uitgepakte lokale Postgres-distributie mist de LLVM-runtime; alleen voor die loopbackfixture staat JIT daarom uit.
+De productiebuild, TypeScript en ESLint slagen. Alle 152 applicatie- en databasetests slagen zonder skips op een schone lokale fixture. De bestaande prototype- en deployercontroles slagen: 46 prototypecases en 57 native deployercases. De afzonderlijke runner-, cleanup-, runtime-, upgrade-, TURN- en Auth-grenscontroles slagen eveneens. De uitgepakte lokale Postgres-distributie mist de LLVM-runtime; alleen voor die loopbackfixture staat JIT daarom uit.
 
 Alle twaalf browserregressies slagen in lokaal Chromium, inclusief de bestaande wedstrijd-, QR-, verenigingsbaan-, zaal-, mailherauthenticatie- en mobiele flows. De nieuwe controles gebruiken uitsluitend loopbackfixtureaccounts:
 
@@ -23,6 +23,8 @@ Alle twaalf browserregressies slagen in lokaal Chromium, inclusief de bestaande 
 | Verplichte naam | Lege/witruimtenaam geweigerd via UI en API, placeholderprofiel aangevuld, Google-voorstel expliciet aangepast, beide gekozen namen zichtbaar in lobby en wedstrijd; DB-tests controleren geverifieerde Auth-provisioning en gelijktijdigheid | Echte e-mail- en Google-registratie op staging nog open |
 
 Fixturelogins en gesimuleerde camera's bewijzen geen fysieke telefoon- of echte provideracceptatie. Er zijn voor deze wijziging geen echte OTP-codes aangevraagd of providercredentials aangepast.
+
+De eerste echte CI-run voor deze spelersflows (`43098736073`, bron `7e730cf39d6877da7f13be2acfd93c45ef835916`) voerde alle controles uit. Alle nieuwe flows slaagden; een bestaande browserproef voor toernooigoedkeuring faalde bij check-in. De vervolgens gereproduceerde race tussen entiteitsrevisie en deelnemersstatus is hersteld door beide in dezelfde SQL-momentopname te lezen. Een gerichte regressie houdt een echte gelijktijdige goedkeuring tegen de leesgrens; verouderde schrijfverzoeken blijven geweigerd. De browserproef controleert nu ook de werkelijke HTTP-uitkomst van check-in.
 
 ## Releasevolgorde
 
@@ -44,4 +46,4 @@ De eerdere runs `43095319680`, `43096044898` en `43096546716` staan op queued zo
 
 GitHub noemt deze combinatie een mogelijke inconsistente workflowrun/checksuite die normale zelfbediening niet kan opruimen. Zie [de officiële troubleshooting](https://docs.github.com/en/actions/how-tos/troubleshoot-workflows#canceling-workflows). Het door de eigenaar aangeleverde ticket 4979898 voor een vergelijkbare VeyoCast-run is gesloten zonder technisch herstel. Er is namens de gebruiker geen nieuw supportbericht geplaatst. De huidige verbinding kan de organisatiepolicy niet lezen zonder extra `admin:org`-scope; een eigenaar kan de Actions-policy en eventuele account-/billingmelding in de webinterface controleren.
 
-Zolang echte CI niet uitvoert, worden de nieuwe hosted datamigraties en activatie uitgesteld. De eerder actieve stagingrelease is `e8317d22fcb7c4d1150962c94d18454af2f4a69b` (`43074167296-1`); productie is `4634852c17cc7737bec246c0b48310e975a36920` (`42995766522-1`). De uiteindelijke actieve identiteit moet opnieuw via `health` en `ready` worden vastgesteld; bovenstaande bronwijzigingen zijn geen bewijs van hosted uitrol.
+Zolang de vereiste CI niet geslaagd is, worden de nieuwe hosted datamigraties en activatie uitgesteld. De eerder actieve stagingrelease is `e8317d22fcb7c4d1150962c94d18454af2f4a69b` (`43074167296-1`); productie is `4634852c17cc7737bec246c0b48310e975a36920` (`42995766522-1`). De uiteindelijke actieve identiteit moet opnieuw via `health` en `ready` worden vastgesteld; bovenstaande bronwijzigingen zijn geen bewijs van hosted uitrol.

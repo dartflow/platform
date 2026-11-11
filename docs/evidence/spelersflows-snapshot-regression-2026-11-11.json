@@ -1,0 +1,28 @@
+{
+  "recordedAt": "2026-11-11T21:12:45.204313+00:00",
+  "firstCandidateSha": "7e730cf39d6877da7f13be2acfd93c45ef835916",
+  "ciRunId": 43098736073,
+  "ciConclusion": "failure",
+  "failedTest": "tests/e2e/cast.spec.ts:106",
+  "newBrowserFlows": "All new invitation, camera, per-player and name flows passed the real CI run.",
+  "diagnosis": "Separate entity/member reads can combine a pre-approval revision with a post-approval membership. This race was reproduced deterministically with real Postgres and a concurrent authorized approval.",
+  "fix": "Read revisions and explicit member projection in one SQL snapshot; preserve stale-write rejection.",
+  "regression": "tests/platform-snapshot.test.ts",
+  "verificationAfterFix": {
+    "productionBuild": "pass",
+    "typecheck": "pass",
+    "lint": "pass",
+    "localApplicationTests": {
+      "pass": 152,
+      "fail": 0,
+      "skip": 0
+    },
+    "localBrowserTests": {
+      "pass": 12,
+      "fail": 0
+    },
+    "nativeCiForFixedSource": "pending push"
+  },
+  "newHostedMigrationsApplied": false,
+  "newAppActivated": false
+}

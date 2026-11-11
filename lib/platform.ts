@@ -146,14 +146,17 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
   await reconcilePlatformResults();
   await reconcilePlatformCalls();
   const client = database();
-  const { rows: entities } = await client.query<EntityRow>(`select e.*,(select i.code from dartflow_private.invitation_codes i where i.entity_id=e.id and i.expires_at>now() order by i.created_at desc,i.code limit 1) as invitation_code from dartflow_private.platform_entities e where
+  // Entity revisions and membership permissions must describe the same committed state.
+  const { rows: entities } = await client.query<EntityRow&{member_snapshot:PlatformMember[]}>(`select e.*,
+    (select coalesce(jsonb_agg(jsonb_build_object('id',m.user_id,'name',p.name,'role',m.role,'status',m.status,'attributes',m.attributes) order by m.created_at,m.user_id),'[]'::jsonb) from dartflow_private.platform_members m join dartflow_private.profiles p on p.id=m.user_id where m.entity_id=e.id) as member_snapshot,
+    (select i.code from dartflow_private.invitation_codes i where i.entity_id=e.id and i.expires_at>now() order by i.created_at desc,i.code limit 1) as invitation_code from dartflow_private.platform_entities e where
     (e.owner_id=$1 or exists(select 1 from dartflow_private.platform_members m where m.entity_id=e.id and m.user_id=$1 and m.status in ('active','invited','pending','waitlisted')) or (e.visibility='public' and e.kind in ('club','room','league','tournament')) or (e.visibility='club' and exists(select 1 from dartflow_private.club_memberships c where c.club_id=e.club_id and c.user_id=$1)))
     and not exists(select 1 from dartflow_private.platform_members m where m.entity_id=e.id and m.user_id=$1 and m.status='banned')
     and (e.club_id is null or exists(select 1 from dartflow_private.club_memberships c where c.club_id=e.club_id and c.user_id=$1) or (e.kind in ('league','tournament') and e.state->>'eligibility' in ('all','code')))
     and (e.kind<>'room' or e.state->>'competitionId' is null or exists(select 1 from dartflow_private.platform_entities ce left join dartflow_private.platform_members cm on cm.entity_id=ce.id and cm.user_id=$1 where ce.id::text=e.state->>'competitionId' and (ce.owner_id=$1 or(cm.status='active' and cm.attributes->>'registered'='true')) and (ce.club_id is null or exists(select 1 from dartflow_private.club_memberships c where c.club_id=ce.club_id and c.user_id=$1) or ce.state->>'eligibility' in ('all','code'))))
     and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$1 and b.target_id=e.owner_id) or (b.target_id=$1 and b.source_id=e.owner_id)))
     order by e.updated_at desc,e.id limit 250`, [actor]);
-  const memberRows=await client.query<PlatformMember&{entityId:string}>('select m.entity_id as "entityId",m.user_id as id,p.name,m.role,m.status,m.attributes from dartflow_private.platform_members m join dartflow_private.profiles p on p.id=m.user_id where m.entity_id=any($1::uuid[]) order by m.created_at,m.user_id',[entities.map(e=>e.id)]);
+  const memberRows={rows:entities.flatMap(row=>row.member_snapshot.map(member=>({...member,entityId:row.id})))};
   const list = await Promise.all(entities.map(row => view(client, row, actor,memberRows.rows.filter(m=>m.entityId===row.id))));
   const { rows: people } = await client.query<Profile>(`select p.id,p.name from dartflow_private.profiles p left join dartflow_private.platform_preferences f on f.user_id=p.id where p.id<>$1 and coalesce(f.discoverable,true)
     and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$1 and b.target_id=p.id) or (b.target_id=$1 and b.source_id=p.id))) order by p.name,p.id limit 200`, [actor]);
