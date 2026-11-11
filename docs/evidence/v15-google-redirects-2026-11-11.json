@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-11-11T16:11:44.152091+00:00",
+  "results": [
+    {
+      "environment": "staging",
+      "appOrigin": "https://staging.dartflow.nl",
+      "projectRef": "dsnqnvbckkqpzadblshu",
+      "appToSupabaseRedirect": "passed",
+      "pkceChallengePresent": true,
+      "supabaseToGoogleRedirect": "passed",
+      "googleCallback": "https://dsnqnvbckkqpzadblshu.supabase.co/auth/v1/callback",
+      "clientIdSha256": "de852f58001df022cf7f0af1bbd725d082659bea656b84b5fb187861dd4540c6",
+      "loginCompleted": false,
+      "limit": "Stops before Google account selection/consent; no callback, verified session or owner-role acceptance claimed."
+    },
+    {
+      "environment": "production",
+      "appOrigin": "https://dartflow.nl",
+      "projectRef": "wlrnowuownakqqgjxnbb",
+      "appToSupabaseRedirect": "passed",
+      "pkceChallengePresent": true,
+      "supabaseToGoogleRedirect": "passed",
+      "googleCallback": "https://wlrnowuownakqqgjxnbb.supabase.co/auth/v1/callback",
+      "clientIdSha256": "4a35038a0776b8f2d5b16de70897e3337dd3c941b8754d04719fac5a6215798e",
+      "loginCompleted": false,
+      "limit": "Stops before Google account selection/consent; no callback, verified session or owner-role acceptance claimed."
+    }
+  ],
+  "separateGoogleWebClientIds": true
+}

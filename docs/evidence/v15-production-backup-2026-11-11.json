@@ -1,0 +1,114 @@
+{
+  "checkedAt": "2026-11-11T16:16:18.122637+00:00",
+  "environment": "production",
+  "projectRef": "wlrnowuownakqqgjxnbb",
+  "scope": "dartflow_private schema and runtime-visible application rows only; not a full Supabase/Auth/managed-service backup",
+  "sourceRelease": {
+    "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+    "releaseId": "42995766522-1",
+    "configId": "production-2026-11-11-v1"
+  },
+  "backup": {
+    "createdAt": "2026-11-11T16:14:11.394717+00:00",
+    "hostPath": "/var/backups/dartflow/v15-db-production-20261111T161408320422Z/dartflow-production.dump",
+    "bytes": 51659,
+    "sha256": "a79a98fcd36fd0d73a4d9c0aec8ba207989f11e32dea341dcd869d73bcad2ee5",
+    "directoryMode": "0700",
+    "fileMode": "0600",
+    "owner": "root:root",
+    "archiveIndexVerified": true,
+    "archiveTables": 18,
+    "clientVersion": "PostgreSQL 17.11",
+    "connection": "Fixed production project host and dartflow_app account; parsed PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD environment; verify-full with pinned public CA",
+    "enableRowSecurity": true,
+    "credentialsInArgvOrOutput": false
+  },
+  "before": {
+    "currentUser": "dartflow_app",
+    "coreSchema": 1,
+    "privateTables": 18,
+    "rlsTables": 18,
+    "profiles": 0,
+    "clubs": 0,
+    "matches": 0,
+    "v15Present": false
+  },
+  "afterBackup": {
+    "currentUser": "dartflow_app",
+    "coreSchema": 1,
+    "privateTables": 18,
+    "rlsTables": 18,
+    "profiles": 0,
+    "clubs": 0,
+    "matches": 0,
+    "v15Present": false
+  },
+  "restoreDrill": {
+    "result": "passed",
+    "target": "isolated local PostgreSQL16 scratch database in development fixture; main database untouched",
+    "restored": {
+      "core_schema": 1,
+      "tables": 18,
+      "rls_tables": 18,
+      "profiles": 0,
+      "clubs": 0,
+      "matches": 0,
+      "v15_present": false
+    },
+    "formatAdaptation": {
+      "description": "Only PostgreSQL17 psql restrict markers and transaction_timeout session setting omitted; schema, rows and grants retained",
+      "psqlRestrictMarkers": 2,
+      "transactionTimeoutSessionSetting": 1
+    },
+    "credentialsInArgvOrOutput": false,
+    "scratchDatabaseRemoved": true,
+    "localArchive": "/home/codex/repos/dartflow/.local/v15-production-restore-a62f18b298f90b82/dartflow-production.dump",
+    "protectedScratchDirectory": "/home/codex/repos/dartflow/.local/v15-production-restore-a62f18b298f90b82",
+    "localDirectoryMode": "0700",
+    "localArchiveMode": "0600",
+    "transferDigestVerified": true
+  },
+  "postBackupHost": {
+    "production": {
+      "active": true,
+      "mainPid": 64473,
+      "sourceUnchanged": true,
+      "loopbackHealth": 200,
+      "loopbackReady": 200,
+      "publicHealth": 200,
+      "publicReady": 200
+    },
+    "caddy": {
+      "active": true,
+      "mainPid": 3243
+    },
+    "milo": {
+      "unit": "milobingo-staging.service",
+      "mainPid": 70911,
+      "samePidAsPriorEvidence": true,
+      "loopbackHealth": 200,
+      "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+      "releaseId": "43026808427-1",
+      "configVersion": "staging-2026-11-11-v2"
+    },
+    "staging": {
+      "loopbackHealth": 200,
+      "loopbackReady": 200,
+      "publicHealth": 200,
+      "publicReady": 200,
+      "observedSource": "be635592950e1c4beb6b4b1bb75b770ce43b202a",
+      "observedReleaseId": "43056058034-1",
+      "note": "Parent deployment task independently promoted staging during this backup; this backup procedure performed no app/service changes."
+    }
+  },
+  "mutationsPerformed": {
+    "target": "Created only a fresh root-only backup directory and archive; no production schema/config/app/service/provider mutation",
+    "development": "Created and restored a uniquely named local scratch database, then removed it; preserved the main development database"
+  },
+  "limitations": [
+    "Archive excludes Supabase Auth users/sessions, managed schemas, provider configuration, external mail delivery state and cluster roles.",
+    "Backup was read with the existing limited application role and --enable-row-security; original production application tables currently contain no profiles, clubs or matches.",
+    "A database recovery would not revert Google/SMTP/Resend configuration or external provider events.",
+    "The actual restoration used PostgreSQL16; only two PostgreSQL17 psql restrict marker lines and one transaction_timeout session-setting line were omitted. Schema, rows and grant statements were retained."
+  ]
+}

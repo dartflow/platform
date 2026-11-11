@@ -1,0 +1,158 @@
+{
+  "scope": "Read-only provider readiness after the owner reported adding Google and Resend in Supabase",
+  "host": "dg-nxttrack-01",
+  "publicAuthObservation": {
+    "checkedAt": "2026-11-11T16:08:40.326852Z",
+    "source": "SSH root worker; HTTPS GET /auth/v1/settings with each active protected bundle's public key; response allowlist only",
+    "staging": {
+      "projectRef": "dsnqnvbckkqpzadblshu",
+      "httpOk": true,
+      "googleEnabled": true,
+      "emailEnabled": true,
+      "phoneEnabled": false,
+      "emailAutoconfirm": false,
+      "signupsDisabled": false,
+      "samlEnabled": false,
+      "customSmtpConfigurationVisible": false,
+      "googleClientSecretVisible": false
+    },
+    "production": {
+      "projectRef": "wlrnowuownakqqgjxnbb",
+      "httpOk": true,
+      "googleEnabled": true,
+      "emailEnabled": true,
+      "phoneEnabled": false,
+      "emailAutoconfirm": false,
+      "signupsDisabled": false,
+      "samlEnabled": false,
+      "customSmtpConfigurationVisible": false,
+      "googleClientSecretVisible": false
+    }
+  },
+  "protectedHostMetadata": {
+    "checkedAt": "2026-11-11T16:08:40.326852Z",
+    "source": "SSH root worker; immutable runtime bundle fields inspected in memory; pending file names, ownership and modes only",
+    "staging": {
+      "activeConfigId": "staging-2026-11-11-v15-1",
+      "bundles": [
+        {
+          "configId": "staging-2026-11-11-v1",
+          "active": false,
+          "supabaseManagementTokenPresent": false,
+          "integrationEncryptionKeyPresent": false
+        },
+        {
+          "configId": "staging-2026-11-11-v15-1",
+          "active": true,
+          "supabaseManagementTokenPresent": false,
+          "integrationEncryptionKeyPresent": true
+        }
+      ],
+      "pendingSecretFiles": []
+    },
+    "production": {
+      "activeConfigId": "production-2026-11-11-v1",
+      "bundles": [
+        {
+          "configId": "production-2026-11-11-v1",
+          "active": true,
+          "supabaseManagementTokenPresent": false,
+          "integrationEncryptionKeyPresent": false
+        },
+        {
+          "configId": "production-2026-11-11-v15-1",
+          "active": false,
+          "supabaseManagementTokenPresent": false,
+          "integrationEncryptionKeyPresent": true
+        }
+      ],
+      "pendingSecretFiles": []
+    }
+  },
+  "preparedMailPolicies": {
+    "checkedAt": "2026-11-11T16:09:39.835369Z",
+    "source": "SSH root worker; selected public policy metadata from each protected v15 runtime bundle",
+    "staging": {
+      "configId": "staging-2026-11-11-v15-1",
+      "maxMode": "test",
+      "ownerSenderAllowed": true,
+      "ownerTestRecipientAllowed": true,
+      "googleManagementCredentialPresent": false
+    },
+    "production": {
+      "configId": "production-2026-11-11-v15-1",
+      "maxMode": "live",
+      "ownerSenderAllowed": true,
+      "ownerTestRecipientAllowed": true,
+      "googleManagementCredentialPresent": false
+    }
+  },
+  "databaseObservations": {
+    "source": "Parent worker's independent read-only Supabase MCP observations; not queried again by this reviewer",
+    "staging": {
+      "checkedAt": "2026-11-11T16:08:54Z",
+      "authUsersPresent": true,
+      "ownerIdentityPresent": true,
+      "verifiedOwnerIdentityPresent": false,
+      "profilesPresent": false,
+      "verifiedOwnerRolePresent": false,
+      "integrationCredentialKinds": [],
+      "integrationSettingsProviders": [],
+      "v15FeatureReady": true
+    },
+    "production": {
+      "checkedAt": "2026-11-11T16:08:55.208262+00:00",
+      "authUsersPresent": false,
+      "profilesPresent": false,
+      "v15FeatureTablePresent": false
+    }
+  },
+  "readinessAssessment": {
+    "googleProviderEnabledBothProjects": true,
+    "googleLoginAcceptanceReadyToAttempt": true,
+    "googleLoginAccepted": false,
+    "googleManagementAvailableInApplication": false,
+    "managementTokenRequiredForLogin": false,
+    "managementTokenRequiredForApplicationProviderConfiguration": true,
+    "supabaseSmtpReportedConfiguredByOwner": true,
+    "supabaseCustomSmtpIndependentlyVerifiedByThisCheck": false,
+    "supabaseSmtpConfigurationSuppliesApplicationResendCredentials": false,
+    "stagingApplicationResendApiCredentialStored": false,
+    "stagingApplicationResendWebhookCredentialStored": false,
+    "stagingApplicationMailMode": "log",
+    "productionV15SchemaApplied": false,
+    "allFunctionalAcceptanceCompleted": false
+  },
+  "remainingAcceptance": [
+    "Coordinate one real owner login and verify the actual session, profile and one-time owner role",
+    "Verify post-configuration Auth email delivery and OTP acceptance; public emailEnabled is not SMTP delivery proof",
+    "Complete a real current Google OAuth login for the verified owner and its recorded login proof",
+    "Supply a separate project-scoped Supabase Management credential through the protected server handoff for application provider management",
+    "Store separate application Resend API and webhook credentials through the write-only owner controls, then verify an authorized test message and signed webhook",
+    "Apply the reviewed production v15 migration and deploy only through the established acceptance and same-SHA release procedure"
+  ],
+  "actions": {
+    "readOnlyProviderAndHostChecks": true,
+    "mailSent": false,
+    "otpRequested": false,
+    "oauthLoginStarted": false,
+    "credentialsPrintedOrStoredInEvidence": false,
+    "databaseOrHostConfigurationChanged": false
+  },
+  "latestHostedAcceptanceObservation": {
+    "checkedAt": "2026-11-11T16:18:16.377968+00:00",
+    "source": "Root worker read-only Supabase execute_sql; counts/provider names and allowlisted integration metadata only",
+    "environment": "staging",
+    "verifiedOwnerIdentities": 0,
+    "ownerProfiles": 0,
+    "verifiedOwnerRoles": 0,
+    "ownerProviders": [
+      "email"
+    ],
+    "credentialKinds": [],
+    "safeIntegrationStatus": [],
+    "outboxJobs": 0,
+    "otpRequestedByWorkerThisRound": false,
+    "emailCodesOrSessionTokensCollected": false
+  }
+}
