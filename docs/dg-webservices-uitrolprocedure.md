@@ -271,7 +271,7 @@ Het intakeformulier en de startopdracht maken deze werkwijze herhaalbaar. Volled
 
 ## Dartflow als concrete referentie
 
-De actuele technische details staan in [deployment.md](deployment.md), de beheerverbinding in [ssh-management.md](ssh-management.md) en het uitrolbewijs in [release-acceptatie.md](../voorbeelden/release-acceptatie.md).
+De actuele technische details staan in [deployment.md](deployment.md), de beheerverbinding in [ssh-management.md](ssh-management.md) en het uitrolbewijs in [het v15-opleverrapport](../voorbeelden/opleverrapport-v15.md). De eerste uitrol van de voorafgaande app is bewaard in [het historische acceptatierapport](../voorbeelden/release-acceptatie.md).
 
 Op 11 november 2026 zijn `staging.dartflow.nl` en `dartflow.nl` op `dg-nxttrack-01` uit broncommit `4634852c17cc7737bec246c0b48310e975a36920` gebouwd en geactiveerd. Het algemene beheeraccount is `codex-dg-admin`; zijn sleutel vervalt op 11 november 2027 om 09:28:54 UTC, oftewel 10:28:54 Nederlandse tijd.
 

@@ -1,6 +1,6 @@
 # Dartflow
 
-Native Next.js-app met de v15-ontwerpbron, lokale ontwikkeling en afzonderlijke omgevingen op **https://staging.dartflow.nl** en **https://dartflow.nl**. De [v15-omgevingsmatrix](docs/v15-omgevingen.md) onderscheidt de nieuwe inrichting van actieve releases. Het installatie- en uitrolbewijs staat in `docs/evidence/` en `voorbeelden/release-acceptatie.md`.
+Native Next.js-app met de v15-ontwerpbron, lokale ontwikkeling en afzonderlijke omgevingen op **https://staging.dartflow.nl** en **https://dartflow.nl**. De [v15-omgevingsmatrix](docs/v15-omgevingen.md) onderscheidt de nieuwe inrichting van actieve releases. Het installatie- en uitrolbewijs staat in `docs/evidence/` en [het v15-opleverrapport](voorbeelden/opleverrapport-v15.md).
 
 ## Lokaal starten
 
