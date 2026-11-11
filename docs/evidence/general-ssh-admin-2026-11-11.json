@@ -1,0 +1,51 @@
+{
+  "createdAtUtc": "2026-11-11T09:28:54Z",
+  "expiresAtUtc": "2027-11-11T09:28:54Z",
+  "expiresAtEuropeAmsterdam": "2027-11-11T10:28:54+01:00",
+  "authorizedKeyExpiryOption": "20271111092854Z",
+  "accountExpiresOnUtc": "2027-11-12",
+  "hostname": "dg-nxttrack-01",
+  "address": "100.111.66.17",
+  "allowedSourceAddress": "100.79.0.26",
+  "account": "codex-dg-admin",
+  "uid": 1006,
+  "gid": 1007,
+  "home": "/home/codex-dg-admin",
+  "passwordLocked": true,
+  "authorizedKeysMode": "0o600",
+  "sudoersFile": "/etc/sudoers.d/codex-dg-admin",
+  "sudoersMode": "0o440",
+  "sudoersValidated": true,
+  "keyRestrictions": [
+    "source-ip",
+    "restrict",
+    "no-pty",
+    "no-agent-forwarding",
+    "no-port-forwarding",
+    "no-X11-forwarding",
+    "no-user-rc"
+  ],
+  "sshdSettings": {
+    "pubkeyauthentication": "yes",
+    "strictmodes": "yes",
+    "authorizedkeysfile": ".ssh/authorized_keys .ssh/authorized_keys2",
+    "authenticationmethods": "any"
+  },
+  "keyFingerprintSha256": "SHA256:1YC2lMIE90hnIpVJCxiY8oXKiDfjQXl2E4G5UPeDiIM",
+  "verifiedAtUtc": "2026-11-11T09:29:26Z",
+  "verification": {
+    "freshSshConnection": true,
+    "hostIdentity": "dg-nxttrack-01",
+    "loginUser": "codex-dg-admin",
+    "passwordlessSudoRoot": true,
+    "sourceAddress": "100.79.0.26",
+    "strictHostKeyChecking": true,
+    "privateKeyMode": "0o600",
+    "configMode": "0o600"
+  },
+  "localPrivateKeyPath": "/home/codex/.ssh/id_ed25519_dg_nxttrack_admin",
+  "localConfigPath": "/home/codex/.ssh/dg-nxttrack-admin.conf",
+  "sshCommand": "ssh -F /home/codex/.ssh/dg-nxttrack-admin.conf dg-nxttrack-01-admin",
+  "scope": "General server administration. Independent of application, build and release runner identities.",
+  "existingTemporaryDartflowAccountChanged": false
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "environment": "staging",
+    "http": 200,
+    "emailProviderEnabled": true,
+    "googleProviderEnabled": false,
+    "signupsDisabled": false,
+    "outgoingEmailSent": false,
+    "userCreated": false
+  },
+  {
+    "environment": "production",
+    "http": 200,
+    "emailProviderEnabled": true,
+    "googleProviderEnabled": false,
+    "signupsDisabled": false,
+    "outgoingEmailSent": false,
+    "userCreated": false
+  }
+]

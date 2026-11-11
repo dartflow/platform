@@ -1,0 +1,126 @@
+{
+  "recordedAt": "2026-11-11T09:31:33.728Z",
+  "origin": "https://staging.dartflow.nl",
+  "scope": "Anonymous read-only public staging browser smoke; no authentication clicks, mail, OTP, OAuth requests or user writes",
+  "expectedSourceSha": "4634852c17cc7737bec246c0b48310e975a36920",
+  "expectedReleaseId": "42995422162-1",
+  "expectedConfigId": "staging-2026-11-11-v1",
+  "viewports": [
+    {
+      "label": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "httpStatus": 200,
+      "layout": {
+        "viewportWidth": 1440,
+        "viewportHeight": 1000,
+        "documentWidth": 1440,
+        "bodyWidth": 1440,
+        "heading": "Jouw volgende partijbegint hier.",
+        "localTestUi": false,
+        "logo": [
+          {
+            "path": "/assets/dartflow-logo.svg",
+            "complete": true,
+            "naturalWidth": 300,
+            "naturalHeight": 98
+          }
+        ],
+        "emailInputVisible": true,
+        "otpInputPresent": false
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "authRequests": [],
+      "screenshot": "test-results/evidence/staging-live-desktop.png"
+    },
+    {
+      "label": "mobile",
+      "width": 390,
+      "height": 844,
+      "httpStatus": 200,
+      "layout": {
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "heading": "Jouw volgende partijbegint hier.",
+        "localTestUi": false,
+        "logo": [
+          {
+            "path": "/assets/dartflow-logo.svg",
+            "complete": true,
+            "naturalWidth": 300,
+            "naturalHeight": 98
+          }
+        ],
+        "emailInputVisible": true,
+        "otpInputPresent": false
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "authRequests": [],
+      "screenshot": "test-results/evidence/staging-live-mobile.png"
+    }
+  ],
+  "api": {
+    "/api/health": {
+      "status": 200,
+      "contentType": "application/json",
+      "identity": {
+        "status": "ok",
+        "mode": "supabase",
+        "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+        "releaseId": "42995422162-1",
+        "buildConfigId": "staging-2026-11-11-v1",
+        "runtimeConfigId": "staging-2026-11-11-v1"
+      }
+    },
+    "/api/ready": {
+      "status": 200,
+      "contentType": "application/json",
+      "identity": {
+        "status": "ready",
+        "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+        "releaseId": "42995422162-1",
+        "buildConfigId": "staging-2026-11-11-v1",
+        "runtimeConfigId": "staging-2026-11-11-v1",
+        "database": "ok",
+        "auth": "reachable",
+        "schemaVersion": 1
+      }
+    },
+    "/api/session": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "local": false,
+        "user": null,
+        "localUsers": []
+      }
+    },
+    "/api/overview": {
+      "status": 401,
+      "contentType": "application/json"
+    },
+    "/assets/dartflow-logo.svg": {
+      "status": 200,
+      "contentType": "image/svg+xml",
+      "bytes": 3095
+    }
+  },
+  "limitations": [
+    "No live login, email delivery, OTP, Google OAuth or authenticated pilot/core flow tested.",
+    "Deployment context reports no Auth users, profiles or fixture data; Google provider disabled in both environments. These are not independently queried by this anonymous test."
+  ],
+  "summary": {
+    "status": "passed",
+    "failures": [],
+    "anonymousOverviewDenied": true,
+    "localLoginDisabled": true,
+    "authRequestsMade": false,
+    "rebootAcceptance": "not in scope"
+  }
+}

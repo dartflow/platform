@@ -1,0 +1,169 @@
+{
+  "workflow": {
+    "conclusion": "success",
+    "createdAt": "2026-11-11T09:28:09Z",
+    "databaseId": 42995422162,
+    "headSha": "4634852c17cc7737bec246c0b48310e975a36920",
+    "jobs": [
+      {
+        "completedAt": "2026-11-11T09:28:30Z",
+        "conclusion": "success",
+        "databaseId": 130438208420,
+        "name": "Verify immutable release",
+        "startedAt": "2026-11-11T09:28:14Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-11-11T09:28:15Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-11-11T09:28:14Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:28:17Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+            "number": 2,
+            "startedAt": "2026-11-11T09:28:15Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:28:25Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+            "number": 3,
+            "startedAt": "2026-11-11T09:28:17Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:28:28Z",
+            "conclusion": "success",
+            "name": "Verify fixed repository, integration branch, SHA and required CI attempt",
+            "number": 4,
+            "startedAt": "2026-11-11T09:28:25Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:28:28Z",
+            "conclusion": "success",
+            "name": "Validate configuration identifier",
+            "number": 5,
+            "startedAt": "2026-11-11T09:28:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:28:28Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+            "number": 9,
+            "startedAt": "2026-11-11T09:28:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:28:28Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+            "number": 10,
+            "startedAt": "2026-11-11T09:28:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:28:28Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 11,
+            "startedAt": "2026-11-11T09:28:28Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/dartflow/platform/actions/runs/42995422162/job/130438208420"
+      },
+      {
+        "completedAt": "2026-11-11T09:30:17Z",
+        "conclusion": "success",
+        "databaseId": 130438360088,
+        "name": "Build and activate on target VPS",
+        "startedAt": "2026-11-11T09:28:33Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-11-11T09:28:34Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-11-11T09:28:34Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:28:34Z",
+            "conclusion": "success",
+            "name": "Verify dedicated runner boundary",
+            "number": 2,
+            "startedAt": "2026-11-11T09:28:34Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:30:13Z",
+            "conclusion": "success",
+            "name": "Invoke fixed broker, retrying only host-lock conflicts",
+            "number": 3,
+            "startedAt": "2026-11-11T09:28:34Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:30:13Z",
+            "conclusion": "success",
+            "name": "Record release evidence",
+            "number": 4,
+            "startedAt": "2026-11-11T09:30:13Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-11-11T09:30:13Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 5,
+            "startedAt": "2026-11-11T09:30:13Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/dartflow/platform/actions/runs/42995422162/job/130438360088"
+      }
+    ],
+    "status": "completed",
+    "updatedAt": "2026-11-11T09:30:18Z",
+    "url": "https://github.com/dartflow/platform/actions/runs/42995422162"
+  },
+  "httpsChecks": {
+    "health": {
+      "http": 200,
+      "body": {
+        "status": "ok",
+        "mode": "supabase",
+        "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+        "releaseId": "42995422162-1",
+        "buildConfigId": "staging-2026-11-11-v1",
+        "runtimeConfigId": "staging-2026-11-11-v1",
+        "configId": "staging-2026-11-11-v1"
+      }
+    },
+    "ready": {
+      "http": 200,
+      "body": {
+        "status": "ready",
+        "database": "ok",
+        "schemaVersion": 1,
+        "auth": "reachable",
+        "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+        "releaseId": "42995422162-1",
+        "buildConfigId": "staging-2026-11-11-v1",
+        "runtimeConfigId": "staging-2026-11-11-v1",
+        "configId": "staging-2026-11-11-v1"
+      }
+    }
+  },
+  "artifactCopiedFromDevOrGitHub": false,
+  "sourceBuiltOnTarget": true
+}

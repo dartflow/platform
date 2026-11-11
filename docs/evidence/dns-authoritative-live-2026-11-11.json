@@ -1,0 +1,90 @@
+{
+  "verifiedAt": "2026-11-11T09:38:50.992114+00:00",
+  "domain": "dartflow.nl",
+  "authoritativeQueries": [
+    {
+      "nameserver": "ns1.stackdns.com",
+      "type": "A",
+      "exit": 0,
+      "status": "NOERROR",
+      "authoritative": true,
+      "records": [
+        "dartflow.nl.\t\t3600\tIN\tA\t128.140.93.95"
+      ]
+    },
+    {
+      "nameserver": "ns1.stackdns.com",
+      "type": "AAAA",
+      "exit": 0,
+      "status": "NOERROR",
+      "authoritative": true,
+      "records": [
+        "dartflow.nl.\t\t300\tIN\tSOA\tns1.stackdns.com. hostmaster.stackdns.com. 1794387260 1800 900 1209600 300"
+      ]
+    },
+    {
+      "nameserver": "ns2.stackdns.com",
+      "type": "A",
+      "exit": 0,
+      "status": "NOERROR",
+      "authoritative": true,
+      "records": [
+        "dartflow.nl.\t\t3600\tIN\tA\t128.140.93.95"
+      ]
+    },
+    {
+      "nameserver": "ns2.stackdns.com",
+      "type": "AAAA",
+      "exit": 0,
+      "status": "NOERROR",
+      "authoritative": true,
+      "records": [
+        "dartflow.nl.\t\t300\tIN\tSOA\tns1.stackdns.com. hostmaster.stackdns.com. 1794387260 1800 900 1209600 300"
+      ]
+    },
+    {
+      "nameserver": "ns3.stackdns.com",
+      "type": "A",
+      "exit": 0,
+      "status": "NOERROR",
+      "authoritative": true,
+      "records": [
+        "dartflow.nl.\t\t3600\tIN\tA\t128.140.93.95"
+      ]
+    },
+    {
+      "nameserver": "ns3.stackdns.com",
+      "type": "AAAA",
+      "exit": 0,
+      "status": "NOERROR",
+      "authoritative": true,
+      "records": [
+        "dartflow.nl.\t\t300\tIN\tSOA\tns1.stackdns.com. hostmaster.stackdns.com. 1794387260 1800 900 1209600 300"
+      ]
+    },
+    {
+      "nameserver": "ns4.stackdns.com",
+      "type": "A",
+      "exit": 0,
+      "status": "NOERROR",
+      "authoritative": true,
+      "records": [
+        "dartflow.nl.\t\t3600\tIN\tA\t128.140.93.95"
+      ]
+    },
+    {
+      "nameserver": "ns4.stackdns.com",
+      "type": "AAAA",
+      "exit": 0,
+      "status": "NOERROR",
+      "authoritative": true,
+      "records": [
+        "dartflow.nl.\t\t300\tIN\tSOA\tns1.stackdns.com. hostmaster.stackdns.com. 1794387260 1800 900 1209600 300"
+      ]
+    }
+  ],
+  "workerUpstreamResolverHasCachedOldAaaa": true,
+  "dnsConfigurationChanged": false,
+  "localResolvedCacheFlushed": true,
+  "note": "All four authoritative nameservers confirm new A and absence of AAAA; Hetzner recursive resolver still retains old AAAA until its TTL expires."
+}

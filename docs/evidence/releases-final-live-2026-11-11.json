@@ -1,0 +1,189 @@
+{
+  "verifiedAt": "2026-11-11T09:34:45.236494+00:00",
+  "environments": {
+    "staging": {
+      "current": "releases/4634852c17cc-42995422162-1",
+      "releaseMetadata": {
+        "artifactSha256": "45fc706c1cadb59aad04ba23fee9ee8ff6222032df36c6f65eb3767b8d6f4855",
+        "ciRunUrl": "https://github.com/dartflow/platform/actions/runs/42994763094",
+        "configId": "staging-2026-11-11-v1",
+        "format": "dartflow-native-release-v1",
+        "gateValidatorSha256": "5d84b5edcf63f79d1b85b92fa135800d0bb8ae9da135dc0590a7a6e51c6a5f5f",
+        "helperSha256": "8b2c696710b5b378f94bb8dbb16d933d9812e5f114f669b34038ac7a52447b2a",
+        "port": 4174,
+        "publicConfigHash": "7cfe83486764bafc3e1ed7ce1ffff53c00fd80b5c1afd62412a43e32c6a08496",
+        "releaseId": "42995422162-1",
+        "runtimeConfigHash": "41f46c4065ae9226f5189800d3421bff405d840e7e9d7b97da87a11439d9639b",
+        "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+        "toolchain": {
+          "node": "24.18.0",
+          "nodeSha256": "41a74efb34cbde5c7632cdac0cf8bd1a14d0b8d73dc1e82755014d9a9ce70f5c",
+          "npm": "11.16.0",
+          "npmSha256": "8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7"
+        }
+      },
+      "state": "MainPID=63511\nUser=app-dart-stg\nGroup=app-dart-stg\nActiveState=active\nSubState=running\nUnitFileState=enabled\n",
+      "artifactRecomputedMatches": true,
+      "artifactEntries": 2575,
+      "artifactBytes": 50254226,
+      "runtimeCredentialArtifactMatches": 0,
+      "privateArtifactPaths": [],
+      "checks": {
+        "loopback_health": {
+          "http": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995422162-1",
+            "buildConfigId": "staging-2026-11-11-v1",
+            "runtimeConfigId": "staging-2026-11-11-v1",
+            "configId": "staging-2026-11-11-v1"
+          }
+        },
+        "loopback_ready": {
+          "http": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995422162-1",
+            "buildConfigId": "staging-2026-11-11-v1",
+            "runtimeConfigId": "staging-2026-11-11-v1",
+            "configId": "staging-2026-11-11-v1"
+          }
+        },
+        "https_health": {
+          "http": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995422162-1",
+            "buildConfigId": "staging-2026-11-11-v1",
+            "runtimeConfigId": "staging-2026-11-11-v1",
+            "configId": "staging-2026-11-11-v1"
+          }
+        },
+        "https_ready": {
+          "http": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995422162-1",
+            "buildConfigId": "staging-2026-11-11-v1",
+            "runtimeConfigId": "staging-2026-11-11-v1",
+            "configId": "staging-2026-11-11-v1"
+          }
+        }
+      },
+      "vpsResolver": [
+        "128.140.93.95"
+      ]
+    },
+    "production": {
+      "current": "releases/4634852c17cc-42995766522-1",
+      "releaseMetadata": {
+        "artifactSha256": "2a1c0f3c166cf00f5603b6979c73f8040adbad07d5034cf2d648017beb8ce592",
+        "ciRunUrl": "https://github.com/dartflow/platform/actions/runs/42994763094",
+        "configId": "production-2026-11-11-v1",
+        "format": "dartflow-native-release-v1",
+        "gateValidatorSha256": "5d84b5edcf63f79d1b85b92fa135800d0bb8ae9da135dc0590a7a6e51c6a5f5f",
+        "helperSha256": "fa847042b9d8f0d4f8fe9c12629af3313fc0355d6d876ec46d27bdee617a3c48",
+        "port": 4175,
+        "publicConfigHash": "841d382265ffa5ef4e989b80beb498ce7a2524e7e5312acf4bf72677d969d3d9",
+        "releaseId": "42995766522-1",
+        "runtimeConfigHash": "388b8fe36b0b6db3b37d4b2d29f44524e860b6e0f4949944f5a06764a2262218",
+        "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+        "toolchain": {
+          "node": "24.18.0",
+          "nodeSha256": "41a74efb34cbde5c7632cdac0cf8bd1a14d0b8d73dc1e82755014d9a9ce70f5c",
+          "npm": "11.16.0",
+          "npmSha256": "8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7"
+        }
+      },
+      "state": "MainPID=64473\nUser=app-dart-prd\nGroup=app-dart-prd\nActiveState=active\nSubState=running\nUnitFileState=enabled\n",
+      "artifactRecomputedMatches": true,
+      "artifactEntries": 2575,
+      "artifactBytes": 50254609,
+      "runtimeCredentialArtifactMatches": 0,
+      "privateArtifactPaths": [],
+      "checks": {
+        "loopback_health": {
+          "http": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        },
+        "loopback_ready": {
+          "http": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        },
+        "https_health": {
+          "http": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        },
+        "https_ready": {
+          "http": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        }
+      },
+      "vpsResolver": [
+        "128.140.93.95"
+      ]
+    }
+  },
+  "milo": {
+    "state": "MainPID=52104\nActiveState=active\nSubState=running\n",
+    "health": {
+      "status": "ok",
+      "revision": "729d962b7401b100ce9cacb94ce4e4da16a699f2",
+      "releaseId": "42804436092-1",
+      "configVersion": "staging-2026-11-05-v1",
+      "checks": [
+        "http"
+      ]
+    },
+    "current": "releases/729d962b7401-42804436092-1"
+  },
+  "rebootPerformed": false
+}

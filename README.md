@@ -45,13 +45,13 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Database- en browsertests gebruiken geïsoleerde synthetische fixtures in de lokale database en ruimen die op. Browsercontroles gebruiken aparte sessies en Chromium; fysieke iOS-/Android-toestellen, echte OTP-/Google-login en externe HTTPS-acceptatie staan afzonderlijk open.
+Database- en browsertests gebruiken geïsoleerde synthetische fixtures in de lokale database en ruimen die op. Beide VPS-releases zijn daarnaast via HTTPS en een publieke browser gecontroleerd; zie [het acceptatierapport](voorbeelden/release-acceptatie.md). Fysieke iOS-/Android-toestellen, toegelaten pilotaccounts en echte OTP-/Google-login blijven afzonderlijke acceptatiestappen.
 
 ## GitHub en hosting
 
 De **exacte GitHub-configuratie**, providerlocaties, callbacks en uitrolvolgorde staan in [docs/deployment.md](docs/deployment.md). De twee native hostcontracten zijn geïnstalleerd en geverifieerd (`nativeEnabled: true`); iedere release vereist daarnaast groene CI voor de exacte bron-SHA. De native route gebruikt geen zelf aan te maken GitHub-secrets; de GitHub-environments bevatten ieder vier publieke variabelen. Databasecredentials blijven in een immutable root-only hostbundel.
 
-De vastgelegde repository is `dartflow/platform`, branch `main`. De gebruiker heeft staging en productie op `dg-nxttrack-01` geautoriseerd; beheer-SSH/sudo en eigen Supabase-projecten zijn beschikbaar. Er zijn afzonderlijke deploy-/rollbackworkflows, runneraccounts en hostconfiguraties voor `https://staging.dartflow.nl` en `https://dartflow.nl`; productie gebruikt exact de gezonde staging-SHA en bouwt opnieuw met eigen configuratie. `nativeEnabled` wordt per omgeving pas na geverifieerde bootstrap geactiveerd. De hoofdtaak legt de werkelijk uitgevoerde installatie, release- en gebruikersacceptatie vast; eerdere ontbrekende-toegangmeldingen in de historische inventaris zijn daarmee gedateerde waarnemingen.
+De vastgelegde repository is `dartflow/platform`, branch `main`. Staging en productie op `dg-nxttrack-01` zijn via hun eigen workflows geactiveerd met bron-SHA `4634852c17cc7737bec246c0b48310e975a36920`. Productie is afzonderlijk gebouwd met eigen configuratie, na verificatie van de gezonde staging-SHA. Het acceptatierapport scheidt de daadwerkelijke uitrol van de nog open gebruikersacceptatie. Het algemene SSH-beheeraccount met geldigheid tot 11 november 2027 staat beschreven in [SSH-beheer](docs/ssh-management.md).
 
 De app gebruikt Supabase voor hosted Auth. Het score- en rechtenmodel draait in servercode binnen PostgreSQL-transacties met een beperkte `dartflow_app`-verbinding. De private tabellen zijn niet beschikbaar via Supabase Data API. Browsergebruikers krijgen geen databasecredential of verhoogde Supabase-key. Migraties/seed gebruiken een apart beheeraccount, buiten de app-runtime. Zie [docs/architecture.md](docs/architecture.md).
 

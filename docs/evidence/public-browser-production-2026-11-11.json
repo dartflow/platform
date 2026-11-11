@@ -1,0 +1,191 @@
+{
+  "recordedAt": "2026-11-11T09:34:27.112Z",
+  "origin": "https://dartflow.nl",
+  "scope": "Anonymous read-only controlled-target production browser smoke; no authentication clicks, OTP, email, OAuth requests or user writes",
+  "expectedSourceSha": "4634852c17cc7737bec246c0b48310e975a36920",
+  "expectedReleaseId": "42995766522-1",
+  "expectedConfigId": "production-2026-11-11-v1",
+  "dns": {
+    "resolverOverride": {
+      "chromiumArgument": "--host-resolver-rules=MAP dartflow.nl 128.140.93.95, MAP www.dartflow.nl 128.140.93.95",
+      "nodeApiLookup": "128.140.93.95",
+      "tlsCertificateValidation": true
+    },
+    "normalWorkerResolverAcceptance": "not_verified_for_new_release_due_to_cached_removed_AAAA",
+    "authoritativeState": "Root separately verified no production AAAA at authoritative DNS; no DNS changes requested or performed by this smoke",
+    "workerLookup": [
+      {
+        "address": "2a07:7800::138",
+        "family": 6
+      },
+      {
+        "address": "128.140.93.95",
+        "family": 4
+      }
+    ],
+    "workerAAAAWithTTL": [
+      {
+        "address": "2a07:7800::138",
+        "ttl": 553
+      }
+    ],
+    "normalHTTPSProbe": {
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "location": null,
+      "remoteAddress": "2a07:7800::138",
+      "tlsAuthorized": true,
+      "bytes": 1091
+    }
+  },
+  "viewports": [
+    {
+      "label": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "httpStatus": 200,
+      "layout": {
+        "viewportWidth": 1440,
+        "viewportHeight": 1000,
+        "documentWidth": 1440,
+        "bodyWidth": 1440,
+        "heading": "Jouw volgende partijbegint hier.",
+        "localTestUi": false,
+        "logo": [
+          {
+            "path": "/assets/dartflow-logo.svg",
+            "complete": true,
+            "naturalWidth": 300,
+            "naturalHeight": 98
+          }
+        ],
+        "emailInputVisible": true,
+        "otpInputPresent": false
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "authRequests": [],
+      "screenshot": "test-results/evidence/production-live-desktop.png"
+    },
+    {
+      "label": "mobile",
+      "width": 390,
+      "height": 844,
+      "httpStatus": 200,
+      "layout": {
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "documentWidth": 390,
+        "bodyWidth": 390,
+        "heading": "Jouw volgende partijbegint hier.",
+        "localTestUi": false,
+        "logo": [
+          {
+            "path": "/assets/dartflow-logo.svg",
+            "complete": true,
+            "naturalWidth": 300,
+            "naturalHeight": 98
+          }
+        ],
+        "emailInputVisible": true,
+        "otpInputPresent": false
+      },
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failedRequests": [],
+      "authRequests": [],
+      "screenshot": "test-results/evidence/production-live-mobile.png"
+    }
+  ],
+  "api": {
+    "/api/health": {
+      "status": 200,
+      "contentType": "application/json",
+      "remoteAddress": "128.140.93.95",
+      "tlsAuthorized": true,
+      "identity": {
+        "status": "ok",
+        "mode": "supabase",
+        "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+        "releaseId": "42995766522-1",
+        "buildConfigId": "production-2026-11-11-v1",
+        "runtimeConfigId": "production-2026-11-11-v1"
+      }
+    },
+    "/api/ready": {
+      "status": 200,
+      "contentType": "application/json",
+      "remoteAddress": "128.140.93.95",
+      "tlsAuthorized": true,
+      "identity": {
+        "status": "ready",
+        "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+        "releaseId": "42995766522-1",
+        "buildConfigId": "production-2026-11-11-v1",
+        "runtimeConfigId": "production-2026-11-11-v1",
+        "database": "ok",
+        "auth": "reachable",
+        "schemaVersion": 1
+      }
+    },
+    "/api/session": {
+      "status": 200,
+      "contentType": "application/json",
+      "remoteAddress": "128.140.93.95",
+      "tlsAuthorized": true,
+      "body": {
+        "local": false,
+        "user": null,
+        "localUsers": []
+      }
+    },
+    "/api/overview": {
+      "status": 401,
+      "contentType": "application/json",
+      "remoteAddress": "128.140.93.95",
+      "tlsAuthorized": true
+    },
+    "/assets/dartflow-logo.svg": {
+      "status": 200,
+      "contentType": "image/svg+xml",
+      "remoteAddress": "128.140.93.95",
+      "tlsAuthorized": true,
+      "bytes": 3095
+    }
+  },
+  "redirects": [
+    {
+      "path": "/",
+      "status": 301,
+      "location": "https://dartflow.nl/",
+      "remoteAddress": "128.140.93.95",
+      "tlsAuthorized": true,
+      "bytes": 0
+    },
+    {
+      "path": "/inloggen",
+      "status": 301,
+      "location": "https://dartflow.nl/inloggen",
+      "remoteAddress": "128.140.93.95",
+      "tlsAuthorized": true,
+      "bytes": 0
+    }
+  ],
+  "limitations": [
+    "Controlled target smoke explicitly pins the verified current IPv4 while retaining hostname/SNI/TLS validation; it does not claim normal worker DNS acceptance.",
+    "No live login, email delivery, OTP, Google OAuth or authenticated pilot/core flow tested.",
+    "Deployment context reports no Auth users/profiles/fixture data and disabled Google provider; this anonymous test does not query private provider configuration."
+  ],
+  "summary": {
+    "status": "controlled_target_passed_normal_worker_dns_cache_limited",
+    "controlledTargetStatus": "passed",
+    "failures": [],
+    "normalWorkerDNSPassed": false,
+    "anonymousOverviewDenied": true,
+    "localLoginDisabled": true,
+    "authRequestsMade": false,
+    "wwwCanonical301": true,
+    "actualReboot": "not in scope"
+  }
+}

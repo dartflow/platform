@@ -1,0 +1,457 @@
+{
+  "format": "dartflow-database-privileges-live-v1",
+  "scope": "Read-only catalog and has_*_privilege inspection of the two explicitly authorized Dartflow projects.",
+  "collectedAt": "2026-11-11T09:23:38Z",
+  "runtimeRole": "dartflow_app",
+  "privateSchema": "dartflow_private",
+  "operations": {
+    "selectOnly": true,
+    "ddl": false,
+    "dml": false,
+    "userDataRead": false,
+    "credentialValuesRead": false
+  },
+  "declaredColumnUpdateGrants": {
+    "columns": [
+      "dartflow_private.events.id",
+      "dartflow_private.boards.id"
+    ],
+    "purpose": "PostgreSQL SELECT FOR UPDATE requires UPDATE privilege on at least one column of the locked table.",
+    "purposeReference": "https://www.postgresql.org/docs/17/sql-select.html",
+    "boundary": "These are real column UPDATE grants, so those two columns are not read-only. No INSERT, DELETE, table-wide UPDATE, TRUNCATE or TRIGGER privilege is granted on the administration tables; no other administration column UPDATE grants exist.",
+    "schemaMigrationsWritable": false,
+    "auditUpdatesAllowed": false
+  },
+  "queryMethod": {
+    "catalogs": [
+      "pg_roles",
+      "pg_auth_members",
+      "pg_namespace",
+      "pg_class",
+      "pg_attribute",
+      "pg_proc",
+      "pg_type"
+    ],
+    "privilegeFunctions": [
+      "pg_has_role (MEMBER/SET)",
+      "has_schema_privilege",
+      "has_database_privilege",
+      "has_table_privilege",
+      "has_column_privilege",
+      "has_any_column_privilege",
+      "has_sequence_privilege",
+      "has_function_privilege"
+    ],
+    "membershipTraversal": "Recursive catalog traversal of all granted roles; SET targets also checked with pg_has_role(..., 'SET') on PostgreSQL 16+.",
+    "relationFiltering": "Materialized table/sequence catalog sets keep has_sequence_privilege limited to actual sequences.",
+    "sql": "WITH RECURSIVE\napp AS (SELECT oid,rolname,rolsuper,rolcreatedb,rolcreaterole,rolinherit,rolreplication,rolbypassrls FROM pg_roles WHERE rolname='dartflow_app'),\nprivate AS (SELECT oid,nspowner FROM pg_namespace WHERE nspname='dartflow_private'),\nmembership AS (\n  SELECT m.roleid,m.member,1 AS depth,ARRAY[m.member,m.roleid] AS path\n  FROM pg_auth_members m JOIN app a ON a.oid=m.member\n  UNION ALL\n  SELECT m.roleid,m.member,w.depth+1,w.path||m.roleid\n  FROM membership w JOIN pg_auth_members m ON m.member=w.roleid\n  WHERE NOT m.roleid=ANY(w.path)\n),\ntables AS MATERIALIZED (SELECT c.oid,c.relname,c.relowner,c.relrowsecurity FROM pg_class c JOIN private n ON n.oid=c.relnamespace WHERE c.relkind IN ('r','p')),\nsequences AS MATERIALIZED (SELECT c.oid,c.relname,c.relowner FROM pg_class c JOIN private n ON n.oid=c.relnamespace WHERE c.relkind='S'),\napi_roles AS (SELECT oid,rolname FROM pg_roles WHERE rolname IN ('anon','authenticated','service_role')),\nadmin_tables AS (SELECT * FROM tables WHERE relname IN ('schema_migrations','profiles','clubs','club_memberships','event_staff','events','boards')),\nappend_only AS (SELECT * FROM tables WHERE relname IN ('audit_events','action_receipts','match_results','match_players'))\nSELECT jsonb_build_object(\n 'checked_at',to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),\n 'server_version_num',current_setting('server_version_num')::int,\n 'runtime_role',(SELECT jsonb_build_object('exists',true,'superuser',rolsuper,'create_database',rolcreatedb,'create_role',rolcreaterole,'inherit',rolinherit,'replication',rolreplication,'bypass_rls',rolbypassrls) FROM app),\n 'memberships',jsonb_build_object(\n   'direct_count',(SELECT count(*) FROM pg_auth_members m JOIN app a ON a.oid=m.member),\n   'reachable_count',(SELECT count(DISTINCT roleid) FROM membership),\n   'reachable_roles',COALESCE((SELECT jsonb_agg(DISTINCT r.rolname ORDER BY r.rolname) FROM membership m JOIN pg_roles r ON r.oid=m.roleid),'[]'::jsonb),\n   'indirect_set_role_targets',COALESCE((SELECT jsonb_agg(r.rolname ORDER BY r.rolname) FROM pg_roles r CROSS JOIN app a WHERE r.oid<>a.oid AND CASE WHEN current_setting('server_version_num')::int>=160000 THEN pg_has_role(a.oid,r.oid,'SET') ELSE pg_has_role(a.oid,r.oid,'MEMBER') END),'[]'::jsonb)\n ),\n 'ownership',jsonb_build_object(\n   'private_schema_owner',(SELECT pg_get_userbyid(nspowner) FROM private),\n   'private_relation_owners',COALESCE((SELECT jsonb_agg(jsonb_build_object('owner',owner_name,'objects',object_count) ORDER BY owner_name) FROM (SELECT pg_get_userbyid(c.relowner) AS owner_name,count(*) AS object_count FROM pg_class c JOIN private n ON n.oid=c.relnamespace GROUP BY c.relowner) owners),'[]'::jsonb),\n   'app_owned_schemas',(SELECT count(*) FROM pg_namespace n CROSS JOIN app a WHERE n.nspowner=a.oid),\n   'app_owned_relations',(SELECT count(*) FROM pg_class c CROSS JOIN app a WHERE c.relowner=a.oid),\n   'app_owned_functions',(SELECT count(*) FROM pg_proc p CROSS JOIN app a WHERE p.proowner=a.oid),\n   'app_owned_types',(SELECT count(*) FROM pg_type t CROSS JOIN app a WHERE t.typowner=a.oid)\n ),\n 'schema_access',jsonb_build_object(\n   'private_usage',has_schema_privilege('dartflow_app','dartflow_private','USAGE'),\n   'private_create',has_schema_privilege('dartflow_app','dartflow_private','CREATE'),\n   'any_schema_create',COALESCE((SELECT jsonb_agg(n.nspname ORDER BY n.nspname) FROM pg_namespace n WHERE has_schema_privilege('dartflow_app',n.oid,'CREATE')),'[]'::jsonb),\n   'database_create',has_database_privilege('dartflow_app',current_database(),'CREATE')\n ),\n 'private_tables',jsonb_build_object('count',(SELECT count(*) FROM tables),'rls_enabled_count',(SELECT count(*) FROM tables WHERE relrowsecurity),'all_owners_postgres',(SELECT bool_and(pg_get_userbyid(relowner)='postgres') FROM tables)),\n 'admin_table_privileges',COALESCE((SELECT jsonb_agg(jsonb_build_object(\n   'table',t.relname,'select',has_table_privilege('dartflow_app',t.oid,'SELECT'),\n   'insert',has_table_privilege('dartflow_app',t.oid,'INSERT'),'update',has_table_privilege('dartflow_app',t.oid,'UPDATE'),'delete',has_table_privilege('dartflow_app',t.oid,'DELETE'),\n   'truncate',has_table_privilege('dartflow_app',t.oid,'TRUNCATE'),'trigger',has_table_privilege('dartflow_app',t.oid,'TRIGGER'),\n   'insert_columns',COALESCE((SELECT jsonb_agg(a.attname ORDER BY a.attnum) FROM pg_attribute a WHERE a.attrelid=t.oid AND a.attnum>0 AND NOT a.attisdropped AND has_column_privilege('dartflow_app',t.oid,a.attnum,'INSERT')),'[]'::jsonb),\n   'update_columns',COALESCE((SELECT jsonb_agg(a.attname ORDER BY a.attnum) FROM pg_attribute a WHERE a.attrelid=t.oid AND a.attnum>0 AND NOT a.attisdropped AND has_column_privilege('dartflow_app',t.oid,a.attnum,'UPDATE')),'[]'::jsonb)\n ) ORDER BY t.relname) FROM admin_tables t),'[]'::jsonb),\n 'append_only_privileges',COALESCE((SELECT jsonb_agg(jsonb_build_object(\n   'table',t.relname,'insert',has_table_privilege('dartflow_app',t.oid,'INSERT'),'update',has_table_privilege('dartflow_app',t.oid,'UPDATE'),'delete',has_table_privilege('dartflow_app',t.oid,'DELETE'),'truncate',has_table_privilege('dartflow_app',t.oid,'TRUNCATE'),\n   'update_columns',COALESCE((SELECT jsonb_agg(a.attname ORDER BY a.attnum) FROM pg_attribute a WHERE a.attrelid=t.oid AND a.attnum>0 AND NOT a.attisdropped AND has_column_privilege('dartflow_app',t.oid,a.attnum,'UPDATE')),'[]'::jsonb)\n ) ORDER BY t.relname) FROM append_only t),'[]'::jsonb),\n 'api_role_privileges',COALESCE((SELECT jsonb_agg(jsonb_build_object(\n   'role',r.rolname,'private_schema_usage',has_schema_privilege(r.oid,(SELECT oid FROM private),'USAGE'),'private_schema_create',has_schema_privilege(r.oid,(SELECT oid FROM private),'CREATE'),\n   'tables_with_access',(SELECT count(*) FROM tables t WHERE has_table_privilege(r.oid,t.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege(r.oid,t.oid,'SELECT,INSERT,UPDATE,REFERENCES')),\n   'sequences_with_access',(SELECT count(*) FROM sequences s WHERE has_sequence_privilege(r.oid,s.oid,'USAGE,SELECT,UPDATE')),\n   'functions_with_execute',(SELECT count(*) FROM pg_proc p JOIN private n ON n.oid=p.pronamespace WHERE has_function_privilege(r.oid,p.oid,'EXECUTE'))\n ) ORDER BY r.rolname) FROM api_roles r),'[]'::jsonb)\n) AS privilege_evidence;"
+  },
+  "projects": [
+    {
+      "environment": "staging",
+      "projectRef": "dsnqnvbckkqpzadblshu",
+      "status": "passed_with_declared_column_update_grants",
+      "checks": {
+        "runtime_privileged_flags_absent": true,
+        "no_direct_or_indirect_memberships": true,
+        "private_owner_postgres": true,
+        "runtime_owns_no_database_objects": true,
+        "runtime_has_no_schema_or_database_create": true,
+        "all_private_tables_have_rls": true,
+        "no_admin_table_wide_write": true,
+        "admin_column_update_grants_exactly_declared": true,
+        "append_only_tables_cannot_be_changed_or_deleted": true,
+        "api_roles_have_no_private_access": true
+      },
+      "evidence": {
+        "ownership": {
+          "app_owned_types": 0,
+          "app_owned_schemas": 0,
+          "app_owned_functions": 0,
+          "app_owned_relations": 0,
+          "private_schema_owner": "postgres",
+          "private_relation_owners": [
+            {
+              "owner": "postgres",
+              "objects": 41
+            }
+          ]
+        },
+        "checked_at": "2026-11-11T09:23:38Z",
+        "memberships": {
+          "direct_count": 0,
+          "reachable_count": 0,
+          "reachable_roles": [],
+          "indirect_set_role_targets": []
+        },
+        "runtime_role": {
+          "exists": true,
+          "inherit": false,
+          "superuser": false,
+          "bypass_rls": false,
+          "create_role": false,
+          "replication": false,
+          "create_database": false
+        },
+        "schema_access": {
+          "private_usage": true,
+          "private_create": false,
+          "database_create": false,
+          "any_schema_create": []
+        },
+        "private_tables": {
+          "count": 18,
+          "rls_enabled_count": 18,
+          "all_owners_postgres": true
+        },
+        "server_version_num": 170011,
+        "api_role_privileges": [
+          {
+            "role": "anon",
+            "tables_with_access": 0,
+            "private_schema_usage": false,
+            "private_schema_create": false,
+            "sequences_with_access": 0,
+            "functions_with_execute": 0
+          },
+          {
+            "role": "authenticated",
+            "tables_with_access": 0,
+            "private_schema_usage": false,
+            "private_schema_create": false,
+            "sequences_with_access": 0,
+            "functions_with_execute": 0
+          },
+          {
+            "role": "service_role",
+            "tables_with_access": 0,
+            "private_schema_usage": false,
+            "private_schema_create": false,
+            "sequences_with_access": 0,
+            "functions_with_execute": 0
+          }
+        ],
+        "admin_table_privileges": [
+          {
+            "table": "boards",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": [
+              "id"
+            ]
+          },
+          {
+            "table": "club_memberships",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": []
+          },
+          {
+            "table": "clubs",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": []
+          },
+          {
+            "table": "event_staff",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": []
+          },
+          {
+            "table": "events",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": [
+              "id"
+            ]
+          },
+          {
+            "table": "profiles",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": []
+          },
+          {
+            "table": "schema_migrations",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": []
+          }
+        ],
+        "append_only_privileges": [
+          {
+            "table": "action_receipts",
+            "delete": false,
+            "insert": true,
+            "update": false,
+            "truncate": false,
+            "update_columns": []
+          },
+          {
+            "table": "audit_events",
+            "delete": false,
+            "insert": true,
+            "update": false,
+            "truncate": false,
+            "update_columns": []
+          },
+          {
+            "table": "match_players",
+            "delete": false,
+            "insert": true,
+            "update": false,
+            "truncate": false,
+            "update_columns": []
+          },
+          {
+            "table": "match_results",
+            "delete": false,
+            "insert": true,
+            "update": false,
+            "truncate": false,
+            "update_columns": []
+          }
+        ]
+      }
+    },
+    {
+      "environment": "production",
+      "projectRef": "wlrnowuownakqqgjxnbb",
+      "status": "passed_with_declared_column_update_grants",
+      "checks": {
+        "runtime_privileged_flags_absent": true,
+        "no_direct_or_indirect_memberships": true,
+        "private_owner_postgres": true,
+        "runtime_owns_no_database_objects": true,
+        "runtime_has_no_schema_or_database_create": true,
+        "all_private_tables_have_rls": true,
+        "no_admin_table_wide_write": true,
+        "admin_column_update_grants_exactly_declared": true,
+        "append_only_tables_cannot_be_changed_or_deleted": true,
+        "api_roles_have_no_private_access": true
+      },
+      "evidence": {
+        "ownership": {
+          "app_owned_types": 0,
+          "app_owned_schemas": 0,
+          "app_owned_functions": 0,
+          "app_owned_relations": 0,
+          "private_schema_owner": "postgres",
+          "private_relation_owners": [
+            {
+              "owner": "postgres",
+              "objects": 41
+            }
+          ]
+        },
+        "checked_at": "2026-11-11T09:23:38Z",
+        "memberships": {
+          "direct_count": 0,
+          "reachable_count": 0,
+          "reachable_roles": [],
+          "indirect_set_role_targets": []
+        },
+        "runtime_role": {
+          "exists": true,
+          "inherit": false,
+          "superuser": false,
+          "bypass_rls": false,
+          "create_role": false,
+          "replication": false,
+          "create_database": false
+        },
+        "schema_access": {
+          "private_usage": true,
+          "private_create": false,
+          "database_create": false,
+          "any_schema_create": []
+        },
+        "private_tables": {
+          "count": 18,
+          "rls_enabled_count": 18,
+          "all_owners_postgres": true
+        },
+        "server_version_num": 170011,
+        "api_role_privileges": [
+          {
+            "role": "anon",
+            "tables_with_access": 0,
+            "private_schema_usage": false,
+            "private_schema_create": false,
+            "sequences_with_access": 0,
+            "functions_with_execute": 0
+          },
+          {
+            "role": "authenticated",
+            "tables_with_access": 0,
+            "private_schema_usage": false,
+            "private_schema_create": false,
+            "sequences_with_access": 0,
+            "functions_with_execute": 0
+          },
+          {
+            "role": "service_role",
+            "tables_with_access": 0,
+            "private_schema_usage": false,
+            "private_schema_create": false,
+            "sequences_with_access": 0,
+            "functions_with_execute": 0
+          }
+        ],
+        "admin_table_privileges": [
+          {
+            "table": "boards",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": [
+              "id"
+            ]
+          },
+          {
+            "table": "club_memberships",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": []
+          },
+          {
+            "table": "clubs",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": []
+          },
+          {
+            "table": "event_staff",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": []
+          },
+          {
+            "table": "events",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": [
+              "id"
+            ]
+          },
+          {
+            "table": "profiles",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": []
+          },
+          {
+            "table": "schema_migrations",
+            "delete": false,
+            "insert": false,
+            "select": true,
+            "update": false,
+            "trigger": false,
+            "truncate": false,
+            "insert_columns": [],
+            "update_columns": []
+          }
+        ],
+        "append_only_privileges": [
+          {
+            "table": "action_receipts",
+            "delete": false,
+            "insert": true,
+            "update": false,
+            "truncate": false,
+            "update_columns": []
+          },
+          {
+            "table": "audit_events",
+            "delete": false,
+            "insert": true,
+            "update": false,
+            "truncate": false,
+            "update_columns": []
+          },
+          {
+            "table": "match_players",
+            "delete": false,
+            "insert": true,
+            "update": false,
+            "truncate": false,
+            "update_columns": []
+          },
+          {
+            "table": "match_results",
+            "delete": false,
+            "insert": true,
+            "update": false,
+            "truncate": false,
+            "update_columns": []
+          }
+        ]
+      }
+    }
+  ]
+}
