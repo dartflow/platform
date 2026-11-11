@@ -1,0 +1,79 @@
+{
+  "recordedAt": "2026-11-11T16:36:49.245100+00:00",
+  "scope": "Effective Supabase default Site URL and requested app callback after owner URL Configuration correction",
+  "probeSource": "tests/auth-redirect-live.py",
+  "result": "configured",
+  "priorFailureEvidence": "v15-auth-redirect-failure-2026-11-11.json",
+  "ownerReportedGoogleLoginWorking": true,
+  "workerAuthenticatedAsOwner": false,
+  "fullGoogleConsentSessionAndOwnerAcceptanceEstablishedByThisProbe": false,
+  "exactAllowlistContentsRead": false,
+  "limits": "Synthetic impossible nonhex-token /verify error responses only. Proves effective redirect target acceptance, not a genuine Google or OTP session, delivery, or exact allowlist contents.",
+  "operations": {
+    "realOtpRequested": false,
+    "realCodeReplayed": false,
+    "providerConfigChangedByWorker": false,
+    "httpRedirectFollowed": false,
+    "credentialsUsed": false
+  },
+  "results": [
+    {
+      "environment": "staging",
+      "projectRef": "dsnqnvbckkqpzadblshu",
+      "configured": true,
+      "probes": [
+        {
+          "probe": "site-url",
+          "httpStatus": 303,
+          "errorCode": "otp_expired",
+          "configured": true,
+          "effectiveTarget": {
+            "scheme": "https",
+            "host": "staging.dartflow.nl",
+            "path": ""
+          }
+        },
+        {
+          "probe": "callback",
+          "httpStatus": 303,
+          "errorCode": "otp_expired",
+          "configured": true,
+          "effectiveTarget": {
+            "scheme": "https",
+            "host": "staging.dartflow.nl",
+            "path": "/auth/callback"
+          }
+        }
+      ]
+    },
+    {
+      "environment": "production",
+      "projectRef": "wlrnowuownakqqgjxnbb",
+      "configured": true,
+      "probes": [
+        {
+          "probe": "site-url",
+          "httpStatus": 303,
+          "errorCode": "otp_expired",
+          "configured": true,
+          "effectiveTarget": {
+            "scheme": "https",
+            "host": "dartflow.nl",
+            "path": ""
+          }
+        },
+        {
+          "probe": "callback",
+          "httpStatus": 303,
+          "errorCode": "otp_expired",
+          "configured": true,
+          "effectiveTarget": {
+            "scheme": "https",
+            "host": "dartflow.nl",
+            "path": "/auth/callback"
+          }
+        }
+      ]
+    }
+  ]
+}

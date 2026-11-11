@@ -1,0 +1,75 @@
+{
+  "recordedAt": "2026-11-11T16:32:02.379017+00:00",
+  "scope": "Google OAuth redirect configuration failure; no supplied authorization code used or saved",
+  "reportedLoginMethod": "google",
+  "reportedFailure": "Return to localhost on the user device",
+  "applicationRequest": {
+    "staging": "https://staging.dartflow.nl/auth/callback",
+    "production": "https://dartflow.nl/auth/callback",
+    "bothRequestedCorrectly": true,
+    "googleToSupabaseCallbacksCorrect": true
+  },
+  "effectiveProviderObservation": {
+    "source": "Read-only Supabase MCP query selecting only created_at and allowlisted sanitized auth.flow_state.referrer targets; no flow IDs, auth codes, verifier, tokens or identity data read",
+    "staging": {
+      "projectRef": "dsnqnvbckkqpzadblshu",
+      "recentGoogleFlows": [
+        {
+          "createdAt": "2026-11-11T16:28:26.754885+00:00",
+          "effectiveRedirect": "http://localhost:3000"
+        },
+        {
+          "createdAt": "2026-11-11T16:27:57.320079+00:00",
+          "effectiveRedirect": "http://localhost:3000"
+        },
+        {
+          "createdAt": "2026-11-11T16:26:13.805136+00:00",
+          "effectiveRedirect": "http://localhost:3000"
+        }
+      ]
+    },
+    "production": {
+      "projectRef": "wlrnowuownakqqgjxnbb",
+      "recentGoogleFlows": [
+        {
+          "createdAt": "2026-11-11T16:27:58.011644+00:00",
+          "effectiveRedirect": "http://localhost:3000"
+        }
+      ]
+    }
+  },
+  "assessment": {
+    "effectiveReturnToLocalhostConfirmedBothProjects": true,
+    "configurationReadViaManagementApi": false,
+    "managementCredentialAvailableOnHost": false,
+    "applicationGeneratedLocalhostCallback": false,
+    "providerUrlConfigurationCorrectionRequired": true,
+    "ownerConfigurationChangeConfirmed": false,
+    "genuineLoginAcceptanceCompleted": false
+  },
+  "requiredConfiguration": {
+    "staging": {
+      "siteUrl": "https://staging.dartflow.nl",
+      "redirectUrls": [
+        "https://staging.dartflow.nl/auth/callback"
+      ]
+    },
+    "production": {
+      "siteUrl": "https://dartflow.nl",
+      "redirectUrls": [
+        "https://dartflow.nl/auth/callback"
+      ]
+    }
+  },
+  "priorEvidenceLimit": "v15-google-redirects-2026-11-11.json verified the requested app callback and Google-to-Supabase callback only; it did not verify the effective app target accepted by Supabase.",
+  "operations": {
+    "suppliedUserCodeReplayedOrStoredInEvidence": false,
+    "emailOrOtpSentByWorker": false,
+    "providerConfigurationChangedByWorker": false,
+    "authDatabaseMutatedByWorker": false
+  },
+  "sources": [
+    "https://supabase.com/docs/guides/auth/redirect-urls",
+    "https://github.com/supabase/auth/blob/1357a5b90faa0e575e25030dc690bb228fdce721/internal/utilities/request.go"
+  ]
+}

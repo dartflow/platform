@@ -2572,24 +2572,29 @@ function Login({ session }: { session: Session | null }) {
             />
           </label>
           {sent && (
-            <label className="field" htmlFor="login-token">
-              Inlogcode
-              <input
-                id="login-token"
-                className="otp-input"
-                type="text"
-                autoComplete="one-time-code"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                minLength={6}
-                maxLength={10}
-                required
-                autoFocus
-                value={token}
-                onChange={(e) => setToken(e.target.value.replace(/\D/g, ""))}
-                placeholder="000000"
-              />
-            </label>
+            <>
+              <label className="field" htmlFor="login-token">
+                Inlogcode
+                <input
+                  id="login-token"
+                  className="otp-input"
+                  type="text"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  minLength={6}
+                  maxLength={10}
+                  required
+                  autoFocus
+                  aria-describedby="login-token-help"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value.replace(/\D/g, ""))}
+                />
+              </label>
+              <p id="login-token-help" className="muted-copy">
+                Neem de volledige code uit je e-mail over.
+              </p>
+            </>
           )}
           {error && (
             <div className="notice error" role="alert">

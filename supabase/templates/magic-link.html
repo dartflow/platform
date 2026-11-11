@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>Je DartFlow-inlogcode</title>
+    <style>
+      body { margin: 0; padding: 0; }
+      table { border-collapse: collapse; }
+      a { word-break: break-word; }
+      @media screen and (max-width: 620px) {
+        .mail-outer { padding: 16px 8px !important; }
+        .mail-shell { width: 100% !important; }
+        .mail-pad { padding-left: 24px !important; padding-right: 24px !important; }
+        .mail-title { font-size: 30px !important; }
+        .mail-code { font-size: 28px !important; letter-spacing: 2px !important; }
+      }
+      @media screen and (max-width: 420px) {
+        .mail-category { display: none !important; }
+      }
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background-color:#edf1ec;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
+    <!-- DartFlow v15: Supabase Magic Link / OTP. Supabase supplies the real OTP. -->
+    <div style="display:none;font-size:1px;line-height:1px;color:#edf1ec;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">Je eenmalige code om veilig in te loggen bij DartFlow.</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#edf1ec" style="width:100%;background-color:#edf1ec;">
+      <tr>
+        <td class="mail-outer" align="center" style="padding:36px 16px;">
+          <table role="presentation" class="mail-shell" width="600" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="width:100%;max-width:600px;background-color:#ffffff;border:1px solid #dbe5d7;table-layout:fixed;">
+            <tr>
+              <td class="mail-pad" bgcolor="#181d1a" style="padding:24px 40px;background-color:#181d1a;border-top:4px solid #b7f62b;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td>
+                      <a href="{{ .SiteURL }}" style="display:inline-block;color:#b7f62b;font-size:23px;font-weight:bold;text-decoration:none;">
+                        <img src="{{ .SiteURL }}/assets/dartflow-logo.png" alt="DartFlow" width="196" height="51" style="display:block;width:196px;max-width:100%;height:auto;border:0;color:#b7f62b;">
+                      </a>
+                    </td>
+                    <td class="mail-category" align="right" style="font-size:10px;line-height:1.5;font-weight:bold;letter-spacing:1.3px;color:#dce7db;">ACCOUNT</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td class="mail-pad" style="padding:36px 40px 32px;">
+                <p style="margin:0 0 12px;font-size:11px;line-height:1.5;letter-spacing:2px;font-weight:bold;color:#365710;">VEILIG INLOGGEN</p>
+                <h1 class="mail-title" style="margin:0 0 22px;font-size:36px;line-height:1.15;letter-spacing:-1px;font-weight:bold;color:#181d1a;">Terug aan de oche.</h1>
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#414944;">Hoi darter,</p>
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#414944;">Gebruik deze eenmalige code om veilig in te loggen bij DartFlow. Vul hem in op de loginpagina waarop je de code hebt aangevraagd.</p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin-top:28px;">
+                  <tr>
+                    <td align="center" bgcolor="#181d1a" style="padding:24px 12px;background-color:#181d1a;border:1px solid #48573e;">
+                      <p style="margin:0;font-size:11px;line-height:1.5;font-weight:bold;letter-spacing:1.5px;color:#e6eee7;">JOUW EENMALIGE INLOGCODE</p>
+                      <p class="mail-code" dir="ltr" style="margin:12px 0;font-family:Consolas,Menlo,monospace;font-size:36px;line-height:1.4;font-weight:bold;letter-spacing:3px;color:#b7f62b;">{{ .Token }}</p>
+                      <p style="margin:0;font-size:12px;line-height:1.6;color:#bdc9be;">Deel deze code met niemand.</p>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:24px 0 0;font-size:14px;line-height:1.7;color:#414944;">Ga terug naar die pagina in dezelfde browser. De code is tijdelijk geldig en kan maar eenmaal worden gebruikt. Is hij verlopen? Vraag dan op de loginpagina een nieuwe code aan.</p>
+                <p style="margin:16px 0 0;font-size:14px;line-height:1.7;color:#535e54;">Heb je geen inlogcode aangevraagd? Dan kun je deze e-mail negeren.</p>
+              </td>
+            </tr>
+            <tr>
+              <td class="mail-pad" bgcolor="#f2f6ef" style="padding:22px 40px;background-color:#f2f6ef;border-top:1px solid #dbe5d7;">
+                <p style="margin:0;font-size:12px;line-height:1.7;color:#535e54;">DartFlow · DG Webservices</p>
+                <p style="margin:4px 0 0;font-size:12px;line-height:1.7;color:#535e54;">Deze code hoort bij <a href="{{ .SiteURL }}" style="color:#365710;text-decoration:underline;">{{ .SiteURL }}</a>.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

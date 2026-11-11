@@ -1,0 +1,24 @@
+{
+  "recordedAt": "2026-11-11T16:37:38.364013+00:00",
+  "scope": "Owner-designated identity readiness after reported Google login and default Auth email incident",
+  "environment": "staging",
+  "ownerAddress": "info@dgwebservices.nl",
+  "source": "Read-only Supabase MCP aggregate counts restricted to the already designated owner identity; no other addresses or UUIDs read",
+  "ownerAuthIdentityCount": 1,
+  "verifiedOwnerAuthIdentityCount": 1,
+  "ownerAuthProfileCount": 0,
+  "verifiedOwnerAuthProfileCount": 0,
+  "ownerRoleCountForDesignatedIdentity": 0,
+  "bootstrapInvitationExists": true,
+  "bootstrapInvitationOpen": true,
+  "bootstrapConsumedByDesignatedIdentity": false,
+  "ownerReportedGoogleLoginWorking": true,
+  "ownerReportedAuthEmailProblem": "Default Confirm your email address template, only confirmation link, no visible OTP code",
+  "assessment": "Google login reported working; assigned owner profile and role still require a genuine login as the designated address. The open invitation is not manually consumed or granted.",
+  "operations": {
+    "identityOrRoleMutatedByWorker": false,
+    "realCodeReadFromProvider": false,
+    "realCodeReplayed": false,
+    "emailSentByThisCheck": false
+  }
+}

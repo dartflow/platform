@@ -60,6 +60,8 @@ jobs:
           python3 -B tests/runtime-boundaries-test.py
           python3 -B tests/host-upgrade-test.py
           python3 -B tests/turn-peer-guard-test.py
+      - name: Verify Auth redirect probe without network requests
+        run: python3 -B tests/auth-redirect-live-test.py
       - run: npm run build
       - name: Install pinned Chromium
         run: |
