@@ -1,0 +1,74 @@
+{
+  "recordedAt": "2026-11-11T16:43:01.187635+00:00",
+  "scope": "Reviewed Auth email sources and synthetic browser rendering only; no provider installation or email delivery",
+  "sourceSha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+  "result": "pass",
+  "localReview": {
+    "templateCount": 2,
+    "tokenInVisibleBody": true,
+    "fixedDigitCount": false,
+    "fixedTtlClaim": false,
+    "realCodeInSubjectOrTitle": false,
+    "confirmationUrlLink": false,
+    "userMetadataVariables": false,
+    "trackingOrScripts": false
+  },
+  "independentOfflineReview": {
+    "browser": "Cached Chromium 156",
+    "viewportWidths": [
+      320,
+      600
+    ],
+    "syntheticCodeLengths": [
+      6,
+      8,
+      10
+    ],
+    "renderChecksPassed": 12,
+    "externalRequests": 0,
+    "providerInstallationProven": false
+  },
+  "workerMobilePreview": {
+    "browser": "Cached Chromium 156.0.8078.4",
+    "viewportWidth": 390,
+    "templateCount": 2,
+    "visibleCodeChecksPassed": 2,
+    "horizontalOverflow": false,
+    "liveStagingLogoLoaded": true,
+    "emailSent": false
+  },
+  "logoAvailability": {
+    "staging": {
+      "httpStatus": 200,
+      "contentType": "image/png"
+    },
+    "productionBeforeV15Activation": {
+      "httpStatus": 200,
+      "contentType": "text/html",
+      "pngAvailable": false
+    },
+    "limits": "Production preceding app does not yet serve the PNG asset. Code and instructions, body branding and DartFlow footer remain plain visible text; image and alt rendering depend on mail client. The v15 app contains the PNG."
+  },
+  "providerInstallation": {
+    "staging": "pending",
+    "production": "pending",
+    "requires": "Owner Dashboard action or separately supplied project-scoped Management credential"
+  },
+  "operations": {
+    "realOtpRequested": false,
+    "realOtpReadOrReplayed": false,
+    "authConfigChanged": false,
+    "appDatabaseMutated": false,
+    "productionAppActivated": false
+  },
+  "files": [
+    {
+      "path": "supabase/templates/confirm-signup.html",
+      "sha256": "aa3149809fbbe014798b4a473bb1c49c8eff49564bd5b9b136173daca6c4b867"
+    },
+    {
+      "path": "supabase/templates/magic-link.html",
+      "sha256": "59ea322706c325b7e1ced780b4a4405cc56507323c98cf602e4da8fa704f96cb"
+    }
+  ]
+}

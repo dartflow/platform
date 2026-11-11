@@ -97,10 +97,17 @@ Voor Auth wordt per omgeving vastgelegd:
 3. De toegestane aanmeldmethoden, inschrijvingsregels en testgebruikers.
 4. Een eigen SMTP-configuratie als e-mail voor login, uitnodigingen of herstel wordt gebruikt.
 5. De Google OAuth-configuratie als Google-login onderdeel van het product is.
+6. De juiste e-mailtemplates voor eerste registratie én opnieuw inloggen, met een invoerveld dat de ingestelde codelengte ondersteunt.
 
 Bij Google zijn er twee routes: Google stuurt terug naar `https://<project-ref>.supabase.co/auth/v1/callback`; Supabase stuurt daarna terug naar de applicatiecallback. Gebruik bij voorkeur een afzonderlijke OAuth-client per omgeving. Registreer de applicatie-origin en de door Supabase opgegeven providercallback op de juiste plaatsen bij Google. Zie [Google login](https://supabase.com/docs/guides/auth/social-sign-in/auth-google) en [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls).
 
+Controleer ook het terugkeeradres dat Supabase daadwerkelijk kiest. Alleen de aangevraagde `redirect_to` uitlezen bewijst geen werkende Site URL of allowlist; een afgewezen callback kan terugvallen op localhost. Start na een correctie een nieuwe login in dezelfde browser en controleer de uiteindelijke eigen HTTPS-host en sessie.
+
 Richt voor productie-e-mail eigen SMTP in, inclusief afzender, passende SPF/DKIM/DMARC-records en een bezorgtest met een afgesproken ontvanger. De ingebouwde maildienst is beperkt en bedoeld voor ontwikkeling; zie [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp). SMTP- en OAuth-geheimen blijven in Supabase/providerbeheer en de beheerde kluis.
+
+Bij code-invoer bevatten zowel **Confirm sign up** als **Magic Link / OTP** een zichtbare `{{ .Token }}`. Gebruik herkenbare opmaak en instructies om de volledige code op de oorspronkelijke loginpagina in te voeren. Vermijd een vaste codelengte in voorbeeldtekst en controleer de werkelijk ingestelde lengte. Test eerste registratie en opnieuw inloggen afzonderlijk met afgesproken adressen; een preview bewijst nog geen bezorging of geldige sessie. DartFlow levert [twee templates en installatie-instructies](v15-integraties.md#beide-auth-templates-installeren); de algemene velden staan bij [Supabase Email Templates](https://supabase.com/docs/guides/auth/auth-email-templates).
+
+Leg vast wie Auth-configuratie kan schrijven. Een gekoppeld Supabase-beheeraccount biedt via de beschikbare tools niet automatisch toegang tot de mailtemplate- of providerinstellingen. Regel daarvoor Dashboardbeheer of een projectgebonden Management-credential via de beveiligde secretvoorziening; verzamel geen OTP-codes of secrets in chat.
 
 Maak de afgesproken testgebruikers aan of nodig hen uit. Koppel hun Auth-identiteit aan de juiste applicatierollen of organisatie. Een bereikbaar Auth-endpoint bewijst nog geen werkende login of toegangscontrole.
 

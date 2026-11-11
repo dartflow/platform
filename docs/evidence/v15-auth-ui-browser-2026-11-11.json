@@ -1,0 +1,65 @@
+{
+  "kind": "public-staging-ui-fixture-only",
+  "checkedAt": "2026-11-11T16:46:30.741Z",
+  "before": {
+    "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+    "releaseId": "43061111506-1",
+    "configId": "staging-2026-11-11-v15-1"
+  },
+  "after": {
+    "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+    "releaseId": "43061111506-1",
+    "configId": "staging-2026-11-11-v15-1"
+  },
+  "browserVersion": "156.0.8078.4",
+  "views": [
+    {
+      "width": 320,
+      "inputLength": 8,
+      "htmlValid": true,
+      "minLength": 6,
+      "maxLength": 10,
+      "numericInput": true,
+      "oneTimeCodeAutofill": true,
+      "sixZeroPlaceholderAbsent": true,
+      "helpPresent": true,
+      "helpVisible": true,
+      "noHorizontalOverflow": true,
+      "fixtureOtpResponses": 1,
+      "authRequestsSent": 0,
+      "blockedAuthActions": 0,
+      "blockedOtherMutations": 0,
+      "blockedExternalRequests": 0,
+      "pageErrors": 0,
+      "verificationSubmitted": false
+    },
+    {
+      "width": 390,
+      "inputLength": 8,
+      "htmlValid": true,
+      "minLength": 6,
+      "maxLength": 10,
+      "numericInput": true,
+      "oneTimeCodeAutofill": true,
+      "sixZeroPlaceholderAbsent": true,
+      "helpPresent": true,
+      "helpVisible": true,
+      "noHorizontalOverflow": true,
+      "fixtureOtpResponses": 1,
+      "authRequestsSent": 0,
+      "blockedAuthActions": 0,
+      "blockedOtherMutations": 0,
+      "blockedExternalRequests": 0,
+      "pageErrors": 0,
+      "verificationSubmitted": false
+    }
+  ],
+  "realOtpOrMailSent": false,
+  "supabaseAuthRequestSent": false,
+  "actualLoginProven": false,
+  "ownerRoleProven": false,
+  "syntheticFixture": true,
+  "noRealAuth": true,
+  "sessionProof": false,
+  "limit": "Local OTP fixture only; no OTP or verification forwarded, no authenticated session or owner role proven."
+}

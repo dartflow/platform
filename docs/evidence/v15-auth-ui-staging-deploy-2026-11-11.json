@@ -1,0 +1,248 @@
+{
+  "recordedAt": "2026-11-11T16:46:28.071Z",
+  "scope": "Auth UI staging deployment; independent read-only activation and production/Milo preservation checks. No Auth template configuration or functional login/mail acceptance.",
+  "deployment": {
+    "runUrl": "https://github.com/dartflow/platform/actions/runs/43061111506",
+    "runId": 43061111506,
+    "attempt": 1,
+    "event": "workflow_dispatch",
+    "workflowHeadSha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+    "status": "completed",
+    "conclusion": "success",
+    "createdAt": "2026-11-11T16:43:23Z",
+    "completedAt": "2026-11-11T16:45:39Z",
+    "verifyJob": {
+      "id": 130663629858,
+      "name": "Verify immutable release",
+      "conclusion": "success",
+      "completedAt": "2026-11-11T16:43:42Z"
+    },
+    "targetJob": {
+      "id": 130663798856,
+      "name": "Build and activate on target VPS",
+      "conclusion": "success",
+      "completedAt": "2026-11-11T16:45:38Z"
+    },
+    "workflowAndBrokerGateEvidence": [
+      {
+        "ciRunUrl": "https://github.com/dartflow/platform/actions/runs/43060594522",
+        "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+        "status": "passed"
+      },
+      {
+        "ciRunUrl": "https://github.com/dartflow/platform/actions/runs/43060594522",
+        "configId": "staging-2026-11-11-v15-1",
+        "releaseId": "43061111506-1",
+        "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+        "status": "passed"
+      }
+    ]
+  },
+  "independentPublicCheck": {
+    "checkedAt": "2026-11-11T16:46:01.469996+00:00",
+    "production": {
+      "health": {
+        "body": {
+          "buildConfigId": "production-2026-11-11-v1",
+          "configId": "production-2026-11-11-v1",
+          "mode": "supabase",
+          "releaseId": "42995766522-1",
+          "runtimeConfigId": "production-2026-11-11-v1",
+          "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+          "status": "ok"
+        },
+        "httpStatus": 200
+      },
+      "ready": {
+        "body": {
+          "auth": "reachable",
+          "buildConfigId": "production-2026-11-11-v1",
+          "configId": "production-2026-11-11-v1",
+          "database": "ok",
+          "releaseId": "42995766522-1",
+          "runtimeConfigId": "production-2026-11-11-v1",
+          "schemaVersion": 1,
+          "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+          "status": "ready"
+        },
+        "httpStatus": 200
+      }
+    },
+    "source": "Independent worker HTTPS GETs; allowlisted health/readiness metadata only",
+    "staging": {
+      "health": {
+        "body": {
+          "buildConfigId": "staging-2026-11-11-v15-1",
+          "configId": "staging-2026-11-11-v15-1",
+          "mode": "supabase",
+          "releaseId": "43061111506-1",
+          "runtimeConfigId": "staging-2026-11-11-v15-1",
+          "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+          "status": "ok"
+        },
+        "httpStatus": 200
+      },
+      "ready": {
+        "body": {
+          "auth": "reachable",
+          "buildConfigId": "staging-2026-11-11-v15-1",
+          "configId": "staging-2026-11-11-v15-1",
+          "database": "ok",
+          "releaseId": "43061111506-1",
+          "runtimeConfigId": "staging-2026-11-11-v15-1",
+          "schemaVersion": 1,
+          "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+          "status": "ready"
+        },
+        "httpStatus": 200
+      }
+    },
+    "milo": {
+      "body": {
+        "configVersion": "staging-2026-11-11-v2",
+        "releaseId": "43026808427-1",
+        "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+        "status": "ok"
+      },
+      "checkedAt": "2026-11-11T16:46:28.053185+00:00",
+      "httpStatus": 200
+    }
+  },
+  "independentHostCheck": {
+    "caddyActive": true,
+    "checkedAt": "2026-11-11T16:46:02.663485+00:00",
+    "host": "dg-nxttrack-01",
+    "milo": {
+      "current": "releases/f1550dd028ef-43026808427-1",
+      "loopback": {
+        "health": {
+          "body": {
+            "configVersion": "staging-2026-11-11-v2",
+            "releaseId": "43026808427-1",
+            "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 14:14:47 CET",
+        "ActiveState": "active",
+        "MainPID": "70911"
+      }
+    },
+    "production": {
+      "current": "releases/4634852c17cc-42995766522-1",
+      "loopback": {
+        "health": {
+          "body": {
+            "buildConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1",
+            "mode": "supabase",
+            "releaseId": "42995766522-1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        },
+        "ready": {
+          "body": {
+            "auth": "reachable",
+            "buildConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1",
+            "database": "ok",
+            "releaseId": "42995766522-1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "schemaVersion": 1,
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "status": "ready"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 10:32:39 CET",
+        "ActiveState": "active",
+        "MainPID": "64473"
+      }
+    },
+    "source": "SSH read-only: current symlink, selected systemctl fields and loopback health/readiness only",
+    "staging": {
+      "current": "releases/62529cc56e29-43061111506-1",
+      "loopback": {
+        "health": {
+          "body": {
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1",
+            "mode": "supabase",
+            "releaseId": "43061111506-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+            "status": "ok"
+          },
+          "httpStatus": 200
+        },
+        "ready": {
+          "body": {
+            "auth": "reachable",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1",
+            "database": "ok",
+            "releaseId": "43061111506-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "schemaVersion": 1,
+            "sha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+            "status": "ready"
+          },
+          "httpStatus": 200
+        }
+      },
+      "service": {
+        "ActiveEnterTimestamp": "Wed 2026-11-11 17:45:29 CET",
+        "ActiveState": "active",
+        "MainPID": "92576"
+      }
+    }
+  },
+  "preservation": {
+    "baselineRecordedAt": "2026-11-11T16:41:01.785444+00:00",
+    "baselineSource": "Root-provided predeployment service/source identity and docs/evidence/v15-current-staging-deploy-2026-11-11.json",
+    "production": {
+      "mainPid": "64473",
+      "activeEnterTimestamp": "Wed 2026-11-11 10:32:39 CET",
+      "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+      "releaseId": "42995766522-1",
+      "configId": "production-2026-11-11-v1",
+      "pidAndStartUnchanged": true,
+      "sourceReleaseConfigUnchanged": true,
+      "publicAndLoopbackHealthy": true
+    },
+    "milo": {
+      "mainPid": "70911",
+      "activeEnterTimestamp": "Wed 2026-11-11 14:14:47 CET",
+      "sha": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+      "releaseId": "43026808427-1",
+      "configId": "staging-2026-11-11-v2",
+      "pidAndStartUnchanged": true,
+      "sourceReleaseConfigUnchanged": true,
+      "publicAndLoopbackHealthy": true
+    }
+  },
+  "validation": {
+    "exactSourceReleaseAndConfigMatchPublicAndLoopback": true,
+    "stagingDatabaseReady": true,
+    "stagingAuthReachable": true,
+    "otpInputPlaceholderSourceNowDeployed": true,
+    "supabaseAuthTemplatesNotAppliedByThisDeployment": true,
+    "doesNotAssertOwnerLoginOtpVerificationOrExternalMailDelivery": true
+  },
+  "operationsByThisObserver": {
+    "readOnlyWorkflowAndHttpChecks": true,
+    "credentialsReadOrOutput": false,
+    "directSqlExecuted": false,
+    "hostConfigurationChanged": false,
+    "authRequestsOrMailSent": false,
+    "productionDeployed": false
+  }
+}

@@ -69,6 +69,8 @@ Controleer vrije poorten en bestaande hostcontracten vóór installatie. Een AAA
 | SMTP-/mailprovider en afzenderdomein | `<provider en domein of buiten scope>` |
 | Google-providerproject / credentialverwijzing | `<verwijzingen of buiten scope>` |
 | Site URL, appcallbacks en providercallbacks per omgeving | `<configuratieverwijzing>` |
+| Auth-configuratiebeheer per project | `<Dashboardbeheerder of projectgebonden Management-credentialverwijzing>` |
+| Registratie-/inlogmailtemplates en OTP-codelengte | `<templatebronnen, installatie- en testresultaat per omgeving>` |
 
 Gebruik twee afzonderlijke projecten: controleer de bestaande projecten of maak nieuwe aan wanneer ze ontbreken. Een nieuwe VPS vereist op zichzelf geen nieuwe Supabase-projecten. Een Supabase-beheeraccount, organisatie, project en applicatiegebruiker zijn verschillende identiteiten. Bevestig projecttoegang met een echte leesactie; een zichtbare connectornaam is daarvoor onvoldoende.
 

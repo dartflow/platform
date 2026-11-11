@@ -1,0 +1,129 @@
+{
+  "recordedAt": "2026-11-11T16:43:46.742727+00:00",
+  "scope": "Successful CI for Auth code UI, mail template sources and effective redirect probe; not live provider/email/login acceptance",
+  "sourceSha": "62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+  "run": {
+    "databaseId": 43060594522,
+    "status": "completed",
+    "conclusion": "success",
+    "createdAt": "2026-11-11T16:40:12Z",
+    "updatedAt": "2026-11-11T16:43:11Z",
+    "url": "https://github.com/dartflow/platform/actions/runs/43060594522"
+  },
+  "jobs": [
+    {
+      "id": 130661789302,
+      "name": "Verify",
+      "conclusion": "success",
+      "completedAt": "2026-11-11T16:43:10Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install repository-pinned npm and locked dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify preinstalled PostgreSQL 16",
+          "conclusion": "success"
+        },
+        {
+          "name": "Start isolated local test database",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run typecheck",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run lint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm test",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:prototype",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:deploy",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify privileged bootstrap contracts without host mutations",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify Auth redirect probe without network requests",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run build",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install pinned Chromium",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:e2e",
+          "conclusion": "success"
+        },
+        {
+          "name": "Package standalone candidate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop local test database",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "testSummary": [
+    "2026-11-11T16:41:11.9381813Z Ran 57 tests in 0.394s",
+    "2026-11-11T16:41:12.0525383Z Ran 8 tests in 0.027s",
+    "2026-11-11T16:41:12.1154287Z Ran 6 tests in 0.001s",
+    "2026-11-11T16:41:12.1859659Z Ran 3 tests in 0.010s",
+    "2026-11-11T16:41:12.2545657Z Ran 10 tests in 0.004s",
+    "2026-11-11T16:41:12.3477842Z Ran 8 tests in 0.007s",
+    "2026-11-11T16:41:12.4636992Z Ran 8 tests in 0.003s",
+    "2026-11-11T16:43:05.0589894Z   7 passed (1.3m)"
+  ],
+  "artifacts": [
+    {
+      "id": 13872573231,
+      "name": "ci-62529cc56e29024f3fe49cdb019a5f9a051b0bc7",
+      "sizeBytes": 15914623,
+      "expired": false
+    }
+  ]
+}
