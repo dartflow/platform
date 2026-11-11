@@ -1,13 +1,14 @@
-import { randomBytes,randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { DomainError, validateSettings } from './domain';
+import {rotateEntityInvitation}from'./invitations';
 import {assertBoardUnreserved,boardLease,lockPlayingActors}from'./platform-locks';
 import { enqueueMatchTransition } from './integrations-domain';
 import {eventAccess, publishResult } from './db';
 import type { MatchState } from './types';
 import { enqueueDomainMail } from './integrations-mail';
 import { advanceFixtures, roundRobin, tournamentFixtures } from './platform-domain';
-import { acceptsCode, addMember, allowsExternalParticipants, blocked, createCoreEvent, createCoreMatch, createEntity, entity, hash, isClubMember, member, number, requireAccess, save, syncCompetitionRoom, text, uuid, view } from './platform-store';
+import { acceptsCode, addMember, allowsExternalParticipants, blocked, createCoreEvent, createCoreMatch, createEntity, entity, isClubMember, member, number, requireAccess, save, syncCompetitionRoom, text, uuid, view } from './platform-store';
 import type { EntityRow } from './platform-store';
 import type { PlatformCommand, PlatformResponse, PlatformState } from './platform-types';
 
@@ -123,7 +124,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     row.state.fixtures = row.kind === 'league' ? roundRobin(players) : tournamentFixtures(players, row.state.format!, row.state.poolCount);
     row.state.registrationOpen = false;
   } else if(type==='competition.invite'){
-    await requireAccess(client,row,actor,true);const code=randomBytes(18).toString('base64url');await client.query("update dartflow_private.platform_entities set invite_hash=$2,invite_expires_at=now()+interval '7 days' where id=$1",[row.id,hash(code)]);await save(client,row);return {ok:true,id:row.id,code,entity:await view(client,row,actor)};
+    await requireAccess(client,row,actor,true);const code=await rotateEntityInvitation(client,row);await save(client,row);return {ok:true,id:row.id,code,entity:await view(client,row,actor)};
   } else if (type === 'competition.settings') {
     await requireAccess(client, row, actor, true);
     if(a.approvalRequired!==undefined){if(row.kind!=='tournament'||typeof a.approvalRequired!=='boolean')throw new DomainError('invalid_approval','Kies een geldige toernooigoedkeuring.');const registrations=await client.query("select 1 from dartflow_private.platform_members where entity_id=$1 and attributes->>'registered'='true' limit 1",[row.id]);if(registrations.rowCount)throw new DomainError('approval_locked','De goedkeuring staat vast zodra er aanmeldingen zijn.',409);row.state.approvalRequired=a.approvalRequired;}

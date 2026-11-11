@@ -130,8 +130,10 @@ test('standalone club boards persist without competitions and isolate open play 
    const countBefore=Number((await owner.query('select count(*) as n from dartflow_private.club_boards where club_id=$1',[club])).rows[0].n);
    await owner.query('begin');await owner.query('select id from dartflow_private.platform_entities where id=$1 for update',[club]);
    const queued=Promise.allSettled([run(member,{type:'club-board.create',clubId:club,name:'Queued demoted-admin board'})]);
+   try{
    let blocked=false;
    for(let attempt=0;attempt<50&&!blocked;attempt++){
+    await owner.query('select pg_stat_clear_snapshot()');
     blocked=Boolean((await owner.query("select exists(select 1 from pg_stat_activity where datname=current_database() and wait_event_type='Lock' and query like 'select id from dartflow_private.platform_entities where id=$1 and kind=%') as blocked")).rows[0].blocked);
     if(!blocked)await new Promise(resolve=>setTimeout(resolve,10));
    }
@@ -139,6 +141,7 @@ test('standalone club boards persist without competitions and isolate open play 
    await owner.query("update dartflow_private.platform_members set role='member' where entity_id=$1 and user_id=$2",[club,member]);
    await owner.query("update dartflow_private.club_memberships set role='player' where club_id=$1 and user_id=$2",[club,member]);
    await owner.query('update dartflow_private.platform_entities set revision=revision+1,updated_at=now() where id=$1',[club]);await owner.query('commit');
+   }finally{await owner.query('rollback');}
    const result=(await queued)[0];assert.equal(result.status,'rejected');assert.equal(result.status==='rejected'?result.reason.status:null,403);
    assert.equal(Number((await owner.query('select count(*) as n from dartflow_private.club_boards where club_id=$1',[club])).rows[0].n),countBefore);
   });

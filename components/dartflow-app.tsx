@@ -27,6 +27,8 @@ import type {
   PublicSnapshot,
   ResultView,
 } from "../lib/types";
+import {requiresDisplayName,validDisplayName} from "../lib/display-name";
+import {safeNext} from "../lib/config";
 
 type Session = {
   user: Profile | null;
@@ -34,6 +36,7 @@ type Session = {
   localUsers?: Profile[];
   environment?: string;
   canManagePlatform?: boolean;
+  requiresDisplayName?: boolean;
 };
 type IconName =
   | "home"
@@ -438,7 +441,7 @@ export default function DartflowApp() {
     setClubId(localStorage.getItem("dartflow-club") || "");
   }, []);
   const overview = usePolled<Overview>(
-    session.data?.user && path !== "/inloggen"
+    session.data?.user && !session.data.requiresDisplayName && path !== "/inloggen"
       ? `/api/overview${clubId ? `?clubId=${encodeURIComponent(clubId)}` : ""}`
       : null,
   );
@@ -463,6 +466,8 @@ export default function DartflowApp() {
         overlay={readOnlyAlias[1] === "overlay"}
       />
     );
+  if (session.data?.user && (session.data.requiresDisplayName || requiresDisplayName(session.data.user)))
+    return <CompleteProfile user={session.data.user} />;
   if (path === "/inloggen") return <Login session={session.data} />;
   if (!session.data && !session.error)
     return (
@@ -485,7 +490,7 @@ export default function DartflowApp() {
           {session.error && <div className="notice error">{session.error}</div>}
           <a
             className="button gold full"
-            href={`/inloggen?next=${encodeURIComponent(path)}`}
+            href={`/inloggen?next=${encodeURIComponent(safeNext(path+window.location.search))}`}
           >
             {path.startsWith("/baan/") ? "Registreren of aanmelden" : "Inloggen"} <Icon name="arrow" />
           </a>
@@ -493,6 +498,7 @@ export default function DartflowApp() {
       </div>
     );
   const user = session.data.user;
+  if(path.startsWith('/w/'))return <ShortInvitation code={path.split('/')[2]||''} />;
   const data = overview.data;
   const scorerOverview: Overview = data || {
     profile: user,
@@ -1797,6 +1803,7 @@ function MatchPage({
         {match.settings.bestOfSets > 1 &&
           ` · best of ${match.settings.bestOfSets} sets`}
       </Heading>
+      <MatchInvitation matchId={match.id} />
       <div className="match-layout">
         <div>
           <div className="panel scoreboard">
@@ -1840,7 +1847,7 @@ function MatchPage({
               <span>Leg {match.legNumber}</span>
               <span>Set {match.setNumber}</span>
               <span>
-                Schrijver: <strong>{writer}</strong>
+                {match.scoringMode==='per-player'?'Iedere speler scoort zelf · Aan de beurt: ':'Schrijver: '}<strong>{writer}</strong>
               </span>
             </div>
             {match.checkout && match.status === "live" && (
@@ -2113,12 +2120,12 @@ function MatchPage({
                 <Icon name={match.status === "live" ? "history" : "target"} />
                 <h3>
                   {match.status === "live"
-                    ? `${writer} schrijft deze partij`
+                    ? match.scoringMode==='per-player'?`${writer} is aan de beurt`:`${writer} schrijft deze partij`
                     : "Klaar voor de eerste pijl?"}
                 </h3>
                 <p>
                   {match.status === "live"
-                    ? "De actuele stand verschijnt automatisch op dit toestel."
+                    ? match.scoringMode==='per-player'?"Jullie voeren ieder je eigen worp in. Jouw invoer verschijnt automatisch zodra jij aan de beurt bent.":"De actuele stand verschijnt automatisch op dit toestel."
                     : "Bevestig je deelname en start de partij zodra beide spelers klaar zijn."}
                 </p>
                 {match.permissions.canAccept && (
@@ -2474,6 +2481,45 @@ function MatchPage({
       </div>
     </>
   );
+}
+
+function MatchInvitation({matchId}:{matchId:string}){
+  const invite=usePolled<{invitation:{code:string;path:string}|null}>(`/api/matches/${matchId}/invitation`);
+  const [copied,setCopied]=useState('');const invitation=invite.data?.invitation;
+  if(!invitation)return null;
+  return <div className="notice" aria-label="Wedstrijd uitnodiging"><strong>Wedstrijdcode: {invitation.code}</strong>{' '}
+    <button className="button ghost small" type="button" onClick={async()=>{try{await navigator.clipboard.writeText(new URL(invitation.path,location.origin).href);setCopied('Uitnodigingslink gekopieerd.');}catch{setCopied(`Kopiëren is niet gelukt. Gebruik ${location.origin}${invitation.path}`);}}}>Uitnodigingslink kopiëren</button>
+    <span role="status">{copied}</span></div>;
+}
+
+function CompleteProfile({user}:{user:Profile}) {
+  const [name,setName]=useState(validDisplayName(user.name)?user.name:'');
+  const [busy,setBusy]=useState(false),[error,setError]=useState('');
+  async function complete(event:FormEvent){
+    event.preventDefault();setError('');setBusy(true);
+    try{
+      await request('/api/platform/actions',{requestId:crypto.randomUUID(),action:{type:'profile.update',name}});
+      const target=location.pathname==='/inloggen'?safeNext(new URLSearchParams(location.search).get('next')):safeNext(location.pathname+location.search);
+      hardNavigate(target==='/'?'/app':target);
+    }catch(error){setError(error instanceof Error?error.message:'Opslaan is niet gelukt.');}finally{setBusy(false);}
+  }
+  return <div className="auth-page"><div className="auth-brand"><img src="/assets/dartflow-logo.svg" alt="DartFlow" /></div>
+    <form className="auth-card" onSubmit={complete}><Badge>REGISTRATIE AFRONDEN</Badge><h1>Hoe heet je op het scorebord?</h1>
+      <p>Bevestig je naam of pas het voorstel aan. Deze naam zien andere spelers in de lobby, de wedstrijd en op het scorebord.</p>
+      <label className="field">Naam op het scorebord<input name="name" autoComplete="nickname" required maxLength={80} value={name} onChange={event=>setName(event.target.value)} disabled={busy} /></label>
+      {error&&<div className="notice error" role="alert">{error}</div>}
+      <button className="button gold full" disabled={busy||!validDisplayName(name)}>{busy?'Naam opslaan…':'Naam bevestigen en verder'}</button>
+    </form></div>;
+}
+
+function ShortInvitation({code}:{code:string}){
+  const [error,setError]=useState('');const started=useRef(false);
+  useEffect(()=>{if(started.current)return;started.current=true;
+    void request<{id:string;kind:string}>('/api/platform/actions',{requestId:crypto.randomUUID(),action:{type:'invitation.resolve',code}})
+      .then(result=>{const section:Record<string,string>={lobby:'lobby',club:'clubs',room:'community',league:'leagues',tournament:'tournaments'};const path=section[result.kind];if(!path)throw new Error('Deze uitnodiging is niet beschikbaar.');hardNavigate(`/app/${path}/${result.id}?code=${encodeURIComponent(code.toUpperCase())}`);})
+      .catch(error=>setError(error instanceof Error?error.message:'De uitnodiging is niet beschikbaar.'));
+  },[code]);
+  return <div className="auth-page"><div className="auth-card"><h1>Uitnodiging {code.toUpperCase()}</h1>{error?<div className="notice error" role="alert">{error}</div>:<p>Uitnodiging openen…</p>}<a className="button ghost" href="/app/spelen">Terug naar spelen</a></div></div>;
 }
 
 function Login({ session }: { session: Session | null }) {

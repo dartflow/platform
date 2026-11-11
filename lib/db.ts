@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {assertBoardUnreserved,assertPlayersFree,boardLease,lockPlayingActors}from'./platform-locks';
 import { enqueueEventTransition,enqueueMatchTransition } from './integrations-domain';
 import {clubBoardEventAccess} from './club-boards';
+import {requireScoreboardName} from './profile-name';
 import { applyMatchAction, checkout, DomainError, matchView, newGame, validateSettings } from './domain';
 import type { Club, EventAction, MatchCommand, MatchState, MatchView, Overview, Profile, PublicSnapshot, ResultView } from './types';
 
@@ -57,7 +58,7 @@ async function audit(client: PoolClient, actorId: string, event: { club_id?: str
   await client.query('insert into dartflow_private.audit_events(actor_id,club_id,event_id,match_id,action,detail) values($1,$2,$3,$4,$5,$6)', [actorId, event.club_id ?? event.clubId, event.eventId ?? event.id, matchId, action, JSON.stringify(detail)]);
 }
 export async function getProfile(actorId: string): Promise<Profile> {
-  const { rows } = await database().query('select id,name,email from dartflow_private.profiles where id=$1', [assertUuid(actorId)]);
+  const { rows } = await database().query('select id,name,email,display_name_confirmed as "displayNameConfirmed" from dartflow_private.profiles where id=$1', [assertUuid(actorId)]);
   if (!rows.length) throw new DomainError('profile_missing', 'Dit account is nog niet toegelaten tot de pilot.', 403);
   return rows[0];
 }
@@ -67,6 +68,16 @@ export async function getMatch(actorId: string, matchId: string): Promise<MatchV
   const state: MatchState = rows[0].state, access = await matchAccess(database(), actorId, state);
   const link=await database().query("select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind='tournament'",[matchId]);
   return {...matchView(state, actorId, access.canManage),offlineSupported:Boolean(link.rowCount)};
+}
+export async function getMatchInvitation(actorId:string,matchId:string):Promise<{code:string;path:string}|null>{
+  // Use the normal match access rules and share only with current lobby members.
+  await getMatch(actorId,matchId);
+  const {rows}=await database().query(`select i.code from dartflow_private.platform_match_links l
+    join dartflow_private.platform_entities e on e.id=l.entity_id and e.kind='lobby'
+    join dartflow_private.invitation_codes i on i.entity_id=e.id and i.expires_at>now()
+    where l.match_id=$1 and e.invite_expires_at>now() and e.invite_hash=encode(sha256(convert_to(i.code,'UTF8')),'hex')
+    and (e.owner_id=$2 or exists(select 1 from dartflow_private.platform_members p where p.entity_id=e.id and p.user_id=$2 and p.status='active'))`,[assertUuid(matchId),assertUuid(actorId)]);
+  return rows.length===1?{code:rows[0].code,path:`/w/${rows[0].code}`}:null;
 }
 export async function getOverview(actorId: string, clubId?: string): Promise<Overview> {
   const profile = await getProfile(actorId);
@@ -111,6 +122,8 @@ export async function executeMatchCommand(actorId: string, command: MatchCommand
     if (!rows.length) throw new DomainError('not_found', 'Deze partij bestaat niet.', 404);
     const source: MatchState = rows[0].state;
     const access = await matchAccess(client, actorId, source);
+    if(['accept','start','score','take-over'].includes(command.action.type))await requireScoreboardName(client,actorId);
+    if(['call','start'].includes(command.action.type))for(const player of source.players)await requireScoreboardName(client,player.id);
     const prior = await client.query('select payload_hash,response from dartflow_private.action_receipts where match_id=$1 and actor_id=$2 and request_id=$3', [source.id, actorId, command.requestId]);
     if (prior.rows.length) {
       if (prior.rows[0].payload_hash !== payloadHash) throw new DomainError('request_reused', 'Dit aanvraag-ID is eerder met andere gegevens gebruikt.', 409);
@@ -155,6 +168,7 @@ export async function executeEventCommand(actorId: string, eventId: string, acti
     const event = await eventAccess(client, actorId, eventId);
     if(await clubBoardEventAccess(client,actorId,eventId))throw new DomainError('invalid_action','Een vaste verenigingsbaan gebruikt vrij spelen; een evenementinschrijving is niet nodig.',409);
     await client.query('select id from dartflow_private.events where id=$1 for update', [eventId]);
+    if(action.type==='register'||action.type==='check-in')await requireScoreboardName(client,assertUuid(action.playerId??actorId));
     const beforeEntries=await client.query<{id:string;user_id:string;status:'registered'|'waitlisted'|'withdrawn'}>('select id,user_id,status from dartflow_private.entries where event_id=$1',[eventId]);
     if (action.type === 'plan') {
       if (!event.canManage) throw new DomainError('forbidden', 'Alleen de wedstrijdleiding kan partijen plannen.', 403);
@@ -241,8 +255,8 @@ export async function consumeRateLimit(key: string, limit: number, windowSeconds
 }
 
 export async function checkDatabaseReady(): Promise<{ ready: boolean; schemaVersion: number }> {
-  const { rows } = await database().query("select current_user as role,(select max(version) from dartflow_private.schema_migrations) as version,(select version from dartflow_private.feature_versions where name='v15') as feature_version,(select version from dartflow_private.feature_versions where name='club_boards') as club_boards_version");
-  return { ready: rows[0].role === 'dartflow_app' && rows[0].version === 1 && rows[0].feature_version === 15 && rows[0].club_boards_version === 1, schemaVersion: rows[0].version ?? 0 };
+  const { rows } = await database().query("select current_user as role,(select max(version) from dartflow_private.schema_migrations) as version,(select version from dartflow_private.feature_versions where name='v15') as feature_version,(select version from dartflow_private.feature_versions where name='club_boards') as club_boards_version,(select version from dartflow_private.feature_versions where name='short_invitations') as short_invitations_version,(select version from dartflow_private.feature_versions where name='display_names') as display_names_version,(select version from dartflow_private.feature_versions where name='per_player_scoring') as per_player_scoring_version");
+  return { ready: rows[0].role === 'dartflow_app' && rows[0].version === 1 && rows[0].feature_version === 15 && rows[0].club_boards_version === 1 && rows[0].short_invitations_version===1 && rows[0].display_names_version===1 && rows[0].per_player_scoring_version===1, schemaVersion: rows[0].version ?? 0 };
 }
 
 /** A fixed board UUID resolves its actual event, independently of UI club selection. */

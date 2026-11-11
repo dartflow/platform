@@ -1,6 +1,6 @@
 export type Role = 'organizer' | 'player';
 export type { ClubBoardView,ClubBoardScreenView } from './platform-types';
-export type Profile = { id: string; name: string; email?: string; role?: Role };
+export type Profile = { id: string; name: string; email?: string; role?: Role; displayNameConfirmed?: boolean };
 export type Club = { id: string; name: string; role: Role };
 export type Settings = { startScore: 301 | 501 | 701; bestOfLegs: number; bestOfSets: number; legLimit?: number };
 export type Visit = { player: string; playerIndex: number; score: number; darts: number; remainingBefore: number; remainingAfter: number; bust: boolean; leg: number; checkout: boolean };
@@ -10,6 +10,7 @@ export type MatchState = {
   id: string; clubId: string; eventId: string; boardId: string | null; revision: number;
   status: 'planned' | 'called' | 'ready' | 'live' | 'result' | 'confirmed' | 'disputed';
   players: Profile[]; writerId: string; settings: Settings; accepted: boolean[];
+  scoringMode?: 'shared-writer' | 'per-player';
   delegatedWriterId?: string | null;
   callRef?:string|null;
   paused?:boolean;pausedBy?:string|null;scoringRevision?:number;
@@ -22,7 +23,7 @@ export type MatchView = Omit<MatchState, 'game' | 'previousSets'> & {
   offlineSupported?: boolean;
   remaining: number[]; legs: number[]; sets: number[]; turn: number; checkout: string | null;
   visits: Visit[]; stats: Stats[]; legNumber: number; setNumber: number;
-  permissions: { canScore: boolean; canManage: boolean; canAccept: boolean; canConfirm: boolean; canTakeOver: boolean; canUndo: boolean;canPause:boolean;canResume:boolean;canRequestCorrection:boolean;canAnswerCorrection:boolean;canCancelCorrection:boolean };
+  permissions: { canScore: boolean; canWrite: boolean; canManage: boolean; canAccept: boolean; canConfirm: boolean; canTakeOver: boolean; canUndo: boolean;canPause:boolean;canResume:boolean;canRequestCorrection:boolean;canAnswerCorrection:boolean;canCancelCorrection:boolean };
 };
 export type MatchAction =
   | { type: 'call'; boardId: string;callRef?:string }

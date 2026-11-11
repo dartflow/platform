@@ -1,0 +1,212 @@
+{
+  "kind": "four-player-flows-locally-verified-hosted-release-pending",
+  "recordedAt": "2026-11-11T20:53:42.283604+00:00",
+  "baseSha": "90b3830892b858b09489d571ce167de27ff0aba5",
+  "report": "docs/spelersflows-uitrol.md",
+  "localVerification": {
+    "productionBuild": "pass",
+    "typecheck": "pass",
+    "lint": "pass",
+    "applicationTests": {
+      "pass": 151,
+      "fail": 0,
+      "skip": 0
+    },
+    "browserTests": {
+      "pass": 12,
+      "fail": 0,
+      "accounts": [
+        "Danny Goldenbelt",
+        "Michael de Groot",
+        "Raymond van Dijk",
+        "Speler andere club"
+      ],
+      "temporaryScoreboardNames": [
+        "Noor Dart",
+        "Sam Dart"
+      ],
+      "browser": "Chromium 156.0.8078.4",
+      "camera": "Two contexts; real WebRTC with synthetic canvas video and oscillator audio",
+      "physicalIosSafariOrAndroidChrome": false
+    },
+    "prototypeTests": 46,
+    "nativeDeployerTests": 57,
+    "additionalPythonChecks": {
+      "runner": 8,
+      "cleanup": 6,
+      "runtime": 5,
+      "hostUpgrade": 10,
+      "turnPeerGuard": 8,
+      "authRedirectProbe": 8
+    },
+    "cleanLocalFixtureJitDisabled": "Extracted PostgreSQL 16 lacks libLLVM-17; hosted databases unchanged"
+  },
+  "migrations": [
+    {
+      "file": "supabase/migrations/20261111203744_per_player_remote_scoring.sql",
+      "sha256": "9ccc182bfd96d4029b854e5ad0d7518f07b6fbd438c435b9f22b228c2ee1fdc7",
+      "appliedStaging": false,
+      "appliedProduction": false
+    },
+    {
+      "file": "supabase/migrations/20261111203820_short_invitation_codes.sql",
+      "sha256": "efee006ed6a95032b1adbb14534341fb023a0f6c3e24df9405bc1b371d775d8f",
+      "appliedStaging": false,
+      "appliedProduction": false
+    },
+    {
+      "file": "supabase/migrations/20261111204007_required_scoreboard_names.sql",
+      "sha256": "c9d846a054753b733b0a3760af90ae52ff3481e18ae26a9f1ed8c68b061bc63f",
+      "appliedStaging": false,
+      "appliedProduction": false
+    }
+  ],
+  "hostedIdentityCheckedAt": "2026-11-11T20:53:12.602493+00:00",
+  "hosted": {
+    "staging": {
+      "public": {
+        "health": {
+          "status": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+            "releaseId": "43074167296-1",
+            "buildConfigId": "staging-2026-11-11-v15-mail-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+            "configId": "staging-2026-11-11-v15-mail-1"
+          }
+        },
+        "ready": {
+          "status": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+            "releaseId": "43074167296-1",
+            "buildConfigId": "staging-2026-11-11-v15-mail-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+            "configId": "staging-2026-11-11-v15-mail-1"
+          }
+        }
+      },
+      "loopback": {
+        "health": {
+          "status": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+            "releaseId": "43074167296-1",
+            "buildConfigId": "staging-2026-11-11-v15-mail-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+            "configId": "staging-2026-11-11-v15-mail-1"
+          }
+        },
+        "ready": {
+          "status": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "e8317d22fcb7c4d1150962c94d18454af2f4a69b",
+            "releaseId": "43074167296-1",
+            "buildConfigId": "staging-2026-11-11-v15-mail-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+            "configId": "staging-2026-11-11-v15-mail-1"
+          }
+        }
+      },
+      "service": {
+        "MainPID": "101136",
+        "ActiveState": "active",
+        "ActiveEnterTimestamp": "Wed 2026-11-11 19:06:06 CET"
+      },
+      "newApplicationActivated": false
+    },
+    "production": {
+      "public": {
+        "health": {
+          "status": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        },
+        "ready": {
+          "status": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        }
+      },
+      "loopback": {
+        "health": {
+          "status": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        },
+        "ready": {
+          "status": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        }
+      },
+      "service": {
+        "MainPID": "64473",
+        "ActiveState": "active",
+        "ActiveEnterTimestamp": "Wed 2026-11-11 10:32:39 CET"
+      },
+      "newApplicationActivated": false
+    }
+  },
+  "cancellation": {
+    "runs": [
+      43095319680,
+      43096044898,
+      43096546716
+    ],
+    "normalAndForceRequested": true,
+    "allSixResponses": 409,
+    "message": "Cannot cancel a workflow run that has not been queued yet.",
+    "cancelled": false,
+    "jobsPerRun": 0,
+    "checksPerRun": 0
+  },
+  "physicalAndProviderAcceptance": "Open: actual iOS Safari/Android Chrome and real email/Google registration on the new staging release",
+  "releaseGatesPreserved": true,
+  "newGithubSecretsRequired": false,
+  "externalMessagesSent": false
+}

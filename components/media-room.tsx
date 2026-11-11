@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect,useRef,useState} from 'react';
+import {CameraRecoveryError,nextCamera,replaceCamera,type CameraTarget} from '@/lib/media-camera';
 
 type Configuration={actorId:string;peerId:string;isInitiator:boolean;relayConfigured:boolean;iceServers:RTCIceServer[]};
 type Signal={id:number;actorId:string;type:string;payload:{callId?:string;sdp?:RTCSessionDescriptionInit;candidate?:RTCIceCandidateInit};createdAt:string};
@@ -16,15 +17,47 @@ export function MediaRoom({matchId}:{matchId:string}) {
   const stream=useRef<MediaStream|null>(null),peer=useRef<RTCPeerConnection|null>(null);
   const config=useRef<Configuration|null>(null),callId=useRef(''),cursor=useRef(0),poll=useRef<ReturnType<typeof setTimeout>|null>(null);
   const pendingIce=useRef<RTCIceCandidateInit[]>([]),running=useRef(false);
+  const generation=useRef(0),cameraOperation=useRef(0),cameraBusy=useRef(false),connecting=useRef(false);
+  const cameraAbort=useRef<AbortController|null>(null);
   const [preview,setPreview]=useState(false),[active,setActive]=useState(false),[video,setVideo]=useState(true),[audio,setAudio]=useState(true);
   const [status,setStatus]=useState('Test eerst je camera en microfoon. Je score blijft onafhankelijk van de video.'),[error,setError]=useState('');
+  const [cameras,setCameras]=useState<MediaDeviceInfo[]>([]),[selectedCamera,setSelectedCamera]=useState(''),[switching,setSwitching]=useState(false),[opening,setOpening]=useState(false),[cameraNotice,setCameraNotice]=useState(''),[recovery,setRecovery]=useState<CameraTarget|null>(null);
 
   useEffect(()=>()=>{
+    generation.current++;cameraOperation.current++;cameraBusy.current=false;
+    cameraAbort.current?.abort();cameraAbort.current=null;
     running.current=false;
     if(poll.current)clearTimeout(poll.current);
     peer.current?.close();
     stream.current?.getTracks().forEach(track=>track.stop());
+    peer.current=null;stream.current=null;
   },[matchId]);
+
+  async function discoverCameras(media:MediaStream) {
+    try {const devices=await navigator.mediaDevices.enumerateDevices();if(stream.current===media){setCameras(devices.filter(device=>device.kind==='videoinput'));setSelectedCamera(media.getVideoTracks()[0]?.getSettings().deviceId||'');}}catch{/* Facing-mode switching remains available when enumeration is restricted. */}
+  }
+  async function switchCamera(target?:CameraTarget,releaseCurrent=false) {
+    const media=stream.current,connection=peer.current,version=generation.current;
+    if(!media||cameraBusy.current||connecting.current)return;
+    const destination=target||nextCamera(media.getVideoTracks()[0]?.getSettings()||{},cameras);
+    const operation=++cameraOperation.current;
+    const controller=new AbortController();cameraAbort.current=controller;
+    cameraBusy.current=true;setSwitching(true);setError('');setCameraNotice('');setRecovery(null);
+    const isCurrent=()=>generation.current===version&&cameraOperation.current===operation&&stream.current===media&&peer.current===connection;
+    try {
+      await replaceCamera({localStream:media,connection,target:destination,getUserMedia:constraints=>navigator.mediaDevices.getUserMedia(constraints),isCurrent,releaseCurrent,signal:controller.signal});
+      if(!isCurrent())return;
+      if(localVideo.current)localVideo.current.srcObject=media;
+      setVideo(Boolean(media.getVideoTracks()[0]?.enabled));setCameraNotice('Camera gewisseld. Je geluid en wedstrijd lopen door.');
+      await discoverCameras(media);
+    }catch(cause){
+      if(!isCurrent())return;
+      if(localVideo.current)localVideo.current.srcObject=media;
+      if(cause instanceof CameraRecoveryError){setError(cause.message);setVideo(Boolean(media.getVideoTracks()[0]?.readyState==='live'&&media.getVideoTracks()[0]?.enabled));await discoverCameras(media);}
+      else if(cause instanceof DOMException&&cause.name==='NotReadableError'){setError('Dit toestel kan niet twee camera’s tegelijk openen. Je huidige camera blijft actief.');setRecovery(destination);}
+      else setError(cause instanceof DOMException&&cause.name==='NotAllowedError'?'Geen toestemming voor de andere camera. Je huidige camera blijft actief.':cause instanceof DOMException&&['NotFoundError','OverconstrainedError'].includes(cause.name)?'Geen andere camera beschikbaar. Je huidige camera blijft actief.':'De camera kon niet worden gewisseld. Je huidige camera blijft actief.');
+    }finally{if(cameraOperation.current===operation){cameraAbort.current=null;cameraBusy.current=false;setSwitching(false);}}
+  }
 
   async function signal(type:string,payload:Record<string,unknown>) {
     if(!config.current)return;
@@ -34,15 +67,18 @@ export function MediaRoom({matchId}:{matchId:string}) {
     setError('');
     if(stream.current)return stream.current;
     if(!navigator.mediaDevices?.getUserMedia)throw new Error('Camera en microfoon vereisen HTTPS en een ondersteunde browser.');
+    const version=generation.current;setOpening(true);
     try {
-      const media=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+      const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'user'}},audio:true});
+      if(generation.current!==version){media.getTracks().forEach(track=>track.stop());throw new DOMException('Media operation cancelled','AbortError');}
       stream.current=media;
       if(localVideo.current)localVideo.current.srcObject=media;
       setPreview(true);setVideo(true);setAudio(true);setStatus('Je eigen beeld is zichtbaar. Start de verbinding wanneer jullie allebei klaar zijn.');
+      void discoverCameras(media);
       return media;
     } catch {
       throw new Error('Geen toegang tot camera of microfoon. Controleer je browserrechten en probeer opnieuw.');
-    }
+    }finally{if(generation.current===version)setOpening(false);}
   }
   async function acceptSignals(connection:RTCPeerConnection,initial:boolean) {
     const data=await request<{signals:Signal[];cursor:number}>(`/api/platform/matches/${matchId}/signals?after=${cursor.current}`);
@@ -75,10 +111,13 @@ export function MediaRoom({matchId}:{matchId:string}) {
     }
   }
   async function connect() {
+    if(cameraBusy.current||connecting.current)return;
+    connecting.current=true;setOpening(true);const version=generation.current;
     setError('');
     try {
       const media=await startPreview();
       config.current=await request<Configuration>(`/api/media/${matchId}`);
+      if(generation.current!==version)throw new DOMException('Media operation cancelled','AbortError');
       peer.current?.close();
       const connection=new RTCPeerConnection({iceServers:config.current.iceServers});peer.current=connection;
       cursor.current=0;pendingIce.current=[];callId.current='';running.current=true;
@@ -97,14 +136,17 @@ export function MediaRoom({matchId}:{matchId:string}) {
         if(running.current)poll.current=setTimeout(synchronize,1000);
       };
       poll.current=setTimeout(synchronize,500);
-    }catch(cause){setError(cause instanceof Error?cause.message:'Verbinding niet beschikbaar.');}
+    }catch(cause){if(generation.current===version)setError(cause instanceof Error?cause.message:'Verbinding niet beschikbaar.');}finally{connecting.current=false;if(generation.current===version)setOpening(false);}
   }
   async function stop() {
-    if(active)await signal('leave',{}).catch(()=>undefined);
+    generation.current++;cameraOperation.current++;cameraBusy.current=false;setSwitching(false);setOpening(false);setRecovery(null);setCameraNotice('');
+    cameraAbort.current?.abort();cameraAbort.current=null;
+    const leaving=active?signal('leave',{}).catch(()=>undefined):Promise.resolve();
     running.current=false;if(poll.current)clearTimeout(poll.current);
     peer.current?.close();peer.current=null;stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;
     if(localVideo.current)localVideo.current.srcObject=null;if(remoteVideo.current)remoteVideo.current.srcObject=null;
     setActive(false);setPreview(false);setStatus('Camera en microfoon zijn gestopt.');
+    await leaving;
   }
   function toggle(kind:'audio'|'video') {
     const tracks=kind==='video'?stream.current?.getVideoTracks():stream.current?.getAudioTracks();
@@ -112,12 +154,13 @@ export function MediaRoom({matchId}:{matchId:string}) {
     if(kind==='video')setVideo(Boolean(tracks?.[0]?.enabled));else setAudio(Boolean(tracks?.[0]?.enabled));
   }
   return <section className="media-room" aria-label="Online camera en microfoon">
-    <h2>Samen aan de oche</h2><p role="status">{status}</p>{error&&<p role="alert">{error}</p>}
+    <h2>Samen aan de oche</h2><p role="status">{status}</p>{error&&<p role="alert">{error}</p>}{cameraNotice&&<p role="status">{cameraNotice}</p>}
     <div className="media-grid"><figure><video ref={localVideo} muted autoPlay playsInline aria-label="Je eigen camerabeeld"/><figcaption>Jij · lokaal voorbeeld</figcaption></figure><figure><video ref={remoteVideo} autoPlay playsInline controls aria-label="Gedeeld beeld van de andere speler"/><figcaption>Andere speler</figcaption></figure></div>
     <div className="media-controls">
-      {!preview&&<button onClick={()=>void startPreview().catch(cause=>setError(cause.message))}>Camera en microfoon testen</button>}
-      <button onClick={()=>void connect()}>{active?'Opnieuw verbinden':'Beeldverbinding starten'}</button>
-      {preview&&<><button onClick={()=>toggle('video')}>{video?'Camera uit':'Camera aan'}</button><button onClick={()=>toggle('audio')}>{audio?'Microfoon uit':'Microfoon aan'}</button><button onClick={()=>void stop()}>Beeldverbinding verlaten</button></>}
+      {!preview&&<button disabled={opening} onClick={()=>void startPreview().catch(cause=>setError(cause.message))}>Camera en microfoon testen</button>}
+      <button disabled={opening||switching} onClick={()=>void connect()}>{active?'Opnieuw verbinden':'Beeldverbinding starten'}</button>
+      {preview&&<><button disabled={switching} onClick={()=>toggle('video')}>{video?'Camera uit':'Camera aan'}</button><button disabled={opening||switching} aria-busy={switching} onClick={()=>void switchCamera()}>{switching?'Camera wisselen…':'Camera wisselen'}</button>{cameras.length>2&&<label>Camera<select aria-label="Camera kiezen" disabled={opening||switching} value={selectedCamera} onChange={event=>void switchCamera({deviceId:event.target.value})}>{!selectedCamera&&<option value="">Huidige camera</option>}{cameras.map((camera,index)=><option key={camera.deviceId} value={camera.deviceId}>{camera.label||`Camera ${index+1}`}</option>)}</select></label>}<button onClick={()=>toggle('audio')}>{audio?'Microfoon uit':'Microfoon aan'}</button><button onClick={()=>void stop()}>Beeldverbinding verlaten</button></>}
     </div>
+    {recovery&&<div className="notice"><p>Op dit toestel moet de huidige camera kort worden vrijgegeven. Je geluid blijft aan; als wisselen niet lukt, proberen we de vorige camera te herstellen.</p><button disabled={switching||opening} onClick={()=>void switchCamera(recovery,true)}>Camera omschakelen op dit toestel</button></div>}
   </section>;
 }

@@ -32,6 +32,7 @@ type Entity = {
   state: RecordValue;
   members: Member[];
   canManage?: boolean;
+  inviteCode?: string;
 };
 type Platform = {
   profile: Profile;
@@ -72,8 +73,12 @@ function navigate(path: string) {
 type Command = (action: Action, entity?: Entity) => Promise<Result | undefined>;
 
 function inviteDetails(value: string): { id?: string; code: string } {
+  const input = value.trim();
   try {
-    const url = new URL(value, location.origin);
+    const url = new URL(input, location.origin);
+    if (url.origin !== location.origin || url.username || url.password || url.hash) return { code: "" };
+    const short = /^\/w\/([A-Za-z0-9]{4})$/.exec(url.pathname);
+    if (short) return { code: short[1].toUpperCase() };
     if (url.pathname.startsWith("/app/")) {
       return {
         id: url.pathname.split("/").filter(Boolean).at(-1),
@@ -83,27 +88,40 @@ function inviteDetails(value: string): { id?: string; code: string } {
   } catch {
     /* A plain invitation code is valid input. */
   }
-  return { code: value.trim() };
+  return { code: /^[A-Za-z0-9]{4}$/.test(input) ? input.toUpperCase() : input };
 }
-function ShareInvitation({ section, id }: { section: string; id: string }) {
-  const code = invitationCode();
+function invitationLink(section: string, id: string, code: string) {
+  return /^[A-Za-z0-9]{4}$/.test(code)
+    ? `/w/${code.toUpperCase()}`
+    : entityUrl(section, id, code);
+}
+function ShareInvitation({ section, id, entity }: { section: string; id: string; entity?: Entity }) {
+  const code = entity?.inviteCode || invitationCode();
+  const [copyStatus, setCopyStatus] = useState("");
+  const link = invitationLink(section, id, code);
   return code ? (
     <div className="notice">
-      <strong>Uitnodiging</strong>
-      <p>
-        Deel deze link met de bedoelde spelers. De code verloopt na zeven dagen.
-      </p>
-      <a className="text-link" href={entityUrl(section, id, code)}>
-        {typeof location === "undefined" ? "" : location.origin}
-        {entityUrl(section, id, code)}
+      <strong>Uitnodigingscode</strong>
+      <p className="workspace-code">{code}</p>
+      <p>Deel de code of link met de bedoelde speler. Een nieuwe uitnodiging is zeven dagen geldig.</p>
+      <a className="text-link" href={link}>
+        {typeof location === "undefined" ? "" : location.origin}{link}
       </a>
+      <div className="button-row">
+        <button className="button ghost small" type="button" onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(new URL(link, location.origin).href);
+            setCopyStatus("Uitnodigingslink gekopieerd.");
+          } catch { setCopyStatus("Kopiëren is niet gelukt. Kopieer de getoonde link handmatig."); }
+        }}>Uitnodigingslink kopiëren</button>
+      </div>
+      <p role="status">{copyStatus}</p>
     </div>
   ) : null;
 }
 function invitationCode() {
-  return typeof location === "undefined"
-    ? ""
-    : new URLSearchParams(location.search).get("code") || "";
+  const code = typeof location === "undefined" ? "" : new URLSearchParams(location.search).get("code") || "";
+  return /^[A-Za-z0-9]{4}$/.test(code) ? code.toUpperCase() : code;
 }
 function entityUrl(section: string, id: string, code?: string) {
   return `/app/${section}/${id}${code ? `?code=${encodeURIComponent(code)}` : ""}`;
@@ -112,10 +130,7 @@ async function joinInvitation(command: Command, type: string, value: string) {
   const parsed = inviteDetails(value);
   let id = parsed.id;
   if (!id) {
-    const resolved = await command({
-      type: "invitation.resolve",
-      code: parsed.code,
-    });
+    const resolved = await command({ type: "invitation.resolve", code: parsed.code });
     id = resolved?.id;
   }
   if (!id) return;
@@ -1517,7 +1532,7 @@ function Clubs({
           {text(entity.state.description)}
         </Title>
         <ClubNavigation id={entity.id} />
-        <ShareInvitation section="clubs" id={entity.id} />
+        <ShareInvitation section="clubs" id={entity.id} entity={entity} />
         {manager && (
           <EntitySettings entity={entity} command={command} busy={busy} />
         )}
@@ -1799,7 +1814,7 @@ function Rooms({
             {text(entity.state.capacity, 8)} deelnemers
           </span>
         </Title>
-        <ShareInvitation section="community" id={entity.id} />
+        <ShareInvitation section="community" id={entity.id} entity={entity} />
         {manager && (
           <EntitySettings entity={entity} command={command} busy={busy} />
         )}
@@ -2213,19 +2228,7 @@ function Lobby({
             <p className="muted-copy">
               Deel de code of uitnodigingslink met je tegenstander.
             </p>
-            <strong className="workspace-code">
-              {invitationCode() || entity.id}
-            </strong>
-            <p>
-              <a
-                className="text-link"
-                href={entityUrl("lobby", entity.id, invitationCode())}
-              >
-                {typeof location !== "undefined"
-                  ? `${location.origin}${entityUrl("lobby", entity.id, invitationCode())}`
-                  : entityUrl("lobby", entity.id)}
-              </a>
-            </p>
+            <ShareInvitation section="lobby" id={entity.id} entity={entity} />
             {entity.members.map((m) => (
               <div className="workspace-row" key={m.id}>
                 <strong>{m.name}</strong>
@@ -2448,6 +2451,7 @@ function Lobby({
           }}
         >
           <Field label="Wedstrijdcode" name="code" required />
+          <p className="muted-copy">Vul de vier tekens in of plak de uitnodigingslink. Bestaande links blijven bruikbaar zolang ze geldig zijn.</p>
         </Form>
       </div>
       <section className="panel">
@@ -2517,6 +2521,7 @@ function Competitions({
         <ShareInvitation
           section={entity.kind === "league" ? "leagues" : "hall"}
           id={entity.id}
+          entity={entity}
         />
         {typeof entity.state.roomId === "string" &&
           (manager ||
@@ -2535,6 +2540,8 @@ function Competitions({
                 value={entryCode}
                 onChange={(event) => setEntryCode(event.target.value)}
                 autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
               />
             </label>
           )}
@@ -3468,7 +3475,7 @@ function Preferences({
         }}
       >
         <Field
-          label="Zichtbare naam"
+          label="Naam op het scorebord"
           name="name"
           defaultValue={data.profile.name}
           required

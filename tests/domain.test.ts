@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyMatchAction, newGame, scoreGame, validateSettings, checkout } from '../lib/domain';
+import { applyMatchAction, newGame, scoreGame, validateSettings, checkout, matchView } from '../lib/domain';
 import type { MatchState, Settings } from '../lib/types';
 const settings: Settings = { startScore: 301, bestOfLegs: 1, bestOfSets: 1 };
 function match(overrides: Partial<MatchState> = {}): MatchState { return { id: 'match', clubId: 'club', eventId: 'event', boardId: 'board', revision: 0, status: 'live', players: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], writerId: 'a', settings, accepted: [true, true], confirmations: [false, false], resultRevision: null, game: newGame('match', ['a', 'b'], settings), previousSets: [], winnerId: null, resultPublished: false, dispute: null, ...overrides }; }
@@ -66,6 +66,57 @@ test('takeover revokes prior writer and publication requires both assigned playe
   state = applyMatchAction(state, 'a', false, { type: 'confirm' }); assert.equal(state.resultPublished, false);
   assert.throws(() => applyMatchAction(state, 'a', false, { type: 'undo' }), /onbevestigde/);
   state = applyMatchAction(state, 'b', false, { type: 'confirm' }); assert.equal(state.resultPublished, true); assert.equal(state.resultRevision, resultRevision);
+});
+test('per-player scoring switches input with the turn and forbids host, organizer and takeover bypass',()=>{
+ let state=match({scoringMode:'per-player'});
+ assert.equal(matchView(state,'a',false).permissions.canWrite,true);
+ assert.equal(matchView(state,'b',false).permissions.canWrite,false);
+ assert.throws(()=>applyMatchAction(state,'b',true,{type:'score',score:60}),{code:'not_your_turn'});
+ assert.throws(()=>applyMatchAction(state,'b',false,{type:'take-over'}),{code:'per_player_scoring'});
+ assert.throws(()=>applyMatchAction({...state,delegatedWriterId:'outsider',writerId:'outsider'},'outsider',true,{type:'score',score:60}),{code:'forbidden'});
+ state=applyMatchAction(state,'a',false,{type:'score',score:60});
+ assert.equal(state.writerId,'b');assert.equal(state.game.turn,1);
+ assert.equal(matchView(state,'a',true).permissions.canScore,false);
+ assert.equal(matchView(state,'b',false).permissions.canWrite,true);
+ assert.equal(matchView(state,'b',false).permissions.canTakeOver,false);
+ assert.throws(()=>applyMatchAction(state,'a',true,{type:'score',score:60}),{code:'not_your_turn'});
+ state=applyMatchAction(state,'b',false,{type:'score',score:45});
+ assert.deepEqual(state.game.remaining,[241,256]);assert.equal(state.writerId,'a');
+ assert.equal(matchView({...state,paused:true},'a',false).permissions.canWrite,false);
+});
+test('per-player undo belongs to the last thrower and older corrections still require the opponent',()=>{
+ let state=match({scoringMode:'per-player'});
+ state=applyMatchAction(state,'a',false,{type:'score',score:60});
+ assert.equal(matchView(state,'a',false).permissions.canUndo,true);
+ assert.equal(matchView(state,'b',false).permissions.canUndo,false);
+ assert.throws(()=>applyMatchAction(state,'b',true,{type:'undo'}),{code:'forbidden'});
+ let undone=applyMatchAction(state,'a',false,{type:'undo'});assert.equal(undone.game.turn,0);assert.equal(undone.writerId,'a');assert.deepEqual(undone.game.remaining,[301,301]);
+ state=applyMatchAction(state,'b',false,{type:'score',score:45});
+ assert.throws(()=>applyMatchAction(state,'a',false,{type:'undo'}),{code:'forbidden'});
+ state=applyMatchAction(state,'a',false,{type:'request-correction',reason:'Mijn vorige worp was onjuist'});
+ assert.equal(matchView(state,'a',false).permissions.canWrite,false);
+ assert.equal(state.correction!.undoCount,2);
+ assert.throws(()=>applyMatchAction(state,'a',true,{type:'approve-correction',correctionId:state.correction!.id}),{code:'forbidden'});
+ undone=applyMatchAction(state,'b',false,{type:'approve-correction',correctionId:state.correction!.id});
+ assert.equal(undone.writerId,'a');assert.equal(undone.game.visits.length,0);assert.deepEqual(undone.game.remaining,[301,301]);
+});
+test('per-player set transitions and finishing undo keep the authoritative starter as scorer',()=>{
+ const multi={...settings,bestOfSets:3};
+ const source=match({scoringMode:'per-player',settings:multi,game:{...newGame('match',['a','b'],multi),remaining:[40,301]}});
+ const next=applyMatchAction(source,'a',false,{type:'score',score:40,darts:1,doubleConfirmed:true});
+ assert.equal(next.game.turn,1);assert.equal(next.writerId,'b');assert.equal(matchView(next,'b',false).permissions.canWrite,true);
+ const restored=applyMatchAction(next,'a',false,{type:'undo'});assert.deepEqual(restored.game,source.game);assert.equal(restored.writerId,'a');
+ const final=applyMatchAction(match({scoringMode:'per-player',game:{...newGame('match',['a','b'],settings),remaining:[40,301]}}),'a',false,{type:'score',score:40,darts:1,doubleConfirmed:true});
+ assert.equal(final.status,'result');assert.equal(matchView(final,'b',false).permissions.canUndo,false);
+ assert.equal(applyMatchAction(final,'a',false,{type:'undo'}).status,'live');
+});
+test('legacy and explicit local matches retain one shared writer for both players',()=>{
+ for(const scoringMode of [undefined,'shared-writer'] as const){
+  let state=match({scoringMode});state=applyMatchAction(state,'a',false,{type:'score',score:60});
+  assert.equal(state.game.turn,1);assert.equal(state.writerId,'a');assert.equal(matchView(state,'a',false).permissions.canWrite,true);
+  assert.equal(matchView(state,'b',false).permissions.canWrite,false);
+  state=applyMatchAction(state,'a',false,{type:'score',score:45});assert.deepEqual(state.game.remaining,[241,256]);
+ }
 });
 test('a dispute requires an organizer decision with reason; resume reverses final visit', () => {
   let state = match({ game: { ...newGame('match', ['a', 'b'], settings), remaining: [40, 301] } });

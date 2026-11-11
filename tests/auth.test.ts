@@ -12,6 +12,9 @@ test('login intent only accepts explicit internal routes and immutable match ide
   for(const invalid of [clubBoards+'?next=https://evil.example',clubBoards+'/extra',clubBoards.replace('/banen','/admin'),'/app/clubs/unknown/banen'])assert.equal(safeNext(invalid),'/');
   const invitation='/app/lobby/30000000-0000-4000-8000-000000000001?code=abcdefghijklmnopqrstuvwx';
   assert.equal(safeNext(invitation),invitation);
+  for(const value of ['/w/K7M2','/w/k7m2',invitation.replace('abcdefghijklmnopqrstuvwx','k7m2')])assert.equal(safeNext(value),value);
+  for(const code of ['K7M2','abcdefghijklmnopqrstuvwx']){const hall=`/app/hall/30000000-0000-4000-8000-000000000001?code=${code}`;assert.equal(safeNext(hall),hall);}
+  for(const value of ['/w/K7M2/extra','/w/K7M2?next=https://evil.example','/w/K7M','/w/%4b7M2'])assert.equal(safeNext(value),'/');
   const studio='/app/venue-cast/studio?event=30000000-0000-4000-8000-000000000001';
   assert.equal(safeNext(studio),studio);
   assert.equal(safeNext(studio+'&next=https://evil.example'),'/');

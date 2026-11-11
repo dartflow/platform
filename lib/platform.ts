@@ -1,12 +1,15 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { database, eventAccess, executeMatchCommand, getMatch, getProfile } from './db';
+import { consumeRateLimit, database, eventAccess, executeMatchCommand, getMatch, getProfile } from './db';
+import {invitationAttemptRequired} from './invitations';
+import {requireScoreboardName} from './profile-name';
 import { DomainError, matchView } from './domain';
+import {resolveInvitation}from'./invitations';
 import {boardAction}from'./platform-boards';
 import {clubBoardAction,listClubBoards,revalidateClubBoardCommand}from'./club-boards';
 import { autoAssign, competitionAction } from './platform-competitions';
 import { advanceFixtures, newTraining, standings, trainingAction } from './platform-domain';
 import { socialAction } from './platform-social';
-import { allowsExternalParticipants, blocked, canonical, createEntity, entity, hash, isClubMember, member, requireAccess, save, transaction, uuid, view } from './platform-store';
+import { blocked, canonical, createEntity, entity, hash, isClubMember, member, requireAccess, save, transaction, uuid, view } from './platform-store';
 import type { EntityRow, Client } from './platform-store';
 import type { PlatformCommand, PlatformMember, PlatformMessage, PlatformOverview, PlatformResponse } from './platform-types';
 import type { MatchState, Profile, ResultView } from './types';
@@ -17,15 +20,22 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
   const actor = uuid(actorId);
   if (!command || typeof command !== 'object' || !command.action || typeof command.action.type !== 'string' || command.action.type.length > 80 || !command.requestId || (command.expectedRevision !== undefined && (!Number.isSafeInteger(command.expectedRevision) || command.expectedRevision < 0))) throw new DomainError('invalid_command', 'Ongeldig platformcommando.');
   uuid(command.requestId);
+  // These counters must commit even when a guessed code fails and its command rolls back.
+  if(invitationAttemptRequired(command.action))for(const [key,max] of [[`invite:actor:${actor}`,10],['invite:global',120]] as const){
+    const limit=await consumeRateLimit(key,max,60);
+    if(!limit.allowed)throw Object.assign(new DomainError('rate_limited',`Te veel uitnodigingspogingen. Wacht ${limit.retryAfter} seconden.`,429),{retryAfter:limit.retryAfter});
+  }
   const payloadHash = hash(canonical({ action: command.action, expectedRevision: command.expectedRevision }));
   const response = await transaction(async client => {
     // Per-actor command lock serializes duplicate request IDs, independent of entity.
     await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))', [`command:${actor}`]);
     if (!(await client.query('select 1 from dartflow_private.profiles where id=$1', [actor])).rowCount) throw new DomainError('profile_missing', 'Meld je opnieuw aan.', 403);
+    if(command.action.type==='board.start'||command.action.type.startsWith('training.')||['lobby.create','lobby.join','lobby.ready','lobby.start','competition.register','competition.checkin','competition.available','fixture.start'].includes(command.action.type))await requireScoreboardName(client,actor);
     const { rows: receipts } = await client.query('select payload_hash,response from dartflow_private.platform_receipts where actor_id=$1 and request_id=$2', [actor, command.requestId]);
     if (receipts.length) {
       if (receipts[0].payload_hash !== payloadHash) throw new DomainError('request_reused', 'Dit aanvraag-ID is eerder met andere gegevens gebruikt.', 409);
       const response=receipts[0].response as PlatformResponse;
+      if(command.action.type==='invitation.resolve')await resolveInvitation(client,actor,command.action.code);
       await revalidateClubBoardCommand(client,actor,command,response);
       if(['board.start','board.screen'].includes(command.action.type)){
         const scope=await client.query('select event_id from dartflow_private.boards where id=$1',[uuid(command.action.boardId)]);
@@ -43,16 +53,7 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
     if(action.type.startsWith('club-board.'))result=await clubBoardAction(client,actor,command);
     else if(['board.start','board.screen'].includes(action.type))result=await boardAction(client,actor,command);
     else if (action.type === 'invitation.resolve') {
-      if(typeof action.code!=='string'||action.code.length>100)throw new DomainError('invalid_invitation','Deze uitnodiging is ongeldig.',404);
-      const candidate=await client.query<EntityRow>("select * from dartflow_private.platform_entities where invite_hash=$1 and invite_expires_at>now()",[hash(action.code)]);
-      if(!candidate.rows.length)throw new DomainError('invalid_invitation','Deze uitnodiging is ongeldig of verlopen.',404);
-      const row=candidate.rows[0];
-      if(row.state.closed||await blocked(client,actor,row.owner_id))throw new DomainError('forbidden','Deze uitnodiging is niet beschikbaar.',403);
-      if(row.club_id&&!allowsExternalParticipants(row)&&!(await client.query('select 1 from dartflow_private.club_memberships where club_id=$1 and user_id=$2',[row.club_id,actor])).rowCount)throw new DomainError('forbidden','Word eerst lid van deze club.',403);
-      const banned=await client.query("select 1 from dartflow_private.platform_members where entity_id=$1 and user_id=$2 and status='banned'",[row.id,actor]);
-      if(banned.rowCount)throw new DomainError('forbidden','Deze uitnodiging is niet voor jou beschikbaar.',403);
-      if(row.kind==='lobby'){const invited=await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='invited'",[row.id]);if(invited.rows.length&&!invited.rows.some(r=>r.user_id===actor)&&row.owner_id!==actor)throw new DomainError('forbidden','Deze uitnodiging hoort bij een andere speler.',403);}
-      result={ok:true,id:row.id,kind:row.kind,name:row.state.name};
+      result={ok:true,...await resolveInvitation(client,actor,action.code)};
     } else if (action.type === 'cast.share' || action.type === 'cast.revoke') {
       const row = await entity(client, action.id, true);
       if (!['league','tournament'].includes(row.kind)) throw new DomainError('invalid_cast', 'Kies een competitie of toernooi.');
@@ -145,7 +146,7 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
   await reconcilePlatformResults();
   await reconcilePlatformCalls();
   const client = database();
-  const { rows: entities } = await client.query<EntityRow>(`select e.* from dartflow_private.platform_entities e where
+  const { rows: entities } = await client.query<EntityRow>(`select e.*,(select i.code from dartflow_private.invitation_codes i where i.entity_id=e.id and i.expires_at>now() order by i.created_at desc,i.code limit 1) as invitation_code from dartflow_private.platform_entities e where
     (e.owner_id=$1 or exists(select 1 from dartflow_private.platform_members m where m.entity_id=e.id and m.user_id=$1 and m.status in ('active','invited','pending','waitlisted')) or (e.visibility='public' and e.kind in ('club','room','league','tournament')) or (e.visibility='club' and exists(select 1 from dartflow_private.club_memberships c where c.club_id=e.club_id and c.user_id=$1)))
     and not exists(select 1 from dartflow_private.platform_members m where m.entity_id=e.id and m.user_id=$1 and m.status='banned')
     and (e.club_id is null or exists(select 1 from dartflow_private.club_memberships c where c.club_id=e.club_id and c.user_id=$1) or (e.kind in ('league','tournament') and e.state->>'eligibility' in ('all','code')))

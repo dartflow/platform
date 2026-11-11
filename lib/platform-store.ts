@@ -3,10 +3,12 @@ import type { PoolClient } from 'pg';
 import {assertPlayersFree,lockPlayingActors}from'./platform-locks';
 import { database } from './db';
 import { DomainError, newGame } from './domain';
+import {allocateInvitationCode,invitationCodeAccepted}from'./invitations';
 import type { PlatformEntity, PlatformKind, PlatformMember, PlatformState } from './platform-types';
 import type { MatchState, Profile, Settings } from './types';
+import { requireScoreboardName } from './profile-name';
 
-export type EntityRow = { id: string; kind: PlatformKind; owner_id: string; club_id: string | null; visibility: string; revision: number; state: PlatformState; invite_hash: string | null; invite_expires_at: Date | null };
+export type EntityRow = { id: string; kind: PlatformKind; owner_id: string; club_id: string | null; visibility: string; revision: number; state: PlatformState; invite_hash: string | null; invite_expires_at: Date | null;invitation_code?:string|null };
 export type Client = Pick<PoolClient, 'query'>;
 export function uuid(value: unknown): string {
   if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) throw new DomainError('invalid_id', 'Ongeldige identificatie.');
@@ -34,7 +36,7 @@ export async function transaction<T>(run: (client: PoolClient) => Promise<T>): P
   finally { client.release(); }
 }
 export async function entity(client: Client, id: unknown, lock = false): Promise<EntityRow> {
-  const { rows } = await client.query<EntityRow>(`select * from dartflow_private.platform_entities where id=$1${lock ? ' for update' : ''}`, [uuid(id)]);
+  const { rows } = await client.query<EntityRow>(`select e.*,(select i.code from dartflow_private.invitation_codes i where i.entity_id=e.id and i.expires_at>now() order by i.created_at desc,i.code limit 1) as invitation_code from dartflow_private.platform_entities e where e.id=$1${lock ? ' for update of e' : ''}`, [uuid(id)]);
   if (!rows.length) throw new DomainError('not_found', 'Dit onderdeel bestaat niet.', 404);
   return rows[0];
 }
@@ -68,15 +70,16 @@ export async function view(client: Client, row: EntityRow, actor: string,cachedM
   const state = structuredClone(row.state);
   if (!full) { delete state.game; delete state.undo; delete state.ready; delete state.coreClubId; }
   const visibleMembers = full ? members.filter(m => canManage || ['active', 'waitlisted'].includes(m.status) || m.id === actor) : members.filter(m => m.id === actor);
-  return { id: row.id, kind: row.kind, name: state.name, ownerId: row.owner_id, clubId: row.club_id, visibility: row.visibility, revision: row.revision, state, members: visibleMembers, canManage: Boolean(canManage) };
+  return { id: row.id, kind: row.kind, name: state.name, ownerId: row.owner_id, clubId: row.club_id, visibility: row.visibility, revision: row.revision, state, members: visibleMembers, canManage: Boolean(canManage),...(full&&self?.status!=='banned'&&invitationCodeAccepted(row,row.invitation_code)?{inviteCode:row.invitation_code!}:{}) };
 }
 export async function addMember(client: Client, id: string, user: string, role = 'member', status = 'active', attributes: Record<string, unknown> = {}) {
   await client.query('insert into dartflow_private.platform_members(entity_id,user_id,role,status,attributes) values($1,$2,$3,$4,$5) on conflict(entity_id,user_id) do update set role=excluded.role,status=excluded.status,attributes=excluded.attributes', [id, uuid(user), role, status, JSON.stringify(attributes)]);
 }
 export async function createEntity(client: Client, actor: string, kind: PlatformKind, state: PlatformState, visibility: string, clubId: string | null = null, id = randomUUID()): Promise<{ row: EntityRow; code: string }> {
-  const code = randomBytes(18).toString('base64url');
+  let code = randomBytes(18).toString('base64url');
   await client.query("insert into dartflow_private.platform_entities(id,kind,owner_id,club_id,visibility,state,invite_hash,invite_expires_at) values($1,$2,$3,$4,$5,$6,$7,now()+interval '7 days')", [id, kind, actor, clubId, visibility, JSON.stringify(state), hash(code)]);
   await addMember(client, id, actor, 'owner');
+  if(kind!=='training'){const current=await entity(client,id);code=await allocateInvitationCode(client,id,current.invite_expires_at!);await client.query('update dartflow_private.platform_entities set invite_hash=$2 where id=$1',[id,hash(code)]);}
   return { row: await entity(client, id), code };
 }
 export async function save(client: Client, row: EntityRow) {
@@ -84,7 +87,7 @@ export async function save(client: Client, row: EntityRow) {
   await client.query('update dartflow_private.platform_entities set owner_id=$2,revision=$3,state=$4,visibility=$5,updated_at=now() where id=$1', [row.id, row.owner_id, row.revision, JSON.stringify(row.state),row.visibility]);
 }
 export function acceptsCode(row: EntityRow, code: unknown): boolean {
-  return typeof code === 'string' && code.length < 100 && row.invite_hash === hash(code) && row.invite_expires_at !== null && new Date(row.invite_expires_at).getTime() > Date.now();
+  return invitationCodeAccepted(row,code);
 }
 export async function available(client: Client, row: EntityRow) {
   const { rows } = await client.query("select count(*)::integer as count from dartflow_private.platform_members where entity_id=$1 and status='active'", [row.id]);
@@ -106,16 +109,20 @@ export async function provisionPlayer(client: Client, state: PlatformState, play
 }
 export async function createCoreMatch(client: Client, row: EntityRow, players: string[], settings: Settings, fixtureId: string,administrative=false): Promise<string> {
   if (players.length !== 2 || players[0] === players[1]) throw new DomainError('invalid_players', 'Deze partij heeft twee verschillende spelers nodig.');
-  const { rows: profiles } = await client.query<Profile>('select id,name from dartflow_private.profiles where id=any($1::uuid[])', [players]);
-  if (profiles.length !== 2) throw new DomainError('invalid_players', 'Een speler bestaat niet.');
-  const participants = players.map(id => profiles.find(p => p.id === id)!);
   await createCoreEvent(client, row.owner_id, row.state, row.club_id);
   for (const id of players) await provisionPlayer(client, row.state, id);
+  // Lock verified names through insertion so concurrent profile completion cannot
+  // pass validation after an older, unconfirmed name was already snapshotted.
+  const { rows: profiles } = await client.query<Profile>('select id,name from dartflow_private.profiles where id=any($1::uuid[]) order by id for share', [players]);
+  if (profiles.length !== 2) throw new DomainError('invalid_players', 'Een speler bestaat niet.');
+  for(const player of players)await requireScoreboardName(client,player);
+  const participants = players.map(id => profiles.find(p => p.id === id)!);
   if(!administrative){await lockPlayingActors(client,players);await assertPlayersFree(client,players);}
   const id = randomUUID();
   const starter=row.kind==='lobby'&&typeof row.state.starterId==='string'?players.indexOf(row.state.starterId):0;
   if(starter<0)throw new DomainError('invalid_starter','De startspeler is niet aanwezig.');
-  const state: MatchState = { id, clubId: row.state.coreClubId!, eventId: row.state.eventId!, boardId: null, revision: 0, status: 'called', players: participants, writerId: players[0], settings, accepted: [false, false], confirmations: [false, false], resultRevision: null, game: newGame(id, players, settings,starter), previousSets: [], winnerId: null, resultPublished: false, dispute: null };
+  const scoringMode=row.kind==='lobby'&&['remote','hybrid'].includes(String(row.state.setup))?'per-player':'shared-writer';
+  const state: MatchState = { id, clubId: row.state.coreClubId!, eventId: row.state.eventId!, boardId: null, revision: 0, status: 'called', players: participants,scoringMode,writerId:players[scoringMode==='per-player'?starter:0], settings, accepted: [false, false], confirmations: [false, false], resultRevision: null, game: newGame(id, players, settings,starter), previousSets: [], winnerId: null, resultPublished: false, dispute: null };
   await client.query('insert into dartflow_private.matches(id,club_id,event_id,revision,state) values($1,$2,$3,0,$4)', [id, state.clubId, state.eventId, JSON.stringify(state)]);
   for (const [i, player] of players.entries()) await client.query('insert into dartflow_private.match_players(match_id,user_id,position) values($1,$2,$3)', [id, player, i]);
   await client.query('insert into dartflow_private.platform_match_links(match_id,entity_id,fixture_id) values($1,$2,$3)', [id, row.id, fixtureId]);

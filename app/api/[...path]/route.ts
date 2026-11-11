@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { actorId, isLocalRequest, LOCAL_USERS, loginLocal, logout, saveIntent, consumeIntent, supabaseServer } from '@/lib/auth';
 import { appConfig, safeNext } from '@/lib/config';
 import { releaseIdentity } from '@/lib/release';
-import { database, checkDatabaseReady, getProfile, getOverview, getMatch, getBoardForActor, executeMatchCommand, executeEventCommand, getPublicSnapshot, createScreen, revokeScreen, consumeRateLimit } from '@/lib/db';
+import { database, checkDatabaseReady, getProfile, getOverview, getMatch, getMatchInvitation, getBoardForActor, executeMatchCommand, executeEventCommand, getPublicSnapshot, createScreen, revokeScreen, consumeRateLimit } from '@/lib/db';
 import { DomainError } from '@/lib/domain';
 import type { EventAction, MatchAction } from '@/lib/types';
 import { ensureAuthProfile } from '@/lib/accounts';
@@ -15,6 +15,8 @@ import { handleIntegrationPublic, handleIntegrations, workerTokenMatches } from 
 import { getPlatformOverview, executePlatformCommand, getPlatformMessages, getMatchSignals, sendMatchSignal, reconcilePlatformResults, reconcilePlatformCalls, getPlatformCast, getPlatformStatistics, exportPlatformCsv, replayMatchCommands, getMatchChat, sendMatchChat } from '@/lib/platform';
 import { mediaConfiguration } from '@/lib/media';
 import { getClubBoardScreen } from '@/lib/club-boards';
+import {requiresDisplayName} from '@/lib/display-name';
+import {invitationAttemptRequired} from '@/lib/invitations';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -88,7 +90,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if (method==='GET' && path==='session') {
     const config=appConfig(); const id=await actorId(request); const user=id ? await getProfile(id) : null;
     const canManagePlatform=id?Boolean((await database().query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')",[id])).rowCount):false;
-    return json({user,canManagePlatform,local:config.mode==='local',environment:config.mode==='local'?'development':config.origin==='https://staging.dartflow.nl'?'staging':'production',localUsers:config.mode==='local'?LOCAL_USERS:[]});
+    return json({user,requiresDisplayName:user?requiresDisplayName(user):false,canManagePlatform,local:config.mode==='local',environment:config.mode==='local'?'development':config.origin==='https://staging.dartflow.nl'?'staging':'production',localUsers:config.mode==='local'?LOCAL_USERS:[]});
   }
   if (method==='POST' && path==='auth/local') {
     const data=await body(request); await loginLocal(String(data.userId),request);
@@ -143,7 +145,15 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if(method==='GET' && parts[0]==='media' && uuid(parts[1]) && parts.length===2) return json(await mediaConfiguration(actor.id,parts[1]));
   if(method==='GET' && parts[0]==='boards' && uuid(parts[1]) && parts.length===2)return json(await getBoardForActor(actor.id,parts[1]));
   if(method==='GET' && path==='platform')return json(await getPlatformOverview(actor.id));
-  if(method==='POST' && path==='platform/actions')return json(await executePlatformCommand(actor.id,await body(request)));
+  if(method==='POST' && path==='platform/actions'){
+    const input=await body(request);
+    if(input.action&&typeof input.action==='object'&&!Array.isArray(input.action)&&invitationAttemptRequired(input.action as Record<string,unknown>)){
+      // Caddy overwrites the forwarding header on the loopback-only app listener.
+      const address=(request.headers.get('x-forwarded-for')||'loopback').split(',').at(-1)!.trim();
+      await limit(`invite:ip:${digest(address)}`,20,60);
+    }
+    return json(await executePlatformCommand(actor.id,input));
+  }
   if(method==='GET' && path==='platform/statistics')return json(await getPlatformStatistics(actor.id));
   if(method==='GET' && parts[0]==='platform' && parts[1]==='export' && parts.length===3){
     const csv=await exportPlatformCsv(actor.id,parts[2],request.nextUrl.searchParams.get('clubId') || undefined);
@@ -170,6 +180,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   }
   if (parts[0]==='matches' && uuid(parts[1])) {
     if (method==='GET' && parts.length===2) return json(await getMatch(actor.id,parts[1]));
+    if (method==='GET' && parts.length===3 && parts[2]==='invitation')return json({invitation:await getMatchInvitation(actor.id,parts[1])});
     if (method==='POST' && parts[2]==='actions' && parts.length===3) {
       const data=await body(request);
       if (!uuid(data.requestId) || !Number.isSafeInteger(data.expectedRevision) || Number(data.expectedRevision)<0 || !data.action || typeof data.action!=='object') throw new DomainError('command','Ongeldige wedstrijdactie.');

@@ -145,14 +145,14 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
       let match = await getMatch(alice, matchId);
       const score = async (actor: string, action: MatchAction) => { match = await executeMatchCommand(actor, { requestId: randomUUID(), matchId, expectedRevision: match.revision, action }); };
       await score(alice, { type: 'accept' }); await score(bob, { type: 'accept' }); await score(alice, { type: 'start' });
-      await score(alice,{type:'score',score:0});await score(alice,{type:'score',score:0});
+      await score(bob,{type:'score',score:0});await score(alice,{type:'score',score:0});
       await score(alice,{type:'request-correction',reason:'Mijn eigen laatste testbeurt herstellen.'});const correctionId=match.correction!.id;
       await score(bob,{type:'pause'});await assert.rejects(executeMatchCommand(alice,{requestId:randomUUID(),matchId,expectedRevision:match.revision,action:{type:'score',score:60}}),{code:'match_paused'});
       const basis=match.revision;
       const race=await Promise.allSettled([executeMatchCommand(bob,{requestId:randomUUID(),matchId,expectedRevision:basis,action:{type:'approve-correction',correctionId}}),executeMatchCommand(alice,{requestId:randomUUID(),matchId,expectedRevision:basis,action:{type:'score',score:60}})]);
       assert.equal(race.filter(r=>r.status==='fulfilled').length,1);match=await getMatch(alice,matchId);assert.equal(match.correction,null);assert.equal(match.visits.length,1);assert.equal(match.paused,true);
-      await score(alice,{type:'resume'});await score(alice,{type:'undo'});assert.equal(match.visits.length,0);
-      await score(alice, { type: 'score', score: 180 }); await score(alice, { type: 'score', score: 0 }); await score(alice, { type: 'score', score: 121, doubleConfirmed: true });
+      await score(alice,{type:'resume'});await score(bob,{type:'undo'});assert.equal(match.visits.length,0);
+      await score(bob,{type:'score',score:0});await score(alice, { type: 'score', score: 180 });await score(bob, { type: 'score', score: 0 }); await score(alice, { type: 'score', score: 121, doubleConfirmed: true });
       await score(alice, { type: 'confirm' }); await score(bob, { type: 'confirm' });
       await reconcilePlatformResults(); await reconcilePlatformResults();
       await assert.rejects(mediaConfiguration(alice,matchId),{code:'media_closed'});

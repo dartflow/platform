@@ -34,6 +34,8 @@ Een netwerkfout bewaart de onbevestigde actie met haar oorspronkelijke ID. Een h
 
 Voor vrij spelen met een vaste verenigingsbaan gebruik je **Verenigingen → jouw vereniging → Banen → Baan toevoegen**. Elke baan heeft een permanente speel-QR en een afzonderlijk alleen-lezen baanscherm. Kies iedereen met een DartFlow-account of alleen verenigingsleden; een competitie of toernooi is hiervoor niet nodig. Zie [de handleiding voor verenigingsbanen](docs/verenigingsbanen.md).
 
+De volgende bronwijziging voegt korte uitnodigingen, camera wisselen, eigen beurtinvoer bij thuis/hybride en een verplichte scorebordnaam toe. De lokale controles, nog openstaande stagingacceptatie en uitrolvolgorde staan in [het rapport voor de spelersflows](docs/spelersflows-uitrol.md).
+
 ## Controleren
 
 ```bash

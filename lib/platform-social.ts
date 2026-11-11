@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { DomainError } from './domain';
+import {saveScoreboardName} from './profile-name';
 import { enqueueDomainMail } from './integrations-mail';
 import { acceptsCode, addMember, available, blocked, createEntity, entity, isClubMember, member, number, requireAccess, save, text, uuid, view } from './platform-store';
 import type { PlatformCommand, PlatformResponse } from './platform-types';
@@ -11,7 +12,7 @@ async function notify(client: PoolClient, requestId: string, templateId: string,
 }
 export async function socialAction(client: PoolClient, actor: string, command: PlatformCommand): Promise<PlatformResponse | null> {
   const a = command.action, type = a.type;
-  if(type==='profile.update'){await client.query('update dartflow_private.profiles set name=$2 where id=$1',[actor,text(a.name,80)]);return {ok:true};}
+  if(type==='profile.update'){await saveScoreboardName(client,actor,a.name);return {ok:true};}
   if (type === 'preferences.update') {
     if ((a.discoverable !== undefined && typeof a.discoverable !== 'boolean') || (a.allowRequests !== undefined && typeof a.allowRequests !== 'boolean')) throw new DomainError('invalid_preferences', 'Gebruik geldige privacyinstellingen.');
     await client.query('insert into dartflow_private.platform_preferences(user_id,discoverable,allow_requests) values($1,coalesce($2,true),coalesce($3,true)) on conflict(user_id) do update set discoverable=coalesce($2,dartflow_private.platform_preferences.discoverable),allow_requests=coalesce($3,dartflow_private.platform_preferences.allow_requests)', [actor, a.discoverable, a.allowRequests]);
