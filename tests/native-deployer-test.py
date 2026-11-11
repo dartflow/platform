@@ -428,6 +428,15 @@ class BuildIsolation(unittest.TestCase):
         with patch.object(deploy, 'command'), patch.object(deploy.subprocess, 'run', return_value=SimpleNamespace(returncode=0)), self.assertRaisesRegex(ValueError, 'cgroup'):
             deploy.build_command(['npm', 'run', 'build'], Path('/unused'), policy, RUN, 'build')
 
+    def test_synchronous_app_clients_keep_controller_locks_without_passing_them_to_app(self):
+        with patch.object(deploy, 'command') as command:
+            for action in ['restart', 'stop']:
+                deploy.service(action, {'serviceTimeoutSeconds': 45})
+                self.assertEqual(command.call_args.args[0], ['/usr/bin/systemctl', action, 'dartflow-staging.service'])
+                self.assertEqual(command.call_args.kwargs, {'timeout': 45, 'pass_fds': (31, 32)})
+            with self.assertRaises(ValueError):
+                deploy.service('shell', {'serviceTimeoutSeconds': 45})
+
     def test_independent_gate_credential_is_only_in_stdin(self):
         policy = {'repository': 'synthetic/dartflow', 'integrationBranch': 'main', 'node': '/opt/node/bin/node', 'requiredChecks': [{'workflow': 'ci.yml', 'jobs': ['Verify'], 'events': ['push']}]}
         output = {'status': 'passed', 'sha': SHA, 'ciRunUrl': 'https://github.com/synthetic/dartflow/actions/runs/123', 'deploymentRunUrl': 'https://github.com/synthetic/dartflow/actions/runs/' + RUN.split('-')[0]}
@@ -843,15 +852,21 @@ class GuardianLifetime(unittest.TestCase):
 
 class DelayedTrustedClient(unittest.TestCase):
     def test_delayed_client_exec_keeps_both_locks_after_helper_kill_but_builder_has_neither(self):
+        self.exercise_delayed_client('build')
+
+    def test_delayed_synchronous_app_client_keeps_both_locks_until_app_job_finishes(self):
+        self.exercise_delayed_client('app')
+
+    def exercise_delayed_client(self, kind):
         # Real exec/pass_fds models the reviewed v255 systemd-run client. Builder
         # launch is deliberately delayed until AFTER the original helper is dead.
         builder_script = """import os,sys
-status,end,global_dev,global_ino,site_dev,site_ino=map(int,sys.argv[1:])
+status,end,global_dev,global_ino,site_dev,site_ino=map(int,sys.argv[1:7])
 for name in os.listdir('/proc/self/fd'):
  try: item=os.fstat(int(name))
  except OSError: continue
  assert (item.st_dev,item.st_ino) not in [(global_dev,global_ino),(site_dev,site_ino)]
-os.write(status,b'B')
+os.write(status,sys.argv[7].encode())
 assert os.read(end,1)==b'1'
 """
         client_script = """import os,subprocess,sys
@@ -862,7 +877,7 @@ for fd in lock_fds:
  item=os.fstat(fd);identities.extend([item.st_dev,item.st_ino])
 os.write(status,b'R')
 assert os.read(start,1)==b'1'
-result=subprocess.run([sys.executable,'-I','-c',sys.argv[6],str(status),str(end),*map(str,identities)],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env={'PATH':'/usr/bin:/bin'},pass_fds=(status,end),close_fds=True)
+result=subprocess.run([sys.executable,'-I','-c',sys.argv[6],str(status),str(end),*map(str,identities),sys.argv[7]],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env={'PATH':'/usr/bin:/bin'},pass_fds=(status,end),close_fds=True)
 assert result.returncode==0
 os.write(status,b'D')
 """
@@ -897,7 +912,7 @@ os.write(status,b'D')
                         descriptors.frombytes(body[:len(body) - len(body) % descriptors.itemsize])
                         duplicates.extend(descriptors)
                 self.assertEqual(len(duplicates), 2)
-                client = subprocess.Popen([sys.executable, '-I', '-c', client_script, str(status_w), str(start_r), str(end_r), *map(str, duplicates), builder_script], pass_fds=(*duplicates, status_w, start_r, end_r), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env={'PATH': '/usr/bin:/bin'}, close_fds=True)
+                client = subprocess.Popen([sys.executable, '-I', '-c', client_script, str(status_w), str(start_r), str(end_r), *map(str, duplicates), builder_script, 'A' if kind == 'app' else 'B'], pass_fds=(*duplicates, status_w, start_r, end_r), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env={'PATH': '/usr/bin:/bin'}, close_fds=True)
                 for fd in duplicates:
                     os.close(fd)
                 duplicates.clear()
@@ -920,7 +935,7 @@ os.write(status,b'D')
                 self.assertEqual(os.waitstatus_to_exitcode(result), -signal.SIGKILL)
                 both_busy()  # No builder exists yet; only the exec'd client holds the locks.
                 os.write(start_w, b'1')
-                status(b'B')  # Actual builder has inspected its open FDs and found neither lock.
+                status(b'A' if kind == 'app' else b'B')  # The actual job process inspected its FDs and found neither lock.
                 both_busy()
                 os.write(end_w, b'1')
                 status(b'D')

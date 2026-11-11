@@ -168,6 +168,9 @@
     "trustedBuildClientRetainsLockDescriptors": true,
     "builderLockDescriptorsAllowed": false,
     "trustedBuildClientDescriptorTransferVerifiedOnHost": false,
-    "reviewedSystemdSourceVersion": "v255"
+    "reviewedSystemdSourceVersion": "v255",
+    "trustedAppClientRetainsLockDescriptors": true,
+    "appLockDescriptorsAllowed": false,
+    "trustedAppClientDescriptorTransferVerifiedOnHost": false
   }
 }

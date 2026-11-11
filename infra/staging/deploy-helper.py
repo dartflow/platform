@@ -563,7 +563,10 @@ def health(meta):
 
 def service(action, policy):
     require(action in ['restart', 'stop'], 'Unknown fixed service action')
-    command(['/usr/bin/systemctl', action, SERVICE], timeout=policy['serviceTimeoutSeconds'])
+    require(len(BUILD_LOCK_FDS) == 2 and all(fd >= 3 for fd in BUILD_LOCK_FDS), 'App client requires retained controller locks')
+    # The trusted synchronous v255 client retains the OFDs until its job ends.
+    # RestartUnit/StopUnit send only unit/mode strings to PID1, never these FDs.
+    command(['/usr/bin/systemctl', action, SERVICE], timeout=policy['serviceTimeoutSeconds'], pass_fds=BUILD_LOCK_FDS)
 
 
 def point_current(root, name):
