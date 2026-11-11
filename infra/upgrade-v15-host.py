@@ -22,6 +22,19 @@ EXTRACTORS = {'staging': '/usr/local/libexec/dartflow-extract-source.py',
 BACKUPS = Path('/var/backups/dartflow')
 
 
+def reviewed_install_mode(path):
+    # The unprivileged fixed entry reads helper source to verify its pinned hash.
+    public_code = {'/usr/local/bin/' + values[3] for values in SITES.values()} | {'/usr/local/libexec/' + values[4] for values in SITES.values()}
+    if str(path) in public_code:
+        return 0o755
+    if str(path) in EXTRACTORS.values():
+        # The isolated, unprivileged builder opens this source with Python.
+        return 0o755
+    if str(path) in {'/etc/sudoers.d/dartflow-' + env for env in SITES}:
+        return 0o440
+    raise ValueError('Unknown reviewed install path')
+
+
 def trusted(path, directory=False):
     path = Path(path)
     info = path.lstat()
@@ -67,6 +80,11 @@ def read_reviewed(path, maximum=524288):
     finally:
         if fd >= 0:
             os.close(fd)
+
+
+def installed_file_mode(path):
+    return stat.S_IMODE(trusted_render_path(path).lstat().st_mode)
+
 
 def atomic(path, content, mode=0o600):
     path = Path(path)
@@ -158,6 +176,7 @@ def update_extractors(reviewed, apply=False):
         data = reviewed[env][extractor_path]
         policy_path = Path('/etc/dg-sites/dartflow-' + env + '/deploy.json')
         old_source = read_reviewed(extractor_path)
+        old_mode = installed_file_mode(extractor_path)
         old_policy = read_reviewed(policy_path, 65536)
         policy = json.loads(old_policy)
         if policy['repository'] != 'dartflow/platform' or policy['backend']['projectRef'] != ref or policy['port'] != port:
@@ -165,14 +184,16 @@ def update_extractors(reviewed, apply=False):
         if policy['extractorSha256'] != hashlib.sha256(old_source).hexdigest():
             raise ValueError('Installed extractor differs from its protected policy')
         digest = hashlib.sha256(data).hexdigest()
+        policy_changed = policy['extractorSha256'] != digest
         policy['extractorSha256'] = digest
         changes.append({'environment': env, 'path': extractor_path, 'policyPath': policy_path,
                         'oldSource': old_source, 'oldPolicy': old_policy, 'data': data,
+                        'oldMode': old_mode, 'mode': reviewed_install_mode(extractor_path), 'policyChanged': policy_changed,
                         'policy': json.dumps(policy, indent=2) + '\n', 'sha256': digest})
     if len({item['sha256'] for item in changes}) != 1:
         raise ValueError('The two reviewed extractors must have identical source')
-    report = {'changesApplied': False, 'environments': {item['environment']: {'extractorSha256': item['sha256']} for item in changes}}
-    if not apply or all(item['oldSource'] == item['data'] for item in changes):
+    report = {'changesApplied': False, 'environments': {item['environment']: {'extractorSha256': item['sha256'], 'installedMode': format(item['oldMode'], '04o'), 'requiredMode': format(item['mode'], '04o'), 'requiresUpdate': item['oldSource'] != item['data'] or item['oldMode'] != item['mode']} for item in changes}}
+    if not apply or not any(item['requiresUpdate'] for item in report['environments'].values()):
         return report
     trusted_render_path(BACKUPS, directory=True)
     backup = BACKUPS / ('v15-extractor-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ'))
@@ -182,17 +203,20 @@ def update_extractors(reviewed, apply=False):
         atomic(backup / (item['environment'] + '-deploy.json'), item['oldPolicy'])
     try:
         for item in changes:
-            atomic(item['path'], item['data'], 0o700)
-            atomic(item['policyPath'], item['policy'])
+            atomic(item['path'], item['data'], item['mode'])
+            if item['policyChanged']:
+                atomic(item['policyPath'], item['policy'])
         for item in changes:
-            if hashlib.sha256(read_reviewed(item['path'])).hexdigest() != item['sha256'] or json.loads(read_reviewed(item['policyPath'], 65536))['extractorSha256'] != item['sha256']:
+            if hashlib.sha256(read_reviewed(item['path'])).hexdigest() != item['sha256'] or installed_file_mode(item['path']) != item['mode'] or json.loads(read_reviewed(item['policyPath'], 65536))['extractorSha256'] != item['sha256']:
                 raise ValueError('Installed extractor repair verification failed')
     except BaseException:
         for item in changes:
-            atomic(item['path'], item['oldSource'], 0o700)
+            atomic(item['path'], item['oldSource'], item['oldMode'])
             atomic(item['policyPath'], item['oldPolicy'])
         raise
-    return {**report, 'changesApplied': True, 'backup': str(backup)}
+    return {**report, 'changesApplied': True, 'backup': str(backup), 'environments': {
+        env: {**item, 'previousInstalledMode': item['installedMode'], 'installedMode': item['requiredMode'], 'requiresUpdate': False}
+        for env, item in report['environments'].items()}}
 
 
 def main():
@@ -275,8 +299,7 @@ def main():
                 destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
                 shutil.copyfile(name, destination)
                 os.chmod(destination, 0o600)
-                mode = 0o755 if name.startswith('/usr/local/bin/') else 0o700 if name.startswith('/usr/local/libexec/') else 0o440
-                atomic(name, data, mode)
+                atomic(name, data, reviewed_install_mode(name))
             policy_backup = backup / ('deploy-' + env + '.json')
             shutil.copyfile(policy_path, policy_backup)
             os.chmod(policy_backup, 0o600)

@@ -1,0 +1,55 @@
+{
+  "checkedAt": "2026-11-11T14:24:54.628144+00:00",
+  "workflow": "https://github.com/dartflow/platform/actions/runs/43038096799",
+  "requestedRelease": "4634852c17cc-42995422162-1",
+  "loopback": {
+    "health": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+      "releaseId": "42995422162-1",
+      "buildConfigId": "staging-2026-11-11-v1",
+      "runtimeConfigId": "staging-2026-11-11-v1",
+      "configId": "staging-2026-11-11-v1"
+    },
+    "ready": {
+      "status": "ready",
+      "database": "ok",
+      "schemaVersion": 1,
+      "auth": "reachable",
+      "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+      "releaseId": "42995422162-1",
+      "buildConfigId": "staging-2026-11-11-v1",
+      "runtimeConfigId": "staging-2026-11-11-v1",
+      "configId": "staging-2026-11-11-v1"
+    }
+  },
+  "public": {
+    "health": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+      "releaseId": "42995422162-1",
+      "buildConfigId": "staging-2026-11-11-v1",
+      "runtimeConfigId": "staging-2026-11-11-v1",
+      "configId": "staging-2026-11-11-v1"
+    },
+    "ready": {
+      "status": "ready",
+      "database": "ok",
+      "schemaVersion": 1,
+      "auth": "reachable",
+      "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+      "releaseId": "42995422162-1",
+      "buildConfigId": "staging-2026-11-11-v1",
+      "runtimeConfigId": "staging-2026-11-11-v1",
+      "configId": "staging-2026-11-11-v1"
+    }
+  },
+  "subsequentForwardRestoration": {
+    "workflow": "https://github.com/dartflow/platform/actions/runs/43038238892",
+    "sourceSha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+    "releaseId": "43038238892-1",
+    "proof": "v15-final-host-2026-11-11.json"
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "checkedAt": "2026-11-11T14:31:32.288434+00:00",
+  "host": "dg-nxttrack-01",
+  "sites": {
+    "staging": {
+      "current": "releases/38bceb0dfdfe-43038238892-1",
+      "loopback": {
+        "health": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+            "releaseId": "43038238892-1",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1"
+          }
+        },
+        "ready": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+            "releaseId": "43038238892-1",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1"
+          }
+        }
+      },
+      "service": [
+        "MainPID=77758",
+        "Id=dartflow-staging.service",
+        "ActiveState=active"
+      ],
+      "mailTimer": [
+        "Id=dartflow-mail-staging.timer",
+        "ActiveState=active",
+        "UnitFileState=enabled"
+      ],
+      "mailWorkerLastExecution": [
+        "Result=success",
+        "ExecMainCode=1",
+        "ExecMainStatus=0",
+        "Id=dartflow-mail-staging.service"
+      ],
+      "public": {
+        "health": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+            "releaseId": "43038238892-1",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1"
+          }
+        },
+        "ready": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+            "releaseId": "43038238892-1",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1"
+          }
+        }
+      }
+    },
+    "production": {
+      "current": "releases/4634852c17cc-42995766522-1",
+      "loopback": {
+        "health": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        },
+        "ready": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        }
+      },
+      "service": [
+        "MainPID=64473",
+        "Id=dartflow-production.service",
+        "ActiveState=active"
+      ],
+      "mailTimer": [
+        "Id=dartflow-mail-production.timer",
+        "ActiveState=inactive",
+        "UnitFileState=disabled"
+      ],
+      "public": {
+        "health": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        },
+        "ready": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        }
+      }
+    }
+  },
+  "otherApplication": {
+    "httpStatus": 200,
+    "body": {
+      "status": "ok",
+      "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+      "releaseId": "43026808427-1",
+      "configVersion": "staging-2026-11-11-v2",
+      "checks": [
+        "http"
+      ]
+    }
+  },
+  "otherService": [
+    "MainPID=70911",
+    "Id=milobingo-staging.service",
+    "ActiveState=active"
+  ],
+  "infrastructureServices": [
+    "Id=caddy.service",
+    "ActiveState=active",
+    "",
+    "Id=dg-turn-staging.service",
+    "ActiveState=active",
+    "",
+    "Id=dg-turn-production.service",
+    "ActiveState=active"
+  ],
+  "publicPrograms": {
+    "/usr/local/libexec/dg-dartflow-deploy-helper": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0755",
+      "sha256": "a998feaba06d9039219b3ea0d718c379368d3f1c372aea1272c82a342f4b1935"
+    },
+    "/usr/local/libexec/dg-dartflow-production-deploy-helper": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0755",
+      "sha256": "b8daf97e627737f6e0506c07296bca31397fbd0755fdbe1e643a12cb3f48db16"
+    },
+    "/usr/local/libexec/dartflow-extract-source.py": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0755",
+      "sha256": "ab293d0b7a1ffbdab7d8e82ee3955f1014368487e37c1e635d9702e30b9cda0a"
+    },
+    "/usr/local/libexec/dartflow-production-extract-source.py": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0755",
+      "sha256": "ab293d0b7a1ffbdab7d8e82ee3955f1014368487e37c1e635d9702e30b9cda0a"
+    }
+  },
+  "operatorCopies": {
+    "/root/upgrade-v15-host-reviewed.py": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0700",
+      "sha256": "08c266b81a2f90cae28e0b32217f219484e062a1029e6260e6bfbb3427fc604c"
+    },
+    "/root/v15-reviewed-extractor/upgrade-v15-host.py": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0700",
+      "sha256": "08c266b81a2f90cae28e0b32217f219484e062a1029e6260e6bfbb3427fc604c"
+    }
+  },
+  "stagingDatabaseObservation": {
+    "source": "read-only Supabase execute_sql after rollback and forward restoration",
+    "observedAt": "2026-11-11T14:31:34.350278+00:00",
+    "coreSchema": 1,
+    "featureVersions": [
+      {
+        "name": "v15",
+        "version": 15
+      }
+    ],
+    "authUsers": 0,
+    "profiles": 0,
+    "effectiveMailMode": "log",
+    "savedProviderCredentials": 0,
+    "outboxJobs": 0
+  },
+  "acceptanceLimits": [
+    "No hosted OTP/Google login or provider delivery accepted: owner provider setup pending.",
+    "No public TURN relay accepted: port-selective upstream filtering remains under diagnosis.",
+    "Production v15 migration/application promotion not performed; prior healthy production app remains active."
+  ]
+}

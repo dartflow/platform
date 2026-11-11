@@ -1,8 +1,10 @@
-# Dartflow: uitrolacceptatie staging en productie
+# Dartflow: historische uitrolacceptatie vóór v15
+
+Dit verslag beschrijft de eerste uitrol van bron `4634852c17cc7737bec246c0b48310e975a36920`. De onderstaande stagingrelease is inmiddels vervangen. Voor de huidige releases en open acceptatiepunten geldt [het v15-opleverrapport](opleverrapport-v15.md).
 
 Gecontroleerd op **11 november 2026**. Beide omgevingen zijn op **dg-nxttrack-01** ingericht en via de eigen GitHub-workflows uit dezelfde geteste broncommit gebouwd en geactiveerd. De eerste lokale rapportage is ongewijzigd bewaard in [het historische verslag](release-acceptatie-lokaal-2026-11-11.md).
 
-## Actieve releases
+## Releases op het moment van deze controle
 
 | Onderdeel | Staging | Productie |
 |---|---|---|

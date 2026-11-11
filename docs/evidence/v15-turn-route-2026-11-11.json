@@ -1,0 +1,115 @@
+{
+  "checkedAt": "2026-11-11T14:29:01.425320+00:00",
+  "targetHost": "dg-nxttrack-01",
+  "targetPublicIpv4": "128.140.93.95",
+  "workerPublicIpv4": "65.108.158.112",
+  "scope": "Read-only network diagnosis and bounded owned-host socket probes; no firewall, service, runtime or TURN credential configuration changed.",
+  "routes": {
+    "workerToTarget": "128.140.93.95 via 172.31.1.1 dev eth0 src 65.108.158.112",
+    "targetToWorker": "65.108.158.112 via 172.31.1.1 dev eth0 src 128.140.93.95",
+    "proxyVariablesConfigured": false,
+    "adminSsh": "Tailscale 100.111.66.17, not public port22",
+    "tailscaleControl": "direct IPv6 peer :41641, 34ms"
+  },
+  "simultaneousIpv4Probes": [
+    {
+      "protocol": "tcp",
+      "destinationPort": 443,
+      "result": "connected",
+      "elapsedSeconds": 0.038
+    },
+    {
+      "protocol": "tcp",
+      "destinationPort": 22,
+      "result": "timeout",
+      "elapsedSeconds": 2.001
+    },
+    {
+      "protocol": "tcp",
+      "destinationPort": 3478,
+      "result": "timeout",
+      "elapsedSeconds": 2.002
+    },
+    {
+      "protocol": "tcp",
+      "destinationPort": 3479,
+      "result": "timeout",
+      "elapsedSeconds": 2.002
+    },
+    {
+      "protocol": "udp",
+      "destinationPort": 3478,
+      "probe": "unauthenticated STUN binding",
+      "result": "timeout",
+      "elapsedSeconds": 2.001
+    },
+    {
+      "protocol": "udp",
+      "destinationPort": 3479,
+      "probe": "unauthenticated STUN binding",
+      "result": "timeout",
+      "elapsedSeconds": 2.002
+    }
+  ],
+  "targetInterfaceCapture": {
+    "interface": "eth0",
+    "durationSeconds": 18,
+    "sourceHostFilter": "65.108.158.112",
+    "ports": [
+      22,
+      443,
+      3478,
+      3479
+    ],
+    "capturedPackets": 6,
+    "tcp443Packets": 6,
+    "tcp22Packets": 0,
+    "turnTcpOrUdpPackets": 0,
+    "kernelDroppedPackets": 0,
+    "finding": "Complete TCP443 handshake and close arrived; no simultaneous TURN/22 probes arrived at target interface."
+  },
+  "secondUdpCapture": {
+    "interface": "eth0",
+    "durationSeconds": 12,
+    "ports": [
+      443,
+      3478,
+      3479
+    ],
+    "workerSend": "three UDP datagrams accepted by source kernel",
+    "capturedPackets": 0,
+    "kernelDroppedPackets": 0
+  },
+  "targetReadiness": {
+    "tcpAndUdpListenersBound": [
+      "128.140.93.95:3478",
+      "128.140.93.95:3479"
+    ],
+    "ufw": "active",
+    "ufwTurnTcpUdpInboundAllowed": [
+      3478,
+      3479
+    ],
+    "ufwRelayUdpInboundAllowed": [
+      "49160:49179",
+      "49180:49199"
+    ],
+    "publicSshIntentionallyNotAllowed": "22 allowed only on tailscale0",
+    "existingAuthenticatedSelfTestEvidence": "v15-turn-native-2026-11-11.json"
+  },
+  "diagnosticLimits": {
+    "workerRawCapture": "permission denied; no privileged source capture available",
+    "reverseOwnedHost3478Probe": "target TCP connection timed out; target UDP send accepted but temporary worker receiver timed out; does not isolate directional filtering",
+    "publicRelayRoundTrip": "not run because public listener reachability remains blocked",
+    "sharedSecretsReadOrExposed": false
+  },
+  "conclusion": {
+    "proved": "Port-selective filtering exists upstream of the target eth0 interface. The general public IPv4 route and TCP443 work. Target TURN listeners and local firewall allow rules exist.",
+    "notProved": "These two endpoint observations cannot uniquely attribute the drop to worker egress policy versus a target/provider ingress firewall. A successful same-port probe from an independent network or cloud firewall rule inspection is needed.",
+    "ownerAction": [
+      "Inspect the cloud/provider firewall attached to 128.140.93.95 and allow inbound TCP+UDP3478/3479 and UDP49160-49199 from intended client networks. The OS UFW rules are already present.",
+      "If provider rules already allow these ports, test 128.140.93.95:3478/3479 from an independent owned client network; independent success isolates the worker route/egress policy.",
+      "After reachability succeeds, run tests/turn-relay-live.py --run-target for authenticated UDP/TCP relay, cross-environment denial and cleanup; then perform browser media acceptance across two independent networks."
+    ]
+  }
+}

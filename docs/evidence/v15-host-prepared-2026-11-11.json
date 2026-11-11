@@ -178,5 +178,22 @@
     "systemdTimeoutSeconds": 175,
     "timersStarted": false,
     "verification": "Both installed units report TimeoutStartUSec=2min55s"
+  },
+  "publicProgramReadCorrection": {
+    "verifiedOn": "2026-11-11",
+    "cause": "Operator installer used 0700 for public helper/extractor program source; the separate runner/builder must read those reviewed programs",
+    "fixedMode": "0755 root:root, no group/other write",
+    "helperSha256Unchanged": true,
+    "extractorSha256Unchanged": true,
+    "actualChecks": [
+      "run-dart-stg entry trusted_helper checksum passed",
+      "run-dart-prd entry trusted_helper checksum passed",
+      "build-dart-stg extractor source read/checksum passed",
+      "build-dart-prd extractor source read/checksum passed"
+    ],
+    "failedDeployment": "43037068421 attempt 1 refused before target build; previous application stayed active",
+    "subsequentDeployment": "43037068421 attempt 2 succeeded",
+    "futureOperatorHostTests": 10,
+    "secretsRemainRootOnly": true
   }
 }

@@ -1,0 +1,46 @@
+{
+  "checkedAt": "2026-11-11T14:30:38.304Z",
+  "origin": "https://staging.dartflow.nl",
+  "scope": "Anonymous read-only marketing screenshot recapture after restoration. No login, OTP, OAuth, mail or mutation.",
+  "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+  "configId": "staging-2026-11-11-v15-1",
+  "captures": [
+    {
+      "label": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "scrollY": 0,
+      "viewportWidth": 1440,
+      "documentWidth": 1440,
+      "heading": "Darten, waar je ook speelt.",
+      "file": "v15-staging-marketing-desktop-2026-11-11.png"
+    },
+    {
+      "label": "mobile",
+      "width": 390,
+      "height": 844,
+      "scrollY": 0,
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "heading": "Darten, waar je ook speelt.",
+      "file": "v15-staging-marketing-mobile-2026-11-11.png"
+    }
+  ],
+  "before": {
+    "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+    "releaseId": "43038238892-1",
+    "buildConfigId": "staging-2026-11-11-v15-1",
+    "runtimeConfigId": "staging-2026-11-11-v15-1"
+  },
+  "after": {
+    "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+    "releaseId": "43038238892-1",
+    "buildConfigId": "staging-2026-11-11-v15-1",
+    "runtimeConfigId": "staging-2026-11-11-v15-1"
+  },
+  "originalSmokeEvidenceUnchanged": true,
+  "pageErrors": [],
+  "mutatingRequests": [],
+  "result": "passed",
+  "visualInspection": "Desktop and mobile captures reviewed: header is at the top; images and graphite/lime layout are readable."
+}

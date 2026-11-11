@@ -23,7 +23,7 @@ Gecontroleerde basis op 11 november 2026. Repository: `dartflow/platform`, integ
 | Google naar Supabase | `https://dsnqnvbckkqpzadblshu.supabase.co/auth/v1/callback` | `https://wlrnowuownakqqgjxnbb.supabase.co/auth/v1/callback` |
 | Supabase naar app | `https://staging.dartflow.nl/auth/callback` | `https://dartflow.nl/auth/callback` |
 
-De voorafgaande actieve bron is `4634852c17cc7737bec246c0b48310e975a36920`. De uiteindelijke v15-SHA en activering krijgen eigen releasebewijs; een voorbereide bundel of online runner bewijst geen applicatiedeployment.
+Staging is daadwerkelijk geactiveerd op v15-bron `38bceb0dfdfed70046d550e7b2f82839564f41cb`; CI, publieke browserproef en gecontroleerde rollback zijn vastgelegd. Productie draait nog de gezonde voorafgaande bron `4634852c17cc7737bec246c0b48310e975a36920`. De uiteindelijke actieve release-ID staat in [het v15-opleverrapport](../voorbeelden/opleverrapport-v15.md); een voorbereide bundel is geen applicatiedeployment.
 
 Beide projecten bevatten bij de inventarisatie nul Auth-gebruikers, profielen, clubs en wedstrijden. De expansiemigratie houdt het kerncontract en bestaande IDs geldig. Er is geen bestaande bedrijfsdata geïmporteerd of overschreven. Synthetische accounts blijven in development; productie krijgt geldige lege toestanden.
 
@@ -37,8 +37,8 @@ SSH en de jaarlijkse geldigheid staan in [ssh-management.md](ssh-management.md).
 
 ## Hosting en provideracceptatie
 
-De uitgevoerde v15-hostupgrade bewaart eerdere brokers en policies onder `/var/backups/dartflow/v15-host-20261111T133129Z` en behoudt oude configuratiebundels. Caddy weigert publieke toegang tot `/api/mail/process`. De mailworker wordt pas gestart na verificatie van de bijbehorende v15-app.
+De uitgevoerde v15-hostupgrade bewaart eerdere brokers en policies onder `/var/backups/dartflow/v15-host-20261111T133129Z` en behoudt oude configuratiebundels. Caddy weigert publieke toegang tot `/api/mail/process`. Na verificatie van de herstelde v15-app is alleen de stagingmailtimer ingeschakeld; de oneshot eindigde met `Result=success`, exitstatus 0. De effectieve mailmodus is Log en er zijn geen providercredentials opgeslagen. De productietimer blijft uitgeschakeld tot de bijbehorende v15-app is geactiveerd. Zie [het eindbewijs](evidence/v15-final-host-2026-11-11.json).
 
-De native coturn-installatie en hostproeven staan in [het relaybewijs](evidence/v15-turn-native-2026-11-11.json). De lokale firewall heeft de nieuwe poorten. In de eerste externe proef bereikten pakketten vanaf de worker de publieke VPS-interface niet. Publieke relayacceptatie blijft open totdat de externe netwerkroute is bevestigd.
+De native coturn-installatie en hostproeven staan in [het relaybewijs](evidence/v15-turn-native-2026-11-11.json). De lokale firewall heeft de nieuwe poorten. De [gelijktijdige routemeting](evidence/v15-turn-route-2026-11-11.json) toont werkend TCP443, terwijl TURN-pakketten vanaf de worker de publieke VPS-interface niet bereiken. Controleer de providerfirewall voor inkomend TCP+UDP3478/3479 en UDP49160–49199. Als die regels al bestaan, is een proef vanaf een onafhankelijk netwerk nodig om de workerroute te onderscheiden. Publieke relayacceptatie blijft open.
 
 Google Cloud-webclients en Resend SMTP zijn door de eigenaar als nog niet ingericht gemeld. De app onderscheidt beschikbare beheerfunctionaliteit, geconfigureerde providers en werkelijke acceptatie van login/mail. De afronding gebruikt de eigen projectreferenties en callbacks hierboven.

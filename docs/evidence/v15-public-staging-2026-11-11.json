@@ -1,0 +1,244 @@
+{
+  "checkedAt": "2026-11-11T14:23:22.414Z",
+  "origin": "https://staging.dartflow.nl",
+  "expectedSha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+  "scope": "Anonymous read-only HTTPS staging smoke. No OTP, OAuth, mail sending, authenticated session, provider mutation, seed data or host mutation.",
+  "identity": {
+    "status": "ok",
+    "mode": "supabase",
+    "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+    "releaseId": "43037068421-2",
+    "buildConfigId": "staging-2026-11-11-v15-1",
+    "runtimeConfigId": "staging-2026-11-11-v15-1",
+    "configId": "staging-2026-11-11-v15-1"
+  },
+  "pages": [
+    {
+      "path": "/",
+      "label": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "status": 200,
+      "title": "DartFlow | Online darten, live scorebord en darttoernooien",
+      "heading": "Darten, waar je ook speelt.",
+      "viewportWidth": 1440,
+      "documentWidth": 1440,
+      "canonical": "https://staging.dartflow.nl",
+      "robots": "noindex, nofollow",
+      "ogUrl": "https://staging.dartflow.nl",
+      "structuredDataUrl": "https://staging.dartflow.nl",
+      "images": [
+        {
+          "path": "/assets/dartflow-logo.svg",
+          "loaded": true,
+          "naturalWidth": 1916,
+          "naturalHeight": 496
+        },
+        {
+          "path": "/assets/marketing-hero.webp",
+          "loaded": true,
+          "naturalWidth": 1600,
+          "naturalHeight": 900
+        },
+        {
+          "path": "/assets/dartflow-logo.svg",
+          "loaded": true,
+          "naturalWidth": 1916,
+          "naturalHeight": 496
+        },
+        {
+          "path": "/assets/marketing-venue.webp",
+          "loaded": true,
+          "naturalWidth": 1440,
+          "naturalHeight": 810
+        },
+        {
+          "path": "/assets/dartflow-logo.svg",
+          "loaded": true,
+          "naturalWidth": 1916,
+          "naturalHeight": 496
+        }
+      ],
+      "localTestUi": false,
+      "screenshot": "v15-staging-marketing-desktop-2026-11-11.png"
+    },
+    {
+      "path": "/",
+      "label": "mobile",
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "DartFlow | Online darten, live scorebord en darttoernooien",
+      "heading": "Darten, waar je ook speelt.",
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "canonical": "https://staging.dartflow.nl",
+      "robots": "noindex, nofollow",
+      "ogUrl": "https://staging.dartflow.nl",
+      "structuredDataUrl": "https://staging.dartflow.nl",
+      "images": [
+        {
+          "path": "/assets/dartflow-logo.svg",
+          "loaded": true,
+          "naturalWidth": 1916,
+          "naturalHeight": 496
+        },
+        {
+          "path": "/assets/marketing-hero.webp",
+          "loaded": true,
+          "naturalWidth": 1600,
+          "naturalHeight": 900
+        },
+        {
+          "path": "/assets/dartflow-logo.svg",
+          "loaded": true,
+          "naturalWidth": 1916,
+          "naturalHeight": 496
+        },
+        {
+          "path": "/assets/marketing-venue.webp",
+          "loaded": true,
+          "naturalWidth": 1440,
+          "naturalHeight": 810
+        },
+        {
+          "path": "/assets/dartflow-logo.svg",
+          "loaded": true,
+          "naturalWidth": 1916,
+          "naturalHeight": 496
+        }
+      ],
+      "localTestUi": false,
+      "screenshot": "v15-staging-marketing-mobile-2026-11-11.png"
+    },
+    {
+      "path": "/",
+      "label": "small-mobile",
+      "width": 320,
+      "height": 720,
+      "status": 200,
+      "title": "DartFlow | Online darten, live scorebord en darttoernooien",
+      "heading": "Darten, waar je ook speelt.",
+      "viewportWidth": 320,
+      "documentWidth": 320,
+      "canonical": "https://staging.dartflow.nl",
+      "robots": "noindex, nofollow",
+      "ogUrl": "https://staging.dartflow.nl",
+      "structuredDataUrl": "https://staging.dartflow.nl",
+      "images": [
+        {
+          "path": "/assets/dartflow-logo.svg",
+          "loaded": true,
+          "naturalWidth": 1916,
+          "naturalHeight": 496
+        },
+        {
+          "path": "/assets/marketing-hero.webp",
+          "loaded": true,
+          "naturalWidth": 1600,
+          "naturalHeight": 900
+        },
+        {
+          "path": "/assets/dartflow-logo.svg",
+          "loaded": true,
+          "naturalWidth": 1916,
+          "naturalHeight": 496
+        },
+        {
+          "path": "/assets/marketing-venue.webp",
+          "loaded": true,
+          "naturalWidth": 1440,
+          "naturalHeight": 810
+        },
+        {
+          "path": "/assets/dartflow-logo.svg",
+          "loaded": true,
+          "naturalWidth": 1916,
+          "naturalHeight": 496
+        }
+      ],
+      "localTestUi": false
+    },
+    {
+      "path": "/inloggen",
+      "label": "mobile",
+      "status": 200,
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "heading": "Jouw volgende partijbegint hier.",
+      "localTestUi": false,
+      "emailInputVisible": true,
+      "otpInputPresent": false,
+      "googleLinkPresent": true,
+      "fixtureNamesPresent": false,
+      "robots": "noindex, nofollow",
+      "screenshot": "v15-staging-login-mobile-2026-11-11.png"
+    }
+  ],
+  "api": {
+    "/api/ready": {
+      "status": 200,
+      "database": "ok",
+      "auth": "reachable",
+      "schemaVersion": 1,
+      "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb"
+    },
+    "/api/session": {
+      "status": 200,
+      "anonymous": true,
+      "local": false,
+      "environment": "staging",
+      "localUserCount": 0,
+      "canManagePlatform": false
+    },
+    "/api/platform": {
+      "method": "GET",
+      "status": 401,
+      "code": "unauthorized"
+    },
+    "/api/media/00000000-0000-4000-8000-000000000001": {
+      "method": "GET",
+      "status": 401,
+      "code": "unauthorized"
+    },
+    "/api/mail/templates?scope=platform": {
+      "method": "GET",
+      "status": 401,
+      "code": "unauthorized"
+    },
+    "/api/admin/integrations/resend": {
+      "method": "GET",
+      "status": 401,
+      "code": "unauthorized"
+    },
+    "/api/mail/process": {
+      "method": "GET",
+      "status": 404,
+      "code": null
+    }
+  },
+  "resources": {
+    "robots": {
+      "status": 200,
+      "disallowsAll": true
+    },
+    "sitemap": {
+      "status": 200,
+      "publicUrlCount": 0
+    }
+  },
+  "providerAcceptance": {
+    "otpDelivery": "not exercised",
+    "googleLogin": "not exercised",
+    "transactionalMailDelivery": "not exercised",
+    "externalTurnRelay": "not exercised"
+  },
+  "browser": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "authActions": [],
+    "mutatingRequests": []
+  },
+  "result": "passed"
+}
