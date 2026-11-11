@@ -9,7 +9,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # Keep this namespace stable; the original group contains orphaned GitHub runs.
+  group: dartflow-ci-v2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
