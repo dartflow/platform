@@ -4,6 +4,16 @@ De vastgelegde repository is **[dartflow/platform](https://github.com/dartflow/p
 
 De native hostcontracten zijn op 11 november 2026 geïnstalleerd en geverifieerd; beide policies hebben `nativeEnabled: true`. De daadwerkelijke accounts, rootbestanden, twee online runners, databaseverbindingen, overdracht van lockdescriptors, afgebroken helpers en geblokkeerde cleanup met gericht rootherstel zijn vastgelegd in `docs/evidence/*-2026-11-11.json`. Dit installatiebewijs staat los van de CI- en applicatierelease: ook de ingeschakelde broncommit moet eerst groene CI krijgen en door de beide deployworkflows lopen.
 
+De actuele v15-projectrefs, configuratie-ID's, services en providerstatus staan in [v15-omgevingen.md](v15-omgevingen.md). De stappen voor de eigenaar om OTP/SMTP, Google en Resend werkelijk te activeren staan in [v15-integraties.md](v15-integraties.md). Dit document beschrijft de bron-, database- en hostrelease die deze instellingen gebruikt.
+
+## Ontwikkeling en v15-architectuur
+
+De developmentcheckout op de dev-VPS is de bron voor wijzigingen. Het overgenomen prototype blijft beschikbaar als referentie en voor zijn eigen tests; de draaiende applicatie bestaat uit Next.js-pagina's, geauthenticeerde server-API's en de private PostgreSQL-database. Browseropslag bepaalt geen platformrol, clublidmaatschap, wedstrijdstatus of providercredential. Supabase Auth levert de geverifieerde gebruikersidentiteit; platform- en clubrechten komen uit actuele serverdata. De beperkte databasegebruiker `dartflow_app` voert geen migraties uit.
+
+Gebruik voor development de geïsoleerde lokale PostgreSQL-fixture: `npm ci`, `npm run db:start`, `npm run db:migrate` en `npm run db:seed`. Controleer dat de developmentconfiguratie loopback en `DARTFLOW_DATA_MODE=local` gebruikt voordat fixturedata wordt geladen. Synthetische accounts en seeddata gaan niet naar staging of productie. De reguliere CI controleert types, lint, domein-/integratietests, het bronprototype, de native deploygrenzen, de standalonebuild en de browserflows. Alleen een geslaagde push-CI op de gekozen volledige SHA telt voor de releasegate.
+
+Applicatiemail gebruikt een duurzame outbox: domeinwijziging en mailjob worden in dezelfde transactie opgeslagen, daarna verwerkt een omgevingsgebonden worker beperkte batches. Supabase Auth blijft verantwoordelijk voor OTP en zijn eigen SMTP-configuratie. Voor cameramedia gebruiken de browsers WebRTC en de eigen native TURN-service; app-, signaling- en relayautorisatie blijven afzonderlijk. Een geslaagde appbuild bewijst geen externe mailbezorging, Google-login of bereikbare publieke mediarelay.
+
 ## Vaste omgevingsgrenzen
 
 | Onderdeel | Staging | Productie |
@@ -35,7 +45,7 @@ De twee GitHub-environments bevatten elk deze vier publieke variables. Hun werke
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://dsnqnvbckkqpzadblshu.supabase.co` | `https://wlrnowuownakqqgjxnbb.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Eigen staging `sb_publishable_...` | Eigen productie `sb_publishable_...` |
 
-De optionele hosted `Staging candidate`-workflow leest de stagingvariables voor een inspectieartifact. De normale native deploy leest zijn publieke waarden uit de beschermde hostbundel; de GitHub-variables vervangen die bundel niet. **`DARTFLOW_DATABASE_URL` blijft uitsluitend op de host**, in de juiste immutable bundel. Google-/SMTP-secrets staan in het bijbehorende Supabase Auth-project, migratiecredentials in het afzonderlijke beheerpad.
+De optionele hosted `Staging candidate`-workflow leest de stagingvariables voor een inspectieartifact. De normale native deploy leest zijn publieke waarden uit de beschermde hostbundel; de GitHub-variables vervangen die bundel niet. **Database-, encryptie-, worker-, TURN- en Management-credentials blijven uitsluitend server-side**. Google-/SMTP-secrets staan in het bijbehorende Supabase Auth-project; de Resend-appsleutel en het webhooksecret staan versleuteld in de private applicatiedatabase. Migratiecredentials blijven in het afzonderlijke beheerpad.
 
 Beperk waar het GitHub-plan dit ondersteunt beide environments tot `main`, met passende reviewers en workflow-/branchbescherming. De verplichte check is workflow `CI`, jobnaam **`Verify`**. De exacte GitHub-platforminstellingen moeten als waargenomen feiten in het acceptatiebewijs worden vastgelegd; de softwarematige gates blijven ook zonder beschikbare platformbescherming actief.
 
@@ -57,14 +67,40 @@ Elke omgeving heeft root-only bundels onder `/etc/dg-sites/<site>/configs/<confi
 
 ```text
 public.json   # de vier publieke omgevingswaarden
-runtime.env   # uitsluitend DARTFLOW_DATABASE_URL
+runtime.env   # uitsluitend de expliciete server-allowlist hieronder
 ```
 
 Gebruik de veldvoorbeelden `ops/public-config.example.json` en `ops/runtime.env.example`; echte waarden blijven buiten Git. Bundeldirectory `root:root 0700`, bestanden `root:root 0600`. Een ID bestaat uit 1–96 tekens, alfanumeriek begin, daarna alleen letters/cijfers/punt/underscore/koppelteken. Nieuwe waarden krijgen een nieuw toegelaten ID; een gebruikt ID wordt niet overschreven. Stage- en productieprojecten/configuraties worden niet uitgewisseld.
 
+De v15-broker accepteert alleen deze runtimevelden en weigert onbekende of dubbele namen:
+
+| Naam | Grens |
+| --- | --- |
+| `DARTFLOW_DATABASE_URL` | Eigen beperkte databasegebruiker en project; verplichte TLS-verificatie |
+| `DARTFLOW_ENV` | Exact de eigen omgeving |
+| `DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY` | Eigen base64-gecodeerde 32-byte sleutel, gegenereerd op de doelhost |
+| `DARTFLOW_MAIL_WORKER_TOKEN` | Eigen willekeurig token van 64 hextekens, gegenereerd op de doelhost |
+| `DARTFLOW_MAIL_ALLOWED_FROM` | Exact toegestane afzenderadressen; providerverificatie blijft daarnaast nodig |
+| `DARTFLOW_MAIL_TEST_RECIPIENTS` | Exact toegestane echte testontvangers |
+| `DARTFLOW_MAIL_MAX_MODE` | Hoogstens `test` op staging; hoogstens `live` op productie |
+| `DARTFLOW_TURN_SECRET` | Eigen base64-gecodeerd 32-byte relaysecret |
+| `DARTFLOW_TURN_URLS` | Expliciete TURN-URL's van deze omgeving, met toegestane transportkeuze |
+| `SUPABASE_MANAGEMENT_TOKEN` | Optioneel projectgebonden server-token voor Google-configuratiebeheer |
+| `DARTFLOW_ADMIN_REQUIRE_MFA` | Optionele extra eis; pas activeren na ingerichte en geteste eigenaar-MFA |
+
+Ook met een runtimebovengrens `test` of `live` begint de opgeslagen mailinstelling in **Log**. Een nieuwe secret of allowlist krijgt een nieuwe immutable bundel en wordt via een gereviewde configuratierelease geactiveerd. Het wijzigen van de integratie-encryptiesleutel vraagt een plan om bestaande credentials opnieuw te versleutelen of in te voeren. Bewaar benodigde eerdere sleutels volgens het toegestane herstelbeleid; een databaseback-up alleen ontsleutelt de credentials niet. De afzonderlijke bronbestanden `integrations.key`, `mail-worker.token` en `turn-secret` onder de eigen `/etc/dg-sites/<site>/` zijn root-only en worden nooit buildinput.
+
 De URL-gate dwingt de eigen projecthost/session-pooler, accountnaam `dartflow_app` en `sslmode=verify-full` af. Werkelijke rolflags, lidmaatschappen en DDL-/tabelrechten moeten met beheeracceptatie en negatieve proeven worden bewezen. Een accountnaam alleen bewijst geen least privilege. Migraties/backup/restore lopen apart; de broker voert geen automatische schemawijziging of databaseherstel uit.
 
 Het standalone-pakket bevat `server.js`, getraceerde dependencies, `public/`, `.next/static/` en `build-config.json`, dat bron-SHA/config-ID/hash van de publieke buildwaarden vastlegt. De verzegelde release bevat daarnaast een `.runtime.env`-symlink naar de exacte bundel, een gegenereerde `.release.env` met uitsluitend publieke configuratie/SHA/run/config-ID's en root-only `.release.json` met integriteits-/CI-/toolchainbewijs. De appunit leest beide envbestanden via dezelfde atomisch verwisselde `current`-verwijzing. Wijziging van `NEXT_PUBLIC_*` vereist een herbuild.
+
+## Database-uitbreiding en compatibiliteit
+
+De v15-uitbreiding is een afzonderlijk beoordeelde, additieve migratie onder `supabase/migrations/`. De SQL omvat de account-/eigenaarsgrenzen, platformdata en private integratietabellen. Pas de gereviewde migratie met de beheeridentiteit afzonderlijk toe op staging en controleer rechten en bestaande IDs. Herhaal dit op productie vóór de applicatiepromotie. Laad daar geen developmentseed. De app- en runneraccounts krijgen geen beheercredential of migratierecht.
+
+Het bestaande kerncontract blijft `dartflow_private.schema_migrations` versie **1**; de uitbreiding registreert `feature_versions(name='v15', version=15)`. De nieuwe readinesscontrole vereist beide versies en de runtimegebruiker `dartflow_app`. Daardoor kan een eerdere compatibele kernrelease haar bestaande versie-1-controle blijven uitvoeren. Controleer de werkelijke vorige release vóór rollback; een nieuwe marker is geen algemene garantie voor toekomstige destructieve schemawijzigingen.
+
+Maak vóór beheermigraties een herstelbaar databaseback-up en controleer het herstelpad. De releasebroker migreert of herstelt geen database automatisch. Een applicatierollback draait geregistreerde gebruikers, scores, outboxjobs, verzonden mail en externe providerconfiguratie niet terug. Na databaseherstel blijft mail gepauzeerd of in Log totdat outbox en providerhistorie zijn gecontroleerd.
 
 ## Installatie en bevoegdheden
 
@@ -79,6 +115,18 @@ De stagingretryadapter wordt geïnstalleerd als `/usr/local/libexec/dartflow-ret
 De bestaande root-owned globale buildlock wordt hergebruikt, niet vervangen. Een gewone release bouwt als eigen buildaccount en krijgt geen appgeheimen. Rechten-/capaciteits-/cgroup-/guardianproeven horen bij de daadwerkelijke hostacceptatie; zie ook `ops/deploy-contract.md` en `infra/staging/GUARDIAN.md`.
 
 De zes Dartflow-UID's worden daarnaast door `dartflow-admin-guard.service` geweigerd op Caddy's beheerpoort 2019 via IPv4- en IPv6-loopback. De guard gebruikt uitsluitend een eigen nftables-tabel; root en Milo blijven buiten de selectie. De twee app- en runnerunits vereisen de geladen guard. Het echte kernelgedrag, de zes geweigerde verbindingen en de behouden toegang voor root/Milo zijn gecontroleerd; een echte reboot van de gedeelde VPS is niet uitgevoerd. Zie `infra/CADDY-ADMIN-GUARD.md` en het afzonderlijke verificatiebewijs.
+
+### Eenmalige v15-hostvoorbereiding
+
+`infra/upgrade-v15-host.py` is een beoordeelde beheerhandeling voor uitsluitend deze host, buiten de CI-/runnerrechten. De operator controleert de bron en rendermanifesten en plaatst ze in een beschermde rootdirectory, bijvoorbeeld `/root/dartflow-v15-reviewed`. `--renders` accepteert alleen een absoluut pad: alle padcomponenten moeten root-owned zijn, zonder symlink en zonder schrijfbevoegdheid voor groep of anderen. Bestanden moeten gewone bestanden met één link zijn. Een directory onder `/tmp` voldoet niet, ook als de laatste directory root-owned is. De upgrader leest begrensde bestanden met symlinkbescherming en vergelijkt de inhoud met het manifest voordat hij reviewed helpercode gebruikt.
+
+Voer eerst de validatie zonder `--apply` uit. Pas daarna kan de operator de eigen brokers/policies, nieuwe immutable configuratiebundels en mailworkerunits installeren. De upgrader gebruikt de bestaande globale buildlock en bewaart eerdere hostbestanden; het waargenomen v15-backuppad staat in [het omgevingenoverzicht](v15-omgevingen.md). Hij weigert een reeds bestaand v15-configuratie-ID. Herhaal de volledige eenmalige toepassing daarom niet voor een losse servicecorrectie; beoordeel en installeer die correctie gericht.
+
+Voor uitsluitend een gereviewde extractorreparatie ondersteunt dezelfde operator `--extractor-only`. Gebruik nieuwe, gecontroleerde renders en valideer eerst zonder `--apply`; de daadwerkelijke toepassing vervangt onder de bestaande globale buildlock alleen beide extractors en hun `extractorSha256` in de eigen beschermde policies. Bestaande digests moeten vooraf overeenkomen. Beide oude bestand-/policypaaren krijgen een back-up en worden bij een opgevangen installatiefout hersteld. Deze gerichte route wijzigt geen configuratiebundel of service. De bronextractor laat alleen `.env.example`, `.env.staging.example` en `.env.production.example` toe; private envbestanden blijven geweigerd.
+
+De root-only mailtick leest het token uit de actieve bundel en roept uitsluitend de eigen loopbackapp aan. Caddy weigert publieke toegang tot `/api/mail/process`; de applicatie controleert loopback en het exacte bearer-token. De tick heeft een HTTP-time-out van 160 seconden en de oneshot-unit `TimeoutStartSec=175`, zodat een begrensde batch van tien providerpogingen kan eindigen. De timer wacht na voltooiing van een tick, zodat een trage batch geen overlappende ticks start. Activeer `dartflow-mail-staging.timer` respectievelijk `dartflow-mail-production.timer` pas na verificatie van de eigen v15-app; controleer daarna unitstatus en wachtrij. Logmodus veroorzaakt geen externe bezorging.
+
+De eigen coturn-services, relaypoorten en externe bereikbaarheid staan in [v15-omgevingen.md](v15-omgevingen.md) en het afzonderlijke relaybewijs. Native serviceactiviteit en een proef op de host vervangen geen browserproef via een extern netwerk. Behoud de afzonderlijke secrets, poorten en quota van beide omgevingen en wijzig geen bestaande toepassingen of hun firewallregels.
 
 ## Normale release en rollback
 
@@ -115,6 +163,8 @@ De onafhankelijke rootguardian houdt dezelfde lockdescriptors buiten de helper-/
 
 ## Auth en acceptatie
 
-Staging gebruikt callback `https://staging.dartflow.nl/auth/callback`; productie `https://dartflow.nl/auth/callback`, elk in het eigen Supabase Auth-project en met de eigen Site URL. Google gebruikt de door dat project getoonde `/auth/v1/callback`; SMTP/providersecrets blijven in dat project. Test OTP/Google met toegelaten accounts, club-/rolgrenzen, wedstrijdstart, score, herladen, retry en uitslag. Publieke `DARTFLOW_DATA_MODE=local` blijft verboden.
+Staging gebruikt callback `https://staging.dartflow.nl/auth/callback`; productie `https://dartflow.nl/auth/callback`, elk in het eigen Supabase Auth-project en met de eigen Site URL. Google gebruikt de door dat project getoonde `/auth/v1/callback`; SMTP/providersecrets blijven in dat project. Volg [de integratiewerkinstructie](v15-integraties.md) eerst voor de echte eigenaar-OTP en daarna voor Google, Resend en een ondertekende webhook. Google uitschakelen vraagt naast recente eigenaarautorisatie een door Supabase geverifieerde OTP-aanmelding van maximaal vijftien minuten oud en een ingeschakelde e-mailprovider. Een tokenrefresh of profielveld levert dat bewijs niet.
+
+Bij het opstellen op 11 november 2026 zijn Google Cloud-webclients, custom SMTP en de bijbehorende Resend-/Management-credentials nog eigenaarstappen. De providerstatus blijft **Open** totdat de echte route is uitgevoerd. Health/readiness bewijst appidentiteit en backendgereedheid; het verklaart deze externe functies niet automatisch geslaagd. Test daarnaast club-/rolgrenzen, wedstrijdstart, score, herladen, retry, uitslag en cameramedia tussen twee echte gebruikers. Publieke `DARTFLOW_DATA_MODE=local` blijft verboden.
 
 Het acceptatierapport onderscheidt code-/CI-bewijs, daadwerkelijke hostinstallatie, actieve HTTPS-release, echte gebruikersflow en herstelbewijs. Alleen werkelijk uitgevoerde controles krijgen Pass; configuratievoorbereiding of een groen artifact maakt geen omgeving geaccepteerd.

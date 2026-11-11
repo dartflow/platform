@@ -98,7 +98,7 @@ def extract(stream, destination, max_bytes, max_files):
                     continue
                 key = '/'.join(parts)
                 require(key not in names and not member.islnk() and (member.isdir() or member.isfile() or member.issym()))
-                require(not parts[-1].startswith('.env') or parts[-1] in ['.env.example', '.env.staging.example'])
+                require(not parts[-1].startswith('.env') or parts[-1] in ['.env.example', '.env.staging.example', '.env.production.example'])
                 names.add(key)
                 budget['files'] += 1
                 require(budget['files'] <= max_files)

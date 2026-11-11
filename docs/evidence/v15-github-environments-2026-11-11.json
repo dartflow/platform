@@ -1,0 +1,15 @@
+{
+  "repository": "dartflow/platform",
+  "checkedOn": "2026-11-11",
+  "method": "GitHub authenticated REST environment variables and gh secret list --env (names only)",
+  "staging": {
+    "variables": {"DARTFLOW_APP_ORIGIN":"https://staging.dartflow.nl","DARTFLOW_DATA_MODE":"supabase","NEXT_PUBLIC_SUPABASE_URL":"https://dsnqnvbckkqpzadblshu.supabase.co","NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY":"configured; public value deliberately omitted here"},
+    "customEnvironmentSecretNames": []
+  },
+  "production": {
+    "variables": {"DARTFLOW_APP_ORIGIN":"https://dartflow.nl","DARTFLOW_DATA_MODE":"supabase","NEXT_PUBLIC_SUPABASE_URL":"https://wlrnowuownakqqgjxnbb.supabase.co","NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY":"configured; public value deliberately omitted here"},
+    "customEnvironmentSecretNames": []
+  },
+  "nativeWorkflowAuthentication":"GitHub supplies short-lived GITHUB_TOKEN; no permanent personal token or SSH secret is required in GitHub",
+  "serverSecrets":"Protected target-host configuration and write-only provider management, documented in docs/v15-integraties.md"
+}

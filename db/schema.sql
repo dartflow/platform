@@ -36,7 +36,7 @@ do $$ declare role_name text; table_name text; begin
       execute format('revoke all on all sequences in schema dartflow_private from %I',role_name);
     end if;
   end loop;
-  for table_name in select tablename from pg_tables where schemaname='dartflow_private' loop
+  foreach table_name in array array['schema_migrations','profiles','clubs','club_memberships','events','event_staff','entries','boards','matches','match_players','visits','match_confirmations','match_results','standings','action_receipts','audit_events','screen_capabilities','auth_limits'] loop
     execute format('alter table dartflow_private.%I enable row level security',table_name);
     if not exists(select 1 from pg_policies where schemaname='dartflow_private' and tablename=table_name and policyname='server_runtime') then
       execute format('create policy server_runtime on dartflow_private.%I to dartflow_app using (true) with check (true)',table_name);
@@ -44,15 +44,16 @@ do $$ declare role_name text; table_name text; begin
   end loop;
 end $$;
 grant usage on schema dartflow_private to dartflow_app;
-grant select,insert,update,delete on all tables in schema dartflow_private to dartflow_app;
-grant usage,select on all sequences in schema dartflow_private to dartflow_app;
+grant select,insert,update,delete on dartflow_private.schema_migrations,dartflow_private.profiles,dartflow_private.clubs,dartflow_private.club_memberships,dartflow_private.events,dartflow_private.event_staff,dartflow_private.entries,dartflow_private.boards,dartflow_private.matches,dartflow_private.match_players,dartflow_private.visits,dartflow_private.match_confirmations,dartflow_private.match_results,dartflow_private.standings,dartflow_private.action_receipts,dartflow_private.audit_events,dartflow_private.screen_capabilities,dartflow_private.auth_limits to dartflow_app;
+grant usage,select on sequence dartflow_private.audit_events_id_seq to dartflow_app;
 revoke insert,update,delete on dartflow_private.schema_migrations,dartflow_private.profiles,dartflow_private.clubs,dartflow_private.club_memberships,dartflow_private.event_staff,dartflow_private.events,dartflow_private.boards from dartflow_app;
 revoke update,delete on dartflow_private.audit_events,dartflow_private.action_receipts,dartflow_private.match_results,dartflow_private.match_players from dartflow_app;
 revoke delete on dartflow_private.matches from dartflow_app;
 -- PostgreSQL requires UPDATE on at least one column for SELECT FOR UPDATE row locks.
 grant update(id) on dartflow_private.events,dartflow_private.boards to dartflow_app;
 -- Web writes are constrained by typed server commands and fresh database authorization.
--- No public RPC, SECURITY DEFINER function, auth metadata role or service-role key is used.
+-- No public RPC, auth metadata role or service-role key is used.
+-- Later migrations own their tables and grants; replaying this bootstrap cannot widen them.
 alter default privileges in schema dartflow_private revoke all on tables from public;
 alter default privileges in schema dartflow_private revoke all on functions from public;
 commit;

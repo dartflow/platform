@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {createRooms} from '../public/rooms.js';
+global.document={addEventListener(){},getElementById:()=>null,querySelectorAll:()=>[]};global.sessionStorage={getItem(){return null},setItem(){}};global.location={origin:'https://example.test',pathname:'/'};
+let active=701,lastId=0,message='',modal='';
+const data={players:[{id:1,name:'Rick',avg:50,status:'approved'},{id:2,name:'Mike',avg:60,status:'approved'},{id:3,name:'Jan',avg:70,status:'approved'}],matches:[],play:{social:{blocked:[]},clubs:{items:[{id:701,name:'Club One',members:[{id:1},{id:2}]},{id:702,name:'Club Two',members:[{id:1},{id:3}]}]}}};
+const c={db:data,scopeId:()=>active,esc:String,icon:()=>'',avatar:()=>'',badge:String,button:()=>'',header:()=>'',sectionHeading:()=>'',empty:()=>'',toast:m=>message=m,save(){},showModal:(t,s,b)=>modal=b,closeModal(){},go(){},openMatch:id=>lastId=id,render(){},roomId:()=>lastId,onFinished(){},P:id=>data.players.find(x=>x.id===id),short:id=>c.P(id).name};
+const rooms=createRooms(c);rooms.init();assert.equal(data.matches.find(m=>m.id===50).clubId,null);
+rooms.createGame({opponentId:2});assert.equal(data.matches.at(-1).clubId,701);assert.equal(data.play.rooms[lastId].clubId,701);
+rooms.createGame({opponentId:3,clubId:null});assert.equal(data.matches.at(-1).clubId,null);
+active=702;rooms.createGame({opponentId:3});assert.equal(data.matches.at(-1).clubId,702);
+rooms.createGame({opponentId:2,clubId:701,fixtureId:'fixture-1'});assert.equal(data.matches.at(-1).clubId,701);
+data.play.social.blocked=[2];const before=data.matches.length;assert.equal(rooms.createGame({opponentId:2}),null);assert.equal(data.matches.length,before);assert.match(message,/blokkeerlijst/);
+rooms.handleAction('room-new',{dataset:{}});assert.match(modal,/Globaal spelen/);assert.match(modal,/Club Two/);assert.doesNotMatch(modal,/>Mike ·/);
+active=null;rooms.handleAction('room-new',{dataset:{}});assert.match(modal,/name="matchClubId" value="global"/);assert.match(modal,/Jan · Club Two/);
+console.log('PASS match scope inheritance, explicit global/club override, blocked player gate, multi-club annotated setup');

@@ -36,6 +36,25 @@ test('set transition alternates starter and undo crosses the set boundary', () =
   const restored = applyMatchAction(next, 'a', false, { type: 'undo' });
   assert.deepEqual(restored.game, source.game); assert.equal(restored.previousSets.length, 0);
 });
+test('explicit delegated writer scores but cannot confirm for a player and loses input after takeover', () => {
+  const source=match({writerId:'writer',delegatedWriterId:'writer'});
+  const next=applyMatchAction(source,'writer',false,{type:'score',score:60});
+  assert.equal(next.game.remaining[0],241);
+  assert.throws(()=>applyMatchAction(next,'writer',false,{type:'confirm'}),/toegewezen spelers/);
+  const taken=applyMatchAction(next,'b',false,{type:'take-over'});
+  assert.throws(()=>applyMatchAction(taken,'writer',false,{type:'score',score:60}),/huidige schrijver/);
+  assert.throws(()=>applyMatchAction(source,'outsider',true,{type:'score',score:60}),/toegewezen spelers/);
+});
+test('fixed ten legs continues through a majority and permits the v15 five-all draw', () => {
+  const fixed = validateSettings({ ...settings, legLimit: 10 });
+  const source = match({ settings: fixed, game: { ...newGame('match', ['a', 'b'], fixed), legs: [4, 5], remaining: [40, 301] } });
+  const done = applyMatchAction(source, 'a', false, { type: 'score', score: 40, darts: 1, doubleConfirmed: true });
+  assert.equal(done.status, 'result');
+  assert.deepEqual(done.game.legs, [5, 5]);
+  assert.equal(done.winnerId, null);
+  const restored = applyMatchAction(done, 'a', false, { type: 'undo' });
+  assert.deepEqual(restored.game, source.game);
+});
 test('takeover revokes prior writer and publication requires both assigned players', () => {
   let state = match();
   state = applyMatchAction(state, 'b', false, { type: 'take-over' });

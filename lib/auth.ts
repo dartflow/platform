@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { NextRequest } from 'next/server';
 import { appConfig, safeNext } from './config';
+import { ensureAuthProfile } from './accounts';
 
 export const LOCAL_USERS = [
   {id:'00000000-0000-4000-8000-000000000001',name:'Danny Goldenbelt',role:'organizer'},
@@ -66,7 +67,9 @@ export async function actorId(request?:NextRequest):Promise<string|null> {
   if (error || !claims?.claims?.sub) return null;
   // Ask Auth for the current user in addition to verifying the JWT signature.
   const {data,error:userError} = await client.auth.getUser();
-  return userError ? null : data.user?.id ?? null;
+  if (userError || !data.user) return null;
+  await ensureAuthProfile(data.user);
+  return data.user.id;
 }
 
 export async function loginLocal(id:string,request:NextRequest) {
@@ -87,6 +90,6 @@ export async function consumeIntent() {
   try { const data=JSON.parse(value || '{}'); const age=Date.now()-data.at; return age>=0 && age<600_000 ? safeNext(data.path) : '/'; } catch { return '/'; }
 }
 export async function logout() {
+  const jar=await cookies(); jar.delete('dartflow-local'); jar.delete('dartflow-intent'); jar.delete('dartflow-otp-email'); jar.delete('dartflow-oauth-provider'); jar.delete('dartflow-google-attempt');
   if (appConfig().mode === 'supabase') await (await supabaseServer()).auth.signOut();
-  const jar=await cookies(); jar.delete('dartflow-local'); jar.delete('dartflow-intent'); jar.delete('dartflow-otp-email');
 }

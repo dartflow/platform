@@ -104,7 +104,8 @@ test('Postgres transactions enforce scopes, retry identity, exclusive assignment
       const screen = await createScreen(organizer, event, board);
       const snapshot = await getPublicSnapshot(screen.token);
       assert.equal(snapshot.match?.id, id); assert.equal(snapshot.match?.players[0].id, 'player-1');
-      assert.equal('writerId' in snapshot.match!, false); assert.equal('permissions' in snapshot.match!, false);
+      assert.match(snapshot.match!.writerId,/^(?:player-[12]|writer-external)$/); assert.equal('permissions' in snapshot.match!, false);
+      for(const authId of [organizer,p1,p2])assert.equal(JSON.stringify(snapshot).includes(authId),false);
       await assert.rejects(createScreen(p1, event, board), { status: 403 });
       await assert.rejects(revokeScreen(p1, screen.id), { status: 403 });
       await revokeScreen(organizer, screen.id); await assert.rejects(getPublicSnapshot(screen.token), { status: 404 });
@@ -124,6 +125,9 @@ test('Postgres transactions enforce scopes, retry identity, exclusive assignment
       assert.equal(grants.rows[0].update_results, false); assert.equal(grants.rows[0].delete_audit, false);
     });
   } finally {
+    await owner.query('delete from dartflow_private.mail_provider_events where job_id in(select id from dartflow_private.mail_outbox where recipient_id=any($1::uuid[]))',[people]);
+    await owner.query('delete from dartflow_private.mail_outbox where recipient_id=any($1::uuid[])',[people]);
+    await owner.query('delete from dartflow_private.mail_events where actor_id=any($1::uuid[]) or recipient_key=any($2::text[])',[people,people.map(id=>`user:${id}`)]);
     for (const table of ['action_receipts','match_confirmations','visits']) await owner.query(`delete from dartflow_private.${table} where match_id in (select id from dartflow_private.matches where event_id=$1)`, [event]);
     for (const table of ['match_results','standings','audit_events','screen_capabilities']) await owner.query(`delete from dartflow_private.${table} where event_id=$1`, [event]);
     await owner.query('delete from dartflow_private.match_players where match_id in (select id from dartflow_private.matches where event_id=$1)', [event]);

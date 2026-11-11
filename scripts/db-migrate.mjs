@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import pg from 'pg';
 import { loadEnv, databaseConnection, DatabaseConfigurationError, safeDatabaseScriptError } from './db-shared.mjs';
 async function migrate() {
@@ -17,6 +17,11 @@ async function migrate() {
   try {
     await client.connect();
     await client.query(await readFile(new URL('../db/schema.sql', import.meta.url), 'utf8'));
+    const migrationsRoot=new URL('../supabase/migrations/',import.meta.url);
+    for(const name of (await readdir(migrationsRoot)).filter(name=>/^\d+_[a-z0-9_]+\.sql$/.test(name)).sort()) {
+      const sql=await readFile(new URL(name,migrationsRoot),'utf8');
+      if(sql.trim())await client.query(sql);
+    }
     await client.query(`alter role dartflow_app password '${password.replaceAll("'", "''")}'`);
     console.log('Dartflow-schema toegepast; runtime-rol dartflow_app is gescheiden van de eigenaar.');
   } finally { await client.end().catch(() => undefined); }

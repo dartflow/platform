@@ -266,6 +266,15 @@ class FixedEnvironmentRendering(unittest.TestCase):
 
 
 class SafeSourceAndArtifacts(unittest.TestCase):
+    def test_all_three_public_environment_examples_extract_but_private_variants_do_not(self):
+        examples=['.env.example','.env.staging.example','.env.production.example']
+        with tempfile.TemporaryDirectory() as directory:
+            extractor.extract(archive([('synthetic-root/'+name,'file','PUBLIC_PLACEHOLDER=example\n') for name in examples]),directory,1000,10)
+            for name in examples:self.assertEqual((Path(directory)/name).read_text(),'PUBLIC_PLACEHOLDER=example\n')
+        for name in ['.env','.env.local','.env.staging','.env.production','.env.production.local','.env.production.example.backup','nested/.env.production','nested/.env.secret']:
+            with self.subTest(name=name),tempfile.TemporaryDirectory() as directory,self.assertRaises(ValueError):
+                extractor.extract(archive([('synthetic-root/'+name,'file','PRIVATE_MUST_NOT_EXTRACT=fixture')]),directory,1000,10)
+
     def test_source_extracts_only_one_bounded_tree_and_safe_internal_link(self):
         with tempfile.TemporaryDirectory() as directory:
             stats = extractor.extract(archive([('synthetic-root/src/main.js', 'file', 'hello'), ('synthetic-root/index.js', 'symlink', 'src/main.js')]), directory, 100, 10)

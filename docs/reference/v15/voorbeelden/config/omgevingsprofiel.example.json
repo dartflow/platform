@@ -1,0 +1,51 @@
+{
+  "example": true,
+  "prototypeReference": "e27cccdbd0b6cd2144cc2f26cab9e2986a903e61",
+  "repository": null,
+  "integrationBranch": null,
+  "requiredCiChecks": [],
+  "environments": {
+    "staging": {
+      "githubEnvironment": "staging",
+      "origin": null,
+      "host": null,
+      "runnerLabels": [],
+      "siteId": null,
+      "sitePath": null,
+      "systemdService": null,
+      "loopbackPort": null,
+      "supabaseProjectRef": null,
+      "databaseSecretRef": null,
+      "configRevision": null,
+      "googleClientRef": null,
+      "resendSendingDomain": null,
+      "resendCredentialRef": null,
+      "webhookSecretRef": null,
+      "appAccount": null,
+      "buildAccount": null,
+      "runnerAccount": null,
+      "evidence": []
+    },
+    "production": {
+      "githubEnvironment": "production",
+      "origin": null,
+      "host": null,
+      "runnerLabels": [],
+      "siteId": null,
+      "sitePath": null,
+      "systemdService": null,
+      "loopbackPort": null,
+      "supabaseProjectRef": null,
+      "databaseSecretRef": null,
+      "configRevision": null,
+      "googleClientRef": null,
+      "resendSendingDomain": null,
+      "resendCredentialRef": null,
+      "webhookSecretRef": null,
+      "appAccount": null,
+      "buildAccount": null,
+      "runnerAccount": null,
+      "evidence": []
+    }
+  }
+}

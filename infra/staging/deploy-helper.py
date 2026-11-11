@@ -334,6 +334,48 @@ def validate_database(value, public):
     require(parse_qs(parsed.query, keep_blank_values=True) == {'sslmode': ['verify-full']}, 'Runtime database requires verified TLS without overrides')
 
 
+def runtime_values(text, public):
+    """Parse a fixed server-only allowlist using an unambiguous EnvironmentFile subset."""
+    allowed = {'DARTFLOW_DATABASE_URL', 'DARTFLOW_ENV', 'DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY',
+               'DARTFLOW_MAIL_ALLOWED_FROM', 'DARTFLOW_MAIL_TEST_RECIPIENTS', 'DARTFLOW_MAIL_MAX_MODE',
+               'DARTFLOW_MAIL_WORKER_TOKEN', 'DARTFLOW_ADMIN_REQUIRE_MFA', 'SUPABASE_MANAGEMENT_TOKEN',
+               'DARTFLOW_TURN_SECRET', 'DARTFLOW_TURN_URLS'}
+    result = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        key, separator, value = line.partition('=')
+        require(separator and key in allowed and key not in result, 'Unknown or duplicate runtime variable')
+        if value.startswith('"'):
+            require(len(value) >= 2 and value.endswith('"'), 'Unterminated runtime value')
+            value = value[1:-1]
+        require(0 < len(value) <= 16384 and all(33 <= ord(c) < 127 for c in value)
+                and not any(c in value for c in ['\\', '"', "'"]), 'Unsafe runtime value')
+        result[key] = value
+    require('DARTFLOW_DATABASE_URL' in result, 'Missing runtime database')
+    validate_database(result['DARTFLOW_DATABASE_URL'], public)
+    expected_environment = 'staging' if SITE.endswith('-staging') else 'production'
+    if 'DARTFLOW_ENV' in result:
+        require(result['DARTFLOW_ENV'] == expected_environment, 'Runtime environment differs')
+    if 'DARTFLOW_MAIL_MAX_MODE' in result:
+        require(result['DARTFLOW_MAIL_MAX_MODE'] in ['log', 'test', 'live'], 'Invalid mail ceiling')
+        require(expected_environment != 'staging' or result['DARTFLOW_MAIL_MAX_MODE'] != 'live', 'Staging cannot send unrestricted mail')
+    if 'DARTFLOW_ADMIN_REQUIRE_MFA' in result:
+        require(result['DARTFLOW_ADMIN_REQUIRE_MFA'] in ['true', 'false'], 'Invalid MFA setting')
+    for key in ['DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY', 'DARTFLOW_TURN_SECRET']:
+        if key in result:
+            require(re.fullmatch(r'[A-Za-z0-9+/]{43}=', result[key]), 'Expected per-environment 256-bit key')
+    if 'DARTFLOW_MAIL_WORKER_TOKEN' in result:
+        require(re.fullmatch('[a-f0-9]{64}', result['DARTFLOW_MAIL_WORKER_TOKEN']), 'Invalid mail worker token')
+    for key in ['DARTFLOW_MAIL_ALLOWED_FROM', 'DARTFLOW_MAIL_TEST_RECIPIENTS']:
+        if key in result:
+            require(all(re.fullmatch(r'[^@,\s]+@[^@,\s]+\.[^@,\s]+', address) for address in result[key].split(',')), 'Invalid mail boundary')
+    if 'DARTFLOW_TURN_URLS' in result:
+        require(all(re.fullmatch(r'turns?:[A-Za-z0-9.\[\]:-]+(?:\?transport=(?:udp|tcp))?', url) for url in result['DARTFLOW_TURN_URLS'].split(',')), 'Invalid TURN endpoint')
+    return result
+
+
 def read_bundle(config_id, project_ref):
     require(isinstance(config_id, str) and re.fullmatch(CONFIG_RE, config_id), 'Unsafe configuration ID')
     root = trusted_path(CONFIG_ROOT / config_id, directory=True)
@@ -349,16 +391,7 @@ def read_bundle(config_id, project_ref):
         text = os.read(fd, 32769).decode('utf-8')
     finally:
         os.close(fd)
-    lines = [line.strip() for line in text.splitlines() if line.strip() and not line.lstrip().startswith('#')]
-    require(len(lines) == 1 and lines[0].startswith('DARTFLOW_DATABASE_URL='), 'Runtime bundle accepts only DARTFLOW_DATABASE_URL')
-    value = lines[0].split('=', 1)[1]
-    if value.startswith('"'):
-        require(value.endswith('"'), 'Unterminated runtime value')
-        # This exact restricted format has the same interpretation in systemd EnvironmentFile.
-        value = value[1:-1]
-        require('"' not in value and '\\' not in value, 'Runtime credential must use URL encoding')
-    require(not any(character in value for character in ['\\', '"', "'"]), 'Runtime credential must use URL encoding')
-    validate_database(value, values)
+    runtime_values(text, values)
     return {'id': config_id, 'public': values, 'publicHash': public_hash(values), 'runtimePath': runtime_path, 'runtimeHash': file_digest(runtime_path)}
 
 

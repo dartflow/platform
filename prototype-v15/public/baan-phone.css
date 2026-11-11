@@ -1,0 +1,285 @@
+.bf-phone {
+  --bp-display: var(--display, 'Arial Narrow', Impact, sans-serif);
+  min-height: 100dvh;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font, system-ui, sans-serif);
+  line-height: 1.4;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.bf-phone :is(button, a, select, input):focus-visible { outline: 2px solid var(--accent-text); outline-offset: 3px; }
+.bf-phone * { box-sizing: border-box; }
+.bf-phone h1, .bf-phone h2, .bf-phone p { margin: 0; }
+.bf-phone p { color: var(--muted); }
+.bf-phone a { color: inherit; text-decoration: none; }
+.bf-phone svg { flex-shrink: 0; }
+
+.bf-phone .bf-phone-head,
+.bf-phone .bf-phone-context,
+.bf-phone .bf-phone-main {
+  width: min(100% - 32px, 600px);
+  margin-inline: auto;
+}
+
+.bf-phone .bf-phone-head {
+  min-height: max(70px, calc(65px + env(safe-area-inset-top)));
+  padding: max(8px, env(safe-area-inset-top)) 0 8px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.bf-phone .bf-phone-brand { display: block; flex: 0 1 clamp(108px, 34vw, 168px); min-width: 0; }
+.bf-phone .bf-phone-brand img { display: block; width: 100%; height: auto; }
+.bf-phone .bf-phone-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 1 auto;
+  border: 1px solid var(--warning-line);
+  border-radius: 999px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 11px;
+  font-weight: 750;
+  padding: 6px 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.bf-phone .bf-phone-live.is-online { border-color: var(--success-line); background: var(--success-bg); color: var(--success-text); }
+.bf-phone .bf-phone-live i { flex: 0 0 7px; height: 7px; border-radius: 50%; background: var(--success-text); box-shadow: 0 0 10px color-mix(in srgb, var(--success-text) 25%, transparent); }
+.bf-phone .bf-phone-context { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 16px; }
+.bf-phone .bf-phone-context > div { display: grid; gap: 2px; min-width: 0; }
+.bf-phone .bf-phone-context > div > strong { font-size: 16px; overflow-wrap: anywhere; }
+.bf-phone .bf-phone-screen-link { flex: 0 0 auto; font-size: 12px; min-height: 44px; padding: 7px 10px; }
+.bf-phone .bf-phone-screen-link svg { width: 16px; height: 16px; }
+.bf-phone .bf-phone-main { display: grid; gap: 15px; padding-block: 0 28px; }
+.bf-phone .bf-phone-hero { padding-block: 12px 4px; display: grid; gap: 7px; }
+.bf-phone .bf-phone-kicker { display: block; color: var(--accent-text); font-weight: 850; letter-spacing: .13em; font-size: 10px; text-transform: uppercase; }
+.bf-phone .bf-phone-title {
+  color: var(--text);
+  font-family: var(--bp-display);
+  font-size: clamp(1.9rem, 6.2vw, 2.8rem);
+  font-weight: 750;
+  letter-spacing: -.035em;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+.bf-phone .bf-phone-hero p { max-width: 44ch; font-size: 14px; }
+.bf-phone .bf-phone-panel {
+  min-width: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.bf-phone .bf-phone-panel h2 { font-size: 19px; margin-bottom: 7px; letter-spacing: -.014em; }
+.bf-phone .bf-phone-panel p { font-size: 13px; }
+.bf-phone .bf-phone-account {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 5px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.bf-phone .bf-phone-account > span { display: flex; align-items: center; gap: 7px; }
+.bf-phone .bf-phone-account strong { color: var(--text); }
+.bf-phone .bf-phone-account svg { color: var(--accent-text); width: 16px; height: 16px; }
+.bf-phone .bf-phone-account .bf-btn { font-size: 12px; min-height: 32px; padding: 3px 9px; }
+.bf-phone .bf-phone-mode-list { display: grid; gap: 10px; }
+.bf-phone .bf-phone-mode {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 18px;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  background: var(--panel);
+  padding: 12px;
+  min-height: 82px;
+  cursor: pointer;
+}
+.bf-phone .bf-phone-mode:hover { background: var(--panel2); border-color: var(--accent-line); }
+.bf-phone .bf-phone-mode-icon, .bf-phone .bf-phone-status-icon, .bf-phone .bf-phone-avatar { color: var(--accent-text); background: var(--accent-soft); border: 1px solid var(--accent-line); display: grid; place-items: center; border-radius: 9px; }
+.bf-phone .bf-phone-mode-icon { width: 42px; height: 42px; }
+.bf-phone .bf-phone-mode-text { display: grid; gap: 2px; }
+.bf-phone .bf-phone-mode-text small { color: var(--accent-text); font-size: 9px; letter-spacing: .1em; font-weight: 850; }
+.bf-phone .bf-phone-mode-text strong { font-size: 17px; }
+.bf-phone .bf-phone-mode-text > span { font-size: 12px; color: var(--muted); }
+.bf-phone .bf-phone-chevron { color: var(--accent-text); }
+.bf-phone .bf-btn {
+  appearance: none;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 9px 13px;
+  border: 1px solid var(--line-strong);
+  font: inherit;
+  font-weight: 760;
+  font-size: 13px;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.25;
+  cursor: pointer;
+}
+.bf-phone .bf-btn--primary { color: var(--accent-ink); background: var(--accent); border-color: var(--accent-line); }
+.bf-phone .bf-btn--ghost { color: var(--text); background: var(--panel2); }
+.bf-phone .bf-btn--primary:hover:not(:disabled) { background: var(--accent-hover); }
+.bf-phone .bf-btn--ghost:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent-line); }
+.bf-phone .bf-btn:disabled { opacity: .45; cursor: default; }
+.bf-phone .bf-btn svg { width: 16px; height: 16px; }
+.bf-phone .bf-phone-actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin-top: 10px; }
+.bf-phone .bf-phone-actions > .bf-btn { flex: 1 1 9rem; min-width: 0; }
+.bf-phone .bf-phone-actions > .bf-phone-chip { align-self: center; }
+.bf-phone .bf-phone-main > .bf-phone-actions { margin-top: 0; }
+.bf-phone .bf-phone-form { display: grid; gap: 11px; margin-top: 12px; }
+.bf-phone .bf-phone-form-grid { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0,1fr)); }
+.bf-phone .bf-phone-field { display: grid; align-content: end; min-width: 0; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.bf-phone .bf-phone-field :is(input,select) {
+  width: 100%;
+  min-width: 0;
+  min-height: 43px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-deep);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  padding: 7px 9px;
+}
+.bf-phone .bf-phone-field input::placeholder { color: var(--muted); }
+.bf-phone .bf-phone-status { display: flex; gap: 10px; align-items: center; padding: 9px 0; }
+.bf-phone .bf-phone-status + .bf-phone-status { border-top: 1px solid var(--line); }
+.bf-phone .bf-phone-status-icon { flex: 0 0 36px; height: 36px; }
+.bf-phone .bf-phone-status-icon svg { width: 17px; height: 17px; }
+.bf-phone .bf-phone-status div { display: grid; gap: 2px; }
+.bf-phone .bf-phone-status small { font-size: 9px; color: var(--accent-text); letter-spacing: .08em; font-weight: 800; }
+.bf-phone .bf-phone-invite { display: grid; gap: 8px; margin: 12px 0 8px; }
+.bf-phone .bf-phone-invite .bf-phone-actions { margin-top: 0; }
+.bf-phone .bf-phone-chip { font-size: 12px; font-weight: 750; color: var(--success-text); background: var(--success-bg); border: 1px solid var(--success-line); border-radius: 999px; padding: 6px 10px; }
+.bf-phone .bf-phone-metadata { margin: 4px 0 12px; }
+.bf-phone .bf-phone-score-pair { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.bf-phone .bf-phone-score-pair.is-solo { grid-template-columns: minmax(0, 1fr); }
+.bf-phone .bf-phone-player-score { display: grid; gap: 3px; padding: 10px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel2); min-width: 0; }
+.bf-phone .bf-phone-player-score.is-turn { border-color: var(--accent-line); background: var(--accent-soft); }
+.bf-phone .bf-phone-player-title { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 2.5em; }
+.bf-phone .bf-phone-player-title strong { font-size: 12px; overflow-wrap: anywhere; }
+.bf-phone .bf-phone-avatar { width: 24px; height: 24px; font-size: 9px; flex: 0 0 24px; }
+.bf-phone .bf-phone-score { color: var(--text); font-size: clamp(2rem, 11vw, 4rem); line-height: 1.02; font-weight: 900; letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+.bf-phone .bf-phone-player-score.is-turn .bf-phone-score { color: var(--accent-text); }
+.bf-phone .bf-phone-player-score > small { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
+.bf-phone .bf-phone-score-meta { font-size: 12px; font-weight: 740; }
+@supports (grid-template-rows: subgrid) {
+  .bf-phone .bf-phone-score-pair { grid-template-rows: repeat(4, auto); row-gap: 3px; }
+  .bf-phone .bf-phone-player-score { grid-row: span 4; grid-template-rows: subgrid; }
+}
+.bf-phone .bf-phone-finish { display: flex; gap: 7px; align-items: center; margin-top: 9px; color: var(--accent-text); font-size: 12px; }
+.bf-phone .bf-phone-finish svg { width: 15px; height: 15px; }
+.bf-phone .bf-phone-finish strong { margin-left: 4px; }
+.bf-phone .bf-phone-match .bf-phone-last { margin-top: 9px; font-size: 11px; }
+.bf-phone .bf-phone-score-tools .bf-phone-form { margin-top: 0; }
+.bf-phone .bf-phone-entry { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 8px; align-items: end; }
+.bf-phone .bf-phone-entry :is(input, select) { height: 48px; }
+.bf-phone .bf-phone-entry input { font-size: 20px; font-weight: 800; }
+.bf-phone .bf-phone-keypad { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; }
+.bf-phone .bf-phone-keypad .bf-btn { min-height: 45px; font-size: 20px; padding: 4px; font-variant-numeric: tabular-nums; }
+.bf-phone .bf-phone-keypad .bf-btn--ghost { background: var(--panel2); }
+.bf-phone .bf-phone-quick { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 9px; }
+.bf-phone .bf-phone-quick .bf-btn { flex: 1 1 42px; min-width: 0; min-height: 44px; padding: 4px 6px; }
+.bf-phone .bf-phone-confirm, .bf-phone .bf-phone-feedback { border: 1px solid var(--accent-line); border-radius: 8px; background: var(--accent-soft); padding: 10px; color: var(--accent-text); }
+.bf-phone .bf-phone-confirm { margin-top: 10px; }
+.bf-phone .bf-phone-confirm p { margin-top: 4px; }
+.bf-phone .bf-phone-feedback { font-size: 13px; }
+.bf-phone .bf-phone-feedback.is-error { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-line); }
+.bf-phone .bf-phone-history summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; }
+.bf-phone .bf-phone-history summary::-webkit-details-marker { display: none; }
+.bf-phone .bf-phone-history summary svg { color: var(--accent-text); width: 17px; height: 17px; }
+.bf-phone .bf-phone-history summary span { margin-left: auto; color: var(--accent-text); font-weight: 800; font-size: 12px; }
+.bf-phone .bf-phone-history[open] > p { margin-top: 8px; }
+.bf-phone .bf-phone-result-row { border-top: 1px solid var(--line); margin-top: 9px; padding-top: 9px; font-size: 13px; }
+.bf-phone .bf-phone-result-row > div > small { margin-left: 6px; color: var(--accent-text); font-size: 10px; }
+.bf-phone .bf-phone-stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; margin-top: 7px; }
+.bf-phone .bf-phone-stats > div { border: 1px solid var(--line); background: var(--panel2); padding: 6px; border-radius: 6px; display: grid; gap: 2px; }
+.bf-phone .bf-phone-stats strong { color: var(--accent-text); font-size: 17px; }
+.bf-phone .bf-phone-stats small { color: var(--muted); font-size: 10px; line-height: 1.25; overflow-wrap: anywhere; }
+.bf-phone .bf-phone-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 9px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); }
+.bf-phone .bf-phone-footer a { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-text); font-size: 12px; }
+.bf-phone .bf-phone-footer a svg { width: 14px; height: 14px; }
+.bf-phone .bf-phone-footer span { font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+.bf-phone .bf-phone-a11y { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.bf-phone--console { --bp-console-width: 29rem; }
+.bf-phone--console :is(.bf-phone-head, .bf-phone-main) { width: min(100% - 28px, var(--bp-console-width)); }
+.bf-phone--console .bf-phone-head {
+  min-height: 56px;
+  padding-block: max(5px, env(safe-area-inset-top)) 5px;
+  gap: 8px;
+}
+.bf-phone--console .bf-phone-console-logo { width: clamp(105px, 31vw, 137px); height: auto; margin-right: auto; }
+.bf-phone--console .bf-phone-head .bf-btn { min-width: 44px; padding: 0; }
+.bf-phone--console .bf-phone-main { gap: 10px; padding-block: 14px 10px; }
+.bf-phone--console .bf-phone-console-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.bf-phone--console .bf-phone-console-heading h1 { font-family: var(--bp-display); font-size: clamp(1.55rem, 5.8vw, 2rem); line-height: 1; }
+.bf-phone--console .bf-phone-console-heading > span { color: var(--muted); font-size: 11px; line-height: 1.25; max-width: 44%; overflow-wrap: anywhere; text-align: right; }
+.bf-phone--console .bf-phone-score-pair { grid-template-rows: repeat(3, auto); }
+.bf-phone--console .bf-phone-player-score {
+  grid-row: span 3;
+  gap: 2px;
+  padding: 8px 10px 9px;
+  border-radius: 8px;
+  background: var(--panel);
+}
+.bf-phone--console .bf-phone-player-score.is-turn {
+  background: linear-gradient(115deg, var(--accent-soft-strong), var(--accent-soft) 72%);
+  border-color: var(--accent-line);
+  box-shadow: inset 2px 0 var(--accent);
+}
+.bf-phone--console .bf-phone-player-title { min-height: 0; }
+.bf-phone--console .bf-phone-player-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bf-phone--console .bf-phone-score { font-family: var(--bp-display); font-size: clamp(2.45rem, 10.5vw, 3.35rem); line-height: .95; }
+.bf-phone--console .bf-phone-player-score.is-turn > small { color: var(--accent-text); }
+.bf-phone--console .bf-phone-form { gap: 8px; }
+.bf-phone--console .bf-phone-field { gap: 4px; }
+.bf-phone--console .bf-phone-entry :is(input, select) { height: 44px; }
+.bf-phone--console .bf-phone-entry input { color: var(--accent-text); font-variant-numeric: tabular-nums; }
+.bf-phone--console .bf-phone-keypad .bf-btn {
+  min-height: clamp(46px, 7dvh, 59px);
+  border-radius: 7px;
+  font-size: 21px;
+  touch-action: manipulation;
+}
+.bf-phone--console .bf-phone-keypad .bf-btn--ghost:hover:not(:disabled) { background: var(--accent-soft); }
+.bf-phone--console .bf-phone-quick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 8px; }
+.bf-phone--console .bf-phone-quick .bf-btn { background: var(--panel); font-variant-numeric: tabular-nums; }
+.bf-phone--console .bf-phone-quick .bf-btn:hover:not(:disabled) { background: var(--accent-soft); }
+.bf-phone--console .bf-phone-console-tools { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; margin-top: 4px; }
+.bf-phone--console .bf-phone-console-tools .bf-btn { background: transparent; border-color: transparent; color: var(--muted); font-size: 12px; padding-inline: 3px; }
+.bf-phone--console .bf-phone-console-tools .bf-btn:hover:not(:disabled) { color: var(--text); }
+.bf-phone--console .bf-phone-console-observer { display: grid; align-items: start; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.bf-phone--console .bf-phone-console-observer p { font-size: 13px; overflow-wrap: anywhere; }
+.bf-phone--console .bf-phone-console-observer p svg { vertical-align: middle; color: var(--accent-text); width: 15px; height: 15px; margin-inline-end: 2px; }
+.bf-phone--console .bf-phone-console-observer p strong { color: var(--text); }
+.bf-phone--console .bf-phone-confirm { margin-top: 0; }
+.bf-phone--console .bf-phone-confirm h2 { font-size: 16px; }
+
+@media (max-width: 380px) {
+  .bf-phone .bf-phone-head, .bf-phone .bf-phone-context, .bf-phone .bf-phone-main { width: calc(100% - 22px); }
+  .bf-phone .bf-phone-panel { padding: 12px; }
+  .bf-phone .bf-phone-form-grid { grid-template-columns: 1fr 1fr; }
+  .bf-phone .bf-phone-form-grid .bf-phone-field:first-child { grid-column: 1/-1; }
+  .bf-phone .bf-phone-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

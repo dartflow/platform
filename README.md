@@ -1,6 +1,6 @@
 # Dartflow
 
-Native Next.js-app voor de eerste clubavondpilot, met lokale ontwikkeling en afzonderlijke omgevingen op **https://staging.dartflow.nl** en **https://dartflow.nl**. Het installatie- en uitrolbewijs staat in `docs/evidence/` en `voorbeelden/release-acceptatie.md`.
+Native Next.js-app met de v15-ontwerpbron, lokale ontwikkeling en afzonderlijke omgevingen op **https://staging.dartflow.nl** en **https://dartflow.nl**. De [v15-omgevingsmatrix](docs/v15-omgevingen.md) onderscheidt de nieuwe inrichting van actieve releases. Het installatie- en uitrolbewijs staat in `docs/evidence/` en `voorbeelden/release-acceptatie.md`.
 
 ## Lokaal starten
 
@@ -19,7 +19,7 @@ Open **http://localhost:3000/inloggen**. Kies één van de duidelijk gemarkeerde
 
 Ontbreken PostgreSQL-serverbinaries op Ubuntu, dan kan het lokale script het serverpakket zonder root uitpakken: `DARTFLOW_DOWNLOAD_LOCAL_POSTGRES=1 npm run db:start`. Bestaande database-inhoud wordt niet vervangen. De lokale wachtwoorden worden willekeurig aangemaakt in genegeerde bestanden met modus 0600. `npm run db:stop` stopt uitsluitend deze lokale instance. `npm run db:reset` wist uitsluitend de expliciet gecontroleerde lokale fixture-database en seedt daarna opnieuw.
 
-De lokale database staat persistent in de genegeerde map `.local/postgres`. Na een hostherstart start je deze opnieuw met `npm run db:start`; bestaande data blijft bewaard. De browser voor controles is op deze ontwikkelhost tijdelijk onder `/dev/shm/dartflow-browsers` geïnstalleerd. Installeer die na een hostherstart opnieuw met `npx playwright install chromium`. Bron, dependencies, build en lockfile staan in de repository.
+De lokale database staat persistent in de genegeerde map `.local/postgres`. Na een hostherstart start je deze opnieuw met `npm run db:start`; bestaande data blijft bewaard. Installeer de testbrowser met `npx playwright install chromium`; `DARTFLOW_BROWSER_PATH` kan expliciet naar een reeds geïnstalleerde Chromium verwijzen. Bron, dependencies, build en lockfile staan in de repository.
 
 ## Pilot doorlopen
 
@@ -57,4 +57,4 @@ De vastgelegde repository is `dartflow/platform`, branch `main`. Staging en prod
 
 De app gebruikt Supabase voor hosted Auth. Het score- en rechtenmodel draait in servercode binnen PostgreSQL-transacties met een beperkte `dartflow_app`-verbinding. De private tabellen zijn niet beschikbaar via Supabase Data API. Browsergebruikers krijgen geen databasecredential of verhoogde Supabase-key. Migraties/seed gebruiken een apart beheeraccount, buiten de app-runtime. Zie [docs/architecture.md](docs/architecture.md).
 
-De overdracht en oorspronkelijke prototypetests zijn bewaard in `docs/reference/` en `prototype/`. Prototypebroncommit: `578f58eceabae88e5fce5676c6740d66a6eae689`. Dit is de referentie-SHA, niet de SHA van deze implementatie.
+De v15-overdracht en onveranderde prototypebron staan in `docs/reference/v15/` en `prototype-v15/`, broncommit `e27cccdbd0b6cd2144cc2f26cab9e2986a903e61`. De eerdere overdracht blijft bewaard in `docs/reference/` en `prototype/`. Prototypecommits zijn referenties en geen deploy-SHA. De actuele uitrolstatus staat in [het v15-opleverrapport](voorbeelden/opleverrapport-v15.md).

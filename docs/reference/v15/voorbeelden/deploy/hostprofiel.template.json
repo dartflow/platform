@@ -1,0 +1,53 @@
+{
+  "application": "dartflow",
+  "developmentCheckout": "/home/codex/repos/dartflow",
+  "githubRepository": null,
+  "protectedSourceRef": null,
+  "requiredCiWorkflowFile": null,
+  "environment": null,
+  "historicalStagingHint": {
+    "hostname": "dg-nxttrack-01",
+    "origin": "https://staging.dartflow.nl",
+    "verifyBeforeUse": true
+  },
+  "target": {
+    "providerServerId": null,
+    "hostname": null,
+    "tailscaleName": null,
+    "siteId": null,
+    "origin": null,
+    "loopbackHost": "127.0.0.1",
+    "loopbackPort": null,
+    "runnerName": null,
+    "runnerLabels": [],
+    "runnerAccount": null,
+    "runnerUnit": null,
+    "runnerWorkspace": null,
+    "runtimeAccount": null,
+    "appUnit": null,
+    "releaseRoot": null,
+    "activeReleaseLink": null,
+    "protectedConfigDirectory": null,
+    "deployContractVersion": null,
+    "nodeVersion": null,
+    "npmVersion": null,
+    "hostBuildLock": null
+  },
+  "backends": {
+    "supabaseProjectRef": null,
+    "googleOAuthClientRef": null,
+    "resendSendingDomain": null,
+    "resendWebhookOrigin": null,
+    "backupPolicyRef": null
+  },
+  "operations": {
+    "activeSha": null,
+    "lastCompatibleSha": null,
+    "schemaVersion": null,
+    "minimumFreeBytes": null,
+    "minimumFreeInodes": null,
+    "rpo": null,
+    "rto": null,
+    "siblingSmokes": []
+  }
+}

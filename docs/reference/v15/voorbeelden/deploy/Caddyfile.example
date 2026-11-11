@@ -1,0 +1,10 @@
+# Koppel uitsluitend de reeds geregistreerde hosts aan hun eigen loopbackpoort.
+# Fragment in het bestaande Caddy-configuratiebeheer. Vervang alle placeholders.
+
+<staging-hostname> {
+    reverse_proxy 127.0.0.1:<staging-loopback-port>
+}
+
+<production-hostname> {
+    reverse_proxy 127.0.0.1:<production-loopback-port>
+}

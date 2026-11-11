@@ -1,0 +1,25 @@
+# Voorbeeld bij een gevalideerd Next.js standalone-artefact.
+# Gebruik de bestaande DG-unit en het bestaande config-/activatiecontract.
+# Vervang de placeholders door de waarden van precies één site.
+[Unit]
+Description=DartFlow <site-id>
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<app-user>
+Group=<app-group>
+WorkingDirectory=/srv/sites/<site-id>/current
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=<loopback-port>
+EnvironmentFile=/etc/dg-sites/<site-id>/runtime.env
+ExecStart=<absolute-node-binary> /srv/sites/<site-id>/current/server.js
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

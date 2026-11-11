@@ -1,0 +1,1 @@
+Supabase Auth-template voor de OTP-stroom. Configureer dit in de juiste omgeving. {{ .Token }} blijft een echte providerplaceholder, {{ .SiteURL }} komt uit de omgeving. Bewaar codes nooit in de applicatie-outbox. Controleer huidige providerdocumentatie, OTP-lengte, geldigheid en SMTP-configuratie. Deze export verzendt niets.

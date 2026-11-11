@@ -11,8 +11,21 @@ export function appConfig() {
 }
 
 export function safeNext(value: unknown): string {
-  if (typeof value !== 'string' || value.length > 240 || /[%\\\r\n?#]/.test(value)) return '/';
+  if (typeof value !== 'string' || value.length > 240 || /[%\\\r\n#]/.test(value)) return '/';
+  const [pathname,query,...extra]=value.split('?');
+  const id='[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}';
+  if(query!==undefined) {
+    if(extra.length)return '/';
+    const invitation=new RegExp(`^/app/(?:lobby|community|clubs)/${id}$`).test(pathname) && /^code=[A-Za-z0-9_-]{24}$/.test(query);
+    const studio=/^\/app\/venue-cast\/(?:studio|hall|obs|public)$/.test(pathname) && new RegExp(`^event=${id}$`).test(query);
+    const tablet=new RegExp(`^/wedstrijd/${id}$`).test(pathname) && query==='tablet=1';
+    return invitation || studio || tablet ? value : '/';
+  }
   if (/^\/(?:spelen|evenementen|wedstrijdleiding|clubbeheer|historie)?$/.test(value)) return value;
+  if (/^\/app(?:\/(?:vandaag|spelen|baan|training|vrienden|clubs|kamers|uitdagingen|competities|toernooien|evenementen|wedstrijdleiding|schermen|mail|integraties|profiel|historie))?$/.test(value)) return value;
+  if (/^\/app(?:\/(?:play|practice|lobby|events|friends|community|mymatches|settings|dashboard|operations|manage|leagues|tournaments|hall|players|registrations|matches|rankings|statistics|camera|pools|knockout))?$/.test(value)) return value;
+  if (value==='/app/platform/integraties' || /^\/app\/venue-cast\/(?:studio|hall|obs|public)$/.test(value) || /^\/app\/venue(?:\/(?:entries|boards|schedule))?$/.test(value)) return value;
+  if(new RegExp(`^/app/(?:clubs|community|lobby|leagues|tournaments|training|match|hall|spectator|overlay)/${id}$`).test(value))return value;
   if (/^\/wedstrijd\/[a-f0-9-]{36}$/.test(value) || /^\/baan\/(?:B[1-9][0-9]?|[a-f0-9-]{36})$/.test(value)) return value;
   return '/';
 }

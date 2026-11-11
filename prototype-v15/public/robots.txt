@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://puinruimers-darts-demo.dgwebserv.chatgpt.site/sitemap.xml

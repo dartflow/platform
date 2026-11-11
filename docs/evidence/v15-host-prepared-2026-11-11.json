@@ -1,0 +1,182 @@
+{
+  "checkedAt": "2026-11-11T13:57:33.094943+00:00",
+  "host": "dg-nxttrack-01",
+  "stage": "v15 host prepared; application activation not yet performed",
+  "sites": {
+    "staging": {
+      "configId": "staging-2026-11-11-v15-1",
+      "protectedMetadata": {
+        "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v15-1": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o700"
+        },
+        "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v15-1/public.json": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o600"
+        },
+        "/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v15-1/runtime.env": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o600"
+        },
+        "/etc/dg-sites/dartflow-staging/integrations.key": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o600"
+        },
+        "/etc/dg-sites/dartflow-staging/mail-worker.token": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o600"
+        },
+        "/etc/dg-sites/dartflow-staging/turn-secret": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o600"
+        }
+      },
+      "runtimeVariableNames": [
+        "DARTFLOW_DATABASE_URL",
+        "DARTFLOW_ENV",
+        "DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY",
+        "DARTFLOW_MAIL_WORKER_TOKEN",
+        "DARTFLOW_MAIL_TEST_RECIPIENTS",
+        "DARTFLOW_MAIL_ALLOWED_FROM",
+        "DARTFLOW_MAIL_MAX_MODE",
+        "DARTFLOW_TURN_SECRET",
+        "DARTFLOW_TURN_URLS"
+      ],
+      "current": "releases/4634852c17cc-42995422162-1",
+      "loopback": {
+        "health": {
+          "status": "ok",
+          "mode": "supabase",
+          "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+          "releaseId": "42995422162-1",
+          "buildConfigId": "staging-2026-11-11-v1",
+          "runtimeConfigId": "staging-2026-11-11-v1",
+          "configId": "staging-2026-11-11-v1"
+        },
+        "ready": {
+          "status": "ready",
+          "database": "ok",
+          "schemaVersion": 1,
+          "auth": "reachable",
+          "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+          "releaseId": "42995422162-1",
+          "buildConfigId": "staging-2026-11-11-v1",
+          "runtimeConfigId": "staging-2026-11-11-v1",
+          "configId": "staging-2026-11-11-v1"
+        }
+      },
+      "service": [
+        "MainPID=63511",
+        "ActiveState=active"
+      ],
+      "mailTimer": "inactive"
+    },
+    "production": {
+      "configId": "production-2026-11-11-v15-1",
+      "protectedMetadata": {
+        "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v15-1": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o700"
+        },
+        "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v15-1/public.json": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o600"
+        },
+        "/etc/dg-sites/dartflow-production/configs/production-2026-11-11-v15-1/runtime.env": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o600"
+        },
+        "/etc/dg-sites/dartflow-production/integrations.key": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o600"
+        },
+        "/etc/dg-sites/dartflow-production/mail-worker.token": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o600"
+        },
+        "/etc/dg-sites/dartflow-production/turn-secret": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o600"
+        }
+      },
+      "runtimeVariableNames": [
+        "DARTFLOW_DATABASE_URL",
+        "DARTFLOW_ENV",
+        "DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY",
+        "DARTFLOW_MAIL_WORKER_TOKEN",
+        "DARTFLOW_MAIL_TEST_RECIPIENTS",
+        "DARTFLOW_MAIL_ALLOWED_FROM",
+        "DARTFLOW_MAIL_MAX_MODE",
+        "DARTFLOW_TURN_SECRET",
+        "DARTFLOW_TURN_URLS"
+      ],
+      "current": "releases/4634852c17cc-42995766522-1",
+      "loopback": {
+        "health": {
+          "status": "ok",
+          "mode": "supabase",
+          "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+          "releaseId": "42995766522-1",
+          "buildConfigId": "production-2026-11-11-v1",
+          "runtimeConfigId": "production-2026-11-11-v1",
+          "configId": "production-2026-11-11-v1"
+        },
+        "ready": {
+          "status": "ready",
+          "database": "ok",
+          "schemaVersion": 1,
+          "auth": "reachable",
+          "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+          "releaseId": "42995766522-1",
+          "buildConfigId": "production-2026-11-11-v1",
+          "runtimeConfigId": "production-2026-11-11-v1",
+          "configId": "production-2026-11-11-v1"
+        }
+      },
+      "service": [
+        "MainPID=64473",
+        "ActiveState=active"
+      ],
+      "mailTimer": "inactive"
+    }
+  },
+  "otherApplication": {
+    "status": "ok",
+    "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+    "releaseId": "43026808427-1",
+    "configVersion": "staging-2026-11-11-v2",
+    "checks": [
+      "http"
+    ]
+  },
+  "otherService": [
+    "MainPID=70911",
+    "ActiveState=active"
+  ],
+  "directedExtractorRepair": {
+    "appliedAt": "2026-11-11T14:02:19Z",
+    "backup": "/var/backups/dartflow/v15-extractor-20261111T140219787928Z",
+    "sha256Both": "ab293d0b7a1ffbdab7d8e82ee3955f1014368487e37c1e635d9702e30b9cda0a",
+    "purpose": "Permit exactly the public production env example while retaining private environment-file denials",
+    "protectedRenderRoot": "/root/v15-reviewed-extractor",
+    "appConfigServiceChanges": false
+  },
+  "mailTickCorrection": {
+    "httpTimeoutSeconds": 160,
+    "systemdTimeoutSeconds": 175,
+    "timersStarted": false,
+    "verification": "Both installed units report TimeoutStartUSec=2min55s"
+  }
+}

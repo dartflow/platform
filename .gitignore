@@ -6,6 +6,7 @@ node_modules
 .env*
 !.env.example
 !.env.staging.example
+!.env.production.example
 playwright-report/
 test-results/
 artifacts/
@@ -16,3 +17,7 @@ __pycache__/
 prototype/dist/
 prototype/.data/
 prototype/.wrangler/
+prototype-v15/dist/
+prototype-v15/.data/
+prototype-v15/.wrangler/
+supabase/.temp/

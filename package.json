@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint app components lib proxy.ts tests --max-warnings 0",
     "test": "tsx --test tests/*.test.ts",
-    "test:prototype": "npm test --prefix prototype",
+    "test:prototype": "npm test --prefix prototype-v15",
     "test:e2e": "playwright test",
     "db:start": "node scripts/db-local.mjs start",
     "db:stop": "node scripts/db-local.mjs stop",
@@ -30,7 +30,8 @@
     "pg": "8.23.1",
     "qrcode": "1.5.4",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "resend": "6.38.0"
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",

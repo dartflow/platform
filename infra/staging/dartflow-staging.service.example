@@ -10,7 +10,7 @@ Type=simple
 User=app-dart-stg
 Group=app-dart-stg
 WorkingDirectory=/srv/sites/dartflow-staging/current
-# The protected immutable bundle supplies only DARTFLOW_DATABASE_URL.
+# The protected immutable bundle supplies the reviewed server-only configuration.
 EnvironmentFile=/srv/sites/dartflow-staging/current/.runtime.env
 # Dedicated app-only trust for Supabase TLS; verified root-owned public CA.
 Environment=NODE_EXTRA_CA_CERTS=/usr/local/share/dg-certificates/supabase-prod-ca-bundle.crt

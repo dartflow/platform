@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createGoogleAttempt, GOOGLE_ATTEMPT_COOKIE } from '@/lib/google-proof';
+import { googleConfigurationRevision } from '@/lib/integrations';
 import { cookies } from 'next/headers';
 import { createHash } from 'node:crypto';
 import { actorId, isLocalRequest, LOCAL_USERS, loginLocal, logout, saveIntent, consumeIntent, supabaseServer } from '@/lib/auth';
 import { appConfig, safeNext } from '@/lib/config';
 import { releaseIdentity } from '@/lib/release';
-import { checkDatabaseReady, getProfile, getOverview, getMatch, executeMatchCommand, executeEventCommand, getPublicSnapshot, createScreen, revokeScreen, consumeRateLimit } from '@/lib/db';
+import { database, checkDatabaseReady, getProfile, getOverview, getMatch, getBoardForActor, executeMatchCommand, executeEventCommand, getPublicSnapshot, createScreen, revokeScreen, consumeRateLimit } from '@/lib/db';
 import { DomainError } from '@/lib/domain';
 import type { EventAction, MatchAction } from '@/lib/types';
+import { ensureAuthProfile } from '@/lib/accounts';
+import { handleIntegrationPublic, handleIntegrations, workerTokenMatches } from '@/lib/integrations';
+import { getPlatformOverview, executePlatformCommand, getPlatformMessages, getMatchSignals, sendMatchSignal, reconcilePlatformResults, reconcilePlatformCalls, getPlatformCast, getPlatformStatistics, exportPlatformCsv, replayMatchCommands, getMatchChat, sendMatchChat } from '@/lib/platform';
+import { mediaConfiguration } from '@/lib/media';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -17,7 +23,7 @@ function csrf(request:NextRequest) {
   if (request.headers.get('origin') !== appConfig().origin) throw new DomainError('origin','Ververs de pagina en probeer opnieuw.',403);
   if (request.headers.get('sec-fetch-site') === 'cross-site') throw new DomainError('origin','Ongeldige aanvraag.',403);
 }
-async function body(request:NextRequest):Promise<Record<string,unknown>> {
+async function body(request:NextRequest,maxBytes=8192):Promise<Record<string,unknown>> {
   if (!request.headers.get('content-type')?.startsWith('application/json')) throw new DomainError('content_type','JSON vereist.',415);
   const reader=request.body?.getReader();
   if (!reader) throw new DomainError('invalid_json','Ongeldige aanvraag.');
@@ -25,7 +31,7 @@ async function body(request:NextRequest):Promise<Record<string,unknown>> {
   while (true) {
     const {value,done}=await reader.read(); if (done) break;
     size+=value.byteLength;
-    if (size>8192) { await reader.cancel(); throw new DomainError('too_large','Aanvraag te groot.',413); }
+    if (size>maxBytes) { await reader.cancel(); throw new DomainError('too_large','Aanvraag te groot.',413); }
     chunks.push(value);
   }
   const text=Buffer.concat(chunks).toString('utf8');
@@ -47,6 +53,17 @@ async function limit(key:string,max:number,seconds:number) {
 async function handle(request:NextRequest,parts:string[],method:string) {
   const path=parts.join('/');
   if(appConfig().mode==='local' && !isLocalRequest(request)) throw new DomainError('local_only','Deze testomgeving is alleen lokaal bereikbaar.',403);
+  if (path==='mail/process') {
+    const host=request.headers.get('host') || '';
+    const forwarded=(request.headers.get('x-forwarded-for') || '').split(',').map(value=>value.trim()).filter(Boolean);
+    if (!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host) || forwarded.some(value=>!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(value))) throw new DomainError('forbidden','Geen toegang.',403);
+    if(method==='POST' && workerTokenMatches(request)) {
+      await reconcilePlatformResults();
+      await reconcilePlatformCalls();
+    }
+  }
+  const integrationPublic=await handleIntegrationPublic(request,parts);
+  if(integrationPublic)return integrationPublic;
   if (method!=='GET') csrf(request);
   if (method==='GET' && path==='health') {
     const config=appConfig();
@@ -68,7 +85,8 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   }
   if (method==='GET' && path==='session') {
     const config=appConfig(); const id=await actorId(request); const user=id ? await getProfile(id) : null;
-    return json({user,local:config.mode==='local',localUsers:config.mode==='local'?LOCAL_USERS:[]});
+    const canManagePlatform=id?Boolean((await database().query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')",[id])).rowCount):false;
+    return json({user,canManagePlatform,local:config.mode==='local',environment:config.mode==='local'?'development':config.origin==='https://staging.dartflow.nl'?'staging':'production',localUsers:config.mode==='local'?LOCAL_USERS:[]});
   }
   if (method==='POST' && path==='auth/local') {
     const data=await body(request); await loginLocal(String(data.userId),request);
@@ -76,13 +94,14 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   }
   if (method==='POST' && path==='auth/logout') { await logout(); return json({ok:true}); }
   if (method==='POST' && path==='auth/otp') {
+    const jar=await cookies();jar.delete(GOOGLE_ATTEMPT_COOKIE);jar.delete('dartflow-oauth-provider');
     const data=await body(request); const email=String(data.email || '').trim().toLowerCase();
     if (email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new DomainError('email','Vul een geldig e-mailadres in.');
     const client=await supabaseServer();
     await limit('otp:global',100,60); await limit(`otp:${digest(email)}`,1,60);
     await saveIntent(data.next);
     // Match all valid-address outcomes to avoid exposing pilot account membership.
-    await client.auth.signInWithOtp({email,options:{shouldCreateUser:false}});
+    await client.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
     (await cookies()).set('dartflow-otp-email',email,{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:600});
     return json({ok:true,message:'Als dit adres is toegelaten, ontvang je een code.',retryAfter:60});
   }
@@ -91,6 +110,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     if (email !== (await cookies()).get('dartflow-otp-email')?.value || !/^\d{6,10}$/.test(token)) throw new DomainError('otp','De code is ongeldig of verlopen. Vraag een nieuwe code aan.');
     await limit('verify:global',1000,60); await limit(`verify:${digest(email)}`,8,600);
     const client=await supabaseServer(); const {data:verified,error}=await client.auth.verifyOtp({email,token,type:'email'});
+    if (!error && verified.user) await ensureAuthProfile(verified.user);
     const enrolled=verified.user ? await getProfile(verified.user.id).catch(()=>null) : null;
     if (error || !verified.user || !enrolled) {
       if (verified.user) await client.auth.signOut();
@@ -103,13 +123,43 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     const config=appConfig();
     await limit('oauth:global',100,60);
     await saveIntent(request.nextUrl.searchParams.get('next'));
+    const jar=await cookies();jar.delete(GOOGLE_ATTEMPT_COOKIE);jar.delete('dartflow-oauth-provider');
+    let proofAttempt:string|null=null;
+    try{proofAttempt=createGoogleAttempt(await googleConfigurationRevision());}catch{/* Optional proof setup never disables a working provider login. */}
     const client=await supabaseServer();
     const {data,error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:`${config.origin}/auth/callback`}});
-    if (error || !data.url) return NextResponse.redirect(new URL('/inloggen?error=oauth',config.origin));
+    if (error || !data.url) return NextResponse.redirect(new URL('/inloggen?error=oauth',config.origin),{headers:{'Cache-Control':'private, no-store'}});
+    if(proofAttempt)jar.set(GOOGLE_ATTEMPT_COOKIE,proofAttempt,{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:600});
     return NextResponse.redirect(data.url,{headers:{'Cache-Control':'private, no-store'}});
   }
   if (method==='GET' && parts[0]==='screen' && parts.length===2) return json(await getPublicSnapshot(parts[1]));
+  if (method==='GET' && parts[0]==='platform' && parts[1]==='cast' && parts.length===3) return json(await getPlatformCast(parts[2]));
   const actor=await requireActor(request);
+  const integration=await handleIntegrations(request,actor.id,parts);
+  if(integration)return integration;
+  if(method==='GET' && parts[0]==='media' && uuid(parts[1]) && parts.length===2) return json(await mediaConfiguration(actor.id,parts[1]));
+  if(method==='GET' && parts[0]==='boards' && uuid(parts[1]) && parts.length===2)return json(await getBoardForActor(actor.id,parts[1]));
+  if(method==='GET' && path==='platform')return json(await getPlatformOverview(actor.id));
+  if(method==='POST' && path==='platform/actions')return json(await executePlatformCommand(actor.id,await body(request)));
+  if(method==='GET' && path==='platform/statistics')return json(await getPlatformStatistics(actor.id));
+  if(method==='GET' && parts[0]==='platform' && parts[1]==='export' && parts.length===3){
+    const csv=await exportPlatformCsv(actor.id,parts[2],request.nextUrl.searchParams.get('clubId') || undefined);
+    return new NextResponse(csv,{headers:{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="dartflow-export.csv"','Cache-Control':'private, no-store'}});
+  }
+  if(parts[0]==='platform' && parts[1]==='matches' && uuid(parts[2]) && parts.length===4){
+    if(parts[3]==='replay' && method==='POST'){
+      const input=await body(request,65536);
+      if(input.matchId!==undefined && input.matchId!==parts[2])throw new DomainError('match_changed','Deze wachtrij hoort bij een andere partij.',409);
+      return json(await replayMatchCommands(actor.id,{...input,matchId:parts[2]}));
+    }
+    if(parts[3]==='chat' && method==='GET')return json(await getMatchChat(actor.id,parts[2]));
+    if(parts[3]==='chat' && method==='POST')return json(await sendMatchChat(actor.id,parts[2],await body(request)));
+  }
+  if(parts[0]==='platform' && parts[1]==='rooms' && uuid(parts[2]) && parts[3]==='messages' && parts.length===4 && method==='GET')return json(await getPlatformMessages(actor.id,parts[2]));
+  if(parts[0]==='platform' && parts[1]==='matches' && uuid(parts[2]) && parts[3]==='signals' && parts.length===4){
+    if(method==='GET')return json(await getMatchSignals(actor.id,parts[2],Number(request.nextUrl.searchParams.get('after') || '0')));
+    if(method==='POST')return json(await sendMatchSignal(actor.id,parts[2],await body(request,65536)));
+  }
   if (method==='GET' && path==='overview') {
     const clubId=request.nextUrl.searchParams.get('clubId') || undefined;
     if (clubId && !uuid(clubId)) throw new DomainError('club','Ongeldige club.');
@@ -121,7 +171,9 @@ async function handle(request:NextRequest,parts:string[],method:string) {
       const data=await body(request);
       if (!uuid(data.requestId) || !Number.isSafeInteger(data.expectedRevision) || Number(data.expectedRevision)<0 || !data.action || typeof data.action!=='object') throw new DomainError('command','Ongeldige wedstrijdactie.');
       if (data.matchId!==undefined && data.matchId!==parts[1]) throw new DomainError('match_changed','Deze actie hoort bij een andere partij. Open de oorspronkelijke wedstrijd.',409);
-      return json(await executeMatchCommand(actor.id,{matchId:parts[1],requestId:data.requestId,expectedRevision:Number(data.expectedRevision),action:data.action as MatchAction}));
+      const result=await executeMatchCommand(actor.id,{matchId:parts[1],requestId:data.requestId,expectedRevision:Number(data.expectedRevision),action:data.action as MatchAction});
+      await reconcilePlatformResults();
+      return json(result);
     }
   }
   if (method==='POST' && parts[0]==='events' && uuid(parts[1]) && parts[2]==='actions' && parts.length===3) return json(await executeEventCommand(actor.id,parts[1],await body(request) as EventAction));
@@ -150,3 +202,4 @@ async function route(request:NextRequest,context:Context) {
 export const GET=route;
 export const POST=route;
 export const DELETE=route;
+export const PATCH=route;

@@ -1,0 +1,932 @@
+[
+  {
+    "templateId": "welcome",
+    "eventId": "fixture-welcome-001",
+    "scopeId": null,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#home",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "club-request",
+    "eventId": "fixture-club-request-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#clubs/701",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "club-decision",
+    "eventId": "fixture-club-decision-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#clubs/701",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "club-role",
+    "eventId": "fixture-club-role-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#clubs/701",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "friend-request",
+    "eventId": "fixture-friend-request-001",
+    "scopeId": null,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#friends",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "friend-accepted",
+    "eventId": "fixture-friend-accepted-001",
+    "scopeId": null,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#friends",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "challenge-invite",
+    "eventId": "fixture-challenge-invite-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#mymatches",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "challenge-accepted",
+    "eventId": "fixture-challenge-accepted-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#mymatches",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "challenge-cancelled",
+    "eventId": "fixture-challenge-cancelled-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#mymatches",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "fixture-scheduled",
+    "eventId": "fixture-fixture-scheduled-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#leagues/501",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "fixture-changed",
+    "eventId": "fixture-fixture-changed-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#leagues/501",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "fixture-reminder",
+    "eventId": "fixture-fixture-reminder-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#leagues/501",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "competition-entry",
+    "eventId": "fixture-competition-entry-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#leagues/501",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "tournament-entry",
+    "eventId": "fixture-tournament-entry-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#hall",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "tournament-approved",
+    "eventId": "fixture-tournament-approved-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#hall",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "tournament-rejected",
+    "eventId": "fixture-tournament-rejected-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#hall",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "tournament-changed",
+    "eventId": "fixture-tournament-changed-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#hall",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "tournament-waitlist",
+    "eventId": "fixture-tournament-waitlist-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#hall",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "tournament-promoted",
+    "eventId": "fixture-tournament-promoted-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#hall",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "tournament-withdrawn",
+    "eventId": "fixture-tournament-withdrawn-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#hall",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "tournament-reminder",
+    "eventId": "fixture-tournament-reminder-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#hall",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "board-call",
+    "eventId": "fixture-board-call-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#hall",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "result-confirm",
+    "eventId": "fixture-result-confirm-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#mymatches",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "result-confirmed",
+    "eventId": "fixture-result-confirmed-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#mymatches",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "result-disputed",
+    "eventId": "fixture-result-disputed-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#mymatches",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "result-resolved",
+    "eventId": "fixture-result-resolved-001",
+    "scopeId": 701,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#mymatches",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "room-invite",
+    "eventId": "fixture-room-invite-001",
+    "scopeId": null,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#friends",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "moderation-notice",
+    "eventId": "fixture-moderation-notice-001",
+    "scopeId": null,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#friends",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "moderation-report",
+    "eventId": "fixture-moderation-report-001",
+    "scopeId": null,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#friends",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "registration-received",
+    "eventId": "fixture-registration-received-001",
+    "scopeId": null,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#home",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  },
+  {
+    "templateId": "registration-decision",
+    "eventId": "fixture-registration-decision-001",
+    "scopeId": null,
+    "recipient": {
+      "name": "Rick van Dijk",
+      "email": "rick@voorbeeld.test"
+    },
+    "variables": {
+      "name": "Rick van Dijk",
+      "actorName": "Mike de Bruin",
+      "clubName": "De Puinruimers",
+      "eventName": "Puinruimers Open",
+      "opponentName": "Mike de Bruin",
+      "date": "Vrijdag 13 november",
+      "time": "20:00",
+      "location": "Clubhuis De Puinruimers · Den Haag",
+      "boardName": "Baan 2",
+      "score": "3 – 2",
+      "reason": "De wedstrijdleiding heeft de uitslag beoordeeld.",
+      "role": "Aanvoerder",
+      "actionUrl": "https://puinruimers-darts-demo.dgwebserv.chatgpt.site/#home",
+      "roomName": "Het clubhuis",
+      "startScore": "501",
+      "bestOf": "5 legs",
+      "status": "Goedgekeurd",
+      "otp": "482196"
+    },
+    "kind": "example"
+  }
+]

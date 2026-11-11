@@ -15,6 +15,10 @@ await client.connect();
 try {
  await client.query('begin');
  for (const [key, name] of [['organizer','Danny Goldenbelt'],['player1','Michael de Groot'],['player2','Raymond van Dijk'],['outsider','Speler andere club']]) await client.query('insert into dartflow_private.profiles(id,name) values($1,$2) on conflict(id) do nothing',[ids[key],name]);
+ if(local) {
+  await client.query("update dartflow_private.profiles set email='fixture-'||id::text||'@example.invalid',email_verified=true where id=any($1::uuid[])",[[ids.organizer,ids.player1,ids.player2,ids.outsider]]);
+  await client.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'owner') on conflict(user_id) do nothing",[ids.organizer]);
+ }
  for(const [id,name] of [[ids.club1,'Duindorp SV'],[ids.club2,'Dartclub West']]) await client.query('insert into dartflow_private.clubs(id,name) values($1,$2) on conflict(id) do nothing',[id,name]);
  for(const [club,user,role] of [[ids.club1,ids.organizer,'organizer'],[ids.club1,ids.player1,'player'],[ids.club1,ids.player2,'player'],[ids.club2,ids.outsider,'player']]) await client.query('insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,$3) on conflict do nothing',[club,user,role]);
  for(const [id,club,name] of [[ids.event1,ids.club1,'Duindorp clubavond'],[ids.event2,ids.club2,'West clubavond']]) await client.query("insert into dartflow_private.events(id,club_id,name,date,capacity) values($1,$2,$3,current_date,16) on conflict(id) do nothing",[id,club,name]);

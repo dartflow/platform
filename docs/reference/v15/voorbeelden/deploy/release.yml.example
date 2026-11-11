@@ -1,0 +1,198 @@
+# Koppel dit ontwerp aan de bestaande repo, toegestane ref en DG-adapters.
+# Pinnen en voorbeeldlabels vóór gebruik vervangen.
+name: DartFlow uitrollen
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Doelomgeving
+        required: true
+        type: choice
+        options: [staging, production]
+      candidate_sha:
+        description: Volledige bron-SHA
+        required: true
+        type: string
+      ci_run_id:
+        description: Geslaagde CI-run op deze SHA
+        required: true
+        type: string
+      staging_run_id:
+        description: Geslaagde staging-release voor productiepromotie
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dartflow-deploy-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    # Dit voorbeeld gebruikt main. Stem af op de bestaande beschermde ref.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.provenance.outputs.sha }}
+    steps:
+      - uses: actions/checkout@PIN_GOEDGEKEURDE_CHECKOUT_SHA
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Controleer kandidaat en vereiste CI
+        id: provenance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          CI_RUN_ID: ${{ inputs.ci_run_id }}
+          CI_WORKFLOW: ${{ vars.DARTFLOW_CI_WORKFLOW }}
+          REQUIRED_JOBS: ${{ vars.DARTFLOW_REQUIRED_CI_JOBS_JSON }}
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$CI_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$CI_WORKFLOW" =~ ^[A-Za-z0-9._-]+\.ya?ml$ ]]
+          git cat-file -e "${CANDIDATE_SHA}^{commit}"
+          git merge-base --is-ancestor "$CANDIDATE_SHA" HEAD
+          workflow_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$CI_WORKFLOW" --jq .id)
+          ci_attempt=$(
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CI_RUN_ID" |
+            jq -e --arg sha "$CANDIDATE_SHA" --arg repo "$GITHUB_REPOSITORY" \
+              --argjson workflow "$workflow_id" \
+              'select(.head_sha == $sha and .head_branch == "main" and
+               .head_repository.full_name == $repo and .workflow_id == $workflow and
+               .event == "push" and .status == "completed" and .conclusion == "success") | .run_attempt'
+          )
+          [[ "$ci_attempt" =~ ^[1-9][0-9]*$ ]]
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$CI_RUN_ID/attempts/$ci_attempt/jobs" |
+            jq -e --argjson required "$REQUIRED_JOBS" --arg sha "$CANDIDATE_SHA" '
+              [.[].jobs[]] as $jobs |
+              ($required | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
+              all($required[]; . as $name |
+                [$jobs[] | select(.name == $name)] |
+                length == 1 and all(.[]; .head_sha == $sha and .status == "completed" and .conclusion == "success")
+              )
+            ' >/dev/null
+          printf 'sha=%s\n' "$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
+      - name: Controleer stagingbewijs voor productie
+        if: inputs.target == 'production'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ steps.provenance.outputs.sha }}
+          STAGING_RUN_ID: ${{ inputs.staging_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$STAGING_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          # Neem de echte filename van dit releaseworkflowbestand over.
+          release_workflow=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml" --jq .id)
+          staging_attempt=$(
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$STAGING_RUN_ID" |
+              jq -er --arg repo "$GITHUB_REPOSITORY" --argjson workflow "$release_workflow" \
+                'select(.head_branch == "main" and .head_repository.full_name == $repo and
+                 .workflow_id == $workflow and .event == "workflow_dispatch" and
+                 .status == "completed" and .conclusion == "success") | .run_attempt'
+          )
+          [[ "$staging_attempt" =~ ^[1-9][0-9]*$ ]]
+          proof_dir=$(mktemp -d)
+          trap 'rm -rf "$proof_dir"' EXIT
+          gh run download "$STAGING_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "dartflow-staging-$CANDIDATE_SHA-$staging_attempt" --dir "$proof_dir"
+          jq -e --arg sha "$CANDIDATE_SHA" --arg repo "$GITHUB_REPOSITORY" \
+            --arg run "$STAGING_RUN_ID" --arg attempt "$staging_attempt" \
+            '.repository == $repo and .environment == "staging" and
+             .activeSha == $sha and .runId == $run and .runAttempt == $attempt and
+             .acceptance == "passed"' "$proof_dir/staging-proof.json" >/dev/null
+
+  staging:
+    needs: verify
+    if: inputs.target == 'staging'
+    runs-on: [self-hosted, linux, dartflow-staging]
+    timeout-minutes: 45
+    environment:
+      name: staging
+      url: ${{ vars.DARTFLOW_ORIGIN }}
+    env:
+      CANDIDATE_SHA: ${{ needs.verify.outputs.sha }}
+      DARTFLOW_ENV: staging
+      DARTFLOW_APP_ORIGIN: ${{ vars.DARTFLOW_ORIGIN }}
+      DARTFLOW_LOOPBACK_ORIGIN: ${{ vars.DARTFLOW_LOOPBACK_ORIGIN }}
+      EXPECTED_RUNNER: ${{ vars.DARTFLOW_RUNNER_NAME }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - name: Bevestig geregistreerde runner
+        shell: bash
+        env:
+          ACTUAL_RUNNER: ${{ runner.name }}
+        run: '[[ -n "$EXPECTED_RUNNER" && "$ACTUAL_RUNNER" == "$EXPECTED_RUNNER" ]]'
+      - uses: actions/checkout@PIN_GOEDGEKEURDE_CHECKOUT_SHA
+        with:
+          ref: ${{ needs.verify.outputs.sha }}
+          persist-credentials: false
+      - name: Bouw en activeer staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$CANDIDATE_SHA" ]]
+          ./ops/ci/deploy-verified-release staging "$CANDIDATE_SHA" "$GITHUB_RUN_ID"
+          bash ./ops/ci/check-release.sh "$DARTFLOW_LOOPBACK_ORIGIN" staging "$CANDIDATE_SHA"
+          bash ./ops/ci/check-release.sh "$DARTFLOW_APP_ORIGIN" staging "$CANDIDATE_SHA"
+      - name: Accepteer de actieve stagingrelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./ops/ci/accept-staging "$CANDIDATE_SHA"
+          jq -n --arg repo "$GITHUB_REPOSITORY" --arg sha "$CANDIDATE_SHA" \
+            --arg run "$GITHUB_RUN_ID" --arg attempt "$GITHUB_RUN_ATTEMPT" \
+            '{repository: $repo, environment: "staging", activeSha: $sha,
+              runId: $run, runAttempt: $attempt, acceptance: "passed"}' > staging-proof.json
+      - uses: actions/upload-artifact@PIN_GOEDGEKEURDE_UPLOAD_ARTIFACT_SHA
+        with:
+          name: dartflow-staging-${{ needs.verify.outputs.sha }}-${{ github.run_attempt }}
+          path: staging-proof.json
+          if-no-files-found: error
+
+  production:
+    needs: verify
+    if: inputs.target == 'production'
+    runs-on: [self-hosted, linux, dartflow-production]
+    timeout-minutes: 45
+    environment:
+      name: production
+      url: ${{ vars.DARTFLOW_ORIGIN }}
+    env:
+      CANDIDATE_SHA: ${{ needs.verify.outputs.sha }}
+      DARTFLOW_ENV: production
+      DARTFLOW_APP_ORIGIN: ${{ vars.DARTFLOW_ORIGIN }}
+      DARTFLOW_LOOPBACK_ORIGIN: ${{ vars.DARTFLOW_LOOPBACK_ORIGIN }}
+      EXPECTED_RUNNER: ${{ vars.DARTFLOW_RUNNER_NAME }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - name: Bevestig geregistreerde runner
+        shell: bash
+        env:
+          ACTUAL_RUNNER: ${{ runner.name }}
+        run: '[[ -n "$EXPECTED_RUNNER" && "$ACTUAL_RUNNER" == "$EXPECTED_RUNNER" ]]'
+      - uses: actions/checkout@PIN_GOEDGEKEURDE_CHECKOUT_SHA
+        with:
+          ref: ${{ needs.verify.outputs.sha }}
+          persist-credentials: false
+      - name: Bouw, activeer en verifieer productie
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$CANDIDATE_SHA" ]]
+          ./ops/ci/deploy-verified-release production "$CANDIDATE_SHA" "$GITHUB_RUN_ID"
+          bash ./ops/ci/check-release.sh "$DARTFLOW_LOOPBACK_ORIGIN" production "$CANDIDATE_SHA"
+          bash ./ops/ci/check-release.sh "$DARTFLOW_APP_ORIGIN" production "$CANDIDATE_SHA"

@@ -1,0 +1,93 @@
+{
+  "checkedAt": "2026-11-11T13:33:59.803003+00:00",
+  "host": "dg-nxttrack-01",
+  "publicIpv4": "128.140.93.95",
+  "version": "4.18.0",
+  "sourceCommit": "23c6c1d32a3d2b21a56cee65d3203bcc4ea82d2b",
+  "sourceArchiveSha256": "d7e2ee337b5298c30cc5cd365c3173d05b97c749d28e9416afa4ca907925ce15",
+  "nativePrefix": "/opt/dg-coturn-4.18.0",
+  "vendorCoturnService": "inactive-disabled",
+  "units": {
+    "dg-turn-staging.service": {
+      "active": true,
+      "enabled": true,
+      "listener": 3478,
+      "relayRange": [
+        49160,
+        49179
+      ]
+    },
+    "dg-turn-production.service": {
+      "active": true,
+      "enabled": true,
+      "listener": 3479,
+      "relayRange": [
+        49180,
+        49199
+      ]
+    }
+  },
+  "security": {
+    "dynamicUser": true,
+    "systemdLoadCredential": true,
+    "secretBytes": 32,
+    "sharedSecretsRemainOnTarget": true,
+    "cgroupPrivateAndLoopbackDeny": true,
+    "caddyAdminKernelFilterProbe": "passed",
+    "builderPrivateNetwork": true,
+    "privateAndMappedIpv6PeerAcl": "denied",
+    "maximumAllocationSeconds": 600,
+    "totalAllocationsPerEnvironment": 10
+  },
+  "targetPublicIpSelfTests": [
+    {
+      "environment": "staging",
+      "transport": "udp",
+      "authenticatedAllocation": "passed",
+      "privateAndOwnHostPeers": "denied",
+      "crossEnvironmentCredential": "denied",
+      "allocationCleanup": "passed"
+    },
+    {
+      "environment": "staging",
+      "transport": "tcp",
+      "authenticatedAllocation": "passed",
+      "privateAndOwnHostPeers": "denied",
+      "crossEnvironmentCredential": "denied",
+      "allocationCleanup": "passed"
+    },
+    {
+      "environment": "production",
+      "transport": "udp",
+      "authenticatedAllocation": "passed",
+      "privateAndOwnHostPeers": "denied",
+      "crossEnvironmentCredential": "denied",
+      "allocationCleanup": "passed"
+    },
+    {
+      "environment": "production",
+      "transport": "tcp",
+      "authenticatedAllocation": "passed",
+      "privateAndOwnHostPeers": "denied",
+      "crossEnvironmentCredential": "denied",
+      "allocationCleanup": "passed"
+    }
+  ],
+  "externalWorkerProbe": {
+    "workerPublicIpv4": "65.108.158.112",
+    "udpAndTcp": "timeout",
+    "targetEth0CapturedMatchingPackets": 0,
+    "status": "blocked-before-target-interface",
+    "possibleCauses": [
+      "provider cloud firewall",
+      "worker outbound restriction"
+    ],
+    "publicRelayRoundTrip": "not-yet-verified",
+    "browserMedia": "not-yet-verified"
+  },
+  "existingAppsAndCaddy": "active after installation",
+  "references": [
+    "https://github.com/coturn/coturn/releases/tag/4.18.0",
+    "https://github.com/coturn/coturn/security/advisories/GHSA-j8mm-mpf8-gvjg"
+  ]
+}

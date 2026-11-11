@@ -1,0 +1,168 @@
+/* Keep wide data views scrollable within the page rather than widening the shell. */
+.df-content :is(.full-table, .bracket-scroll, .dr-bracket, .vf-table-wrap) {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overscroll-behavior-inline: contain;
+}
+
+.df-content .page-heading {
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 21px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.df-content .page-heading > :first-child {
+  flex: 1 1 16rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.df-content .page-heading h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3.5vw, 2.7rem);
+  line-height: 1.06;
+  letter-spacing: -.01em;
+}
+
+.df-content .page-heading h1 em { color: inherit; }
+.df-content .page-heading p {
+  max-width: 65ch;
+  margin-top: 6px;
+  font-size: .84rem;
+  line-height: 1.5;
+}
+
+.df-content :is(.heading-actions, .section-heading, .toolbar) {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.df-content .heading-actions .btn { min-height: 38px; font-size: .79rem; }
+.df-content .heading-actions .btn span { display: inline; }
+.df-content .section-heading h2 { min-width: 0; overflow-wrap: anywhere; }
+.df-content :is(.btn, .tab) { line-height: 1.25; }
+.df-content .tab { min-height: 38px; }
+
+@media (max-width: 760px) {
+  .df-shell .df-content {
+    padding-inline: max(13px, env(safe-area-inset-left)) max(13px, env(safe-area-inset-right));
+  }
+
+  .df-shell .df-topbar {
+    padding-block-start: max(8px, env(safe-area-inset-top));
+    padding-inline: max(11px, env(safe-area-inset-left)) max(11px, env(safe-area-inset-right));
+  }
+
+  .df-shell .df-bottom {
+    padding-inline: max(5px, env(safe-area-inset-left)) max(5px, env(safe-area-inset-right));
+  }
+
+  .df-shell .df-sidebar {
+    padding-block-end: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .df-shell :is(.df-role button, .df-menu-close, .mobile-menu, .df-top-actions .icon-btn) {
+    min-block-size: 44px;
+  }
+
+  .df-content .page-heading .heading-actions {
+    margin-block-start: 0;
+  }
+
+  .df-content .section-heading,
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .df-content :is(.btn, .tab),
+  .modal :is(.btn, .icon-btn) {
+    min-block-size: 44px;
+  }
+
+  .df-content .btn,
+  .modal .btn {
+    max-inline-size: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .df-content .heading-actions {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .df-content .heading-actions > .dr-inline { display: contents; }
+  .df-content .heading-actions:empty { display: none; }
+  .df-content .heading-actions .btn {
+    flex: 1 1 7rem;
+    min-width: 0;
+    width: auto;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .df-content .field-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :is(.df-content, .modal) :is(.field, .input-wrap, .input-wrap input, .field input, .field select, .field textarea) {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+
+  :is(.df-content, .modal) :is(.input, .field select) {
+    font-size: 16px;
+  }
+
+  .bf-phone .bf-phone-account > span {
+    min-inline-size: 0;
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .bf-phone :is(.bf-phone-account .bf-btn, .bf-phone-screen-link, .bf-phone-quick .bf-btn) {
+    min-block-size: 44px;
+  }
+}
+
+@media (max-width: 760px), (max-height: 500px) {
+  .modal-overlay {
+    --modal-top: max(12px, env(safe-area-inset-top));
+    --modal-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-block: var(--modal-top) var(--modal-bottom);
+    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .modal {
+    min-inline-size: 0;
+    max-block-size: calc(100dvh - var(--modal-top) - var(--modal-bottom));
+  }
+}
+
+@media (max-width: 420px) {
+  .df-content .field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1000px) and (max-height: 500px) and (orientation: landscape) {
+  .df-content .dr-community-chat {
+    min-height: 0;
+    height: auto;
+    max-height: none;
+  }
+
+  .df-content .dr-community-messages {
+    min-height: 0;
+    max-height: max(110px, calc(100dvh - 235px));
+  }
+}

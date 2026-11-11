@@ -1,0 +1,65 @@
+{
+  "environment": "staging",
+  "projectRef": "dsnqnvbckkqpzadblshu",
+  "migration": "20261111130714_v15_platform_expansion.sql",
+  "appliedUsing": "Supabase apply_migration (DartFlow connection)",
+  "before": {
+    "authUsers": 0,
+    "profiles": 0,
+    "clubs": 0,
+    "matches": 0,
+    "coreSchema": 1
+  },
+  "after": {
+    "profiles": 0,
+    "coreSchema": 1,
+    "v15": 15,
+    "privateTables": 44,
+    "rlsEnabled": 44
+  },
+  "negativeGrants": {
+    "anonPrivateSchema": false,
+    "authenticatedPrivateSchema": false,
+    "runtimeGrantRoles": false,
+    "runtimeReadOwnerAllowlist": false,
+    "runtimeExecuteOwnerTrigger": false
+  },
+  "backup": {
+    "scope": "dartflow_private application schema and rows only; no Auth or managed service backup claimed",
+    "hostPath": "/var/backups/dartflow/v15-db-20261111T134552Z/dartflow-staging.dump",
+    "bytes": 51541,
+    "sha256": "267d34b2dbb0067992506c2e78ff5d9d40e8c97b7e50e9587dcfb9e050091d6a",
+    "archiveIndexVerified": true,
+    "restoreDrill": {
+      "result": "passed",
+      "target": "isolated temporary local PostgreSQL 16 database, removed after verification",
+      "restoredTables": 18,
+      "profiles": 0,
+      "matches": 0,
+      "coreSchema": 1,
+      "compatibility": "PostgreSQL 17 psql restrict markers and transaction_timeout session setting omitted; schema and data preserved"
+    }
+  },
+  "previousApplicationAfterMigration": {
+    "sourceSha": "4634852c17cc7737bec246c0b48310e975a36920",
+    "publicReady": "ready",
+    "schemaVersion": 1
+  },
+  "securityAdvisors": {
+    "warnings": 0,
+    "errors": 0,
+    "info": "owner_bootstrap intentionally has RLS and no runtime/browser policies; privileged trigger only",
+    "reference": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+  },
+  "productionMigration": "not yet applied",
+  "hostedMigrationVersion": "20261111134637",
+  "migrationSha256": "b61088c94a2515aff8513d959e1aa5d5b9028db789087fc6e48afbbc75fa9ec9",
+  "followupMigration": "20261111135047_v15_privilege_replay_guards.sql",
+  "followupPurpose": "Preserve append-only/runtime grants when local bootstrap is replayed; no business rows changed",
+  "followupHostedMigrationVersion": "20261111135115",
+  "localBootstrapReplay": {
+    "runs": 2,
+    "result": "passed",
+    "runtimeAppendOnlyGrantsPreserved": true
+  }
+}

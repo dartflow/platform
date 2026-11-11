@@ -9,17 +9,27 @@ export type MatchState = {
   id: string; clubId: string; eventId: string; boardId: string | null; revision: number;
   status: 'planned' | 'called' | 'ready' | 'live' | 'result' | 'confirmed' | 'disputed';
   players: Profile[]; writerId: string; settings: Settings; accepted: boolean[];
+  delegatedWriterId?: string | null;
+  callRef?:string|null;
+  paused?:boolean;pausedBy?:string|null;scoringRevision?:number;
+  correction?:{id:string;requestedBy:string;reason:string;undoCount:number;visitCount:number;scoringRevision:number}|null;
+  administrativeDecision?:{type:'walkover';actorId:string;reason:string};
   confirmations: boolean[]; resultRevision: number | null; game: Game; previousSets: Game[];
   winnerId: string | null; resultPublished: boolean; dispute: string | null;
 };
 export type MatchView = Omit<MatchState, 'game' | 'previousSets'> & {
+  offlineSupported?: boolean;
   remaining: number[]; legs: number[]; sets: number[]; turn: number; checkout: string | null;
   visits: Visit[]; stats: Stats[]; legNumber: number; setNumber: number;
-  permissions: { canScore: boolean; canManage: boolean; canAccept: boolean; canConfirm: boolean; canTakeOver: boolean; canUndo: boolean };
+  permissions: { canScore: boolean; canManage: boolean; canAccept: boolean; canConfirm: boolean; canTakeOver: boolean; canUndo: boolean;canPause:boolean;canResume:boolean;canRequestCorrection:boolean;canAnswerCorrection:boolean;canCancelCorrection:boolean };
 };
 export type MatchAction =
-  | { type: 'call'; boardId: string }
+  | { type: 'call'; boardId: string;callRef?:string }
   | { type: 'accept' | 'start' | 'undo' | 'take-over' | 'confirm' | 'release' | 'recover' }
+  | {type:'pause';reason?:string}
+  | {type:'resume'}
+  | {type:'request-correction';reason:string}
+  | {type:'approve-correction'|'reject-correction'|'cancel-correction';correctionId:string}
   | { type: 'score'; score: number; darts?: number; doubleConfirmed?: boolean }
   | { type: 'dispute'; reason: string }
   | { type: 'resolve'; reason: string; decision: 'resume' | 'accept' };
@@ -35,4 +45,4 @@ export type Overview = {
   standings: { playerId: string; name: string; played: number; won: number; drawn: number; points: number }[];
   permissions: { canManage: boolean };
 };
-export type PublicSnapshot = { board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'winnerId' | 'resultPublished' | 'settings'> };
+export type PublicSnapshot = { board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'winnerId' | 'resultPublished' | 'settings' | 'writerId' | 'stats' | 'legNumber' | 'setNumber' | 'paused'> };

@@ -47,11 +47,14 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run test:prototype
       - run: npm run test:deploy
       - name: Verify privileged bootstrap contracts without host mutations
         run: |
           python3 -B tests/runner-installer-test.py
           python3 -B tests/blocked-cleanup-probe-test.py
+          python3 -B tests/runtime-boundaries-test.py
+          python3 -B tests/host-upgrade-test.py
       - run: npm run build
       - run: npx --no-install playwright install --with-deps chromium
       - run: npm run test:e2e

@@ -1,0 +1,7 @@
+{
+  "checkedOn":"2026-11-11",
+  "method":"Read-only public Supabase Auth settings endpoint using each environment's own configured publishable key; no server credential or provider secret fetched",
+  "staging":{"projectRef":"dsnqnvbckkqpzadblshu","externalEmail":true,"externalGoogle":false,"signupDisabled":false,"emailAutoconfirm":false},
+  "production":{"projectRef":"wlrnowuownakqqgjxnbb","externalEmail":true,"externalGoogle":false,"signupDisabled":false,"emailAutoconfirm":false},
+  "limits":"Email enabled is not evidence of custom SMTP, delivered mail, verified owner login or working recovery. Google is not yet configured/enabled. No real provider acceptance claimed."
+}
