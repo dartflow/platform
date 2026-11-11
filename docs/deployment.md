@@ -12,6 +12,8 @@ De developmentcheckout op de dev-VPS is de bron voor wijzigingen. Het overgenome
 
 Gebruik voor development de geïsoleerde lokale PostgreSQL-fixture: `npm ci`, `npm run db:start`, `npm run db:migrate` en `npm run db:seed`. Controleer dat de developmentconfiguratie loopback en `DARTFLOW_DATA_MODE=local` gebruikt voordat fixturedata wordt geladen. Synthetische accounts en seeddata gaan niet naar staging of productie. De reguliere CI controleert types, lint, domein-/integratietests, het bronprototype, de native deploygrenzen, de standalonebuild en de browserflows. Alleen een geslaagde push-CI op de gekozen volledige SHA telt voor de releasegate.
 
+Na twee bevestigde DNS-storingen van `azure.archive.ubuntu.com` gebruikt CI de officiële Ubuntu-archieven die al in de [GitHub-runnerconfiguratie](https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/configure-apt-sources.sh) staan. De CI-stap valideert beide HTTPS-vervolgmirrors en verwijdert alleen de Azure-vermelding uit `/etc/apt/apt-mirrors.txt` op de tijdelijke runner. Pakketondertekening, PostgreSQL-installatie, Playwright `--with-deps` en alle controles blijven vereist.
+
 Applicatiemail gebruikt een duurzame outbox: domeinwijziging en mailjob worden in dezelfde transactie opgeslagen, daarna verwerkt een omgevingsgebonden worker beperkte batches. Supabase Auth blijft verantwoordelijk voor OTP en zijn eigen SMTP-configuratie. Voor cameramedia gebruiken de browsers WebRTC en de eigen native TURN-service; app-, signaling- en relayautorisatie blijven afzonderlijk. Een geslaagde appbuild bewijst geen externe mailbezorging, Google-login of bereikbare publieke mediarelay.
 
 ## Vaste omgevingsgrenzen

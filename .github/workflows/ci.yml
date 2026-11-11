@@ -35,6 +35,12 @@ jobs:
           npm install --global npm@11.16.0
           test "$(npm --version)" = "$(cat .npm-version)"
           npm ci
+      - name: Use existing official Ubuntu archive mirrors
+        run: |
+          test -f /etc/apt/apt-mirrors.txt
+          grep -Eq '^https://archive\.ubuntu\.com/ubuntu(/|[[:space:]]|$)' /etc/apt/apt-mirrors.txt
+          grep -Eq '^https://security\.ubuntu\.com/ubuntu(/|[[:space:]]|$)' /etc/apt/apt-mirrors.txt
+          sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
       - name: Install PostgreSQL 16 server for isolated fixture tests
         run: |
           sudo apt-get update
