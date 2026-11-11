@@ -1,0 +1,225 @@
+{
+  "checkedAt": "2026-11-11T15:58:57.727716+00:00",
+  "host": "128.140.93.95",
+  "nativeVersion": "4.18.0",
+  "results": [
+    {
+      "environment": "staging",
+      "listenerPort": 3478,
+      "relayRange": [
+        49160,
+        49179
+      ],
+      "unauthenticatedAllocation": "rejected",
+      "udpRelayRoundTrip": "passed",
+      "tcpRelayRoundTrip": "passed",
+      "privatePeers": "rejected-both-transports",
+      "ownHostPorts": "kernel-drop-verified",
+      "otherEnvironmentCredential": "rejected-both-transports",
+      "allocationCleanup": {
+        "normalRefreshZero": "acknowledged",
+        "controlSockets": "closed-before-return",
+        "quotaRelease": "asynchronous; not-synchronously-asserted",
+        "failedIpv6": {
+          "udp": {
+            "refreshZero": "437-no-allocation",
+            "controlSocket": "closed",
+            "quotaRelease": "not-synchronously-asserted; server teardown/watchdog or external host reset"
+          },
+          "tcp": {
+            "refreshZero": "437-no-allocation",
+            "controlSocket": "closed",
+            "quotaRelease": "not-synchronously-asserted; server teardown/watchdog or external host reset"
+          }
+        }
+      },
+      "peerMapping": "owned-server-authenticated-allocation",
+      "maximumAcknowledgedLiveAllocationsPerCredential": 1,
+      "quotaRetryAfterAcknowledgedRelease": {
+        "maximumAttempts": 3,
+        "delaysSeconds": [
+          0,
+          0.6,
+          0.6
+        ]
+      },
+      "authenticatedIpv6AllocationDenied": {
+        "udp": 440,
+        "tcp": 440
+      },
+      "sameEnvironmentRelayRoundTrips": [
+        {
+          "transport": "udp",
+          "roundTrip": "passed",
+          "relayPorts": [
+            49169,
+            49172
+          ],
+          "kernelAllowedDatagrams": 2
+        },
+        {
+          "transport": "tcp",
+          "roundTrip": "passed",
+          "relayPorts": [
+            49163,
+            49167
+          ],
+          "kernelAllowedDatagrams": 2
+        }
+      ],
+      "ownIpKernelGuardDrops": [
+        {
+          "destinationPort": 9,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        },
+        {
+          "destinationPort": 3478,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        },
+        {
+          "destinationPort": 3479,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        },
+        {
+          "destinationPort": 443,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        },
+        {
+          "destinationPort": 2019,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        },
+        {
+          "destinationPort": 49180,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        }
+      ]
+    },
+    {
+      "environment": "production",
+      "listenerPort": 3479,
+      "relayRange": [
+        49180,
+        49199
+      ],
+      "unauthenticatedAllocation": "rejected",
+      "udpRelayRoundTrip": "passed",
+      "tcpRelayRoundTrip": "passed",
+      "privatePeers": "rejected-both-transports",
+      "ownHostPorts": "kernel-drop-verified",
+      "otherEnvironmentCredential": "rejected-both-transports",
+      "allocationCleanup": {
+        "normalRefreshZero": "acknowledged",
+        "controlSockets": "closed-before-return",
+        "quotaRelease": "asynchronous; not-synchronously-asserted",
+        "failedIpv6": {
+          "udp": {
+            "refreshZero": "437-no-allocation",
+            "controlSocket": "closed",
+            "quotaRelease": "not-synchronously-asserted; server teardown/watchdog or external host reset"
+          },
+          "tcp": {
+            "refreshZero": "437-no-allocation",
+            "controlSocket": "closed",
+            "quotaRelease": "not-synchronously-asserted; server teardown/watchdog or external host reset"
+          }
+        }
+      },
+      "peerMapping": "owned-server-authenticated-allocation",
+      "maximumAcknowledgedLiveAllocationsPerCredential": 1,
+      "quotaRetryAfterAcknowledgedRelease": {
+        "maximumAttempts": 3,
+        "delaysSeconds": [
+          0,
+          0.6,
+          0.6
+        ]
+      },
+      "authenticatedIpv6AllocationDenied": {
+        "udp": 440,
+        "tcp": 440
+      },
+      "sameEnvironmentRelayRoundTrips": [
+        {
+          "transport": "udp",
+          "roundTrip": "passed",
+          "relayPorts": [
+            49189,
+            49193
+          ],
+          "kernelAllowedDatagrams": 2
+        },
+        {
+          "transport": "tcp",
+          "roundTrip": "passed",
+          "relayPorts": [
+            49197,
+            49199
+          ],
+          "kernelAllowedDatagrams": 2
+        }
+      ],
+      "ownIpKernelGuardDrops": [
+        {
+          "destinationPort": 9,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        },
+        {
+          "destinationPort": 3478,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        },
+        {
+          "destinationPort": 3479,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        },
+        {
+          "destinationPort": 443,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        },
+        {
+          "destinationPort": 2019,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        },
+        {
+          "destinationPort": 49160,
+          "egressTransport": "udp",
+          "controlTransport": "tcp",
+          "kernelDroppedDatagrams": 1,
+          "independentAllocation": true
+        }
+      ]
+    }
+  ]
+}

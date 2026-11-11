@@ -25,8 +25,9 @@ PREFIX=Path('/opt/dg-coturn-4.18.0')
 PUBLIC_IP='128.140.93.95'
 BUILDER='build-dg-turn'
 ROOT=Path('/var/lib/dg-turn-build')
+PEER_GUARD=Path('/usr/local/libexec/dg-turn-peer-guard.py')
 SITES={'staging':(3478,49160,49179),'production':(3479,49180,49199)}
-DENIED=['0.0.0.0-0.255.255.255','10.0.0.0-10.255.255.255','100.64.0.0-100.127.255.255','127.0.0.0-127.255.255.255','169.254.0.0-169.254.255.255','172.16.0.0-172.31.255.255','192.0.0.0-192.0.0.255','192.168.0.0-192.168.255.255','198.18.0.0-198.19.255.255','224.0.0.0-255.255.255.255',PUBLIC_IP,'::-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff']
+DENIED=['0.0.0.0-0.255.255.255','10.0.0.0-10.255.255.255','100.64.0.0-100.127.255.255','127.0.0.0-127.255.255.255','169.254.0.0-169.254.255.255','172.16.0.0-172.31.255.255','192.0.0.0-192.0.0.255','192.168.0.0-192.168.255.255','198.18.0.0-198.19.255.255','224.0.0.0-255.255.255.255']
 
 def run(args,**kwargs):
     return subprocess.run(args,check=True,text=True,env={'PATH':'/usr/sbin:/usr/bin:/sbin:/bin','LANG':'C.UTF-8','LC_ALL':'C.UTF-8'},**kwargs)
@@ -52,6 +53,28 @@ def protected_write(path,data,mode=0o600):
         os.replace(temp,path);os.chmod(path,mode)
     finally:
         if temp.exists():temp.unlink()
+
+def install_peer_guard():
+    # The reviewed helper must accompany this root-owned operator input. Never
+    # execute source copied through a writable ancestor or a symlink.
+    source=Path(__file__).absolute().with_name('turn-peer-guard.py')
+    if '..' in source.parts:raise RuntimeError('Peer guard source path must be canonical')
+    for path in [*reversed(source.parents),source]:
+        info=path.lstat()
+        if info.st_uid!=0 or info.st_mode&0o022 or stat.S_ISLNK(info.st_mode):raise RuntimeError('Peer guard source is not root-owned and protected')
+        if path!=source and not stat.S_ISDIR(info.st_mode):raise RuntimeError('Invalid peer guard source ancestor')
+    before=source.lstat()
+    fd=os.open(source,os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC)
+    with os.fdopen(fd,'rb') as stream:
+        info=os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink!=1 or (info.st_dev,info.st_ino)!=(before.st_dev,before.st_ino):raise RuntimeError('Peer guard source changed or is not regular')
+        data=stream.read(65537)
+    if len(data)>65536 or not data.startswith(b'#!/usr/bin/python3 -I\n'):raise RuntimeError('Invalid reviewed peer guard source')
+    for path in [Path('/usr'),Path('/usr/local')]:
+        info=path.lstat()
+        if info.st_uid!=0 or info.st_mode&0o022 or not stat.S_ISDIR(info.st_mode):raise RuntimeError('Unsafe peer guard installation ancestor')
+    directory(PEER_GUARD.parent,0o755)
+    protected_write(PEER_GUARD,data,0o700)
 
 def build():
     metadata=PREFIX/'source.json'
@@ -129,6 +152,7 @@ Wants=network-online.target
 Type=simple
 DynamicUser=yes
 LoadCredential=turn.conf:{config}
+ExecStartPre=+{PEER_GUARD} {environment}
 ExecStart={PREFIX}/bin/turnserver -c %d/turn.conf
 RuntimeDirectory=dg-turn-{environment}
 RuntimeDirectoryMode=0700
@@ -155,7 +179,7 @@ IPAddressDeny=169.254.0.0/16
 IPAddressDeny=172.16.0.0/12
 IPAddressDeny=192.168.0.0/16
 IPAddressDeny=::/0
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictAddressFamilies=AF_INET AF_UNIX
 RestrictSUIDSGID=yes
 LockPersonality=yes
 UMask=0077
@@ -166,20 +190,37 @@ WantedBy=multi-user.target
     run(['/usr/bin/systemd-analyze','verify',str(path)],stdout=subprocess.DEVNULL)
     return unit,secret_path
 
+def stop_owned_turn():
+    # An already loaded legacy unit must not race a relaxed config write: it
+    # could otherwise restart before daemon-reload and omit the new guard.
+    for environment in SITES:
+        unit='dg-turn-'+environment+'.service'
+        state=run(['/usr/bin/systemctl','show',unit,'--property=LoadState','--value'],capture_output=True).stdout.strip()
+        if state=='loaded':run(['/usr/bin/systemctl','stop',unit])
+        elif state!='not-found':raise RuntimeError('Owned TURN unit has an unexpected load state')
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--apply',action='store_true');args=parser.parse_args()
     if os.geteuid()!=0 or socket.gethostname()!='dg-nxttrack-01':raise RuntimeError('Run as root on the fixed target host')
     if not args.apply:print(json.dumps({'host':'dg-nxttrack-01','sourceCommit':COMMIT,'sourceSha256':SOURCE_SHA,'sites':SITES,'mode':'preflight'}));return
     os.umask(0o077)
+    run(['/usr/sbin/nft','--version'],stdout=subprocess.DEVNULL)
     if subprocess.run(['/usr/bin/systemctl','is-active','--quiet','coturn'],check=False).returncode==0:raise RuntimeError('The vendor coturn service is active; review its ownership before proceeding')
-    build();units=[provision(environment,ports) for environment,ports in SITES.items()]
+    install_peer_guard();build();stop_owned_turn()
+    units=[provision(environment,ports) for environment,ports in SITES.items()]
     run(['/usr/bin/systemctl','daemon-reload'])
-    for unit,_path in units:run(['/usr/bin/systemctl','enable','--now',unit],stdout=subprocess.DEVNULL)
+    for unit,_path in units:
+        run(['/usr/bin/systemctl','enable',unit],stdout=subprocess.DEVNULL)
+        run(['/usr/bin/systemctl','restart',unit],stdout=subprocess.DEVNULL)
     for unit,_path in units:run(['/usr/bin/systemctl','is-active','--quiet',unit])
+    for environment in SITES:run([str(PEER_GUARD),'--inspect',environment],stdout=subprocess.DEVNULL)
     for environment,(port,minimum,maximum) in SITES.items():
         for protocol in ['udp','tcp']:run(['/usr/sbin/ufw','allow',str(port)+'/'+protocol,'comment','DartFlow '+environment+' TURN'],stdout=subprocess.DEVNULL)
         run(['/usr/sbin/ufw','allow',str(minimum)+':'+str(maximum)+'/udp','comment','DartFlow '+environment+' relay'],stdout=subprocess.DEVNULL)
-    print(json.dumps({'status':'installed','nativeVersion':'4.18.0','environments':[{ 'environment':unit.removeprefix('dg-turn-').removesuffix('.service'),'unit':unit,'secretFile':str(path)} for unit,path in units]}))
+    # Same-host control clients are deliberately blocked by the guard. Only an
+    # external authenticated peer can prove the public relay; active is not a
+    # claim of browser connectivity or actual media delivery.
+    print(json.dumps({'status':'installed','nativeVersion':'4.18.0','publicRelayAcceptance':'pending-external-authenticated-probe','environments':[{ 'environment':unit.removeprefix('dg-turn-').removesuffix('.service'),'unit':unit,'secretFile':str(path)} for unit,path in units]}))
 
 if __name__=='__main__':
     try:main()

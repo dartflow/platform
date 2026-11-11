@@ -1,0 +1,112 @@
+{
+  "checkedAt": "2026-11-11T15:59:28.203125+00:00",
+  "host": "dg-nxttrack-01",
+  "purpose": "Post-probe cleanup: clear every remaining test control session and deferred quota/BPS charge, including rejected IPv6 allocations, after the successful public guarded test.",
+  "successfulPublicProof": "v15-turn-guarded-public-2026-11-11.json",
+  "activeOwnedRelayPortsBefore": [],
+  "guardBefore": {
+    "staging": {
+      "installed": true,
+      "environment": "staging",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-staging.service",
+      "cgroupId": 153227,
+      "sourceRange": [
+        49160,
+        49179
+      ],
+      "destinationRange": [
+        49160,
+        49179
+      ],
+      "allowedOwnRelayCounter": 4,
+      "blockedOwnIpCounter": 6
+    },
+    "production": {
+      "installed": true,
+      "environment": "production",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-production.service",
+      "cgroupId": 153276,
+      "sourceRange": [
+        49180,
+        49199
+      ],
+      "destinationRange": [
+        49180,
+        49199
+      ],
+      "allowedOwnRelayCounter": 4,
+      "blockedOwnIpCounter": 6
+    }
+  },
+  "guardAfter": {
+    "staging": {
+      "installed": true,
+      "environment": "staging",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-staging.service",
+      "cgroupId": 157497,
+      "sourceRange": [
+        49160,
+        49179
+      ],
+      "destinationRange": [
+        49160,
+        49179
+      ],
+      "allowedOwnRelayCounter": 0,
+      "blockedOwnIpCounter": 0
+    },
+    "production": {
+      "installed": true,
+      "environment": "production",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-production.service",
+      "cgroupId": 157546,
+      "sourceRange": [
+        49180,
+        49199
+      ],
+      "destinationRange": [
+        49180,
+        49199
+      ],
+      "allowedOwnRelayCounter": 0,
+      "blockedOwnIpCounter": 0
+    }
+  },
+  "applicationHealthAfter": {
+    "staging": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+      "releaseId": "43038238892-1",
+      "buildConfigId": "staging-2026-11-11-v15-1",
+      "runtimeConfigId": "staging-2026-11-11-v15-1",
+      "configId": "staging-2026-11-11-v15-1"
+    },
+    "production": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+      "releaseId": "42995766522-1",
+      "buildConfigId": "production-2026-11-11-v1",
+      "runtimeConfigId": "production-2026-11-11-v1",
+      "configId": "production-2026-11-11-v1"
+    },
+    "milo": {
+      "status": "ok",
+      "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+      "releaseId": "43026808427-1",
+      "configVersion": "staging-2026-11-11-v2",
+      "checks": [
+        "http"
+      ]
+    }
+  }
+}

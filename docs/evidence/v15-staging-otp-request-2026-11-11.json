@@ -6,6 +6,7 @@
   "maximumRequests": 1,
   "requestCount": 1,
   "deliveryProven": false,
+  "deliveryProvenScope": "The original HTTP/UI request evidence alone. Subsequent user-confirmed receipt is recorded separately below.",
   "verificationPerformed": false,
   "identityBefore": {
     "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
@@ -39,5 +40,19 @@
     "profiles": 0,
     "ownerRoles": 0,
     "otpOrSessionTokensCollected": false
+  },
+  "subsequentUserConfirmation": {
+    "recordedAt": "2026-11-11T15:30:55Z",
+    "source": "user_confirmation",
+    "receiptConfirmed": true,
+    "recipient": "info@dgwebservices.nl",
+    "summary": "The user confirmed receipt of the OTP email and is now configuring Google web clients and Resend custom SMTP.",
+    "codeVerificationConfirmed": false,
+    "authenticatedSessionConfirmed": false,
+    "ownerRoleConfirmed": false,
+    "googleWebClientsStatus": "configuration_in_progress_not_confirmed_complete",
+    "resendCustomSmtpStatus": "configuration_in_progress_not_confirmed_complete",
+    "historicalDatabaseObservationPreserved": true,
+    "additionalOtpRequestsMade": 0
   }
 }

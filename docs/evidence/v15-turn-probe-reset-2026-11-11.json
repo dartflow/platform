@@ -1,0 +1,111 @@
+{
+  "checkedAt": "2026-11-11T15:56:56.862456+00:00",
+  "host": "dg-nxttrack-01",
+  "purpose": "Clear quota and bandwidth accounting retained by earlier deliberate kernel-DROP probes; no application activation.",
+  "activeOwnedRelayPortsBefore": [],
+  "guardBefore": {
+    "staging": {
+      "installed": true,
+      "environment": "staging",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-staging.service",
+      "cgroupId": 146703,
+      "sourceRange": [
+        49160,
+        49179
+      ],
+      "destinationRange": [
+        49160,
+        49179
+      ],
+      "allowedOwnRelayCounter": 2,
+      "blockedOwnIpCounter": 7
+    },
+    "production": {
+      "installed": true,
+      "environment": "production",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-production.service",
+      "cgroupId": 146654,
+      "sourceRange": [
+        49180,
+        49199
+      ],
+      "destinationRange": [
+        49180,
+        49199
+      ],
+      "allowedOwnRelayCounter": 0,
+      "blockedOwnIpCounter": 0
+    }
+  },
+  "guardAfter": {
+    "staging": {
+      "installed": true,
+      "environment": "staging",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-staging.service",
+      "cgroupId": 153227,
+      "sourceRange": [
+        49160,
+        49179
+      ],
+      "destinationRange": [
+        49160,
+        49179
+      ],
+      "allowedOwnRelayCounter": 0,
+      "blockedOwnIpCounter": 0
+    },
+    "production": {
+      "installed": true,
+      "environment": "production",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-production.service",
+      "cgroupId": 153276,
+      "sourceRange": [
+        49180,
+        49199
+      ],
+      "destinationRange": [
+        49180,
+        49199
+      ],
+      "allowedOwnRelayCounter": 0,
+      "blockedOwnIpCounter": 0
+    }
+  },
+  "applicationHealthAfter": {
+    "staging": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+      "releaseId": "43038238892-1",
+      "buildConfigId": "staging-2026-11-11-v15-1",
+      "runtimeConfigId": "staging-2026-11-11-v15-1",
+      "configId": "staging-2026-11-11-v15-1"
+    },
+    "production": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+      "releaseId": "42995766522-1",
+      "buildConfigId": "production-2026-11-11-v1",
+      "runtimeConfigId": "production-2026-11-11-v1",
+      "configId": "production-2026-11-11-v1"
+    },
+    "milo": {
+      "status": "ok",
+      "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+      "releaseId": "43026808427-1",
+      "configVersion": "staging-2026-11-11-v2",
+      "checks": [
+        "http"
+      ]
+    }
+  }
+}

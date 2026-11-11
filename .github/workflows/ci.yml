@@ -59,6 +59,7 @@ jobs:
           python3 -B tests/blocked-cleanup-probe-test.py
           python3 -B tests/runtime-boundaries-test.py
           python3 -B tests/host-upgrade-test.py
+          python3 -B tests/turn-peer-guard-test.py
       - run: npm run build
       - name: Install pinned Chromium
         run: |

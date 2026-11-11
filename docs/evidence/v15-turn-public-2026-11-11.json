@@ -1,0 +1,63 @@
+{
+  "checkedAt": "2026-11-11T15:43:49.231435+00:00",
+  "host": "128.140.93.95",
+  "nativeVersion": "4.18.0",
+  "results": [
+    {
+      "environment": "staging",
+      "listenerPort": 3478,
+      "relayRange": [
+        49160,
+        49179
+      ],
+      "unauthenticatedAllocation": "rejected",
+      "udpRelayRoundTrip": "passed",
+      "tcpRelayRoundTrip": "passed",
+      "privateAndOwnHostPeers": "rejected-both-transports",
+      "otherEnvironmentCredential": "rejected-both-transports",
+      "allocationCleanup": "passed",
+      "peerMapping": "owned-server-authenticated-allocation",
+      "maximumAcknowledgedLiveAllocationsPerCredential": 1,
+      "quotaRetryAfterAcknowledgedRelease": {
+        "maximumAttempts": 3,
+        "delaysSeconds": [
+          0,
+          0.15,
+          0.4
+        ]
+      },
+      "authenticatedIpv6AllocationDenied": {
+        "udp": 440,
+        "tcp": 440
+      }
+    },
+    {
+      "environment": "production",
+      "listenerPort": 3479,
+      "relayRange": [
+        49180,
+        49199
+      ],
+      "unauthenticatedAllocation": "rejected",
+      "udpRelayRoundTrip": "passed",
+      "tcpRelayRoundTrip": "passed",
+      "privateAndOwnHostPeers": "rejected-both-transports",
+      "otherEnvironmentCredential": "rejected-both-transports",
+      "allocationCleanup": "passed",
+      "peerMapping": "owned-server-authenticated-allocation",
+      "maximumAcknowledgedLiveAllocationsPerCredential": 1,
+      "quotaRetryAfterAcknowledgedRelease": {
+        "maximumAttempts": 3,
+        "delaysSeconds": [
+          0,
+          0.15,
+          0.4
+        ]
+      },
+      "authenticatedIpv6AllocationDenied": {
+        "udp": 440,
+        "tcp": 440
+      }
+    }
+  ]
+}

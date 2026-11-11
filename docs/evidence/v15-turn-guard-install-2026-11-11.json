@@ -1,0 +1,87 @@
+{
+  "appliedAt": "2026-11-11T15:50:31.470942+00:00",
+  "host": "dg-nxttrack-01",
+  "backup": "/var/backups/dartflow/v15-turn-guard-20261111T155015109697Z",
+  "helperPath": "/usr/local/libexec/dg-turn-peer-guard.py",
+  "helperSha256": "75d1a99fba6cf8c090f5b7bb78e5107b8485b7f67a03672edd1feb4072245870",
+  "helperMode": "0700 root:root",
+  "guardedUnitsLoadedBeforeConfigRelaxation": true,
+  "guardInspection": {
+    "staging": {
+      "installed": true,
+      "environment": "staging",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-staging.service",
+      "cgroupId": 146703,
+      "sourceRange": [
+        49160,
+        49179
+      ],
+      "destinationRange": [
+        49160,
+        49179
+      ],
+      "allowedOwnRelayCounter": 0,
+      "blockedOwnIpCounter": 0
+    },
+    "production": {
+      "installed": true,
+      "environment": "production",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-production.service",
+      "cgroupId": 146654,
+      "sourceRange": [
+        49180,
+        49199
+      ],
+      "destinationRange": [
+        49180,
+        49199
+      ],
+      "allowedOwnRelayCounter": 0,
+      "blockedOwnIpCounter": 0
+    }
+  },
+  "stagingRestartProof": {
+    "beforeCgroupId": 146605,
+    "afterCgroupId": 146703,
+    "cgroupRecreated": true,
+    "newServiceInvocation": true,
+    "guardBoundAfterRestart": true
+  },
+  "allPrivateIpv4DenialsPreserved": true,
+  "ipv6SocketFamilyDisabled": true,
+  "ipv6KernelDenyPreserved": true,
+  "turnCredentialsUnchanged": true,
+  "applicationHealthAfter": {
+    "staging": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+      "releaseId": "43038238892-1",
+      "buildConfigId": "staging-2026-11-11-v15-1",
+      "runtimeConfigId": "staging-2026-11-11-v15-1",
+      "configId": "staging-2026-11-11-v15-1"
+    },
+    "production": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+      "releaseId": "42995766522-1",
+      "buildConfigId": "production-2026-11-11-v1",
+      "runtimeConfigId": "production-2026-11-11-v1",
+      "configId": "production-2026-11-11-v1"
+    },
+    "milo": {
+      "status": "ok",
+      "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+      "releaseId": "43026808427-1",
+      "configVersion": "staging-2026-11-11-v2",
+      "checks": [
+        "http"
+      ]
+    }
+  }
+}

@@ -1,0 +1,223 @@
+{
+  "checkedAt": "2026-11-11T15:59:49.369804+00:00",
+  "host": "dg-nxttrack-01",
+  "sites": {
+    "staging": {
+      "current": "releases/38bceb0dfdfe-43038238892-1",
+      "loopback": {
+        "health": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+            "releaseId": "43038238892-1",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1"
+          }
+        },
+        "ready": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+            "releaseId": "43038238892-1",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1"
+          }
+        }
+      },
+      "service": {
+        "MainPID": "77758",
+        "ActiveState": "active"
+      },
+      "mailTimer": {
+        "ActiveState": "active",
+        "UnitFileState": "enabled"
+      },
+      "public": {
+        "health": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+            "releaseId": "43038238892-1",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1"
+          }
+        },
+        "ready": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "38bceb0dfdfed70046d550e7b2f82839564f41cb",
+            "releaseId": "43038238892-1",
+            "buildConfigId": "staging-2026-11-11-v15-1",
+            "runtimeConfigId": "staging-2026-11-11-v15-1",
+            "configId": "staging-2026-11-11-v15-1"
+          }
+        }
+      }
+    },
+    "production": {
+      "current": "releases/4634852c17cc-42995766522-1",
+      "loopback": {
+        "health": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        },
+        "ready": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        }
+      },
+      "service": {
+        "MainPID": "64473",
+        "ActiveState": "active"
+      },
+      "mailTimer": {
+        "ActiveState": "inactive",
+        "UnitFileState": "disabled"
+      },
+      "public": {
+        "health": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        },
+        "ready": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4634852c17cc7737bec246c0b48310e975a36920",
+            "releaseId": "42995766522-1",
+            "buildConfigId": "production-2026-11-11-v1",
+            "runtimeConfigId": "production-2026-11-11-v1",
+            "configId": "production-2026-11-11-v1"
+          }
+        }
+      }
+    }
+  },
+  "turnGuards": {
+    "staging": {
+      "installed": true,
+      "environment": "staging",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-staging.service",
+      "cgroupId": 157497,
+      "sourceRange": [
+        49160,
+        49179
+      ],
+      "destinationRange": [
+        49160,
+        49179
+      ],
+      "allowedOwnRelayCounter": 0,
+      "blockedOwnIpCounter": 0
+    },
+    "production": {
+      "installed": true,
+      "environment": "production",
+      "ownIp": "128.140.93.95",
+      "serviceCgroupBound": true,
+      "cgroupPath": "/system.slice/dg-turn-production.service",
+      "cgroupId": 157546,
+      "sourceRange": [
+        49180,
+        49199
+      ],
+      "destinationRange": [
+        49180,
+        49199
+      ],
+      "allowedOwnRelayCounter": 0,
+      "blockedOwnIpCounter": 0
+    }
+  },
+  "stagingMailWorkerLastExecution": {
+    "Result": "success",
+    "ExecMainCode": "1",
+    "ExecMainStatus": "0"
+  },
+  "otherApplication": {
+    "httpStatus": 200,
+    "body": {
+      "status": "ok",
+      "revision": "f1550dd028ef668f09ed6e45a7c6b9d88c4dc5ee",
+      "releaseId": "43026808427-1",
+      "configVersion": "staging-2026-11-11-v2",
+      "checks": [
+        "http"
+      ]
+    }
+  },
+  "otherService": {
+    "MainPID": "70911",
+    "ActiveState": "active"
+  },
+  "infrastructureServices": {
+    "caddy.service": {
+      "ActiveState": "active"
+    },
+    "dg-turn-staging.service": {
+      "ActiveState": "active"
+    },
+    "dg-turn-production.service": {
+      "ActiveState": "active"
+    }
+  },
+  "guardHelper": {
+    "uid": 0,
+    "gid": 0,
+    "mode": "0700",
+    "sha256": "75d1a99fba6cf8c090f5b7bb78e5107b8485b7f67a03672edd1feb4072245870"
+  },
+  "publicCheckedAt": "2026-11-11T15:59:51.231616+00:00",
+  "acceptanceLimits": [
+    "Owner confirmed OTP receipt; code verification, verified owner session and owner-role activation remain open.",
+    "Google clients and Resend custom SMTP are being configured by owner; completion and genuine provider acceptance are pending.",
+    "Public raw TURN relay and guarded same-host relay are proven; physical browser media over two independent networks is not yet accepted.",
+    "Production v15 migration/application promotion awaits functional staging acceptance; prior healthy production app remains active."
+  ]
+}
