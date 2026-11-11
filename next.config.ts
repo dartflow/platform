@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
   output: 'standalone',
+  // The local-session helper uses fs; never trace developer databases or env files.
+  outputFileTracingExcludes: {'/*':['./.local/**/*','./.env*','./.git/**/*']},
   poweredByHeader: false,
   async headers() {
     return [{source: '/:path*', headers: [
