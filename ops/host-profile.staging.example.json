@@ -8,7 +8,15 @@
   "allowedRefs": [],
   "nativeEnabled": false,
   "requiredChecks": [
-    {"workflow": "ci.yml", "jobs": ["Verify"], "events": ["push"]}
+    {
+      "workflow": "ci.yml",
+      "jobs": [
+        "Verify"
+      ],
+      "events": [
+        "push"
+      ]
+    }
   ],
   "host": {
     "hostname": "dg-nxttrack-01",
@@ -40,7 +48,14 @@
   "runner": {
     "proposedName": "dg-nxttrack-01-dartflow-staging",
     "proposedAccount": "run-dart-stg",
-    "proposedLabels": ["self-hosted", "Linux", "X64", "dg-nxttrack-01", "dartflow", "staging"],
+    "proposedLabels": [
+      "self-hosted",
+      "Linux",
+      "X64",
+      "dg-nxttrack-01",
+      "dartflow",
+      "staging"
+    ],
     "registeredName": null,
     "scope": null,
     "uid": null,
@@ -71,7 +86,9 @@
     "miloPortToPreserve": 4173,
     "configRoot": "/etc/dg-sites/dartflow-staging/configs",
     "approvedConfigIds": [],
-    "runtimeSecretNames": ["DARTFLOW_DATABASE_URL"],
+    "runtimeSecretNames": [
+      "DARTFLOW_DATABASE_URL"
+    ],
     "databaseSecretReference": null,
     "activeReleaseId": null,
     "activeConfigId": null,
@@ -87,9 +104,16 @@
     "releaseRetention": "no_automatic_pruning_preserve_active_and_previous_configs",
     "hostBuildLock": "/run/lock/dg-build.lock",
     "siteDeployLockProposed": "/run/lock/dartflow-staging.deploy.lock",
-    "lockOrder": ["hostBuildLock", "siteDeployLockProposed"],
+    "lockOrder": [
+      "hostBuildLock",
+      "siteDeployLockProposed"
+    ],
     "lockConflictExitCode": 75,
-    "retryDelaysSeconds": [15, 30, 45],
+    "retryDelaysSeconds": [
+      15,
+      30,
+      45
+    ],
     "maxAttempts": 4
   },
   "backend": {
@@ -122,10 +146,28 @@
     "installedHelperSha256": null,
     "installedGateSha256": null,
     "installedExtractorSha256": null,
-    "allowedActions": ["deploy", "rollback"],
+    "installedGuardianSha256": null,
+    "proposedGuardian": "/usr/local/libexec/dartflow-lock-guardian.py",
+    "guardianUnitPattern": "dg-dartflow-lock-<run-id>-<attempt>.service",
+    "guardianSystemdFdTransferVerifiedOnHost": false,
+    "guardianHardHelperDeathVerifiedOnHost": false,
+    "guardianCleanupScope": [
+      "four_fixed_build_units_for_run",
+      "wait_for_fixed_build_and_dartflow_app_manager_jobs"
+    ],
+    "guardianAppRollback": false,
+    "guardianCleanupFailureBehavior": "retain_global_and_site_lock_open_file_descriptions_root_recovery_required",
+    "allowedActions": [
+      "deploy",
+      "rollback"
+    ],
     "immutableSourceMechanism": "independent_root_owned_github_ci_gate_and_exact_sha_archive",
     "credentialTransferMechanism": "ephemeral_default_github_token_stdin_only_runtime_database_host_only",
     "concurrencyGroup": "dartflow-staging-activation",
-    "miloModified": false
+    "miloModified": false,
+    "trustedBuildClientRetainsLockDescriptors": true,
+    "builderLockDescriptorsAllowed": false,
+    "trustedBuildClientDescriptorTransferVerifiedOnHost": false,
+    "reviewedSystemdSourceVersion": "v255"
   }
 }

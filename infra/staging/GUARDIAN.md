@@ -1,0 +1,28 @@
+# Dartflow lockhouder: installatie- en herstelgrens
+
+Deze bron is lokaal voorbereid en offline getest. Er is geen guardian op de doelhost geïnstalleerd of gestart. `nativeEnabled` blijft uit totdat de echte hostproef hieronder is uitgevoerd.
+
+De roothelper start vóór bron-/packagecode een afzonderlijke root-owned transient service `dg-dartflow-lock-<run-id>-<attempt>.service`. De vaste executable is `/usr/local/libexec/dartflow-lock-guardian.py`, afkomstig uit `lock-guardian.py`, root:root `0755`. De root-only deploypolicy moet de beoordeelde `guardianSha256` bevatten. Ook de gewijzigde helperdigest en de gerenderde entry-/sudoers-digests moeten opnieuw worden vastgelegd. De runner krijgt geen directe sudo-regel voor deze guardian of voor `systemd-run`.
+
+De guardian ontvangt de **bestaande open-file descriptions** van `/run/lock/dg-build.lock` en `/run/lock/dartflow-staging.deploy.lock` via respectievelijk stdin en stdout van `systemd-run --pipe`. Hij schrijft nooit op deze descriptors. Er worden geen token, runtimecredential, publieke configuratie of repositorycode doorgegeven. De helper begint pas nadat de `Type=notify`-service `active/running` meldt; de guardian heeft dan beide descriptors, de helperidentiteit/starttijd en diens `pidfd` gecontroleerd. Hij draait buiten de runner-/helpercgroup.
+
+Ook de vertrouwde **`systemd-run --wait`-buildclient** bewaart beide lockdescriptors via expliciete `pass_fds`. Daardoor kan een nog levende, vertraagde client na het overlijden van de helper geen build starten nadat de lock al is vrijgegeven. Dit berust op de gecontroleerde [systemd-v255-implementatie](https://github.com/systemd/systemd/blob/v255/src/run/run.c): deze sluit de extra inherited descriptors niet en levert via D-Bus uitsluitend `StandardInputFileDescriptor`, `StandardOutputFileDescriptor` en `StandardErrorFileDescriptor` aan de buildservice. De lockdescriptors zitten daar niet bij. Het buildaccount krijgt geen lockdescriptors, tokens of runtimeconfiguratie. Deze versieafhankelijkheid moet bij installatie en een systemd-upgrade opnieuw worden getoetst.
+
+Bij helperdood via `pidfd`, of een normale eindaanvraag via `SIGUSR1`, stopt de guardian uitsluitend deze vier vaste units voor dezelfde run:
+
+```text
+dg-dartflow-build-<run>-extract.service
+dg-dartflow-build-<run>-versions.service
+dg-dartflow-build-<run>-install.service
+dg-dartflow-build-<run>-build.service
+```
+
+Elke stop-/statusaanroep heeft een deadline. Vrijgave vereist voor alle vier `is-active`-exitcode `3` of `4`, plus een betrouwbaar gelezen, volledige `systemctl list-jobs --no-legend --no-pager --full` zonder job voor deze buildunits of voor exact `dartflow-staging.service`. Een nog lopende app-restart/-stop mag afronden; de guardian stopt geen gezonde app en raakt Milo niet aan. Bij een fout of onzekere status blijft hij de locks vasthouden en probeert hij de begrensde controle opnieuw. Zijn stop-timeout is daarom bewust oneindig; er is geen `RuntimeMaxSec` die de lockhouder voortijdig kan wegschieten. De normale helper wacht begrensd op afronding en rapporteert anders een fout die rootherstel vereist.
+
+Voor handmatig herstel leest de bevoegde beheerder de status van de exacte guardian, de vier buildunits en de volledige joblijst. Rond of stop uitsluitend de betrokken Dartflow-buildunits; laat de bestaande appjob gecontroleerd afronden. Zodra geen build of appjob meer loopt, kan de beheerder de betreffende guardian met `systemctl kill --kill-whom=main --signal=SIGUSR1 dg-dartflow-lock-<run>.service` opnieuw om de afsluitcontrole vragen en wachten tot hij inactief/verdwenen is. Verwijder, vervang of truncate de lockbestanden nooit. Forceer geen `SIGKILL` op een lockhouder zolang een betrokken client, build of appjob nog loopt.
+
+Een harde helperdood tijdens activatie kan buiten Python-exceptionrollback vallen. Na zo'n incident zijn appstatus, de exacte actieve SHA/configuratie en beide health-/readinesspaden opnieuw te controleren; zo nodig volgt de begrensde rollback naar een bekende verzegelde release. De guardian claimt geen crashherstel van applicatiestatus. Gelijktijdig hard beëindigen van **alle** root-lockhouders, inclusief guardian en vertrouwde clients, valt buiten deze garantie.
+
+Offline bewijs: echte `fork`/`pidfd`/`SIGKILL`/`SCM_RIGHTS`/`flock`-proeven bewijzen dat zowel globale als sitelock bezet blijven terwijl de helper dood en een gesimuleerde build nog actief is. Een afzonderlijke echte exec-/`pass_fds`-proef vertraagt de clientstart tot na helperdood, controleert beide locks vóór en tijdens de build en laat de builder zelf bewijzen dat geen van beide lock-inodes in `/proc/self/fd` aanwezig is. Pas na builder- en clientafloop worden de locks vrij. Alle testprocessen/descriptors worden opgeruimd.
+
+**Nog vereist op de doelhost:** verifieer de werkelijke systemd-versie en root-owned executable/digests; voer de echte `--pipe`-/OFD- en `pass_fds`-overdracht uit; inspecteer de builderdescriptors; beëindig de helper gecontroleerd hard tijdens een langlopende synthetische Dartflow-build en tijdens een vertraagde clientstart; bewijs onafhankelijke globale én site-lockweigering tot build-/jobdrain; toets geblokkeerde cleanup en rootherstel; controleer daarna Milo en de bedoelde Dartflow-release. Offline procesproeven vervangen deze systemd-/hostacceptatie niet.

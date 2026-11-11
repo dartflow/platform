@@ -9,6 +9,7 @@
   "npm": null,
   "gateSha256": null,
   "extractorSha256": null,
+  "guardianSha256": null,
   "accounts": {
     "run-dart-stg": {"uid": null, "gid": null},
     "build-dart-stg": {"uid": null, "gid": null},

@@ -16,12 +16,13 @@ Milo's `/usr/local/bin/dg-site-deploy` en helper blijven ongewijzigd. Hun actuel
 | Privileged helper | `/usr/local/libexec/dg-dartflow-deploy-helper` |
 | Onafhankelijke GitHub-gate | `/usr/local/libexec/dartflow-release-gate.mjs` |
 | Begrensde bronextractor | `/usr/local/libexec/dartflow-extract-source.py` |
+| Onafhankelijke lockbewaker | `/usr/local/libexec/dartflow-lock-guardian.py`, gepind met `guardianSha256` |
 | Alleen-lock retryadapter | `/usr/local/libexec/dartflow-retry-deploy.mjs` |
 | Rootpolicy | `/etc/dg-sites/dartflow-staging/deploy.json`, `root:root 0600` |
 | Configbundels | `/etc/dg-sites/dartflow-staging/configs/<config_id>/`, root-only `0700`, files `0600` |
 | Verhoogde toegang | Alleen de digest-/argumentgebonden helperregels uit `infra/staging/dartflow-staging.sudoers.example` |
 
-Entry/helper/gate/extractor/retryadapter en alle bovenliggende padcomponenten zijn root-owned en niet schrijfbaar voor runner, builder, app, groep of anderen. Render de helper-SHA-256 in de entry en sudoers; de bronplaceholder weigert uitvoering. De rootpolicy pint gate/extractorhashes, repository/branch/checks, backendproject, echte accounts, poort, toolchain en resourcegrenzen. Het voorbeeldbeleid bevat opzettelijk ontbrekende waarden en wordt geweigerd.
+Entry/helper/gate/extractor/lockbewaker/retryadapter en alle bovenliggende padcomponenten zijn root-owned en niet schrijfbaar voor runner, builder, app, groep of anderen. Render de helper-SHA-256 in de entry en sudoers; de bronplaceholder weigert uitvoering. De rootpolicy pint gate/extractor/guardianhashes, repository/branch/checks, backendproject, echte accounts, poort, toolchain en resourcegrenzen. Het voorbeeldbeleid bevat opzettelijk ontbrekende waarden en wordt geweigerd.
 
 De entry accepteert exact:
 
@@ -81,6 +82,12 @@ De appunit leest `.runtime.env` en daarna `.release.env` via `current`. Voor act
 ## Locking, timeouts en herstel
 
 Zowel deploy als rollback nemen nonblocking eerst `/run/lock/dg-build.lock` en daarna `/run/lock/dartflow-staging.deploy.lock`. De bestaande gedeelde lock wordt niet vervangen of inhoudelijk aangepast. Locks blijven over bron/build/activatie/nacontrole vast. GitHub gebruikt daarnaast voor beide workflows `dartflow-staging-activation`, zonder annulering van een lopende operatie.
+
+Een afzonderlijke root-owned guardianunit `dg-dartflow-lock-<run-id>-<attempt>.service` neemt dezelfde open-file-descriptions over via systemd `--pipe` op FD 0 en 1. De helper sluit bij cleanup alleen zijn eigen descriptors; hij ontgrendelt de gedeelde open-file-descriptions niet expliciet. De guardian valideert locks en helper-pidfd vóór zijn gereedmelding. De helper wacht daarop vóór bron-/install-/buildcode draait. Ook uitsluitend de vertrouwde `systemd-run --wait`-buildclient behoudt beide descriptors via `pass_fds`, zodat een late start na helperdood beschermd blijft. De builder krijgt ze niet via D-Bus, stdio of omgeving; guardiancommands krijgen eigen gecontroleerde stdin/stdout. De guardian heeft geen token/runtimeconfiguratie en geen appactivatietaak. Zie `infra/staging/GUARDIAN.md` voor de gecontroleerde systemd-v255-semantiek en verplichte hostproeven.
+
+Na een einde-/cleanupverzoek of waargenomen helperdood stopt en controleert de guardian uitsluitend de vier vaste `dg-dartflow-build-<run-id>-<attempt>-{extract,versions,install,build}.service`-units. Hij wacht daarnaast tot `systemctl list-jobs` geen pending job voor die units of `dartflow-staging.service` meer bevat. Een onzekere of mislukte cleanup houdt de locks vast voor rootdiagnose; er wordt dan geen nieuwe build toegelaten. De helper vangt ook `SIGHUP` af; tegen harde helperdood is juist de onafhankelijke guardian bedoeld.
+
+De guardian herstelt de app niet automatisch na een harde helperdood midden in activatie. Na cleanup zijn controle van de werkelijke app/configidentiteit, health/readiness en zo nodig een bekende compatibele rollback vereist. Beëindig een vastgehouden guardian pas na onafhankelijke bevestiging dat zijn vaste builds gestopt zijn en pending appjobs zijn afgewikkeld; vervang of verwijder nooit de globale lockfile. Gelijktijdige `SIGKILL` van alle root-lockhouders (helper, guardian en vertrouwde clients) is geen gedekte fout. De echte systemd-FD-overdracht, afwezigheid van builder-lockdescriptors en gecontroleerde helper-SIGKILL-proeven op de doelhost blijven **Open**; lokale FD-/procesfixtures bewijzen die hostintegratie niet.
 
 Alleen lockbezetting levert exitcode **75**. De retryadapter doet voor deploy én rollback maximaal vier pogingen, met 15/30/45 seconden tussenruimte; geen enkele andere fout wordt automatisch herhaald. Blijft de vierde poging bezet, wacht op de lopende operatie en start dezelfde expliciete workflow opnieuw. Milo's bestaande generieke foutcode 1 wordt nooit als locksignaal gebruikt.
 

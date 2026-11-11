@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """Offline real-filesystem/lock/transaction tests; no sudo, systemd or providers run."""
+import array
 import hashlib
 import importlib.util
 import io
@@ -7,6 +8,9 @@ import json
 import os
 from pathlib import Path
 import shutil
+import select
+import signal
+import socket
 import stat
 import subprocess
 import sys
@@ -28,6 +32,7 @@ def load(name, file):
 deploy = load('dartflow_helper', 'infra/staging/deploy-helper.py')
 entry = load('dartflow_entry', 'infra/staging/deploy-entry.py')
 extractor = load('dartflow_extract', 'infra/staging/extract-source.py')
+guardian = load('dartflow_guardian', 'infra/staging/lock-guardian.py')
 SHA, OLD_SHA = 'a' * 40, 'b' * 40
 RUN, OLD_RUN = '10101-1', '20202-1'
 NAME, OLD_NAME = SHA[:12] + '-' + RUN, OLD_SHA[:12] + '-' + OLD_RUN
@@ -392,6 +397,11 @@ class ActivationTransactions(unittest.TestCase):
 
 
 class BuildIsolation(unittest.TestCase):
+    def setUp(self):
+        self.locks = patch.object(deploy, 'BUILD_LOCK_FDS', (31, 32))
+        self.locks.start()
+        self.addCleanup(self.locks.stop)
+
     def test_sandbox_uses_pinned_tools_resource_budgets_and_no_secrets(self):
         policy = {'node': '/opt/node-v24.18.0-linux-x64/bin/node', 'npm': '/opt/dg-toolchains/npm/11.16.0/bin/npm', 'buildTimeoutSeconds': 300, 'buildMemoryMax': '3G', 'buildCpuQuota': '100%'}
         values = {**public(), 'DARTFLOW_RELEASE_SHA': SHA, 'DARTFLOW_RELEASE_ID': RUN, 'DARTFLOW_BUILD_CONFIG_ID': CONFIG, 'DARTFLOW_RUNTIME_CONFIG_ID': CONFIG}
@@ -405,6 +415,7 @@ class BuildIsolation(unittest.TestCase):
         self.assertNotIn(TOKEN, str(argv))
         self.assertNotIn('DARTFLOW_DATABASE_URL', str(argv))
         self.assertEqual(argv[-4:], [policy['npm'], 'ci', '--no-audit', '--no-fund'])
+        self.assertEqual(command.call_args.kwargs['pass_fds'], (31, 32))
         self.assertEqual(run.call_args.args[0][1:3], ['is-active', '--quiet'])
         with self.assertRaises(ValueError):
             deploy.build_command(['npm', 'ci'], Path('/unused'), policy, RUN, 'install', values={'GITHUB_TOKEN': TOKEN})
@@ -451,7 +462,7 @@ class CompleteReleaseFixture(unittest.TestCase):
         self.node.chmod(0o700)
         self.npm.chmod(0o700)
         self.policy = json.loads((ROOT / 'infra/staging/deploy-policy.example.json').read_text())
-        self.policy.update(repository='synthetic/dartflow', integrationBranch='main', port=4174, node=str(self.node), npm=str(self.npm), gateSha256='c' * 64, extractorSha256='c' * 64, backend={'projectRef': REF}, allowedConfigIds=[CONFIG])
+        self.policy.update(repository='synthetic/dartflow', integrationBranch='main', port=4174, node=str(self.node), npm=str(self.npm), gateSha256='c' * 64, extractorSha256='c' * 64, guardianSha256='c' * 64, backend={'projectRef': REF}, allowedConfigIds=[CONFIG])
         self.person = SimpleNamespace(pw_uid=os.getuid(), pw_gid=os.getgid())
         self.patches = [patch.object(deploy, 'ROOT_UID', os.getuid()), patch.object(deploy, 'SITE_ROOT', self.site), patch.object(deploy, 'BUILD_ROOT', self.build_root), patch.object(deploy, 'CONFIG_ROOT', self.config_root), patch.object(deploy, 'trusted_path', side_effect=lambda path, directory=False: Path(path)), patch.object(deploy.pwd, 'getpwnam', return_value=self.person), patch.object(deploy, 'capacity')]
         for context in self.patches:
@@ -650,6 +661,291 @@ class TrackedSourceContract(unittest.TestCase):
             self.assertTrue((Path(directory) / 'package-lock.json').is_file())
             self.assertFalse((Path(directory) / '.env.local').exists())
             self.assertEqual(json.loads((Path(directory) / 'package.json').read_text())['name'], 'dartflow')
+
+
+class GuardianLifetime(unittest.TestCase):
+    def test_systemd_guardian_receives_only_lock_stdio_and_waits_for_ready(self):
+        client = SimpleNamespace(poll=lambda: None)
+        with patch.object(deploy, 'trusted_path'), patch.object(deploy, 'file_digest', return_value='a' * 64), patch.object(deploy.subprocess, 'Popen', return_value=client) as spawn, patch.object(deploy, 'guardian_state', side_effect=[{'activating', 'start'}, {'active', 'running'}]), patch.object(deploy.time, 'sleep'):
+            result = deploy.start_guardian((31, 32), RUN, {'guardianSha256': 'a' * 64})
+        self.assertEqual(result['client'], client)
+        args = spawn.call_args.args[0]
+        self.assertIn('--service-type=notify', args)
+        self.assertIn('--property=NotifyAccess=main', args)
+        self.assertIn('--property=TimeoutStopSec=infinity', args)
+        self.assertIn('--wait', args)
+        self.assertFalse(any('RuntimeMaxSec' in value for value in args))
+        self.assertEqual(spawn.call_args.kwargs['stdin'], 31)
+        self.assertEqual(spawn.call_args.kwargs['stdout'], 32)
+        self.assertEqual(spawn.call_args.kwargs['env'], deploy.CLEAN_ENV)
+        self.assertNotIn(TOKEN, str(spawn.call_args))
+        self.assertNotIn('DARTFLOW_DATABASE_URL', str(spawn.call_args))
+
+    def test_cleanup_waits_for_exact_app_job_and_fails_closed_on_unreadable_jobs(self):
+        calls = []
+        def execute(job_output=b'', job_code=0):
+            def fake(args, **options):
+                calls.append(args)
+                self.assertEqual(options['stdin'], subprocess.DEVNULL)
+                if 'list-jobs' in args:
+                    self.assertIn('--full', args)
+                    return SimpleNamespace(returncode=job_code, stdout=job_output)
+                return SimpleNamespace(returncode=3)
+            return fake
+        self.assertTrue(guardian.stop_builds(RUN, execute=execute()))
+        self.assertFalse(guardian.stop_builds(RUN, execute=execute(b'123 dartflow-staging.service restart running\n')))
+        self.assertTrue(guardian.stop_builds(RUN, execute=execute(b'123 other-dartflow-staging.service restart running\n')))
+        self.assertFalse(guardian.stop_builds(RUN, execute=execute(b'123 dg-dartflow-build-' + RUN.encode() + b'-build.service start waiting\n')))
+        self.assertFalse(guardian.stop_builds(RUN, execute=execute(job_code=1)))
+        self.assertFalse(guardian.stop_builds(RUN, execute=execute(b'not a trustworthy job table')))
+        self.assertTrue(all(args[-1].startswith('dg-dartflow-build-' + RUN) for args in calls if args[1] == 'stop'))
+        self.assertFalse(any(args[1] == 'stop' and args[-1] == 'dartflow-staging.service' for args in calls))
+
+    def test_guardian_cleanup_failure_keeps_holder_until_a_verified_stop(self):
+        parent_r, parent_w = os.pipe()
+        os.close(parent_w)
+        attempts, messages, pauses = [], [], []
+        def stop(run):
+            attempts.append(run)
+            return len(attempts) >= 3
+        try:
+            guardian.hold_until_done(parent_r, RUN, stop=stop, announce=messages.append, pause=pauses.append, finish=lambda: False)
+        finally:
+            os.close(parent_r)
+        self.assertEqual(attempts, [RUN, RUN, RUN])
+        self.assertEqual(pauses, [5, 5])
+        self.assertIn('cleanup blocked', messages[1])
+        self.assertIn('releasing deployment locks', messages[-1])
+
+    def test_helper_sigkill_does_not_release_exact_ofd_before_long_build_stops(self):
+        # Three sibling processes model the helper, independent guardian service
+        # and builder cgroup. SCM_RIGHTS preserves the real OFD, like --pipe.
+        # The test parent closes its received duplicates before killing helper;
+        # the fake builder forks before any lock exists and never inherits one.
+        with tempfile.TemporaryDirectory() as directory, patch.object(deploy, 'ROOT_UID', os.getuid()):
+            global_path, site_path = Path(directory) / 'global', Path(directory) / 'site'
+            transport_parent, transport_child = socket.socketpair()
+            status_r, status_w = os.pipe()
+            permit_r, permit_w = os.pipe()
+            children, duplicate_fds = [], []
+            build_pid = os.fork()
+            if build_pid == 0:
+                transport_parent.close()
+                transport_child.close()
+                for fd in [status_r, status_w, permit_r, permit_w]:
+                    os.close(fd)
+                while True:
+                    signal.pause()
+            children.append(build_pid)
+            try:
+                helper_pid = os.fork()
+                if helper_pid == 0:
+                    transport_parent.close()
+                    for fd in [status_r, status_w, permit_r, permit_w]:
+                        os.close(fd)
+                    try:
+                        with deploy.deployment_locks(global_path, site_path) as fds:
+                            transport_child.sendmsg([b'L'], [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array('i', fds))])
+                            transport_child.close()
+                            while True:
+                                signal.pause()
+                    except BaseException:
+                        os._exit(9)
+                children.append(helper_pid)
+                transport_child.close()
+                ready, _, _ = select.select([transport_parent], [], [], 5)
+                self.assertTrue(ready, 'helper did not send lock descriptors')
+                data, ancillary, flags, address = transport_parent.recvmsg(1, socket.CMSG_SPACE(8))
+                self.assertEqual(data, b'L')
+                for level, kind, body in ancillary:
+                    if level == socket.SOL_SOCKET and kind == socket.SCM_RIGHTS:
+                        values = array.array('i')
+                        values.frombytes(body[:len(body) - len(body) % values.itemsize])
+                        duplicate_fds.extend(values)
+                self.assertEqual(len(duplicate_fds), 2)
+                self.assertEqual(os.fstat(duplicate_fds[0]).st_ino, global_path.stat().st_ino)
+                guard_pid = os.fork()
+                if guard_pid == 0:
+                    transport_parent.close()
+                    os.close(status_r)
+                    os.close(permit_w)
+                    try:
+                        parent_fd, builder_fd = os.pidfd_open(helper_pid), os.pidfd_open(build_pid)
+                        def announce(message):
+                            if message.startswith('READY=1'):
+                                os.write(status_w, b'R')
+                            elif 'releasing deployment locks' in message:
+                                os.write(status_w, b'D')
+                        def stop(run):
+                            os.write(status_w, b'C')
+                            if os.read(permit_r, 1) != b'1':
+                                return False
+                            os.kill(build_pid, signal.SIGTERM)
+                            ready, _, _ = select.select([builder_fd], [], [], 3)
+                            return bool(ready)
+                        guardian.hold_until_done(parent_fd, RUN, stop=stop, announce=announce, pause=lambda _: None, finish=lambda: False)
+                        os.close(parent_fd)
+                        os.close(builder_fd)
+                        for fd in duplicate_fds:
+                            os.close(fd)
+                        os._exit(0)
+                    except BaseException:
+                        os._exit(8)
+                children.append(guard_pid)
+                # No parent-owned duplicate may mask a missing guardian hold.
+                for fd in duplicate_fds:
+                    os.close(fd)
+                duplicate_fds.clear()
+                os.close(status_w)
+                status_w = None
+                os.close(permit_r)
+                permit_r = None
+                def read_status(expected):
+                    ready, _, _ = select.select([status_r], [], [], 5)
+                    self.assertTrue(ready, 'guardian readiness/cleanup deadline expired')
+                    self.assertEqual(os.read(status_r, 1), expected)
+                read_status(b'R')
+                os.kill(helper_pid, signal.SIGKILL)
+                _, exit_status = os.waitpid(helper_pid, 0)
+                children.remove(helper_pid)
+                self.assertEqual(os.waitstatus_to_exitcode(exit_status), -signal.SIGKILL)
+                read_status(b'C')
+                os.kill(build_pid, 0)  # The simulated long build still exists.
+                for path, shared in [(global_path, True), (site_path, False)]:
+                    with self.assertRaises(deploy.LockBusy):
+                        fd = deploy.open_lock(path, shared=shared)
+                        os.close(fd)
+                os.write(permit_w, b'1')
+                read_status(b'D')
+                _, guard_status = os.waitpid(guard_pid, 0)
+                children.remove(guard_pid)
+                self.assertEqual(os.waitstatus_to_exitcode(guard_status), 0)
+                _, build_status = os.waitpid(build_pid, 0)
+                children.remove(build_pid)
+                self.assertEqual(os.waitstatus_to_exitcode(build_status), -signal.SIGTERM)
+                with deploy.deployment_locks(global_path, site_path):
+                    pass
+            finally:
+                for fd in duplicate_fds:
+                    os.close(fd)
+                for pid in children:
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    os.waitpid(pid, 0)
+                transport_parent.close()
+                transport_child.close()
+                for fd in [status_r, status_w, permit_r, permit_w]:
+                    if fd is not None:
+                        os.close(fd)
+
+
+class DelayedTrustedClient(unittest.TestCase):
+    def test_delayed_client_exec_keeps_both_locks_after_helper_kill_but_builder_has_neither(self):
+        # Real exec/pass_fds models the reviewed v255 systemd-run client. Builder
+        # launch is deliberately delayed until AFTER the original helper is dead.
+        builder_script = """import os,sys
+status,end,global_dev,global_ino,site_dev,site_ino=map(int,sys.argv[1:])
+for name in os.listdir('/proc/self/fd'):
+ try: item=os.fstat(int(name))
+ except OSError: continue
+ assert (item.st_dev,item.st_ino) not in [(global_dev,global_ino),(site_dev,site_ino)]
+os.write(status,b'B')
+assert os.read(end,1)==b'1'
+"""
+        client_script = """import os,subprocess,sys
+status,start,end=map(int,sys.argv[1:4])
+lock_fds=list(map(int,sys.argv[4:6]))
+identities=[]
+for fd in lock_fds:
+ item=os.fstat(fd);identities.extend([item.st_dev,item.st_ino])
+os.write(status,b'R')
+assert os.read(start,1)==b'1'
+result=subprocess.run([sys.executable,'-I','-c',sys.argv[6],str(status),str(end),*map(str,identities)],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env={'PATH':'/usr/bin:/bin'},pass_fds=(status,end),close_fds=True)
+assert result.returncode==0
+os.write(status,b'D')
+"""
+        with tempfile.TemporaryDirectory() as directory, patch.object(deploy, 'ROOT_UID', os.getuid()):
+            global_path, site_path = Path(directory) / 'global', Path(directory) / 'site'
+            transport_parent, transport_child = socket.socketpair()
+            status_r, status_w = os.pipe()
+            start_r, start_w = os.pipe()
+            end_r, end_w = os.pipe()
+            helper_pid, client, duplicates = None, None, []
+            try:
+                helper_pid = os.fork()
+                if helper_pid == 0:
+                    transport_parent.close()
+                    for fd in [status_r, status_w, start_r, start_w, end_r, end_w]:
+                        os.close(fd)
+                    try:
+                        with deploy.deployment_locks(global_path, site_path) as locks:
+                            transport_child.sendmsg([b'L'], [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array('i', locks))])
+                            transport_child.close()
+                            while True:
+                                signal.pause()
+                    except BaseException:
+                        os._exit(9)
+                transport_child.close()
+                readable, _, _ = select.select([transport_parent], [], [], 5)
+                self.assertTrue(readable)
+                _, ancillary, _, _ = transport_parent.recvmsg(1, socket.CMSG_SPACE(8))
+                for level, kind, body in ancillary:
+                    if level == socket.SOL_SOCKET and kind == socket.SCM_RIGHTS:
+                        descriptors = array.array('i')
+                        descriptors.frombytes(body[:len(body) - len(body) % descriptors.itemsize])
+                        duplicates.extend(descriptors)
+                self.assertEqual(len(duplicates), 2)
+                client = subprocess.Popen([sys.executable, '-I', '-c', client_script, str(status_w), str(start_r), str(end_r), *map(str, duplicates), builder_script], pass_fds=(*duplicates, status_w, start_r, end_r), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env={'PATH': '/usr/bin:/bin'}, close_fds=True)
+                for fd in duplicates:
+                    os.close(fd)
+                duplicates.clear()
+                for fd in [status_w, start_r, end_r]:
+                    os.close(fd)
+                status_w = start_r = end_r = None
+                def status(expected):
+                    readable, _, _ = select.select([status_r], [], [], 5)
+                    self.assertTrue(readable, 'trusted client/builder deadline expired')
+                    self.assertEqual(os.read(status_r, 1), expected)
+                def both_busy():
+                    for path, shared in [(global_path, True), (site_path, False)]:
+                        with self.assertRaises(deploy.LockBusy):
+                            fd = deploy.open_lock(path, shared=shared)
+                            os.close(fd)
+                status(b'R')
+                os.kill(helper_pid, signal.SIGKILL)
+                _, result = os.waitpid(helper_pid, 0)
+                helper_pid = None
+                self.assertEqual(os.waitstatus_to_exitcode(result), -signal.SIGKILL)
+                both_busy()  # No builder exists yet; only the exec'd client holds the locks.
+                os.write(start_w, b'1')
+                status(b'B')  # Actual builder has inspected its open FDs and found neither lock.
+                both_busy()
+                os.write(end_w, b'1')
+                status(b'D')
+                self.assertEqual(client.wait(timeout=5), 0, client.stderr.read())
+                with deploy.deployment_locks(global_path, site_path):
+                    pass
+            finally:
+                for fd in duplicates:
+                    os.close(fd)
+                if helper_pid is not None:
+                    try:
+                        os.kill(helper_pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    os.waitpid(helper_pid, 0)
+                for fd in [status_r, status_w, start_r, start_w, end_r, end_w]:
+                    if fd is not None:
+                        os.close(fd)
+                if client is not None:
+                    if client.poll() is None:
+                        client.kill()
+                        client.wait(timeout=5)
+                    client.stderr.close()
+                transport_parent.close()
+                transport_child.close()
 
 
 if __name__ == '__main__':

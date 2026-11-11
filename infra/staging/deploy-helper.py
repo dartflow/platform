@@ -41,10 +41,12 @@ GLOBAL_LOCK = Path('/run/lock/dg-build.lock')
 SITE_LOCK = Path('/run/lock/dartflow-staging.deploy.lock')
 EXTRACTOR = Path('/usr/local/libexec/dartflow-extract-source.py')
 GATE = '/usr/local/libexec/dartflow-release-gate.mjs'
+GUARDIAN = Path('/usr/local/libexec/dartflow-lock-guardian.py')
 PUBLIC_KEYS = ('DARTFLOW_APP_ORIGIN', 'DARTFLOW_DATA_MODE', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SUPABASE_URL')
 NOFOLLOW = os.O_NOFOLLOW | os.O_CLOEXEC
 DIRECTORY = NOFOLLOW | os.O_DIRECTORY | os.O_RDONLY
 CLEAN_ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C.UTF-8'}
+BUILD_LOCK_FDS = ()
 SHA_RE = r'[a-f0-9]{40}'
 RUN_RE = r'[1-9][0-9]{0,19}-[1-9][0-9]{0,9}'
 CONFIG_RE = r'[A-Za-z0-9][A-Za-z0-9_.-]{0,95}'
@@ -244,7 +246,7 @@ def read_json(path, limit=65536, private=True):
 
 def read_policy():
     policy = read_json(POLICY)
-    fields = {'version', 'repository', 'integrationBranch', 'requiredChecks', 'port', 'node', 'npm', 'gateSha256', 'extractorSha256', 'backend', 'accounts', 'allowedConfigIds', 'minFreeBytes', 'minFreeInodes', 'maxSourceBytes', 'maxSourceFiles', 'maxArtifactBytes', 'maxArtifactFiles', 'buildMemoryMax', 'buildCpuQuota', 'buildTimeoutSeconds', 'healthAttempts', 'healthPauseSeconds', 'serviceTimeoutSeconds'}
+    fields = {'version', 'repository', 'integrationBranch', 'requiredChecks', 'port', 'node', 'npm', 'gateSha256', 'extractorSha256', 'guardianSha256', 'backend', 'accounts', 'allowedConfigIds', 'minFreeBytes', 'minFreeInodes', 'maxSourceBytes', 'maxSourceFiles', 'maxArtifactBytes', 'maxArtifactFiles', 'buildMemoryMax', 'buildCpuQuota', 'buildTimeoutSeconds', 'healthAttempts', 'healthPauseSeconds', 'serviceTimeoutSeconds'}
     require(isinstance(policy, dict) and set(policy) == fields and policy['version'] == 1, 'Incomplete fixed policy')
     require(isinstance(policy['repository'], str) and re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', policy['repository']), 'Missing verified repository')
     require(isinstance(policy['integrationBranch'], str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_./-]{0,99}', policy['integrationBranch']) and '..' not in policy['integrationBranch'], 'Missing integration branch')
@@ -257,7 +259,7 @@ def read_policy():
     for name in ['node', 'npm']:
         trusted_tool(policy[name])
         require(os.access(policy[name], os.X_OK), 'Pinned tool unavailable')
-    for name, path in [('gateSha256', GATE), ('extractorSha256', EXTRACTOR)]:
+    for name, path in [('gateSha256', GATE), ('extractorSha256', EXTRACTOR), ('guardianSha256', GUARDIAN)]:
         trusted_path(path)
         require(isinstance(policy[name], str) and re.fullmatch('[a-f0-9]{64}', policy[name]) and file_digest(path) == policy[name], 'Trusted validator digest differs')
     accounts = policy['accounts']
@@ -377,11 +379,51 @@ def deployment_locks(global_path=GLOBAL_LOCK, site_path=SITE_LOCK):
     site_fd = None
     try:
         site_fd = open_lock(site_path)
-        yield
+        yield (global_fd, site_fd)
     finally:
         if site_fd is not None:
             os.close(site_fd)
         os.close(global_fd)
+
+
+def guardian_state(unit):
+    result = subprocess.run(['/usr/bin/systemctl', 'show', unit, '--property=ActiveState,SubState', '--value'], env=CLEAN_ENV, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=3, check=False)
+    require(len(result.stdout) <= 256, 'Oversized guardian state')
+    return set(result.stdout.decode().splitlines()) if result.returncode == 0 else set()
+
+
+def start_guardian(lock_fds, run, policy):
+    require(re.fullmatch(RUN_RE, run), 'Invalid guardian run')
+    trusted_path(GUARDIAN)
+    require(file_digest(GUARDIAN) == policy['guardianSha256'], 'Guardian digest differs')
+    unit = 'dg-dartflow-lock-' + run + '.service'
+    start = Path('/proc/self/stat').read_text().rsplit(')', 1)[1].split()[19]
+    args = ['/usr/bin/systemd-run', '--quiet', '--wait', '--collect', '--pipe', '--service-type=notify', '--unit=' + unit, '--uid=root', '--gid=root', '--property=NotifyAccess=main', '--property=TimeoutStartSec=10', '--property=TimeoutStopSec=infinity', '--property=KillMode=process', '--property=NoNewPrivileges=yes', '--property=ProtectSystem=strict', '--property=ProtectHome=yes', '--property=PrivateTmp=yes', '--property=CapabilityBoundingSet=', '--property=TasksMax=32', '--property=MemoryMax=64M', '--property=CPUQuota=10%', '/usr/bin/python3', '-I', str(GUARDIAN), run, str(os.getpid()), start]
+    process = subprocess.Popen(args, stdin=lock_fds[0], stdout=lock_fds[1], stderr=subprocess.DEVNULL, env=CLEAN_ENV, close_fds=True)
+    # Startup failures still leave the helper's own descriptors locked. No source
+    # or package code runs before the guardian has verified its pidfd and FDs.
+    for _ in range(15):
+        state = guardian_state(unit)
+        if {'active', 'running'} <= state:
+            return {'unit': unit, 'client': process}
+        require('failed' not in state and process.poll() in [None, 0], 'Guardian startup failed')
+        time.sleep(1)
+    raise Refused('Guardian readiness timed out; no build started')
+
+
+def finish_guardian(guardian):
+    unit = guardian['unit']
+    subprocess.run(['/usr/bin/systemctl', 'kill', '--kill-whom=main', '--signal=SIGUSR1', unit], env=CLEAN_ENV, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5, check=False)
+    for _ in range(20):
+        state = guardian_state(unit)
+        if 'inactive' in state or (not state and guardian['client'].poll() == 0):
+            try:
+                guardian['client'].wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                pass
+            return
+        time.sleep(1)
+    raise Refused('Guardian retains deployment locks; inspect fixed build units and perform root recovery')
 
 
 def command(argv, **options):
@@ -439,6 +481,7 @@ def download_archive(policy, sha, token, destination):
 
 def build_command(argv, work, policy, run, stage, values=None, stdin=None):
     require(stage in ['extract', 'versions', 'install', 'build'], 'Unknown build stage')
+    require(len(BUILD_LOCK_FDS) == 2 and all(fd >= 3 for fd in BUILD_LOCK_FDS), 'Build requires retained controller locks')
     env = {'PATH': f"{Path(policy['node']).parent}:{Path(policy['npm']).parent}:/usr/bin:/bin", 'HOME': str(work / 'home'), 'TMPDIR': str(work / 'tmp'), 'LANG': 'C.UTF-8', 'CI': 'true', 'NEXT_TELEMETRY_DISABLED': '1'}
     if values:
         require(set(values) <= set(PUBLIC_KEYS) | {'DARTFLOW_RELEASE_SHA', 'DARTFLOW_RELEASE_ID', 'DARTFLOW_BUILD_CONFIG_ID', 'DARTFLOW_RUNTIME_CONFIG_ID'}, 'Build secret or unknown variable refused')
@@ -446,7 +489,10 @@ def build_command(argv, work, policy, run, stage, values=None, stdin=None):
     unit = 'dg-dartflow-build-' + run + '-' + stage
     args = ['/usr/bin/systemd-run', '--quiet', '--wait', '--collect', '--pipe', '--service-type=exec', '--unit=' + unit, '--uid=' + BUILDER, '--gid=' + BUILDER, '--working-directory=' + str(work / 'source'), '--property=KillMode=control-group', '--property=RuntimeMaxSec=' + str(policy['buildTimeoutSeconds']), '--property=TimeoutStopSec=10', '--property=UMask=0077', '--property=NoNewPrivileges=yes', '--property=ProtectSystem=strict', '--property=ProtectHome=yes', '--property=PrivateTmp=yes', '--property=ProtectProc=invisible', '--property=RestrictSUIDSGID=yes', '--property=CapabilityBoundingSet=', '--property=TasksMax=256', '--property=MemoryMax=' + policy['buildMemoryMax'], '--property=CPUQuota=' + policy['buildCpuQuota'], '--property=InaccessiblePaths=/etc/dg-sites /srv/sites /home/' + RUNNER, '--property=ReadWritePaths=' + str(work), '/usr/bin/env', '-i', *[key + '=' + value for key, value in env.items()], *argv]
     try:
-        command(args, stdin=stdin, timeout=policy['buildTimeoutSeconds'] + 30)
+        # systemd v255 preserves these extra FDs in the trusted --wait client.
+        # Its D-Bus payload forwards only stdin/out/err to the unprivileged unit.
+        # Thus even a delayed orphan client retains both locks until its unit ends.
+        command(args, stdin=stdin, timeout=policy['buildTimeoutSeconds'] + 30, pass_fds=BUILD_LOCK_FDS)
     finally:
         # A timed-out systemd-run client is insufficient: terminate the actual build cgroup.
         subprocess.run(['/usr/bin/systemctl', 'stop', unit + '.service'], env=CLEAN_ENV, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20, check=False)
@@ -689,18 +735,25 @@ def deploy_release(policy, sha, run, config_id, token, gate=github_gate, downloa
 
 
 def main():
+    global BUILD_LOCK_FDS
     args = arguments(sys.argv[1:])
     require(os.geteuid() == 0 and socket.gethostname() == HOST, 'Wrong helper host or privilege')
     policy = read_policy()
     runner = pwd.getpwnam(RUNNER)
     require(os.environ.get('SUDO_USER') == RUNNER and os.environ.get('SUDO_UID') == str(runner.pw_uid) and os.environ.get('SUDO_GID') == str(runner.pw_gid), 'Wrong fixed sudo caller')
     body = request_body(sys.stdin.buffer, args[0])
-    with deployment_locks():
-        if args[0] == 'deploy':
-            result = deploy_release(policy, args[1], args[2], args[3], body['githubToken'])
-        else:
-            result = activate(SITE_ROOT, args[1], policy, allow_unhealthy_current=True)
-            result = {'status': 'passed', 'operation': 'rollback', 'site': SITE, 'sha': result['sha'], 'releaseId': result['releaseId'], 'configId': result['configId']}
+    run = args[2] if args[0] == 'deploy' else args[1][13:]
+    with deployment_locks() as lock_fds:
+        BUILD_LOCK_FDS = lock_fds
+        guardian = start_guardian(lock_fds, run, policy)
+        try:
+            if args[0] == 'deploy':
+                result = deploy_release(policy, args[1], args[2], args[3], body['githubToken'])
+            else:
+                result = activate(SITE_ROOT, args[1], policy, allow_unhealthy_current=True)
+                result = {'status': 'passed', 'operation': 'rollback', 'site': SITE, 'sha': result['sha'], 'releaseId': result['releaseId'], 'configId': result['configId']}
+        finally:
+            finish_guardian(guardian)
         print(json.dumps(result, sort_keys=True))
 
 
@@ -712,6 +765,7 @@ if __name__ == '__main__':
     os.umask(0o077)
     signal.signal(signal.SIGTERM, interrupted)
     signal.signal(signal.SIGINT, interrupted)
+    signal.signal(signal.SIGHUP, interrupted)
     try:
         main()
     except LockBusy:
