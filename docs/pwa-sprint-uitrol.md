@@ -47,13 +47,15 @@ De onafhankelijke anonieme hosted controle is om **22:38:50 UTC** geslaagd met C
 
 Het [volledige uitrolbewijs](evidence/pwa-sprint-staging-deployed-2026-11-11.json) bevat deze uitkomsten, omgevingsgrenzen en expliciete acceptatiebeperkingen. De bestaande Supabase-advisormeldingen over de bewust ontoegankelijke [eigenaarbootstrap](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) en [wachtwoordbescherming](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) zijn ongewijzigd; de nieuwe schermtabel veroorzaakt geen nieuwe melding.
 
-## Nog te bevestigen op echte apparaten
+## Fysieke acceptatie uitgesteld
+
+Op **12 november 2026** heeft Danny aangegeven geen apparaten voor deze proef aan te wijzen en de fysieke tests over te slaan tot de grote testronde. Deze proeven zijn daarmee uitgesteld op verzoek van de eigenaar en geen voorwaarde voor de huidige oplevering. Ze zijn niet uitgevoerd en worden niet als geslaagd geregistreerd. De uitgevoerde automatische en anonieme stagingcontroles hierboven blijven het beschikbare testbewijs.
 
 | Acceptatie | Status |
 | --- | --- |
-| Speler + Baan 1 + Baan 2 naast elkaar werkelijk installeren en vanuit OS-iconen heropenen | Open; model/OS/browser nog niet opgegeven |
-| Android-tablet, iPhone/iPad en vaste tv-box: native app, snelkoppeling of Scorebord/kioskroute vaststellen | Open; geen fysieke apparaten door de worker bediend |
-| Twee echte telefoons: solo, lokaal en online, veilige randen, finish/correctie en juiste Sprint-stand | Open; geautomatiseerde Chromiumproeven met lokale fixtures uitgevoerd |
-| Kiosk na een echte stroomonderbreking, met blijvende apparaatkoppeling | Open; moet in de apparaatconfiguratie worden ingericht en getest |
+| Speler + Baan 1 + Baan 2 naast elkaar werkelijk installeren en vanuit OS-iconen heropenen | Uitgesteld naar de grote testronde op verzoek van de eigenaar |
+| Android-tablet, iPhone/iPad en vaste tv-box: native app, snelkoppeling of Scorebord/kioskroute vaststellen | Uitgesteld naar de grote testronde op verzoek van de eigenaar |
+| Twee echte telefoons: solo, lokaal en online, veilige randen, finish/correctie en juiste Sprint-stand | Uitgesteld; geautomatiseerde Chromiumproeven met lokale fixtures zijn uitgevoerd |
+| Kiosk na een echte stroomonderbreking, met blijvende apparaatkoppeling | Uitgesteld naar de grote testronde op verzoek van de eigenaar |
 
-Werkelijke installatie, een echte e-mail-/Google-aanmelding en stroomherstel worden uitsluitend als geslaagd gemeld nadat die op de gebruikte apparaten zijn uitgevoerd. De handleiding beschrijft de routes en de afzonderlijke kioskstappen.
+De handleiding blijft beschikbaar voor de grote testronde, inclusief aanmelden vanuit de geïnstalleerde app en de afzonderlijke kioskstappen. De uitgestelde fysieke proeven blokkeren de huidige oplevering niet.

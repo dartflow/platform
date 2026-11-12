@@ -542,5 +542,20 @@
       "inode": 6
     }
   },
-  "advisorInterpretation": "No new advisor finding. Existing owner_bootstrap RLS/no-policy INFO is intentional denial; existing Auth leaked-password-protection WARN is unchanged. No provider or password-policy configuration was modified."
+  "advisorInterpretation": "No new advisor finding. Existing owner_bootstrap RLS/no-policy INFO is intentional denial; existing Auth leaked-password-protection WARN is unchanged. No provider or password-policy configuration was modified.",
+  "acceptanceDecision": {
+    "decidedOn": "2026-11-12",
+    "timezone": "Europe/Amsterdam",
+    "requestedBy": "owner",
+    "status": "deferred_by_owner",
+    "scope": [
+      "physical OS installation and reopening of player and board apps",
+      "Android/iOS/tablet/TV device-specific routes and play tests",
+      "kiosk recovery after physical power interruption"
+    ],
+    "resumeDuring": "grote testronde",
+    "blocksCurrentDelivery": false,
+    "testsExecuted": false,
+    "existingTestResultsUnchanged": true
+  }
 }
