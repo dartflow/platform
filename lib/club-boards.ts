@@ -1,3 +1,5 @@
+import {getOcheStatistics} from './player-statistics-db';
+import {calculatePlayerMeasures,currentPlayerProfiles} from './player-statistics';
 import { randomUUID } from 'node:crypto';
 import {readBoardScoreEvents} from './score-events';
 import { database } from './db';
@@ -91,7 +93,7 @@ export async function clubBoardAction(client:Client,actor:string,command:Platfor
  return {ok:true,id:boardId,board:await boardView(client,await rowForBoard(client,actor,boardId))};
 }
 function visitsForDisplay(visits:Visit[]):Visit[]{return visits.map(v=>({player:`player-${v.playerIndex+1}`,playerIndex:v.playerIndex,score:v.score,darts:v.darts,remainingBefore:v.remainingBefore,remainingAfter:v.remainingAfter,bust:v.bust,leg:v.leg,checkout:v.checkout}));}
-function statsForDisplay(stats:Stats[]):Stats[]{return stats.map(s=>({total:s.total,darts:s.darts,oneEighties:s.oneEighties,highestFinish:s.highestFinish,...(s.legsWon===undefined?{}:{legsWon:s.legsWon}),average:s.darts?Math.round(s.total/s.darts*300)/100:0}));}
+function statsForDisplay(stats:Stats[]):Stats[]{return stats.map(s=>({total:s.total,darts:s.darts,oneEighties:s.oneEighties,highestFinish:s.highestFinish,...(s.legsWon===undefined?{}:{legsWon:s.legsWon}),average:s.average??(s.darts?3*s.total/s.darts:0),...(s.measurementComplete===undefined?{}:{measurementComplete:s.measurementComplete})}));}
 /** Public, read-only physical display: no actor IDs, capabilities, membership or private state. */
 export async function getClubBoardScreen(boardId:string,client?:Client):Promise<ClubBoardScreenView>{
  if(!client){const connection=await database().connect();try{await connection.query('begin isolation level repeatable read read only');const result=await getClubBoardScreen(boardId,connection);await connection.query('commit');return result;}catch(error){await connection.query('rollback');throw error;}finally{connection.release();}}
@@ -105,16 +107,19 @@ export async function getClubBoardScreen(boardId:string,client?:Client):Promise<
  const row=rows[0],lease=await boardLease(client,id),occupied=Boolean(row.state||lease),location=await locationScreenContext(client,id,row.state?.id??lease?.id);
  let match:PublicSnapshot['match']=null;
  if(row.state){
+  const labels=await client.query<{id:string;name:string}>('select id,name from dartflow_private.profile_labels where id=any($1::uuid[])',[row.state.players.map(p=>p.id)]);
+  row.state=currentPlayerProfiles(row.state,labels.rows);
   const view=matchView(row.state,'',false);
   const currentLegVisits=visitsForDisplay(view.currentLegVisits??[]);
   match={id:`board-${id}`,revision:view.revision,status:view.status,players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:currentLegVisits,currentLegVisits,currentLegStartScore:view.currentLegStartScore??view.settings.startScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:{startScore:view.settings.startScore,bestOfLegs:view.settings.bestOfLegs,bestOfSets:view.settings.bestOfSets,...(view.settings.legLimit===undefined?{}:{legLimit:view.settings.legLimit})},writerId:'',stats:statsForDisplay(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
  }else if(lease?.kind==='training'){
   const game=lease.state.game as Game;
-  const profile=await client.query<{name:string}>('select name from dartflow_private.profiles where id=$1',[lease.owner_id]);
+  const profile=await client.query<{name:string}>('select name from dartflow_private.profile_labels where id=$1',[lease.owner_id]);
   const legNumber=game.legs[0]+(game.status==='finished'?0:1),currentLegVisits=visitsForDisplay(game.visits.filter(v=>v.leg===legNumber));
-  match={id:`board-${id}`,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:currentLegVisits,currentLegVisits,currentLegStartScore:game.startScore,winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:statsForDisplay([game.stats[0]]),legNumber,setNumber:1,paused:false};
+  match={id:`board-${id}`,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:currentLegVisits,currentLegVisits,currentLegStartScore:game.startScore,winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:statsForDisplay([{...game.stats[0],average:calculatePlayerMeasures([game],lease.owner_id).average??0}]),legNumber,setNumber:1,paused:false};
  }
  const blocked=row.blocked||Boolean(location?.physical.archived_at);
  const closed=Boolean(location?.physical.closed_at),closePending=Boolean(location?.physical.close_after_session),activity=publicBoardActivity(rawActivity);
- return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied,closed,closePending,publicScan:row.access==='all'&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:closed?'closed':match?'playing':lease?'waiting':blocked?'blocked':closePending?'closed':location?.reservation?'reserved':'available',snapshot:{board:{id,name:row.name},event:{name:location?.reservation?.label??row.club_name},match,...(activity?{boardActivity:activity}:{}),...await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
+ const statistics=await getOcheStatistics(client,{boardId:id,state:row.state,lobbyId:lease?.kind==='lobby'?lease.id:null,allowRecap:!row.state&&!lease&&!blocked&&!closed&&!closePending&&!location?.reservation});
+ return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied,closed,closePending,publicScan:row.access==='all'&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:closed?'closed':match?'playing':lease?'waiting':blocked?'blocked':closePending?'closed':location?.reservation?'reserved':'available',snapshot:{board:{id,name:row.name},event:{name:location?.reservation?.label??row.club_name},match,...(statistics?{statistics}:{}),...(activity?{boardActivity:activity}:{}),...await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
 }

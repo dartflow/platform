@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """Offline real-filesystem/lock/transaction tests; no sudo, systemd or providers run."""
 import array
+import base64
 import hashlib
 import importlib.util
 import importlib.machinery
@@ -37,6 +38,7 @@ extractor = load('dartflow_extract', 'infra/staging/extract-source.py')
 guardian = load('dartflow_guardian', 'infra/staging/lock-guardian.py')
 renderer = load('dartflow_renderer', 'infra/staging/render-deployer.py')
 proof = load('dartflow_lock_proof', 'infra/staging/probe-lock-lifetime.py')
+v19_upgrade = load('dartflow_v19_upgrade', 'infra/upgrade-v19-host.py')
 SHA, OLD_SHA = 'a' * 40, 'b' * 40
 RUN, OLD_RUN = '10101-1', '20202-1'
 NAME, OLD_NAME = SHA[:12] + '-' + RUN, OLD_SHA[:12] + '-' + OLD_RUN
@@ -126,6 +128,51 @@ class NativeBoundaries(unittest.TestCase):
             with self.assertRaises(ValueError):
                 deploy.capacity('/unused', policy, 10, 3)
 
+    def test_pin_peppers_are_runtime_only_versioned_and_old_bundles_remain_valid(self):
+        database = f'DARTFLOW_DATABASE_URL=postgresql://dartflow_app:synthetic-only@db.{REF}.supabase.co:5432/postgres?sslmode=verify-full\n'
+        old = deploy.runtime_values(database, public())
+        self.assertEqual(set(old), {'DARTFLOW_DATABASE_URL'})
+        pepper1, pepper2 = base64.b64encode(bytes([71]) * 32).decode(), base64.b64encode(bytes([113]) * 32).decode()
+        lines = f'DARTFLOW_PLAYER_PIN_PEPPERS=v1:{pepper1},v2:{pepper2}\nDARTFLOW_PLAYER_PIN_PEPPER_VERSION=v2\n'
+        values = deploy.runtime_values(database + lines, public())
+        self.assertEqual(values['DARTFLOW_PLAYER_PIN_PEPPER_VERSION'], 'v2')
+        self.assertEqual(values['DARTFLOW_PLAYER_PIN_PEPPERS'], f'v1:{pepper1},v2:{pepper2}')
+        self.assertEqual(set(deploy.PUBLIC_KEYS), set(public()))
+        for key in deploy.PLAYER_PIN_RUNTIME_KEYS:
+            with self.subTest(public_key=key), self.assertRaises(ValueError):
+                deploy.public_values({**public(), key: 'synthetic-only'})
+        with self.assertRaises(ValueError):
+            deploy.runtime_values(database + lines + 'NEXT_PUBLIC_PLAYER_PIN_PEPPERS=synthetic-only\n', public())
+
+    def test_pin_pepper_map_rejects_missing_current_duplicates_bad_lengths_and_noncanonical_base64(self):
+        pepper = base64.b64encode(bytes([71]) * 32).decode()
+        base = {'DARTFLOW_PLAYER_PIN_PEPPERS': 'v1:' + pepper, 'DARTFLOW_PLAYER_PIN_PEPPER_VERSION': 'v1'}
+        invalid = [
+            {'DARTFLOW_PLAYER_PIN_PEPPER_VERSION': 'v1'}, {'DARTFLOW_PLAYER_PIN_PEPPERS': 'v1:' + pepper},
+            {**base, 'DARTFLOW_PLAYER_PIN_PEPPERS': 'v1:' + pepper + ',v1:' + pepper},
+            {**base, 'DARTFLOW_PLAYER_PIN_PEPPER_VERSION': 'v2'}, {**base, 'DARTFLOW_PLAYER_PIN_PEPPER_VERSION': '../v1'},
+            {**base, 'DARTFLOW_PLAYER_PIN_PEPPERS': 'v1:' + base64.b64encode(b'wrong-size').decode()},
+            {**base, 'DARTFLOW_PLAYER_PIN_PEPPERS': 'v1:' + pepper + ':extra'},
+            {**base, 'DARTFLOW_PLAYER_PIN_PEPPERS': 'bad.version:' + pepper},
+            {**base, 'DARTFLOW_PLAYER_PIN_PEPPERS': 'v1:' + pepper + ',bad:' + 'A' * 42 + 'B='},
+            {**base, 'DARTFLOW_PLAYER_PIN_PEPPERS': 'v1:' + pepper + ','},
+        ]
+        for values in invalid:
+            with self.subTest(keys=sorted(values)), self.assertRaises(ValueError):
+                deploy.validate_player_pin_runtime(values)
+
+    def test_pin_policy_numeric_bounds_match_server_kdf_and_rate_limits(self):
+        pepper = base64.b64encode(bytes([71]) * 32).decode()
+        base = {'DARTFLOW_PLAYER_PIN_PEPPERS': 'v1:' + pepper, 'DARTFLOW_PLAYER_PIN_PEPPER_VERSION': 'v1'}
+        for key, (minimum, maximum) in deploy.PLAYER_PIN_POLICY_RANGES.items():
+            for value in [minimum, maximum]:
+                deploy.validate_player_pin_runtime({**base, key: str(value)})
+            for value in [str(minimum - 1), str(maximum + 1), '1e2', '+2', '2.0', '0', '9999999']:
+                with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                    deploy.validate_player_pin_runtime({**base, key: value})
+            with self.assertRaises(ValueError):
+                deploy.validate_player_pin_runtime({key: str(minimum)})
+
     def test_default_policy_cannot_select_a_repository_or_accounts(self):
         template = json.loads((ROOT / 'infra/staging/deploy-policy.example.json').read_text())
         with patch.object(deploy, 'read_json', return_value=template), self.assertRaises(ValueError):
@@ -147,6 +194,85 @@ class NativeBoundaries(unittest.TestCase):
             file.flush()
             result = subprocess.run(['/usr/sbin/visudo', '-cf', file.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
             self.assertEqual(result.returncode, 0, result.stderr.decode())
+
+
+class V19PinUpgradeBoundaries(unittest.TestCase):
+    def test_new_runtime_preserves_original_bytes_and_rotations_require_review(self):
+        encoded = base64.b64encode(bytes([71]) * 32).decode()
+        for original in [b'DARTFLOW_ENV=staging\n# retained exact comment\n', b'DARTFLOW_ENV=staging']:
+            result = v19_upgrade.pin_runtime(original, encoded)
+            self.assertTrue(result.startswith(original))
+            self.assertTrue(result.endswith(b'DARTFLOW_PLAYER_PIN_PEPPER_VERSION=v1\n'))
+            self.assertEqual(sum(line.startswith(b'DARTFLOW_PLAYER_PIN_') for line in result.splitlines()), 2)
+            with self.assertRaises(ValueError):
+                v19_upgrade.pin_runtime(result, encoded)
+        with self.assertRaises(ValueError):
+            v19_upgrade.pin_runtime(b'baseline\n', 'not-a-256-bit-key')
+
+    def test_config_policy_appends_only_one_immutable_id_without_mutating_original(self):
+        for environment, spec in v19_upgrade.SPECS.items():
+            policy = {'repository': 'dartflow/platform', 'integrationBranch': 'main', 'port': spec['port'], 'backend': {'projectRef': spec['ref']}, 'allowedConfigIds': ['retained-previous', v19_upgrade.CURRENT_IDS[environment]], 'untouchedBound': 17}
+            before = json.dumps(policy, sort_keys=True)
+            result = v19_upgrade.policy_with_config(policy, environment)
+            self.assertEqual(json.dumps(policy, sort_keys=True), before)
+            self.assertEqual(result.pop('allowedConfigIds'), policy['allowedConfigIds'] + [v19_upgrade.NEW_IDS[environment]])
+            self.assertEqual(result, {key: value for key, value in policy.items() if key != 'allowedConfigIds'})
+            for bad in [{**policy, 'repository': 'other/repo'}, {**policy, 'backend': {'projectRef': 'wrong'}}, {**policy, 'allowedConfigIds': policy['allowedConfigIds'] + [v19_upgrade.NEW_IDS[environment]]}]:
+                with self.assertRaises(ValueError):
+                    v19_upgrade.policy_with_config(bad, environment)
+
+    def test_rendered_entry_sudoers_and_helper_pins_are_environment_bound(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for environment, spec in v19_upgrade.SPECS.items():
+                output = Path(directory) / environment
+                manifest = renderer.render(environment, output)
+                self.assertEqual(set(manifest['files']), v19_upgrade.manifest_files(spec))
+                helper = (output / ('usr/local/libexec/' + spec['helper'])).read_bytes()
+                entry_bytes = (output / ('usr/local/bin/' + spec['entry'])).read_bytes()
+                sudoers = (output / ('etc/sudoers.d/' + spec['site'])).read_bytes()
+                v19_upgrade.validate_pins(entry_bytes, sudoers, spec, hashlib.sha256(helper).hexdigest())
+                module = v19_upgrade.helper_module(helper, environment)
+                self.assertEqual(module.BACKEND_REF, spec['ref'])
+                for changed_entry, changed_sudoers in [(entry_bytes, sudoers + b'root ALL=(ALL) NOPASSWD: ALL\n'), (entry_bytes.replace(spec['runner'].encode(), b'wrong-runner'), sudoers)]:
+                    with self.assertRaises(ValueError):
+                        v19_upgrade.validate_pins(changed_entry, changed_sudoers, spec, hashlib.sha256(helper).hexdigest())
+                with self.assertRaises(ValueError):
+                    v19_upgrade.validate_pins(entry_bytes, sudoers, spec, '0' * 64)
+
+    def test_failure_after_atomic_replacement_recovers_control_bytes_and_retains_private_unapproved_bundle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, plans = Path(directory), {}
+            for environment, spec in v19_upgrade.SPECS.items():
+                base = root / environment
+                old_bundle, destination = base / 'configs/old', base / 'configs' / v19_upgrade.NEW_IDS[environment]
+                old_bundle.mkdir(parents=True, mode=0o700)
+                public_raw = json.dumps({'DARTFLOW_APP_ORIGIN': 'https://' + spec['host'], 'DARTFLOW_DATA_MODE': 'supabase', 'NEXT_PUBLIC_SUPABASE_URL': 'https://' + spec['ref'] + '.supabase.co', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY': 'sb_publishable_synthetic_fixture'}).encode()
+                runtime_raw = ('DARTFLOW_DATABASE_URL=postgresql://dartflow_app:synthetic-only@db.' + spec['ref'] + '.supabase.co:5432/postgres?sslmode=verify-full\n').encode()
+                (old_bundle / 'public.json').write_bytes(public_raw)
+                (old_bundle / 'runtime.env').write_bytes(runtime_raw)
+                control = base / 'helper'
+                control.write_bytes(b'old-helper')
+                control.chmod(0o755)
+                module = SimpleNamespace(runtime_values=deploy.runtime_values, read_bundle=lambda *_: None)
+                plans[environment] = {'spec': spec, 'module': module, 'old': {str(control): b'old-helper'}, 'new': {str(control): b'new-helper'}, 'modes': {str(control): 0o755}, 'publicRaw': public_raw, 'runtimeRaw': runtime_raw, 'public': json.loads(public_raw), 'oldBundle': old_bundle, 'destination': destination}
+            backups = root / 'backups'
+            backups.mkdir(mode=0o700)
+            failed = False
+            def simulated_atomic(path, data, mode):
+                nonlocal failed
+                Path(path).write_bytes(data)
+                Path(path).chmod(mode)
+                if data == b'new-helper' and not failed:
+                    failed = True
+                    raise OSError('synthetic failure after replacement')
+            with patch.object(v19_upgrade, 'BACKUPS', backups), patch.object(v19_upgrade, 'trusted', side_effect=lambda path, **_: Path(path)), patch.object(v19_upgrade, 'atomic', side_effect=simulated_atomic), patch.object(v19_upgrade, 'baseline', return_value={'unchanged': True}), patch.object(v19_upgrade, 'run', return_value=b''), self.assertRaisesRegex(ValueError, 'prior control files restored'):
+                v19_upgrade.apply(plans, {'unchanged': True})
+            for plan in plans.values():
+                for name, original in plan['old'].items():
+                    self.assertEqual(Path(name).read_bytes(), original)
+                self.assertEqual((plan['oldBundle'] / 'runtime.env').read_bytes(), plan['runtimeRaw'])
+                self.assertEqual(stat.S_IMODE((plan['destination'] / 'runtime.env').stat().st_mode), 0o600)
+                self.assertTrue((plan['destination'] / 'runtime.env').read_bytes().startswith(plan['runtimeRaw']))
 
 
 class FixedEnvironmentRendering(unittest.TestCase):
@@ -641,6 +767,8 @@ class CompleteReleaseFixture(unittest.TestCase):
         self.assertNotIn('DARTFLOW_DATABASE_URL', str(values))
         self.assertNotIn('DARTFLOW_MAIL_ALLOWED_REPLY_TO', str(values))
         self.assertNotIn('support@dartflow.nl', str(values))
+        self.assertFalse(deploy.PLAYER_PIN_RUNTIME_KEYS & set(values or {}))
+        self.assertNotIn(base64.b64encode(bytes([71]) * 32).decode(), str(values))
         if stage == 'extract':
             extractor.extract(stdin, work / 'source', policy['maxSourceBytes'], policy['maxSourceFiles'])
         elif stage == 'versions':
@@ -676,7 +804,9 @@ class CompleteReleaseFixture(unittest.TestCase):
         with (self.bundle / 'runtime.env').open('a') as stream:
             stream.write('DARTFLOW_MAIL_ALLOWED_FROM=noreply@dartflow.nl\n'
                          'DARTFLOW_MAIL_ALLOWED_REPLY_TO=support@dartflow.nl\n'
-                         'DARTFLOW_MAIL_TEST_RECIPIENTS=info@dgwebservices.nl\n')
+                         'DARTFLOW_MAIL_TEST_RECIPIENTS=info@dgwebservices.nl\n'
+                         'DARTFLOW_PLAYER_PIN_PEPPERS=v1:' + base64.b64encode(bytes([71]) * 32).decode() + '\n'
+                         'DARTFLOW_PLAYER_PIN_PEPPER_VERSION=v1\n')
         result = self.run_release()
         self.assertEqual(result['status'], 'passed')
         self.assertEqual(self.events, ['gate', 'download', 'extract', 'versions', 'install', 'build', 'activate', 'restart'])

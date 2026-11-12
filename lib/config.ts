@@ -16,6 +16,8 @@ export function safeNext(value: unknown): string {
   const id='[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}';
   if(query!==undefined) {
     if(extra.length)return '/';
+    if((pathname==='/app/settings'||pathname==='/app/profiel')&&query==='pin=reset')return value;
+    if(pathname==='/app/statistics'&&/^view=(matches|opponents|tournaments|practice)$/.test(query))return value;
     const invitation=new RegExp(`^/app/(?:lobby|community|clubs|leagues|tournaments|hall)/${id}$`).test(pathname) && /^code=(?:[A-Za-z0-9]{4}|[A-Za-z0-9_-]{24})$/.test(query);
     const studio=/^\/app\/venue-cast\/(?:studio|hall|obs|public)$/.test(pathname) && new RegExp(`^event=${id}$`).test(query);
     const tablet=new RegExp(`^/wedstrijd/${id}$`).test(pathname) && query==='tablet=1';

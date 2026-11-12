@@ -177,6 +177,7 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
       assert.equal((await getBoardForActor(alice,assignment.boardId)).matchId,assignment.matchId);await assert.rejects(getBoardForActor(outsider,assignment.boardId),{status:403});assert.equal((await getBoardForActor(bob,assignment.boardId)).board.occupied,true);assert.equal((await getBoardForActor(bob,assignment.boardId)).matchId,undefined);await assert.rejects(getBoardForActor(alice,randomUUID()),{status:404});
 
       let core=await getMatch(alice,assignment.matchId);const players=core.players.map(p=>p.id);
+      const playedBefore=(await getPlatformOverview(players[0])).statistics.played;
       const send=async(actor:string,action:MatchAction)=>{core=await executeMatchCommand(actor,{matchId:core.id,expectedRevision:core.revision,requestId:randomUUID(),action});};
       await send(players[0],{type:'accept'});await send(players[1],{type:'accept'});await send(players[0],{type:'start'});
       const base=core.revision,commands=[{requestId:randomUUID(),expectedRevision:base,action:{type:'score',score:180}},{requestId:randomUUID(),expectedRevision:base+1,action:{type:'score',score:0}}];
@@ -186,7 +187,7 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
       core=await getMatch(players[0],core.id);await send(core.writerId,{type:'score',score:121,doubleConfirmed:true});await send(players[0],{type:'confirm'});await send(players[1],{type:'confirm'});
       await reconcilePlatformResults();await reconcilePlatformResults();
       const projected=(await getPlatformOverview(admin)).tournaments.find(e=>e.id===tournament)!;assert.equal(projected.state.fixtures?.find(f=>f.id===assignment.fixtureId)?.status,'confirmed');
-      assert.ok(projected.state.fixtures?.find(f=>f.phase==='knockout')?.players.every(Boolean));assert.equal((await getPlatformOverview(players[0])).statistics.played,1);
+      assert.ok(projected.state.fixtures?.find(f=>f.phase==='knockout')?.players.every(Boolean));assert.equal((await getPlatformOverview(players[0])).statistics.played,playedBefore+1);
       const csv=await exportPlatformCsv(players[0],'matches');assert.ok(csv.includes(core.id));await assert.rejects(exportPlatformCsv(outsider,'players',club),{status:403});
       const share = await run(admin, { type: 'cast.share', id: tournament });
       const projection = await getPlatformCast(String(share.token));

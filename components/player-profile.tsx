@@ -1,0 +1,106 @@
+'use client';
+import {useEffect,useRef,useState,type FormEvent} from 'react';
+import type {Profile} from '@/lib/types';
+import type {PlayerStatisticsResponse,StatisticsMatchRow} from '@/lib/player-statistics-types';
+import {normalizeUsername,validDisplayName,validUsername} from '@/lib/display-name';
+import './player-profile.css';
+
+async function api<T>(path:string,data?:unknown):Promise<T>{
+ const response=await fetch(path,{method:data===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',headers:data===undefined?undefined:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});
+ const value=await response.json();if(!response.ok)throw new Error(typeof value.error==='string'?value.error:'Opslaan is niet gelukt. Probeer opnieuw.');return value;
+}
+const validPin=(value:string)=>/^[0-9]{6}$/.test(value);
+const number=(value:number|null|undefined,digits=2)=>value===null||value===undefined?'Onbekend':value.toLocaleString('nl-NL',{maximumFractionDigits:digits,minimumFractionDigits:digits});
+const date=(value:string)=>new Date(value).toLocaleDateString('nl-NL');
+type PinFieldsProps={pin:string;confirmation:string;setPin:(v:string)=>void;setConfirmation:(v:string)=>void;disabled?:boolean};
+function PinFields({pin,confirmation,setPin,setConfirmation,disabled}:PinFieldsProps){return <>
+ <p className="muted-copy">Gebruik deze pincode om op een QR-baan met jouw DartFlow-profiel mee te spelen.</p>
+ <label className="field">Spelerspincode<input name="pin" type="password" inputMode="numeric" autoComplete="off" required minLength={6} maxLength={6} pattern="[0-9]{6}" value={pin} disabled={disabled} aria-describedby="player-pin-help" aria-invalid={pin.length>0&&!validPin(pin)} onChange={e=>setPin(e.target.value)}/></label>
+ <small id="player-pin-help">Gebruik precies zes cijfers (0–9). Een voorloopnul mag.</small>
+ {pin.length>0&&!validPin(pin)&&<p className="field-error" role="status">Vul precies zes cijfers in.</p>}
+ <label className="field">Herhaal spelerspincode<input name="pinConfirmation" type="password" inputMode="numeric" autoComplete="off" required minLength={6} maxLength={6} pattern="[0-9]{6}" value={confirmation} disabled={disabled} aria-invalid={confirmation.length>0&&confirmation!==pin} onChange={e=>setConfirmation(e.target.value)}/></label>
+ {confirmation.length>0&&confirmation!==pin&&<p className="field-error" role="status">De spelerspincodes zijn niet gelijk.</p>}
+ </>;}
+
+export function ProfileCompletion({user,onComplete}:{user:Profile;onComplete:()=>void}){
+ const [username,setUsername]=useState(validUsername(user.username??user.name)?normalizeUsername(user.username??user.name):'');
+ const [displayName,setDisplayName]=useState(validDisplayName(user.displayName??user.name)?user.displayName??user.name:'');
+ const [pin,setPin]=useState(''),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const requestId=useRef<string|null>(null),needsPin=!user.pinConfigured;
+ useEffect(()=>{const clear=()=>{setPin('');setConfirmation('');};window.addEventListener('pagehide',clear);return()=>window.removeEventListener('pagehide',clear);},[]);
+ async function submit(event:FormEvent){event.preventDefault();setError('');setBusy(true);requestId.current??=crypto.randomUUID();
+  try{await api('/api/profile/complete',{requestId:requestId.current,username,displayName,...(needsPin?{pin,pinConfirmation:confirmation}:{})});onComplete();}
+  catch(error){setError(error instanceof Error?error.message:'Opslaan is niet gelukt.');}
+  finally{setBusy(false);setPin('');setConfirmation('');}
+ }
+ return <form className="auth-card player-profile-form" onSubmit={submit}>
+  <span className="eyebrow">REGISTRATIE AFRONDEN</span><h1>Maak je spelersprofiel compleet</h1>
+  <p>Kies een unieke gebruikersnaam en de naam die andere spelers op het scorebord zien. Een Google-naam is een voorstel: bevestig of wijzig die hier.</p>
+  <label className="field">Gebruikersnaam<input name="username" autoComplete="username" required maxLength={81} value={username} onChange={e=>setUsername(e.target.value)} disabled={busy}/></label>
+  <small>Uniek in DartFlow. Met of zonder één voorloop-@.</small>
+  {username&&!validUsername(username)&&<p className="field-error">Kies een geldige gebruikersnaam van maximaal 80 tekens.</p>}
+  <label className="field">Weergavenaam<input name="displayName" autoComplete="nickname" required maxLength={80} value={displayName} onChange={e=>setDisplayName(e.target.value)} disabled={busy}/></label>
+  {needsPin?<PinFields pin={pin} confirmation={confirmation} setPin={setPin} setConfirmation={setConfirmation} disabled={busy}/>:<p>Spelerspincode: ingesteld.</p>}
+  {error&&<div className="notice error" role="alert">{error}</div>}
+  <button className="button gold full" disabled={busy||!validUsername(username)||!validDisplayName(displayName)||needsPin&&(!validPin(pin)||pin!==confirmation)}>{busy?'Profiel opslaan…':'Profiel opslaan en verder'}</button>
+ </form>;
+}
+
+export function PlayerPinSettings({user}:{user:Profile}){
+ const [configured,setConfigured]=useState(Boolean(user.pinConfigured)),[mode,setMode]=useState<'initial'|'change'|'reset'>(user.pinConfigured?'change':'initial');
+ const [pin,setPin]=useState(''),[confirmation,setConfirmation]=useState(''),[currentPin,setCurrentPin]=useState('');
+ const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');const requestId=useRef<string|null>(null);
+ useEffect(()=>{if(new URLSearchParams(location.search).get('pin')==='reset')setMode('reset');const clear=()=>{setPin('');setConfirmation('');setCurrentPin('');};window.addEventListener('pagehide',clear);return()=>window.removeEventListener('pagehide',clear);},[]);
+ function choose(next:typeof mode){setMode(next);setPin('');setConfirmation('');setCurrentPin('');setError('');setMessage('');requestId.current=null;}
+ async function submit(event:FormEvent){event.preventDefault();setBusy(true);setError('');setMessage('');requestId.current??=crypto.randomUUID();
+  try{await api('/api/profile/player-pin',{requestId:requestId.current,mode,pin,pinConfirmation:confirmation,...(mode==='change'?{currentPin}:{})});setConfigured(true);setMode('change');setMessage('Je spelerspincode is opgeslagen.');requestId.current=null;}
+  catch(error){setError(error instanceof Error?error.message:'Opslaan is niet gelukt.');}
+  finally{setBusy(false);setPin('');setConfirmation('');setCurrentPin('');}
+ }
+ const next=encodeURIComponent('/app/settings?pin=reset');
+ return <section className="panel player-profile-form" aria-labelledby="pin-settings-title"><h2 id="pin-settings-title">Spelerspincode</h2>
+  <p>Status: <strong>{configured?'Ingesteld':'Nog instellen'}</strong></p>
+  <div className="button-row"><button className="button ghost small" type="button" onClick={()=>choose(configured?'change':'initial')}>{configured?'Wijzigen':'Instellen'}</button>{configured&&<button className="button ghost small" type="button" onClick={()=>choose('reset')}>Pincode vergeten?</button>}</div>
+  {mode==='reset'&&<div className="notice"><p>Verifieer je eigen login opnieuw via Google of een e-mailcode. Keer daarna terug om een nieuwe pincode op te slaan.</p><a href={`/inloggen?reauth=1&next=${next}`} className="button ghost small">Opnieuw verifiëren via Google of e-mail</a></div>}
+  <form onSubmit={submit}>
+   {mode==='change'&&<label className="field">Huidige spelerspincode<input name="currentPin" type="password" inputMode="numeric" autoComplete="off" required pattern="[0-9]{6}" maxLength={6} value={currentPin} disabled={busy} onChange={e=>setCurrentPin(e.target.value)}/></label>}
+   <PinFields pin={pin} confirmation={confirmation} setPin={setPin} setConfirmation={setConfirmation} disabled={busy}/>
+   {error&&<div className="notice error" role="alert">{error}</div>}{message&&<div className="notice" role="status">{message}</div>}
+   <button className="button gold" disabled={busy||!validPin(pin)||pin!==confirmation||mode==='change'&&!validPin(currentPin)}>{busy?'Opslaan…':mode==='reset'?'Opnieuw instellen':configured?'Pincode wijzigen':'Pincode instellen'}</button>
+  </form>
+ </section>;
+}
+
+type View='matches'|'opponents'|'tournaments'|'practice';
+const views:{id:View;label:string}[]=[{id:'matches',label:'Wedstrijden'},{id:'opponents',label:'Tegenstanders'},{id:'tournaments',label:'Toernooien'},{id:'practice',label:'Oefenen'}];
+export function ProfileStatisticsLinks(){return <nav className="profile-stat-nav" aria-label="Profielstatistieken">{views.map(v=><a className="button ghost" href={`/app/statistics?view=${v.id}`} key={v.id}>{v.label}</a>)}</nav>;}
+function Matches({rows}:{rows:StatisticsMatchRow[]}){return rows.length?<div className="table-scroll"><table><thead><tr><th>Datum</th><th>Tegenstander</th><th>Uitslag</th><th>Speltype</th><th>AVG</th><th>Evenement</th></tr></thead><tbody>{rows.map(row=><tr key={row.id}><td><a href={`/wedstrijd/${row.id}`}>{date(row.completedAt)}</a></td><td>{row.opponent?.name??'Speler'}</td><td><abbr title={row.result==='W'?'Gewonnen':row.result==='V'?'Verloren':'Gelijk'}>{row.result}</abbr> · {row.legs.join('–')}</td><td>{row.startScore} dubbel uit</td><td>{number(row.average)}</td><td>{row.competition?.name??'Vrij spel'}</td></tr>)}</tbody></table></div>:<p>Er zijn nog geen gespeelde, afgeronde wedstrijden.</p>;}
+function Pager({offset,total,onChange}:{offset:number;total:number;onChange:(offset:number)=>void}){return <div className="button-row"><button className="button ghost small" disabled={offset===0} onClick={()=>onChange(Math.max(0,offset-25))}>Vorige</button><span>{total?`${offset+1}–${Math.min(offset+25,total)} van ${total}`:'0 resultaten'}</span><button className="button ghost small" disabled={offset+25>=total} onClick={()=>onChange(offset+25)}>Volgende</button></div>;}
+export function PlayerStatisticsPanel(){
+ const [view,setView]=useState<View>('matches'),[score,setScore]=useState(501),[offset,setOffset]=useState(0),[opponentOffset,setOpponentOffset]=useState(0),[practiceOffset,setPracticeOffset]=useState(0),[search,setSearch]=useState(''),[opponent,setOpponent]=useState('');
+ const [data,setData]=useState<PlayerStatisticsResponse|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[refresh,setRefresh]=useState(0);
+ useEffect(()=>{const v=new URLSearchParams(location.search).get('view');if(views.some(x=>x.id===v))setView(v as View);},[]);
+ useEffect(()=>{let active=true;setBusy(true);const q=new URLSearchParams({startScore:String(score),offset:String(offset),opponentOffset:String(opponentOffset),practiceOffset:String(practiceOffset)});if(search)q.set('search',search);if(opponent)q.set('opponent',opponent);
+  void api<PlayerStatisticsResponse>('/api/player-statistics?'+q).then(value=>{if(active){setData(value);setError('');}}).catch(error=>{if(active)setError(error instanceof Error?error.message:'Statistieken ophalen is niet gelukt.');}).finally(()=>{if(active)setBusy(false);});return()=>{active=false;};
+ },[score,offset,opponentOffset,practiceOffset,search,opponent,refresh]);
+ const s=data?.summary,m=s?.measures;
+ function changeView(value:View){setView(value);history.replaceState(null,'',`/app/statistics?view=${value}`);}
+ const trend=s?.last50.trend??[],measured=trend.flatMap((point,index)=>point.average===null?[]:[{index,value:point.average}]);
+ const max=Math.max(100,...measured.map(p=>p.value)),points=measured.map(p=>`${10+(trend.length<2?0:p.index/(trend.length-1))*580},${110-p.value/max*100}`).join(' ');
+ return <section className="player-statistics" aria-busy={busy}><header><h1>Jouw spelersprofiel</h1><ProfileStatisticsLinks/></header>
+  <div className="profile-stat-nav" role="tablist" aria-label="Statistiekweergave">{views.map(v=><button type="button" className={'button '+(view===v.id?'gold':'ghost')} role="tab" aria-selected={view===v.id} key={v.id} onClick={()=>changeView(v.id)}>{v.label}</button>)}</div>
+  <div className="profile-stat-filter"><label>Speltype <select value={score} onChange={e=>{setScore(Number(e.target.value));setOffset(0);setOpponentOffset(0);setPracticeOffset(0);}}><option value={501}>501 dubbel uit</option><option value={301}>301 dubbel uit</option><option value={701}>701 dubbel uit</option></select></label><button className="button ghost small" onClick={()=>setRefresh(v=>v+1)}>Vernieuwen</button></div>
+  {error&&<div className="notice error" role="alert">{error}</div>}{!data&&<p>{busy?'Statistieken ophalen…':'Geen statistieken beschikbaar.'}</p>}
+  {data&&s&&m&&view==='matches'&&<>
+   <div className="profile-stat-grid">{[['Gespeeld',s.played],['Gewonnen',s.won],['Verloren',s.lost],['Gelijk',s.drawn],['Winstpercentage',s.winPercentage===null?'Onbekend':number(s.winPercentage,1)+'%'],['Legs gewonnen / verloren',`${s.legsWon} / ${s.legsLost}`]].map(([label,value])=><div className="panel" key={label}><small>{label}</small><strong>{value}</strong></div>)}</div>
+   <section className="panel"><h2>Vorm · laatste vijf</h2><p>Van meest recent naar ouder. W = gewonnen, V = verloren, G = gelijk.</p><div className="profile-form-strip">{s.form.map(row=><a href={`/wedstrijd/${row.id}`} key={row.id} title={`${date(row.completedAt)} · ${row.opponent?.name??'Speler'}`} aria-label={`${row.result==='W'?'Gewonnen':row.result==='V'?'Verloren':'Gelijk'} op ${date(row.completedAt)}`}>{row.result}</a>)}{!s.form.length&&<p>Nog geen vorm beschikbaar.</p>}</div></section>
+   <section className="panel"><h2>Laatste 50 · {number(s.last50.average)} AVG</h2><p>{s.last50.label} · {score} dubbel uit</p>{measured.length?<svg className="profile-stat-trend" viewBox="0 0 600 130" role="img" aria-label={`Trend van ${s.last50.measured} gemeten wedstrijden; ${s.last50.label}`}><path d="M10 110H590" stroke="currentColor" opacity=".3"/><polyline points={points} fill="none" stroke="var(--lime,#b6ff00)" strokeWidth="3"/>{measured.map(p=><circle key={p.index} cx={10+(trend.length<2?0:p.index/(trend.length-1))*580} cy={110-p.value/max*100} r="3" fill="var(--lime,#b6ff00)"><title>{number(p.value)} AVG</title></circle>)}</svg>:<p>Nog geen volledig gemeten duels in dit venster.</p>}</section>
+   <section className="panel"><h2>Worpen en records</h2><div className="profile-stat-grid">{[['3-dartgemiddelde',number(m.average)],['100+ (inclusief 140+ en 180)',m.hundredPlus],['140+ (inclusief 180)',m.hundredFortyPlus],['180’s',m.oneEighties],['Hoogste finish',m.highestFinish||'Nog geen'],['100+ finishes',m.hundredPlusFinishes],['Beste gewonnen leg · pijlen',m.bestLegDarts??'Onbekend'],['First 9',number(m.firstNine)],['100+ per 100 beurten',number(m.hundredPlusPer100)],['Checkoutpercentage',m.checkoutPercentage===null?'Onbekend':number(m.checkoutPercentage,1)+'%']].map(([label,value])=><div key={label}><small>{label}</small><strong>{value}</strong></div>)}</div><details><summary>Scoreverdeling · exclusieve bereiken</summary><p>100–139: {m.distribution.hundredTo139} · 140–179: {m.distribution.hundredFortyTo179} · 180: {m.distribution.oneEighty}. Dit zijn afzonderlijke bereiken; de totaaltellers hierboven tellen cumulatief.</p></details><p className="muted-copy">Gemiddelden gebruiken gewogen punten en meetellende pijlen, inclusief verloren legs, nulbeurten en geregistreerde busts. Niet vastgelegde dubbelpogingen blijven onbekend.</p></section>
+   <section className="panel"><h2>Tien hoogste finishes</h2>{s.topFinishes.length?<ol>{s.topFinishes.map(f=><li key={`${f.matchId}:${f.set}:${f.leg}:${f.sequence}`}><a href={`/wedstrijd/${f.matchId}`}><strong>{f.score}</strong> · {date(f.completedAt)} · {f.opponent?.name??'Speler'}</a></li>)}</ol>:<p>Nog geen betrouwbare legwinnende finishes.</p>}</section>
+   <section className="panel"><h2>Wedstrijdhistorie {opponent&&'· geselecteerde tegenstander'}</h2>{opponent&&<button className="button ghost small" onClick={()=>{setOpponent('');setOffset(0);}}>Alle tegenstanders</button>}<Matches rows={data.matches}/><Pager offset={data.pagination.offset} total={data.pagination.total} onChange={setOffset}/></section>
+  </>}
+  {data&&view==='opponents'&&<section className="panel"><h2>Tegenstanders</h2><label className="field">Zoek tegenstander<input value={search} onChange={e=>{setSearch(e.target.value);setOpponentOffset(0);}}/></label>{data.opponents.map(o=><article className="profile-opponent" key={o.opponent.id}><h3>{o.opponent.name}</h3><p>{o.played} ontmoetingen · W/G/V {o.won}/{o.drawn}/{o.lost} · legs {o.legsWon}–{o.legsLost}</p><p>Laatste duel {date(o.lastPlayedAt)} · {o.lastResult.legs.join('–')}</p><Matches rows={o.recent}/><button className="button ghost small" onClick={()=>{setOpponent(o.opponent.id);setOffset(0);changeView('matches');}}>Volledige onderlinge historie</button></article>)}{!data.opponents.length&&<p>Nog geen afgeronde duels met gekoppelde tegenstanders gevonden.</p>}<Pager offset={data.opponentPagination.offset} total={data.opponentPagination.total} onChange={setOpponentOffset}/></section>}
+  {data&&view==='tournaments'&&<section className="panel"><h2>Toernooien en competities</h2>{data.tournaments.map(t=><article className="profile-opponent" key={t.id}><h3>{t.name}</h3><p>Officiële klassering: {t.classification??'Nog niet definitief beschikbaar'}</p><p>{t.summary.played} gespeelde duels · W/V {t.summary.won}/{t.summary.lost} · legs {t.summary.legsWon}–{t.summary.legsLost}</p><p>AVG {number(t.summary.measures.average)} · beste leg {t.summary.measures.bestLegDarts??'Onbekend'} pijlen · hoogste finish {t.summary.measures.highestFinish||'Nog geen'}</p><a href={`/app/${t.kind==='league'?'leagues':'tournaments'}/${t.id}`}>Evenement openen</a>{t.administrative.length>0&&<details><summary>Byes en administratieve uitslagen</summary>{t.administrative.map(a=><p key={a.id}>{a.phase} · ronde {a.round} · {a.status} {a.score?.join('–')}</p>)}</details>}</article>)}{!data.tournaments.length&&<p>Nog geen toernooien of competities met gespeelde uitslagen.</p>}</section>}
+  {data&&view==='practice'&&<section className="panel"><h2>Opgeslagen oefeningen</h2><p>Alleen voltooide sessies. Deze cijfers tellen niet mee bij wedstrijden of onderlinge balans.</p>{data.practice.records.map(r=><article className="profile-opponent" key={`${r.mode}:${r.startScore}`}><h3>{r.mode}{r.startScore?` · ${r.startScore}`:''}</h3><p>{r.sessions} sessies · {r.mode==='around'?`meeste treffers ${r.bestHits??'Onbekend'}`:`${r.startScore===501&&['solo','bot'].includes(r.mode)?`beste AVG ${number(r.bestAverage)} · `:''}beste leg ${r.bestLegDarts??'Onbekend'} pijlen · hoogste finish ${r.highestFinish??'Onbekend'}`} </p></article>)}{data.practice.sessions.map(t=><article className="profile-opponent" key={t.id}><a href={`/app/training/${t.id}`}>{t.name} · {date(t.completedAt)}</a><p>{t.mode==='around'?`Treffers ${t.hits??'Onbekend'} / ${t.attempts??'Onbekend'}`:`${t.startScore}${t.startScore===501&&['solo','bot'].includes(t.mode)?` · AVG ${number(t.average)}`:` · hoogste finish ${t.highestFinish??'Onbekend'}`}`}  · voortgang {t.progress??'Onbekend'}</p></article>)}{!data.practice.sessions.length&&<p>Nog geen voltooide, opgeslagen oefensessies.</p>}<Pager offset={data.practice.pagination.offset} total={data.practice.pagination.total} onChange={setPracticeOffset}/></section>}
+ </section>;
+}

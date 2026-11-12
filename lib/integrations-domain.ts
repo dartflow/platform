@@ -18,7 +18,7 @@ export async function enqueueMatchTransition(client:PoolClient,actorId:string,so
  const linked=await client.query('select e.club_id,e.state from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1',[next.id]);
  const scope=linked.rows.length?(linked.rows[0].club_id?`club:${linked.rows[0].club_id}`:'platform'):`club:${next.clubId}`;
  const event=await client.query('select name,date::text from dartflow_private.events where id=$1',[next.eventId]);
- const actor=await client.query('select name from dartflow_private.profiles where id=$1',[actorId]);
+ const actor=await client.query('select name from dartflow_private.profile_labels where id=$1',[actorId]);
  const board=next.boardId?await client.query('select name from dartflow_private.boards where id=$1',[next.boardId]):null;
  const view=matchView(next,actorId,false),score=(next.settings.bestOfSets>1?view.sets:view.legs).join(' – ');
  for(const kind of kinds)for(const recipientId of kind.recipients){

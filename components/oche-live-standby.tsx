@@ -3,6 +3,7 @@
 import {useEffect,useState,type CSSProperties,type ReactNode} from 'react';
 import {ocheStandbyFrame} from '@/lib/oche-standby';
 import type {ClubBoardScreenView} from '@/lib/types';
+import {OcheHeadToHead,OcheMatchRecap} from './oche-statistics';
 
 export function OcheFullscreen(){
   const [error,setError]=useState('');
@@ -38,7 +39,7 @@ function OcheStandbyCarousel({data,stale,qr,controls,overlay,activityOverlay}:{d
       <section className="oche-slide oche-slide--steps" data-active={frame.index===2} aria-hidden={frame.index!==2} inert={frame.index!==2} aria-label="Zo speel je"><img className="oche-steps-logo" src="/assets/dartflow-logo.svg" alt="DartFlow" width={1916} height={496}/>{qr}<h2>Zo <em>speel je.</em></h2><ol>{steps.map((step,index)=><li key={step}><b aria-hidden="true">{index+1}</b><span>{step}</span></li>)}</ol></section>
     </div>
     <footer className="oche-foot"><div className="oche-carousel-progress" aria-hidden="true"><span/></div><span>DartFlow · Oche Live</span><div className="oche-foot-actions"><span className="oche-slide-counter" aria-label={`Stand-byslide ${frame.index+1} van 3`}>{String(frame.index+1).padStart(2,'0')} / 03</span>{controls}<OcheFullscreen/></div></footer>
-  </div>{overlay}{activityOverlay}</div></main>;
+  </div>{overlay}{activityOverlay}{data.status==='available'&&<OcheMatchRecap statistics={data.snapshot.statistics}/>}</div></main>;
 }
 
 export default function OcheLiveStandby({data,error,stale,needsPairing,pairForm,qr,controls,overlay,activityOverlay,carouselEligible}:StandbyProps){
@@ -54,8 +55,9 @@ export default function OcheLiveStandby({data,error,stale,needsPairing,pairForm,
       {!data?<div className="oche-headline"><span className={`oche-pill${stale?' oche-pill-offline':''}`}>{needsPairing?'Koppeling nodig':stale?'Offline':error?'Niet beschikbaar':'Verbinden'}</span><h1>{needsPairing?'Koppel dit baanscherm':error?'Scherm niet beschikbaar':'Oche Live openen…'}</h1><p>{needsPairing?'Vraag de wedstrijdleiding om een eenmalige koppelcode. Dit apparaat leest alleen de stand op deze baan.':error||'We halen de actuele stand van deze baan op.'}</p>{needsPairing&&pairForm}</div>:<>
         <div className="oche-headline club-board-idle-context"><span className={`oche-pill${stale?' oche-pill-offline':status==='available'?' oche-pill-live':''}`}>{stale?'Offline':status==='closed'?'Gesloten':status==='blocked'?'Buiten gebruik':status==='waiting'?'Wacht op spelers':reserved?'Gereserveerd':'Baan vrij'}</span><h1 className="oche-kicker" data-testid="oche-board-name">{data.board.name}</h1><h2>{status==='closed'?<>Baan <em>gesloten.</em></>:status==='blocked'?<>Even pauze <em>aan dit bord.</em></>:status==='waiting'?<>Jouw tegenstander <em>staat klaar.</em></>:reserved?<>Baan <em>gereserveerd.</em></>:<>Scan en <em>speel.</em></>}</h2><p>{status==='closed'?'Deze baan is gesloten voor nieuwe wedstrijden.':status==='blocked'?'Deze baan is tijdelijk geblokkeerd door de beheerder.':status==='waiting'?'De tweede speler scant dezelfde QR en sluit aan.':reserved?display?.reservation?.label:'Begin een oefenpartij, speel samen op locatie of nodig iemand online uit.'}</p></div>
         {qr}
+        {status==='waiting'&&<OcheHeadToHead statistics={data.snapshot.statistics}/>}
       </>}
     </section>
     <footer className="oche-foot"><span>DartFlow · Oche Live</span><div className="oche-foot-actions"><a className="oche-back-link" href="/speler">Terug</a>{controls}<OcheFullscreen/></div></footer>
-  </div>{overlay}{activityOverlay}</div></main>;
+  </div>{overlay}{activityOverlay}{status==='available'&&<OcheMatchRecap statistics={data?.snapshot.statistics}/>}</div></main>;
 }

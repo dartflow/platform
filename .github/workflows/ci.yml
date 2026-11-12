@@ -24,6 +24,9 @@ jobs:
       DARTFLOW_APP_ORIGIN: http://localhost:3000
       DARTFLOW_RELEASE_SHA: ${{ github.sha }}
       DARTFLOW_PG_BIN: /usr/lib/postgresql/16/bin
+      # Public synthetic fixture key for the isolated local database; never a hosted secret.
+      DARTFLOW_PLAYER_PIN_PEPPERS: ci-v1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DARTFLOW_PLAYER_PIN_PEPPER_VERSION: ci-v1
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:

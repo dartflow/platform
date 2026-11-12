@@ -30,7 +30,8 @@ import type {
   PublicSnapshot,
   ResultView,
 } from "../lib/types";
-import {requiresDisplayName,validDisplayName} from "../lib/display-name";
+import {requiresDisplayName} from "../lib/display-name";
+import {ProfileCompletion} from './player-profile';
 import BoardActivityNotice from './board-activity-notice';
 import {safeNext} from "../lib/config";
 
@@ -41,6 +42,7 @@ type Session = {
   environment?: string;
   canManagePlatform?: boolean;
   requiresDisplayName?: boolean;
+  requiresProfileCompletion?:boolean;
 };
 type IconName =
   | "home"
@@ -472,7 +474,7 @@ export default function DartflowApp() {
         overlay={readOnlyAlias[1] === "overlay"}
       />
     );
-  if (session.data?.user && (session.data.requiresDisplayName || requiresDisplayName(session.data.user)))
+  if (session.data?.user && (session.data.requiresProfileCompletion || session.data.requiresDisplayName || requiresDisplayName(session.data.user)))
     return <CompleteProfile user={session.data.user} />;
   if (path === "/inloggen") return <Login session={session.data} />;
   if (!session.data && !session.error)
@@ -544,6 +546,7 @@ export default function DartflowApp() {
     { href: "/app/locations", label: "Banen & locaties", icon: "target" },
     { href: "/app/clubs", label: "Verenigingen", icon: "club" },
     { href: "/app/mymatches", label: "Mijn wedstrijden", icon: "history" },
+    { href: "/app/statistics", label: "Mijn profiel", icon: "users" },
     { href: "/app/settings", label: "Instellingen", icon: "sliders" },
   ];
   const organizeNav: { href: string; label: string; icon: IconName }[] = [
@@ -728,6 +731,7 @@ export default function DartflowApp() {
             </div>
             <Connection stale={overview.stale} updated={overview.updated} />
           </div>
+          {user.pinConfigured===false&&!/^\/(?:wedstrijd|baan)\//.test(path)&&!/^\/app\/(?:training|match|lobby)(?:\/|$)/.test(platformPath)&&platformPath!=='/app/settings'&&<div className="notice" role="status">Je spelerspincode moet nog worden ingesteld. <a href="/app/settings">Spelerspincode instellen</a>. Je kunt op je eigen telefoon blijven spelen.</div>}
           {path.startsWith("/wedstrijd/") ? (
             <MatchPage
               id={path.split("/")[2]}
@@ -1677,6 +1681,7 @@ function MatchPage({
   const [score, setScore] = useState("");
   const [darts, setDarts] = useState(3);
   const [doubleConfirmed, setDoubleConfirmed] = useState(false);
+  const [doubleAttempts,setDoubleAttempts]=useState<number|null>(null);
   const [reason, setReason] = useState("");
   const [disputing, setDisputing] = useState(false);
   const [correcting, setCorrecting] = useState(false);
@@ -1712,6 +1717,7 @@ function MatchPage({
           setScore("");
           sessionStorage.removeItem(scoreKey);
           setDoubleConfirmed(false);
+          setDoubleAttempts(null);
         }
         setDisputing(false);
         setConflict(false);
@@ -1762,6 +1768,7 @@ function MatchPage({
     setScore(next);
     sessionStorage.setItem(scoreKey, next);
     setDoubleConfirmed(false);
+    setDoubleAttempts(null);
   }
   if (!match)
     return (
@@ -1954,7 +1961,7 @@ function MatchPage({
   return (
     <>
       {!activeConsole&&<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>}
-      {activeConsole && <ScoreConsole activity={<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={match.players.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} message={actionError || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
+      {activeConsole && <ScoreConsole activity={<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={match.players.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} message={actionError || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed,...(doubleAttempts==null?{}:{doubleAttempts})})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
       {match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore) && <button className="button gold full" onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</button>}
       <Heading
         kicker={`${event?.name || "BAANMODUS"}${match.boardId ? ` · ${boardName}` : ""}`}
@@ -2156,6 +2163,7 @@ function MatchPage({
                       score: Number(score),
                       darts,
                       doubleConfirmed: finish && doubleConfirmed,
+                      ...(doubleAttempts==null?{}:{doubleAttempts}),
                     });
                 }}
               >
@@ -2516,23 +2524,12 @@ function MatchInvitation({matchId}:{matchId:string}){
 }
 
 function CompleteProfile({user}:{user:Profile}) {
-  const [name,setName]=useState(validDisplayName(user.name)?user.name:'');
-  const [busy,setBusy]=useState(false),[error,setError]=useState('');
-  async function complete(event:FormEvent){
-    event.preventDefault();setError('');setBusy(true);
-    try{
-      await request('/api/platform/actions',{requestId:crypto.randomUUID(),action:{type:'profile.update',name}});
+  function complete(){
       const target=location.pathname==='/inloggen'?safeNext(new URLSearchParams(location.search).get('next')):safeNext(location.pathname+location.search);
       hardNavigate(target==='/'?'/app':target);
-    }catch(error){setError(error instanceof Error?error.message:'Opslaan is niet gelukt.');}finally{setBusy(false);}
   }
   return <div className="auth-page"><div className="auth-brand"><img src="/assets/dartflow-logo.svg" alt="DartFlow" /></div>
-    <form className="auth-card" onSubmit={complete}><Badge>REGISTRATIE AFRONDEN</Badge><h1>Kies je gebruikersnaam</h1>
-      <p>Je gebruikersnaam is uniek in heel DartFlow. Hoofdletters maken geen verschil. Deze naam zien andere spelers in de lobby, de wedstrijd en op het scorebord. Bevestig het voorstel of kies een andere naam.</p>
-      <label className="field">Gebruikersnaam<input name="name" autoComplete="username" required maxLength={80} value={name} onChange={event=>setName(event.target.value)} disabled={busy} /></label>
-      {error&&<div className="notice error" role="alert">{error}</div>}
-      <button className="button gold full" disabled={busy||!validDisplayName(name)}>{busy?'Gebruikersnaam opslaan…':'Gebruikersnaam bevestigen en verder'}</button>
-    </form></div>;
+    <ProfileCompletion user={user} onComplete={complete}/></div>;
 }
 
 function ShortInvitation({code}:{code:string}){
@@ -2638,7 +2635,7 @@ function Login({ session }: { session: Session | null }) {
                 ? "Meld je opnieuw aan met hetzelfde eigenaarsaccount om je beveiligde wijziging af te ronden."
             : "Eén account voor je club, de speeldag en je scorekaart."}
         </p>
-        {reauth && <p className="notice">Voltooi een nieuwe aanmelding. Laat het oorspronkelijke tabblad Integraties open en keer daarna terug naar dat tabblad om je instellingen opnieuw op te slaan.</p>}
+        {reauth && <p className="notice">Voltooi een nieuwe aanmelding. Daarna keer je terug om je beveiligde instellingen op te slaan.</p>}
         <form onSubmit={submit}>
           <label className="field" htmlFor="login-email">
             E-mailadres

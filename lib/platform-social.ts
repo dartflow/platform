@@ -13,7 +13,12 @@ async function notify(client: PoolClient, requestId: string, templateId: string,
 }
 export async function socialAction(client: PoolClient, actor: string, command: PlatformCommand): Promise<PlatformResponse | null> {
   const a = command.action, type = a.type;
-  if(type==='profile.update'){await saveScoreboardName(client,actor,a.name);return {ok:true};}
+  if(type==='profile.update'){
+    if(a.showPublicStatistics!==undefined&&typeof a.showPublicStatistics!=='boolean')throw new DomainError('invalid_preferences','Gebruik een geldige keuze voor openbare statistieken.');
+    await saveScoreboardName(client,actor,a.username??a.name,a.displayName);
+    if(typeof a.showPublicStatistics==='boolean')await client.query('update dartflow_private.profiles set show_public_statistics=$2 where id=$1',[actor,a.showPublicStatistics]);
+    return {ok:true};
+  }
   if (type === 'preferences.update') {
     if ((a.discoverable !== undefined && typeof a.discoverable !== 'boolean') || (a.allowRequests !== undefined && typeof a.allowRequests !== 'boolean')) throw new DomainError('invalid_preferences', 'Gebruik geldige privacyinstellingen.');
     await client.query('insert into dartflow_private.platform_preferences(user_id,discoverable,allow_requests) values($1,coalesce($2,true),coalesce($3,true)) on conflict(user_id) do update set discoverable=coalesce($2,dartflow_private.platform_preferences.discoverable),allow_requests=coalesce($3,dartflow_private.platform_preferences.allow_requests)', [actor, a.discoverable, a.allowRequests]);
@@ -50,7 +55,7 @@ export async function socialAction(client: PoolClient, actor: string, command: P
     const id = randomUUID();
     await client.query('insert into dartflow_private.platform_reports(id,reporter_id,target_id,room_id,reason) values($1,$2,$3,$4,$5)', [id, actor, target, a.roomId ? uuid(a.roomId) : null, text(a.reason, 2000)]);
     const reviewers=a.roomId?await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='active' and role in ('owner','admin','moderator')",[a.roomId]):await client.query("select user_id from dartflow_private.platform_roles where role in ('owner','admin')");
-    const reporter=(await client.query('select name from dartflow_private.profiles where id=$1',[actor])).rows[0]?.name||'Speler';
+    const reporter=(await client.query('select name from dartflow_private.profile_labels where id=$1',[actor])).rows[0]?.name||'Speler';
     for(const reviewer of reviewers.rows)if(reviewer.user_id!==actor&&reviewer.user_id!==target)await notify(client,command.requestId,'moderation-report',reviewer.user_id,{roomName:a.roomId?(await entity(client,a.roomId)).state.name:'DartFlow',actorName:reporter,reason:text(a.reason,2000)});
     return { ok: true, id };
   }

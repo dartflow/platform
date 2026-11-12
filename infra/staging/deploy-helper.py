@@ -7,6 +7,7 @@ source SHA256 ce93bfeffa573616394d1f28dc5dd101bc7e0ce076b7bf25b35a38827ed9aba8).
 The policy, GitHub source/gate, npm build, config and activation flow are Dartflow-specific.
 """
 import contextlib
+import base64
 import fcntl
 import grp
 import hashlib
@@ -52,6 +53,16 @@ EXTRACTOR = Path('/usr/local/libexec/dartflow-extract-source.py')
 GATE = '/usr/local/libexec/dartflow-release-gate.mjs'
 GUARDIAN = Path('/usr/local/libexec/dartflow-lock-guardian.py')
 PUBLIC_KEYS = ('DARTFLOW_APP_ORIGIN', 'DARTFLOW_DATA_MODE', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SUPABASE_URL')
+PLAYER_PIN_POLICY_RANGES = {
+    'DARTFLOW_PLAYER_PIN_MEMORY_KIB': (19456, 131072),
+    'DARTFLOW_PLAYER_PIN_PASSES': (2, 8),
+    'DARTFLOW_PLAYER_PIN_ACTOR_LIMIT': (1, 100),
+    'DARTFLOW_PLAYER_PIN_TARGET_LIMIT': (1, 50),
+    'DARTFLOW_PLAYER_PIN_WINDOW_SECONDS': (30, 3600),
+    'DARTFLOW_PLAYER_PIN_GLOBAL_LIMIT': (1, 1000),
+    'DARTFLOW_PLAYER_PIN_CONCURRENCY': (1, 8),
+}
+PLAYER_PIN_RUNTIME_KEYS = frozenset(PLAYER_PIN_POLICY_RANGES) | {'DARTFLOW_PLAYER_PIN_PEPPERS', 'DARTFLOW_PLAYER_PIN_PEPPER_VERSION'}
 NOFOLLOW = os.O_NOFOLLOW | os.O_CLOEXEC
 DIRECTORY = NOFOLLOW | os.O_DIRECTORY | os.O_RDONLY
 CLEAN_ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C.UTF-8'}
@@ -339,7 +350,7 @@ def runtime_values(text, public):
     allowed = {'DARTFLOW_DATABASE_URL', 'DARTFLOW_ENV', 'DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY',
                'DARTFLOW_MAIL_ALLOWED_FROM', 'DARTFLOW_MAIL_ALLOWED_REPLY_TO', 'DARTFLOW_MAIL_TEST_RECIPIENTS', 'DARTFLOW_MAIL_MAX_MODE',
                'DARTFLOW_MAIL_WORKER_TOKEN', 'DARTFLOW_ADMIN_REQUIRE_MFA', 'SUPABASE_MANAGEMENT_TOKEN',
-               'DARTFLOW_TURN_SECRET', 'DARTFLOW_TURN_URLS'}
+               'DARTFLOW_TURN_SECRET', 'DARTFLOW_TURN_URLS'} | PLAYER_PIN_RUNTIME_KEYS
     result = {}
     for line in text.splitlines():
         line = line.strip()
@@ -373,7 +384,29 @@ def runtime_values(text, public):
             require(all(re.fullmatch(r'[^@,\s<>]+@[^@,\s<>]+\.[^@,\s<>]+', address) for address in result[key].split(',')), 'Invalid mail boundary')
     if 'DARTFLOW_TURN_URLS' in result:
         require(all(re.fullmatch(r'turns?:[A-Za-z0-9.\[\]:-]+(?:\?transport=(?:udp|tcp))?', url) for url in result['DARTFLOW_TURN_URLS'].split(',')), 'Invalid TURN endpoint')
+    validate_player_pin_runtime(result)
     return result
+
+
+def validate_player_pin_runtime(values):
+    """Keep all PIN peppers server-only, versioned and unambiguous for rotation."""
+    if not (set(values) & PLAYER_PIN_RUNTIME_KEYS):
+        return  # Existing immutable pre-PIN bundles remain valid for rollback.
+    current = values.get('DARTFLOW_PLAYER_PIN_PEPPER_VERSION', '')
+    require(re.fullmatch(r'[A-Za-z0-9_-]{1,32}', current), 'Invalid PIN pepper current version')
+    entries, versions = values.get('DARTFLOW_PLAYER_PIN_PEPPERS', '').split(','), set()
+    for entry in entries:
+        version, separator, encoded = entry.partition(':')
+        require(separator and re.fullmatch(r'[A-Za-z0-9_-]{1,32}', version) and version not in versions, 'Invalid or duplicate PIN pepper version')
+        require(re.fullmatch(r'[A-Za-z0-9+/]{43}=', encoded), 'PIN pepper must encode exactly 256 bits')
+        decoded = base64.b64decode(encoded, validate=True)
+        require(len(decoded) == 32 and base64.b64encode(decoded).decode('ascii') == encoded, 'Invalid canonical PIN pepper encoding')
+        versions.add(version)
+    require(current in versions, 'Current PIN pepper version is unavailable')
+    for key, (minimum, maximum) in PLAYER_PIN_POLICY_RANGES.items():
+        if key in values:
+            raw = values[key]
+            require(re.fullmatch(r'[0-9]{1,6}', raw) and minimum <= int(raw) <= maximum, 'PIN policy setting exceeds reviewed bounds')
 
 
 def read_bundle(config_id, project_ref):

@@ -10,6 +10,7 @@ body.score-console-open{overflow:hidden;overscroll-behavior:none}
 
 body.score-console-open .app-shell{visibility:hidden}
 .screen-device-manager{width:100%;padding:12px 0}.screen-device-manager summary{cursor:pointer;font-size:12px;font-weight:700}.screen-device-manager p{font-size:12px;line-height:1.5}.screen-device-manager .notice strong{overflow-wrap:anywhere;font-size:17px}
+.score-console-dart-picks{display:flex;gap:5px;flex:none}.score-console-dart-picks button{width:34px;height:34px;padding:0;border:1px solid #657455;border-radius:6px;background:#20291d;color:#f5f8ef;font-weight:750}.score-console-dart-picks button[aria-pressed=true]{background:#b7f62b;color:#15200e;border-color:#b7f62b}.score-console-entry>span{overflow:hidden;text-overflow:ellipsis;max-width:55%;white-space:nowrap}.score-console-options small{display:block;color:#b5c3ac;font-size:11px;line-height:1.5}
 
 /* Keep breathing room at both normal and compact phone heights. */
 .score-console{gap:16px;padding:max(16px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}.score-console-form{gap:12px}.score-console-players{gap:16px}.score-console-keypad{gap:10px}.score-console-players>div{padding:10px 14px}

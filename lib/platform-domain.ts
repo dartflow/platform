@@ -139,7 +139,7 @@ export function trainingAction(source: PlatformState, action: Record<string, unk
   state.undo ??= []; state.undo.push(structuredClone(game));
   if (state.undo.length > 300) state.undo.shift();
   if (state.mode !== 'bot') game.turn = 0;
-  state.game = scoreGame(game, Number(action.score), count, action.doubleConfirmed === true);
+  state.game = scoreGame(game, Number(action.score), count, action.doubleConfirmed === true,action.doubleAttempts as number|null|undefined);
   if (state.mode === 'bot') {
     // The simulated opponent is server-side and remains part of training only.
     let guard = 0;

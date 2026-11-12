@@ -50,8 +50,8 @@ async function managedBoardState(client:Client,boardId:string):Promise<Pick<Loca
  const sourceId=activity?.sourceId??match?.id??lease?.id;
  let activeGame:LocationBoard['activeGame']=null;
  if(sourceId){
-  const playerNames=match?match.state.players.map(p=>p.name):(await client.query<{name:string}>(`select p.name from dartflow_private.platform_entities pe join dartflow_private.profiles p on p.id=pe.owner_id where pe.id=$1
-   union select p.name from dartflow_private.platform_members pm join dartflow_private.profiles p on p.id=pm.user_id where pm.entity_id=$1 and pm.status in('active','invited') order by name`,[sourceId])).rows.map(p=>p.name);
+  const playerNames=match?match.state.players.map(p=>p.name):(await client.query<{name:string}>(`select p.name from dartflow_private.platform_entities pe join dartflow_private.profile_labels p on p.id=pe.owner_id where pe.id=$1
+   union select p.name from dartflow_private.platform_members pm join dartflow_private.profile_labels p on p.id=pm.user_id where pm.entity_id=$1 and pm.status in('active','invited') order by name`,[sourceId])).rows.map(p=>p.name);
   const boards=(await client.query<{id:string;name:string}>('select id,name from dartflow_private.boards where id=any($1::uuid[]) order by id',[activity?.boardIds??[boardId]])).rows;
   activeGame={id:sourceId,kind:activity?.kind??'free',label:playerNames.length?playerNames.join(' – '):lease?.kind==='training'?'Solo-oefenpartij':'Huidige partij',playerNames,remote:Boolean(boards.length>1||match?.state.scoringMode==='per-player'||lease?.state.setup==='remote'||lease?.state.setup==='hybrid'),boards};
  }
@@ -72,7 +72,7 @@ export async function getLocationOverview(actor:string):Promise<LocationOverview
   const boards=(await client.query<{id:string;name:string;reservation_enabled:boolean;archived_at:Date|null;public_screen:boolean;legacy_club:boolean;blocked:boolean;occupied:boolean}>(`select b.id,b.name,lb.reservation_enabled,lb.archived_at,lb.public_screen,b.blocked,exists(select 1 from dartflow_private.club_boards cb where cb.board_id=b.id) as legacy_club,
    (exists(select 1 from dartflow_private.matches m where m.board_id=b.id) or exists(select 1 from dartflow_private.platform_entities pe where pe.state->>'boardId'=b.id::text and coalesce(pe.state->>'closed','false')<>'true' and (pe.state->>'boardLeaseUntil')::bigint>floor(extract(epoch from now())*1000) and((pe.kind='training' and pe.state->>'boardHeld'='true') or(pe.kind='lobby' and pe.state->>'matchId' is null)))) as occupied
    from dartflow_private.location_boards lb join dartflow_private.boards b on b.id=lb.board_id where lb.location_id=$1 order by lb.created_at,b.id`,[loc.id])).rows;
-  const managers=loc.owner_id===id?(await client.query<{id:string;name:string}>('select p.id,p.name from dartflow_private.location_members lm join dartflow_private.profiles p on p.id=lm.user_id where lm.location_id=$1 order by p.name,p.id',[loc.id])).rows:[];
+  const managers=loc.owner_id===id?(await client.query<{id:string;name:string}>('select p.id,p.name from dartflow_private.location_members lm join dartflow_private.profile_labels p on p.id=lm.user_id where lm.location_id=$1 order by p.name,p.id',[loc.id])).rows:[];
   const projected:LocationBoard[]=[];for(const b of boards)projected.push({id:b.id,name:b.name,locationId:loc.id,enabled:b.reservation_enabled,archived:Boolean(b.archived_at),publicScreen:b.public_screen,legacyClub:b.legacy_club,blocked:b.blocked,occupied:b.occupied,...await managedBoardState(client,b.id),playUrl:`/baan/${b.id}`,screenUrl:`/baanscherm/${b.id}`});
   locations.push({id:loc.id,name:loc.name,kind:loc.kind,timezone:loc.timezone,role:loc.owner_id===id?'owner':'manager',managers,boards:projected});
  }

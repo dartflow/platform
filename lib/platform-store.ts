@@ -43,7 +43,7 @@ export async function entity(client: Client, id: unknown, lock = false): Promise
   return rows[0];
 }
 export async function member(client: Client, id: string, actor: string): Promise<PlatformMember | undefined> {
-  const { rows } = await client.query<PlatformMember>('select m.user_id as id,p.name,m.role,m.status,m.attributes from dartflow_private.platform_members m join dartflow_private.profiles p on p.id=m.user_id where m.entity_id=$1 and m.user_id=$2', [id, actor]);
+  const { rows } = await client.query<PlatformMember>('select m.user_id as id,p.name,m.role,m.status,m.attributes from dartflow_private.platform_members m join dartflow_private.profile_labels p on p.id=m.user_id where m.entity_id=$1 and m.user_id=$2', [id, actor]);
   return rows[0];
 }
 export async function isClubMember(client: Client, clubId: string, actor: string, manage = false): Promise<boolean> {
@@ -68,7 +68,7 @@ export async function requireAccess(client: Client, row: EntityRow, actor: strin
 }
 export async function view(client: Client, row: EntityRow, actor: string,cachedMembers?:PlatformMember[]): Promise<PlatformEntity> {
   if(row.kind==='club')return clubView(client,row,actor,cachedMembers);
-  const members=cachedMembers??(await client.query<PlatformMember>('select m.user_id as id,p.name,m.role,m.status,m.attributes from dartflow_private.platform_members m join dartflow_private.profiles p on p.id=m.user_id where m.entity_id=$1 order by m.created_at,m.user_id', [row.id])).rows;
+  const members=cachedMembers??(await client.query<PlatformMember>('select m.user_id as id,p.name,m.role,m.status,m.attributes from dartflow_private.platform_members m join dartflow_private.profile_labels p on p.id=m.user_id where m.entity_id=$1 order by m.created_at,m.user_id', [row.id])).rows;
   const own = row.owner_id === actor, self = members.find(m => m.id === actor);
   const canManage = row.club_id&&['league','tournament'].includes(row.kind)?await clubPermission(client,row.club_id,actor,row.kind==='league'?'competitions.manage':'tournaments.manage'):own || self?.status === 'active' && ['owner', 'admin', 'moderator'].includes(self.role);
   const full = own || self?.status === 'active';
@@ -118,7 +118,7 @@ export async function createCoreMatch(client: Client, row: EntityRow, players: s
   for (const id of players) await provisionPlayer(client, row.state, id);
   // Lock verified names through insertion so concurrent profile completion cannot
   // pass validation after an older, unconfirmed name was already snapshotted.
-  const { rows: profiles } = await client.query<Profile>('select id,name from dartflow_private.profiles where id=any($1::uuid[]) order by id for share', [players]);
+  const { rows: profiles } = await client.query<Profile>('select id,coalesce(nullif(display_name,\'\'),name) as name from dartflow_private.profiles where id=any($1::uuid[]) order by id for share', [players]);
   if (profiles.length !== 2) throw new DomainError('invalid_players', 'Een speler bestaat niet.');
   for(const player of players)await requireScoreboardName(client,player);
   const participants = players.map(id => profiles.find(p => p.id === id)!);

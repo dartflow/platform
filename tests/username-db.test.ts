@@ -30,7 +30,7 @@ test('global username claims are atomic across clubs and Google proposals cannot
    await choose(winner,name);await choose(winner,name.toUpperCase());
    await assert.rejects(choose(loser,name.replace('ë','e\u0308')),{code:'username_taken',status:409});
    await assert.rejects(owner.query('update dartflow_private.profiles set name=$2,display_name_confirmed=true where id=$1',[third,`  ${name}  `]),{code:'23505',constraint:'profiles_unique_confirmed_username'});
-   assert.equal((await getProfile(winner)).name,name.toUpperCase());assert.equal((await getProfile(third)).name,'Nieuwe speler');
+   assert.equal((await getProfile(winner)).username,name.toUpperCase());assert.equal((await getProfile(third)).name,'Nieuwe speler');
   });
   await t.test('Google metadata is an unconfirmed suggestion and repeat login keeps the explicitly chosen username',async()=>{
    const identity={id:google,user_metadata:{full_name:name,display_name_confirmed:true}};await ensureAuthProfile(identity);
@@ -42,7 +42,7 @@ test('global username claims are atomic across clubs and Google proposals cannot
   });
   await t.test('trusted direct inserts use the same whitespace normalization and cannot create a second confirmed claim',async()=>{
    const direct=`Direct Label ${suffix}`;await owner.query('update dartflow_private.profiles set name=$2,display_name_confirmed=true where id=$1',[third,`\t Direct\u00A0\u2007Label ${suffix}\u3000`]);assert.equal((await getProfile(third)).name,direct);
-   await assert.rejects(choose(loser,direct.toLowerCase()),{code:'username_taken'});assert.equal((await getProfile(loser)).name,`李明 ${suffix}`);
+   await assert.rejects(choose(loser,direct.toLowerCase()),{code:'username_taken'});assert.equal((await getProfile(loser)).username,`李明 ${suffix}`);
    for(const value of ['¼','²','Ⅷ']){await choose(loser,value);assert.equal((await getProfile(loser)).displayNameConfirmed,true);}
   });
   await t.test('newer Unicode letters keep their validity and case-insensitive claim on older PostgreSQL ICU tables',async()=>{

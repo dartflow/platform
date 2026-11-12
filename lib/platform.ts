@@ -1,3 +1,4 @@
+import {getPlayerStatisticsSummary} from './player-statistics-db';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { consumeRateLimit, database, eventAccess, executeMatchCommand, getMatch, getProfile } from './db';
 import {invitationAttemptRequired} from './invitations';
@@ -18,12 +19,14 @@ import { blocked, canonical, createEntity, entity, hash, isClubMember, member, r
 import type { EntityRow, Client } from './platform-store';
 import type { PlatformCommand, PlatformMember, PlatformMessage, PlatformOverview, PlatformResponse } from './platform-types';
 import type { MatchState, Profile, ResultView } from './types';
+import {containsPrivatePinField} from './private-pin-fields';
 export type { PlatformCommand, PlatformEntity, PlatformOverview, PlatformResponse } from './platform-types';
 
 export async function executePlatformCommand(actorId: string, input: unknown): Promise<PlatformResponse> {
   const command = input as PlatformCommand;
   const actor = uuid(actorId);
   if (!command || typeof command !== 'object' || !command.action || typeof command.action.type !== 'string' || command.action.type.length > 80 || !command.requestId || (command.expectedRevision !== undefined && (!Number.isSafeInteger(command.expectedRevision) || command.expectedRevision < 0))) throw new DomainError('invalid_command', 'Ongeldig platformcommando.');
+  if(containsPrivatePinField(command))throw new DomainError('private_field','Gebruik de beveiligde spelerspincodeflow.',400);
   uuid(command.requestId);
   if(command.action.type.startsWith('community.')){
     const limit=await consumeRateLimit(`community:actor:${actor}`,80,60);
@@ -119,7 +122,7 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
       }
       await save(client, row);
       if(action.type==='training.score'){
-        const name=String((await client.query('select name from dartflow_private.profiles where id=$1',[actor])).rows[0]?.name??'Speler');
+        const name=String((await client.query('select name from dartflow_private.profile_labels where id=$1',[actor])).rows[0]?.name??'Speler');
         await recordScoreEvents(client,typeof row.state.boardId==='string'?row.state.boardId:null,row.id,row.revision,'score',(row.state.game?.visits.slice(previousVisits)??[]).map(visit=>({score:visit.score,checkout:visit.checkout,bust:visit.bust,playerIndex:visit.playerIndex,playerName:visit.playerIndex===0?name:'Dartbot'})));
       }
       else if(action.type==='training.undo')await recordScoreEvents(client,typeof row.state.boardId==='string'?row.state.boardId:null,row.id,row.revision,'undo');
@@ -178,7 +181,7 @@ export async function reconcilePlatformResults(): Promise<void> {
 async function readMessages(client: Client, actor: string, rowId: string): Promise<PlatformMessage[]> {
   const { rows } = await client.query<PlatformMessage>(`select * from (
     select m.id,m.author_id as "authorId",p.name as "authorName",m.body,m.created_at as "createdAt"
-    from dartflow_private.platform_messages m join dartflow_private.profiles p on p.id=m.author_id
+    from dartflow_private.platform_messages m join dartflow_private.profile_labels p on p.id=m.author_id
     where m.room_id=$1 and not m.deleted and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$2 and b.target_id=m.author_id) or (b.target_id=$2 and b.source_id=m.author_id)))
     order by m.created_at desc,m.id desc limit 100) recent order by "createdAt",id`, [rowId, actor]);
   return rows;
@@ -196,7 +199,7 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
   const client = database();
   // Entity revisions and membership permissions must describe the same committed state.
   const { rows: entities } = await client.query<EntityRow&{member_snapshot:PlatformMember[]}>(`select e.*,
-    (select coalesce(jsonb_agg(jsonb_build_object('id',m.user_id,'name',p.name,'role',m.role,'status',m.status,'attributes',m.attributes) order by m.created_at,m.user_id),'[]'::jsonb) from dartflow_private.platform_members m join dartflow_private.profiles p on p.id=m.user_id where m.entity_id=e.id) as member_snapshot,
+    (select coalesce(jsonb_agg(jsonb_build_object('id',m.user_id,'name',p.name,'role',m.role,'status',m.status,'attributes',m.attributes) order by m.created_at,m.user_id),'[]'::jsonb) from dartflow_private.platform_members m join dartflow_private.profile_labels p on p.id=m.user_id where m.entity_id=e.id) as member_snapshot,
     (select i.code from dartflow_private.invitation_codes i where i.entity_id=e.id and i.expires_at>now() order by i.created_at desc,i.code limit 1) as invitation_code from dartflow_private.platform_entities e where
     (e.owner_id=$1 or exists(select 1 from dartflow_private.platform_members m where m.entity_id=e.id and m.user_id=$1 and m.status in ('active','invited','pending','waitlisted')) or (e.visibility='public' and e.kind in ('club','room','league','tournament')) or (e.visibility='club' and exists(select 1 from dartflow_private.club_memberships c where c.club_id=e.club_id and c.user_id=$1)))
     and (e.kind<>'club' or coalesce(e.state->>'lifecycle','active')='active' or (e.owner_id=$1 and e.state->>'lifecycle'='inactive'))
@@ -214,9 +217,9 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
     catch(error){if(row.kind==='club'&&error instanceof DomainError&&[403,404].includes(error.status))return null;throw error;}
   }));
   const list = projected.filter((item):item is NonNullable<typeof item>=>item!==null);
-  const { rows: people } = await client.query<Profile>(`select p.id,p.name from dartflow_private.profiles p left join dartflow_private.platform_preferences f on f.user_id=p.id where p.id<>$1 and p.display_name_confirmed and coalesce(f.discoverable,true)
+  const { rows: people } = await client.query<Profile>(`select p.id,p.name from dartflow_private.profile_labels p left join dartflow_private.platform_preferences f on f.user_id=p.id where p.id<>$1 and p.display_name_confirmed and coalesce(f.discoverable,true)
     and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$1 and b.target_id=p.id) or (b.target_id=$1 and b.source_id=p.id))) order by p.name,p.id limit 200`, [actor]);
-  const { rows: relationships } = await client.query<{ source_id: string; target_id: string; kind: string; name: string }>('select r.*,p.name from dartflow_private.platform_relationships r join dartflow_private.profiles p on p.id=case when r.source_id=$1 then r.target_id else r.source_id end where r.source_id=$1 or r.target_id=$1', [actor]);
+  const { rows: relationships } = await client.query<{ source_id: string; target_id: string; kind: string; name: string }>('select r.*,p.name from dartflow_private.platform_relationships r join dartflow_private.profile_labels p on p.id=case when r.source_id=$1 then r.target_id else r.source_id end where r.source_id=$1 or r.target_id=$1', [actor]);
   const friends: PlatformOverview['friends'] = [];
   for (const rel of relationships) {
     const id = rel.source_id === actor ? rel.target_id : rel.source_id;
@@ -227,16 +230,16 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
   const { rows: prefs } = await client.query('select discoverable,allow_requests as "allowRequests" from dartflow_private.platform_preferences where user_id=$1', [actor]);
   const messages: Record<string, PlatformMessage[]> = {};
   const roomIds=entities.filter(e=>e.kind==='room'&&(e.owner_id===actor||memberRows.rows.some(m=>m.entityId===e.id&&m.id===actor&&m.status==='active'))).map(e=>e.id);
-  const roomMessages=await client.query<PlatformMessage&{roomId:string}>(`select * from (select m.room_id as "roomId",m.id,m.author_id as "authorId",p.name as "authorName",m.body,m.created_at as "createdAt",row_number() over(partition by m.room_id order by m.created_at desc,m.id desc) as rn from dartflow_private.platform_messages m join dartflow_private.profiles p on p.id=m.author_id where m.room_id=any($1::uuid[]) and not m.deleted and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$2 and b.target_id=m.author_id) or(b.target_id=$2 and b.source_id=m.author_id)))) recent where rn<=100 order by "createdAt",id`,[roomIds,actor]);
+  const roomMessages=await client.query<PlatformMessage&{roomId:string}>(`select * from (select m.room_id as "roomId",m.id,m.author_id as "authorId",p.name as "authorName",m.body,m.created_at as "createdAt",row_number() over(partition by m.room_id order by m.created_at desc,m.id desc) as rn from dartflow_private.platform_messages m join dartflow_private.profile_labels p on p.id=m.author_id where m.room_id=any($1::uuid[]) and not m.deleted and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$2 and b.target_id=m.author_id) or(b.target_id=$2 and b.source_id=m.author_id)))) recent where rn<=100 order by "createdAt",id`,[roomIds,actor]);
   for(const id of roomIds){messages[id]=roomMessages.rows.filter(m=>m.roomId===id).map(({roomId,...message})=>{void roomId;return message;});const projection=list.find(e=>e.id===id);if(projection)projection.state.messages=messages[id];}
   const competitions=list.filter(e=>['league','tournament'].includes(e.kind));
   const allBoards=await client.query('select b.id,b.event_id as "eventId",b.name,b.blocked,m.id as "matchId" from dartflow_private.boards b left join dartflow_private.matches m on m.board_id=b.id where b.event_id=any($1::uuid[]) order by b.name,b.id',[competitions.map(e=>e.state.eventId)]);
   for(const item of competitions){item.state.boards=allBoards.rows.filter(b=>b.eventId===item.state.eventId);const playerIds=item.members.filter(m=>m.status==='active'&&m.attributes.registered===true).map(m=>m.id);item.state.standings=standings((item.state.fixtures??[]).filter(f=>f.phase!=='knockout'),playerIds).map(s=>({...s,playerId:s.id,name:item.members.find(m=>m.id===s.id)?.name??'Speler'}));}
   const canManageRegistrations=Boolean((await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')",[actor])).rowCount);
-  const {rows:registrations}=await client.query('select r.user_id as "userId",p.name,r.status,r.reason from dartflow_private.platform_registrations r join dartflow_private.profiles p on p.id=r.user_id where $2::boolean or r.user_id=$1 order by r.created_at,r.user_id',[actor,canManageRegistrations]);
+  const {rows:registrations}=await client.query('select r.user_id as "userId",p.name,r.status,r.reason from dartflow_private.platform_registrations r join dartflow_private.profile_labels p on p.id=r.user_id where $2::boolean or r.user_id=$1 order by r.created_at,r.user_id',[actor,canManageRegistrations]);
   const {rows:reports}=await client.query(`select r.id,r.reporter_id as "reporterId",p.name as "reporterName",r.target_id as "targetId",r.room_id as "roomId",coalesce(e.state->>'name','DartFlow') as "roomName",r.reason,r.status,r.decision,
     ($2::boolean or exists(select 1 from dartflow_private.platform_members m where m.entity_id=r.room_id and m.user_id=$1 and m.status='active' and m.role in ('owner','admin','moderator'))) as "canManage"
-    from dartflow_private.platform_reports r join dartflow_private.profiles p on p.id=r.reporter_id left join dartflow_private.platform_entities e on e.id=r.room_id
+    from dartflow_private.platform_reports r join dartflow_private.profile_labels p on p.id=r.reporter_id left join dartflow_private.platform_entities e on e.id=r.room_id
     where r.reporter_id=$1 or $2::boolean or exists(select 1 from dartflow_private.platform_members m where m.entity_id=r.room_id and m.user_id=$1 and m.status='active' and m.role in ('owner','admin','moderator') and (e.club_id is null or exists(select 1 from dartflow_private.club_memberships c where c.club_id=e.club_id and c.user_id=$1) or (e.kind in ('league','tournament') and e.state->>'eligibility' in ('all','code')))) order by r.created_at desc limit 100`,[actor,canManageRegistrations]);
   const {rows:ownMatchRows}=await client.query<{state:MatchState;can_manage:boolean;offline_supported:boolean}>(`select m.state,
     (c.role='organizer' and exists(select 1 from dartflow_private.event_staff s where s.event_id=m.event_id and s.user_id=$1)) as can_manage,
@@ -300,7 +303,7 @@ export async function getPlatformCast(token: string): Promise<Record<string, unk
   if (!rows.length) throw new DomainError('invalid_cast', 'Deze schermlink is ongeldig of verlopen.', 404);
   const row = rows[0];
   const { rows: boards } = await database().query<{ id: string; name: string; blocked: boolean; state: MatchState | null }>('select b.id,b.name,b.blocked,m.state from dartflow_private.boards b left join dartflow_private.matches m on m.board_id=b.id where b.event_id=$1 order by b.name,b.id', [row.state.eventId]);
-  const names = await database().query<Profile>('select p.id,p.name from dartflow_private.platform_members m join dartflow_private.profiles p on p.id=m.user_id where m.entity_id=$1 and m.status=\'active\' and m.attributes->>\'registered\'=\'true\'', [row.id]);
+  const names = await database().query<Profile>('select p.id,p.name from dartflow_private.platform_members m join dartflow_private.profile_labels p on p.id=m.user_id where m.entity_id=$1 and m.status=\'active\' and m.attributes->>\'registered\'=\'true\'', [row.id]);
   const publicName = (id: string | null | undefined) => names.rows.find(p => p.id === id)?.name ?? 'Speler';
   const fixtures = (row.state.fixtures ?? []).map(f => ({ id: f.id, players: f.players.map(publicName), status: f.status, phase: f.phase, round: f.round, pool: f.pool, score: f.score, winner: f.winnerId ? publicName(f.winnerId) : null }));
   return { event: { id: row.id, name: row.state.name, revision: row.revision, date: row.state.date }, cast: row.state.cast, paused: row.state.paused, champion: row.state.championId ? publicName(String(row.state.championId)) : null,
@@ -309,25 +312,20 @@ export async function getPlatformCast(token: string): Promise<Record<string, unk
 }
 
 export async function getPlatformStatistics(actorId: string) {
-  const actor=uuid(actorId);
-  const {rows}=await database().query<{state:MatchState}>(`select m.state from dartflow_private.matches m join dartflow_private.match_results r on r.match_id=m.id where exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$1) and not exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and e.kind='lobby')`,[actor]);
-  const total={played:rows.length,won:0,drawn:0,average:0,oneEighties:0,highestFinish:0,totalDarts:0,trainingSessions:0};let scored=0;
-  for(const {state}of rows){const i=state.players.findIndex(p=>p.id===actor),stats=matchView(state,actor,false).stats[i];if(state.winnerId===actor)total.won++;if(state.winnerId===null)total.drawn++;total.oneEighties+=stats.oneEighties;total.highestFinish=Math.max(total.highestFinish,stats.highestFinish);total.totalDarts+=stats.darts;scored+=stats.total;}
-  total.average=total.totalDarts?Math.round(scored*30/total.totalDarts)/10:0;
-  total.trainingSessions=Number((await database().query("select count(*)::integer as n from dartflow_private.platform_entities where kind='training' and owner_id=$1 and coalesce(state->>'discarded','false')<>'true'",[actor])).rows[0].n);
-  return total;
+  return getPlayerStatisticsSummary(uuid(actorId));
 }
+
 export async function exportPlatformCsv(actorId:string,kind:string,clubId?:string):Promise<string>{
  const actor=uuid(actorId),client=database();let headers:string[],rows:unknown[][];
  if(kind==='players'){
   const platform=Boolean((await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')",[actor])).rowCount);
   if(!platform&&(!clubId||!(await isClubMember(client,uuid(clubId),actor,true))))throw new DomainError('forbidden','Je kunt alleen je eigen spelersregister exporteren.',403);
-  const people=await client.query('select p.id,p.name,coalesce(r.status,\'approved\') as status from dartflow_private.profiles p left join dartflow_private.platform_registrations r on r.user_id=p.id where ($1::uuid is null or exists(select 1 from dartflow_private.club_memberships m where m.club_id=$1 and m.user_id=p.id)) order by p.name,p.id',[clubId?uuid(clubId):null]);headers=['Speler-ID','Naam','Status'];rows=people.rows.map(p=>[p.id,p.name,p.status]);
+  const people=await client.query('select p.id,p.name,coalesce(r.status,\'approved\') as status from dartflow_private.profile_labels p left join dartflow_private.platform_registrations r on r.user_id=p.id where ($1::uuid is null or exists(select 1 from dartflow_private.club_memberships m where m.club_id=$1 and m.user_id=p.id)) order by p.name,p.id',[clubId?uuid(clubId):null]);headers=['Speler-ID','Naam','Status'];rows=people.rows.map(p=>[p.id,p.name,p.status]);
  }else if(kind==='matches'){
   const matches=await client.query<{snapshot:ResultView}>('select r.snapshot from dartflow_private.match_results r join dartflow_private.match_players p on p.match_id=r.match_id where p.user_id=$1 order by r.created_at desc',[actor]);headers=['Partij-ID','Speler 1','Speler 2','Legs 1','Legs 2','Winnaar-ID'];rows=matches.rows.map(({snapshot:s})=>[s.matchId,s.players[0].name,s.players[1].name,s.legs[0],s.legs[1],s.winnerId??'Gelijkspel']);
  }else if(kind==='rankings'){
   if(!clubId||!(await isClubMember(client,uuid(clubId),actor)))throw new DomainError('forbidden','Kies een club waarvan je lid bent.',403);
-  const scores=await client.query('select s.user_id,p.name,sum(s.played)::integer as played,sum(s.won)::integer as won,sum(s.drawn)::integer as drawn,sum(s.points)::integer as points from dartflow_private.standings s join dartflow_private.events e on e.id=s.event_id join dartflow_private.profiles p on p.id=s.user_id where e.club_id=$1 group by s.user_id,p.name order by points desc,p.name',[clubId]);headers=['Speler-ID','Naam','Gespeeld','Gewonnen','Gelijk','Punten'];rows=scores.rows.map(s=>[s.user_id,s.name,s.played,s.won,s.drawn,s.points]);
+  const scores=await client.query('select s.user_id,p.name,sum(s.played)::integer as played,sum(s.won)::integer as won,sum(s.drawn)::integer as drawn,sum(s.points)::integer as points from dartflow_private.standings s join dartflow_private.events e on e.id=s.event_id join dartflow_private.profile_labels p on p.id=s.user_id where e.club_id=$1 group by s.user_id,p.name order by points desc,p.name',[clubId]);headers=['Speler-ID','Naam','Gespeeld','Gewonnen','Gelijk','Punten'];rows=scores.rows.map(s=>[s.user_id,s.name,s.played,s.won,s.drawn,s.points]);
  }else throw new DomainError('invalid_export','Kies spelers, wedstrijden of ranglijst.');
  const cell=(value:unknown)=>{let text=String(value??'');if(/^[\s]*[=+@-]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`;};
  return '\uFEFF'+[headers,...rows].map(row=>row.map(cell).join(',')).join('\r\n')+'\r\n';

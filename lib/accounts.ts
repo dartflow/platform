@@ -16,7 +16,7 @@ export async function ensureAuthProfile(user:Pick<User,'id'|'email'|'email_confi
   const client=await database().connect();
   try {
     await client.query('begin');
-    const result=await client.query(`insert into dartflow_private.profiles(id,name,email,email_verified,display_name_confirmed) values($1,$2,$3,$4,false)
+    const result=await client.query(`insert into dartflow_private.profiles(id,name,email,email_verified,display_name_confirmed,onboarding_complete) values($1,$2,$3,$4,false,false)
       on conflict(id) do update set email=excluded.email,email_verified=excluded.email_verified returning (xmax=0) as created`,[value.id,value.name,value.email,value.emailVerified]);
     if(result.rows[0].created && value.emailVerified)await enqueueDomainMail(client,{id:`profile:${value.id}:created`,templateId:'welcome',scope:'platform',recipientId:value.id,variables:{name:value.name}});
     await client.query('commit');

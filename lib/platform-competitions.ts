@@ -14,6 +14,20 @@ import type { PlatformCommand, PlatformResponse, PlatformState } from './platfor
 import {assertPhysicalBoardEvent,eventPhysicalBoards,physicalBoard,locationManager} from './location-access';
 import {clubPermission} from './club-access';
 
+/** Both self-scan and the server-verified PIN coupling share the locked second-slot rules. */
+export async function joinLobbyMember(client:PoolClient,actor:string,row:EntityRow,input:{boardId?:unknown;code?:unknown;requestId:string;pinAuthorizer?:string}):Promise<void>{
+ const self=await member(client,row.id,actor),boundBoard=typeof row.state.boardId==='string'?row.state.boardId:null;
+ if(row.kind!=='lobby'||row.state.closed||row.state.matchId||self?.status==='banned'||await blocked(client,actor,row.owner_id))throw new DomainError('lobby_unavailable','Deze lobby is niet beschikbaar.',409);
+ if(self?.status!=='active'&&self?.status!=='invited'&&!(boundBoard&&input.boardId===boundBoard&&(row.state.setup==='localone'||input.pinAuthorizer===row.owner_id&&row.state.setup==='localtwo'))&&!acceptsCode(row,input.code))throw new DomainError('invite_required','Gebruik een geldige uitnodiging.',403);
+ if(self?.status==='active')return;
+ const count=await client.query("select count(*)::integer as n from dartflow_private.platform_members where entity_id=$1 and status='active'",[row.id]);
+ if(count.rows[0].n>=2)throw new DomainError('lobby_full','Deze lobby heeft al twee spelers.',409);
+ const invited=await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='invited'",[row.id]);
+ if(invited.rows.length&&!invited.rows.some(r=>r.user_id===actor))throw new DomainError('invite_recipient','Deze uitnodiging hoort bij een andere speler.',403);
+ await addMember(client,row.id,actor,'member','active',input.pinAuthorizer?{pinLinkedBy:input.pinAuthorizer}:{});
+ await enqueueDomainMail(client,{id:`${input.requestId}:challenge-accepted:${row.owner_id}`,templateId:'challenge-accepted',scope:'platform',recipientId:row.owner_id,entityId:row.id,variables:{eventName:row.state.name}});
+}
+
 export async function competitionAction(client: PoolClient, actor: string, command: PlatformCommand): Promise<PlatformResponse | null> {
   const a = command.action, type = a.type;
   if (type === 'lobby.create') {
@@ -198,7 +212,6 @@ export async function competitionAction(client: PoolClient, actor: string, comma
 async function lobbyAction(client: PoolClient, actor: string, command: PlatformCommand, row: EntityRow): Promise<PlatformResponse> {
   const a = command.action;
   if (row.kind !== 'lobby') throw new DomainError('invalid_kind', 'Open eerst een wedstrijdlobby.');
-  const self = await member(client, row.id, actor);
   const boundBoard=typeof row.state.boardId==='string'?row.state.boardId:null;
   if(boundBoard){await eventAccess(client,actor,row.state.eventId!);if(!row.state.matchId&&Number(row.state.boardLeaseUntil??0)<=Date.now())throw new DomainError('board_session_expired','De wachtende baanopstelling is verlopen. Scan opnieuw.',409);}
   if(a.type==='lobby.board.bind'){
@@ -223,22 +236,16 @@ async function lobbyAction(client: PoolClient, actor: string, command: PlatformC
     if(!boundBoard){row.state.boardId=target;row.state.eventId=scope.event_id;row.state.coreClubId=access.club_id;row.state.boardLeaseUntil=Date.now()+120000;}
     row.state.remoteBoardIds=map;row.state.ready={};
   }else if (a.type === 'lobby.join') {
-    if (row.state.closed || row.state.matchId || await blocked(client, actor, row.owner_id)) throw new DomainError('lobby_unavailable', 'Deze lobby is niet beschikbaar.', 409);
-    if (self?.status !== 'active' && self?.status !== 'invited' && !(boundBoard&&a.boardId===boundBoard&&row.state.setup==='localone') && !acceptsCode(row, a.code)) throw new DomainError('invite_required', 'Gebruik een geldige uitnodiging.', 403);
-    if (self?.status !== 'active') {
-      const count = await client.query("select count(*)::integer as n from dartflow_private.platform_members where entity_id=$1 and status='active'", [row.id]);
-      if (count.rows[0].n >= 2) throw new DomainError('lobby_full', 'Deze lobby heeft al twee spelers.', 409);
-      // A directed invitation cannot be redeemed by a third account with its code.
-      const invited = await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='invited'", [row.id]);
-      if (invited.rows.length && !invited.rows.some(r => r.user_id === actor)) throw new DomainError('invite_recipient', 'Deze uitnodiging hoort bij een andere speler.', 403);
-      await addMember(client, row.id, actor);
-      await enqueueDomainMail(client,{id:`${command.requestId}:challenge-accepted:${row.owner_id}`,templateId:'challenge-accepted',scope:'platform',recipientId:row.owner_id,entityId:row.id,variables:{eventName:row.state.name}});
-    }
+    await joinLobbyMember(client,actor,row,{boardId:a.boardId,code:a.code,requestId:command.requestId});
   } else if(a.type==='lobby.starter'){
     if(row.owner_id!==actor)throw new DomainError('forbidden','Alleen de host kiest de startspeler.',403);
     if(row.state.matchId||row.state.closed)throw new DomainError('lobby_started','Deze lobby is al gestart of gesloten.',409);
     const starter=uuid(a.starterId);if((await member(client,row.id,starter))?.status!=='active')throw new DomainError('invalid_starter','Kies een aanwezige speler.');
     row.state.starterId=starter;row.state.ready={};
+    if(boundBoard&&['localone','localtwo'].includes(String(row.state.setup))){
+      const companions=await client.query<{user_id:string}>("select user_id from dartflow_private.platform_members where entity_id=$1 and user_id<>$2 and status='active' and attributes->>'pinLinkedBy'=$2::text",[row.id,actor]);
+      for(const companion of companions.rows)row.state.ready[companion.user_id]=true;
+    }
   } else if (a.type === 'lobby.ready') {
     await requireAccess(client, row, actor);
     if (row.state.matchId || row.state.closed) throw new DomainError('lobby_started', 'Deze lobby is al gestart of gesloten.', 409);
@@ -264,6 +271,12 @@ async function lobbyAction(client: PoolClient, actor: string, command: PlatformC
       }
     }
     row.state.matchId = await createCoreMatch(client, row, players, row.state.settings!, 'free');
+    const companion=players[1]?await member(client,row.id,players[1]):undefined;
+    if(boundBoard&&['localone','localtwo'].includes(String(row.state.setup))&&players[0]===row.owner_id&&companion?.attributes.pinLinkedBy===row.owner_id){
+      const {rows:matches}=await client.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[row.state.matchId]);const state=matches[0].state;
+      state.localCompanion={playerId:players[1],writerId:row.owner_id,lobbyId:row.id};state.accepted[1]=true;
+      await client.query('update dartflow_private.matches set state=$2 where id=$1',[state.id,JSON.stringify(state)]);
+    }
     if(boundBoard){const {rows:matches}=await client.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[row.state.matchId]);const state=matches[0].state,before=structuredClone(state);state.boardId=boundBoard;state.callRef=command.requestId;state.revision++;await client.query('update dartflow_private.matches set board_id=$2,state=$3,revision=$4 where id=$1',[state.id,boundBoard,JSON.stringify(state),state.revision]);await enqueueMatchTransition(client,actor,before,state,{requestId:command.requestId,matchId:state.id,expectedRevision:before.revision,action:{type:'call',boardId:boundBoard}});}
   } else if (a.type === 'lobby.cancel') {
     await requireAccess(client, row, actor);

@@ -39,7 +39,7 @@ test('profile confirmation and concurrent match creation keep one current scoreb
    try{
     await holder.query('begin');await saveScoreboardName(holder,legacy,label('Confirmed chosen name'));
     queued=Promise.allSettled([run(host,{type:'lobby.start',id:lobby.id})]);
-    await waitForLock('select id,name from dartflow_private.profiles where id=any%for share');
+    await waitForLock('select id,%from dartflow_private.profiles where id=any%for share');
     await holder.query('commit');
     const [result]=await queued;assert.equal(result.status,'fulfilled');
     const match=await getMatch(legacy,result.value.matchId!);assert.deepEqual(match.players.map(p=>p.name),[label('Name race host'),label('Confirmed chosen name')]);
@@ -56,7 +56,7 @@ test('profile confirmation and concurrent match creation keep one current scoreb
     row.state.matchId=matchId;await save(holder,row);
     const original=(await holder.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[matchId])).rows[0].state;
     queued=Promise.allSettled([run(renamer,{type:'profile.update',name:label('Concurrent chosen name')})]);
-    await waitForLock('update dartflow_private.profiles set name=$2,display_name_confirmed=true where id=$1');
+    await waitForLock('update dartflow_private.profiles set name=$2,%display_name_confirmed=true where id=$1');
     await holder.query('commit');
     const [result]=await queued;assert.equal(result.status,'fulfilled');
     const match=await getMatch(renamer,matchId),state=(await owner.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[matchId])).rows[0].state;

@@ -1,3 +1,4 @@
+import {calculatePlayerMeasures} from './player-statistics';
 import type { Game, MatchAction, MatchState, MatchView, Settings } from './types';
 
 export class DomainError extends Error {
@@ -29,7 +30,7 @@ export function validateSettings(input: Partial<Settings> = {}): Settings {
 export function newGame(id: string, players: string[], settings: Settings, starter = 0): Game {
   return { id, players, startScore: settings.startScore, bestOf: settings.bestOfLegs, ...(settings.legLimit ? { legLimit: settings.legLimit } : {}), legs: [0, 0], remaining: [settings.startScore, settings.startScore], turn: starter, legStarter: starter, status: 'live', visits: [], history: [], stats: [0, 1].map(() => ({ darts: 0, total: 0, oneEighties: 0, highestFinish: 0, legsWon: 0 })) };
 }
-export function scoreGame(source: Game, score: number, count = 3, doubleConfirmed = false): Game {
+export function scoreGame(source: Game, score: number, count = 3, doubleConfirmed = false,doubleAttempts?:number|null): Game {
   if (source.status !== 'live') fail('Deze set is afgelopen.');
   if (!Number.isInteger(count) || count < 1 || count > 3 || !Number.isInteger(score) || score < 0 || score > 180 || !possible[count]?.has(score)) fail('Deze score is niet mogelijk met het gekozen aantal darts.');
   const player = source.turn, before = source.remaining[player], left = before - score;
@@ -37,15 +38,17 @@ export function scoreGame(source: Game, score: number, count = 3, doubleConfirme
   if (legWon && !finishRoute(score, count)) fail('Deze finish is niet mogelijk met dubbel uit.');
   if (legWon && !doubleConfirmed) fail('Bevestig de beslissende dubbel.', 'needs_double', 422);
   if (doubleConfirmed && !legWon) fail('De finish is gewijzigd. Controleer de actuele stand.');
+  if(doubleAttempts!==undefined&&doubleAttempts!==null&&(!Number.isInteger(doubleAttempts)||doubleAttempts<0||doubleAttempts>(legWon?count:3)||(legWon&&doubleAttempts<1)))fail('Kies een geldig aantal pogingen op de uitgooidubbel.','double_attempts');
+  const countedDarts=legWon?count:3;
   const next = clone(source);
   const { history, ...snapshot } = clone(source);
   void history;
   next.history.push(snapshot);
-  next.stats[player].darts += count;
+  next.stats[player].darts += countedDarts;
   next.stats[player].total += bust ? 0 : score;
   if (score === 180 && !bust) next.stats[player].oneEighties++;
   next.remaining[player] = bust ? before : left;
-  next.visits.push({ player: source.players[player], playerIndex: player, score, darts: count, remainingBefore: before, remainingAfter: next.remaining[player], bust, leg: source.legs[0] + source.legs[1] + 1, checkout: legWon });
+  next.visits.push({ player: source.players[player], playerIndex: player, score, darts: countedDarts, measurementVersion:1,...(doubleAttempts===undefined?{}:{doubleAttempts}),remainingBefore: before, remainingAfter: next.remaining[player], bust, leg: source.legs[0] + source.legs[1] + 1, checkout: legWon });
   if (!legWon) { next.turn = 1 - player; return next; }
   next.legs[player]++;
   next.stats[player].legsWon = (next.stats[player].legsWon ?? 0) + 1;
@@ -105,7 +108,7 @@ export function applyMatchAction(source: MatchState, actorId: string, isOrganize
     }
     case 'score': if(perPlayerScoring(source))participant();else writer();if(source.paused)fail('De partij is gepauzeerd.','match_paused',409);if(source.correction)fail('Handel eerst het correctieverzoek af.','correction_pending',409);if(source.status!=='live'||currentScorer(source)!==actorId)fail(perPlayerScoring(source)?'Je kunt alleen je eigen worp invoeren wanneer je aan de beurt bent.':'Alleen de huidige schrijver mag scoren.',perPlayerScoring(source)?'not_your_turn':'not_writer',403);
       next.scoringRevision=source.revision+1;
-      next.game = scoreGame(source.game, action.score, action.darts ?? 3, action.doubleConfirmed === true);
+      next.game = scoreGame(source.game, action.score, action.darts ?? 3, action.doubleConfirmed === true,action.doubleAttempts);
       if (next.game.status === 'finished') {
         const winner = setScore(next).findIndex(value => value >= Math.ceil(source.settings.bestOfSets / 2));
         if (winner >= 0 || source.settings.legLimit) { next.status = 'result'; next.winnerId = winner >= 0 ? next.players[winner].id : next.game.winner ?? null; next.resultRevision = source.revision + 1; }
@@ -115,7 +118,7 @@ export function applyMatchAction(source: MatchState, actorId: string, isOrganize
     case 'undo': if(perPlayerScoring(source))participant();else writer();if ((!perPlayerScoring(source)&&source.writerId!==actorId)||!canUndoOwnVisit(source,actorId)||!['live','result'].includes(source.status)||source.confirmations.some(Boolean)||source.resultPublished) fail(perPlayerScoring(source)?'Je kunt alleen je eigen laatste onbevestigde worp terugdraaien.':'Alleen de schrijver kan een onbevestigde beurt terugdraaien.','forbidden',403);
       if(source.paused)fail('De partij is gepauzeerd.','match_paused',409);if(source.correction)fail('Handel eerst het correctieverzoek af.','correction_pending',409);
       undoMatchVisit(next);next.scoringRevision=source.revision+1;break;
-    case 'confirm': participant();if(source.correction)fail('Handel eerst het correctieverzoek af.','correction_pending',409); if (source.status !== 'result' && source.status !== 'confirmed') fail('Er is geen uitslag om te bevestigen.'); next.confirmations[index] = true; if (next.confirmations.every(Boolean)) { next.status = 'confirmed'; next.resultPublished = true; } break;
+    case 'confirm': participant();if(source.correction)fail('Handel eerst het correctieverzoek af.','correction_pending',409); if (source.status !== 'result' && source.status !== 'confirmed') fail('Er is geen uitslag om te bevestigen.'); next.confirmations[index] = true; if(source.scoringMode!=='per-player'&&source.localCompanion?.writerId===actorId&&source.writerId===actorId&&source.players[0]?.id===actorId&&source.localCompanion.playerId===source.players[1]?.id&&Boolean(source.localCompanion.lobbyId))next.confirmations=[true,true]; if (next.confirmations.every(Boolean)) { next.status = 'confirmed'; next.resultPublished = true; } break;
     case 'dispute': participant(); if (source.status !== 'result' || source.resultPublished) fail('Deze uitslag kan niet meer worden betwist.'); if (typeof action.reason !== 'string' || !action.reason.trim()) fail('Vul een reden in.'); next.dispute = action.reason.trim().slice(0, 1000); next.status = 'disputed'; break;
     case 'resolve': manager(); if (source.status !== 'disputed' || typeof action.reason !== 'string' || !action.reason.trim() || !['resume', 'accept'].includes(action.decision)) fail('Kies een beslissing en motiveer deze.'); next.dispute = null; next.confirmations = [false, false]; next.status = 'result';
       next.correction=null;next.paused=false;next.pausedBy=null;
@@ -135,7 +138,7 @@ export function matchView(match: MatchState, actorId: string, isOrganizer: boole
   const writer = participant || match.delegatedWriterId === actorId;
   const canWrite=(perPlayerScoring(match)?participant:writer)&&currentScorer(match)===actorId&&match.status==='live'&&!match.paused&&!match.correction;
   return { ...base,scoringMode:perPlayerScoring(match)?'per-player':'shared-writer',writerId:currentScorer(match),remaining: game.remaining, legs: game.legs, sets: setScore(match), turn: game.turn, checkout: match.status === 'live' ? checkout(game.remaining[game.turn]) : null,
-    visits: [...previousSets, game].flatMap(g => g.visits),currentLegVisits:game.visits.filter(v=>v.leg===currentLeg),currentLegStartScore:game.startScore, stats: [0, 1].map(index => { const stats = [...previousSets, game].reduce((a, g) => ({ total: a.total + g.stats[index].total, darts: a.darts + g.stats[index].darts, oneEighties: a.oneEighties + g.stats[index].oneEighties, highestFinish: Math.max(a.highestFinish, g.stats[index].highestFinish) }), { total: 0, darts: 0, oneEighties: 0, highestFinish: 0 }); return { ...stats, average: stats.darts ? Math.round(stats.total * 30 / stats.darts) / 10 : 0 }; }),
+    visits: [...previousSets, game].flatMap(g => g.visits),currentLegVisits:game.visits.filter(v=>v.leg===currentLeg),currentLegStartScore:game.startScore, stats: match.players.map(player=>{const stats=calculatePlayerMeasures([...previousSets,game],player.id);return{total:stats.points,darts:stats.darts,oneEighties:stats.oneEighties,highestFinish:stats.highestFinish,average:stats.average===null?0:stats.average,measurementComplete:stats.complete,hundredPlus:stats.hundredPlus,hundredFortyPlus:stats.hundredFortyPlus,firstNine:stats.firstNine,bestLegDarts:stats.bestLegDarts,checkoutPercentage:stats.checkoutPercentage};}),
     legNumber: game.legs[0] + game.legs[1] + (game.status === 'finished' ? 0 : 1), setNumber: previousSets.length + 1,
     permissions: { canManage: isOrganizer,canWrite,canScore:canWrite, canAccept: participant && ['called', 'ready'].includes(match.status) && !match.accepted[ownIndex], canConfirm: participant && match.status === 'result' && !match.confirmations[ownIndex] && !match.correction, canTakeOver:!perPlayerScoring(match)&&participant&&match.status==='live'&&match.writerId!==actorId,canUndo:(perPlayerScoring(match)?participant&&canUndoOwnVisit(match,actorId):writer&&match.writerId===actorId)&&['live','result'].includes(match.status)&&!match.resultPublished&&!match.confirmations.some(Boolean)&&!match.paused&&!match.correction&&game.history.length+previousSets.length>0,
       canPause:(participant||isOrganizer)&&match.status==='live'&&!match.paused,canResume:(participant||isOrganizer)&&match.status==='live'&&match.paused===true,

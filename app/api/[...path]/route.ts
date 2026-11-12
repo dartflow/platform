@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createGoogleAttempt, GOOGLE_ATTEMPT_COOKIE } from '@/lib/google-proof';
-import { googleSignInOptions } from '@/lib/reauth';
+import { googleSignInOptions,hasRecentVerifiedAuthentication } from '@/lib/reauth';
 import { googleConfigurationRevision } from '@/lib/integrations';
 import { cookies } from 'next/headers';
 import { createHash } from 'node:crypto';
@@ -21,6 +21,10 @@ import {requiresDisplayName} from '@/lib/display-name';
 import {invitationAttemptRequired} from '@/lib/invitations';
 import {BOARD_SCREEN_COOKIE,boardScreenCookiePath,getBoardScreen,listBoardScreenDevices,createBoardScreenDevice,revokeBoardScreenDevice,pairBoardScreenDevice} from '@/lib/board-screens';
 import {extendBoardActivity,processBoardActivityBatch,publicBoardActivity} from '@/lib/board-activity';
+import {completePlayerProfile} from '@/lib/profile-setup';
+import {updatePlayerPin} from '@/lib/player-pin';
+import {addLocalLobbyPlayer} from '@/lib/player-pin-lobby';
+import {getPlayerStatistics} from '@/lib/player-statistics-db';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -95,7 +99,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if (method==='GET' && path==='session') {
     const config=appConfig(); const id=await actorId(request); const user=id ? await getProfile(id) : null;
     const canManagePlatform=id?Boolean((await database().query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')",[id])).rowCount):false;
-    return json({user,requiresDisplayName:user?requiresDisplayName(user):false,canManagePlatform,local:config.mode==='local',environment:config.mode==='local'?'development':config.origin==='https://staging.dartflow.nl'?'staging':'production',localUsers:config.mode==='local'?LOCAL_USERS:[]});
+    return json({user,requiresDisplayName:user?requiresDisplayName(user):false,requiresProfileCompletion:user?user.onboardingComplete===false:false,canManagePlatform,local:config.mode==='local',environment:config.mode==='local'?'development':config.origin==='https://staging.dartflow.nl'?'staging':'production',localUsers:config.mode==='local'?LOCAL_USERS:[]});
   }
   if (method==='POST' && path==='auth/local') {
     const data=await body(request); await loginLocal(String(data.userId),request);
@@ -167,6 +171,23 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if (method==='GET' && parts[0]==='club-boards' && uuid(parts[1]) && parts[2]==='screen' && parts.length===3) return json(await getClubBoardScreen(parts[1]));
   if (method==='GET' && parts[0]==='platform' && parts[1]==='cast' && parts.length===3) return json(await getPlatformCast(parts[2]));
   const actor=await requireActor(request);
+  if(method==='GET'&&path==='profile')return json({user:actor.profile});
+  if(method==='POST'&&path==='profile/complete')return json(await completePlayerProfile(actor.id,await body(request)));
+  if(method==='POST'&&path==='profile/player-pin'){
+    const data=await body(request);
+    let recentAuth=appConfig().mode==='local'&&isLocalRequest(request);
+    if(!recentAuth){const {data:verified,error}=await (await supabaseServer()).auth.getClaims();recentAuth=!error&&hasRecentVerifiedAuthentication(actor.id,verified?.claims);}
+    return json(await updatePlayerPin(actor.id,{requestId:data.requestId,pin:data.pin,pinConfirmation:data.pinConfirmation,currentPin:data.currentPin,mode:data.mode},{recentAuth}));
+  }
+  if(method==='POST'&&path==='player-pin/lobby-add'){
+    const data=await body(request);
+    const address=(request.headers.get('x-forwarded-for')||'loopback').split(',').at(-1)!.trim();
+    return json(await addLocalLobbyPlayer(actor.id,{requestId:data.requestId,lobbyId:data.lobbyId,expectedRevision:data.expectedRevision,username:data.username,pin:data.pin},digest(address)));
+  }
+  if(method==='GET'&&path==='player-statistics'){
+    const q=request.nextUrl.searchParams;
+    return json(await getPlayerStatistics(actor.id,{limit:25,startScore:q.has('startScore')?Number(q.get('startScore')) as 301|501|701:undefined,offset:Number(q.get('offset')||0),opponent:q.get('opponent')||undefined,search:q.get('search')||undefined,opponentOffset:Number(q.get('opponentOffset')||0),practiceOffset:Number(q.get('practiceOffset')||0)}));
+  }
   if(method==='POST'&&path==='board-activity/continue'){
     const data=await body(request);
     if(!uuid(data.sessionId)||!uuid(data.warningEpoch)||!uuid(data.requestId))throw new DomainError('invalid_command','Ververs de baanstatus en probeer opnieuw.');

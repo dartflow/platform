@@ -1,10 +1,10 @@
 export type Role = 'organizer' | 'player';
 export type { ClubBoardView,ClubBoardScreenView } from './platform-types';
-export type Profile = { id: string; name: string; email?: string; role?: Role; displayNameConfirmed?: boolean };
+export type Profile = { id: string; name: string; email?: string; role?: Role; displayNameConfirmed?: boolean;username?:string;displayName?:string;pinConfigured?:boolean;showPublicStatistics?:boolean;onboardingComplete?:boolean };
 export type Club = { id: string; name: string; role: Role };
 export type Settings = { startScore: 301 | 501 | 701; bestOfLegs: number; bestOfSets: number; legLimit?: number };
-export type Visit = { player: string; playerIndex: number; score: number; darts: number; remainingBefore: number; remainingAfter: number; bust: boolean; leg: number; checkout: boolean };
-export type Stats = { total: number; darts: number; oneEighties: number; highestFinish: number; legsWon?: number; average?: number };
+export type Visit = { player: string; playerIndex: number; score: number; darts: number; remainingBefore: number; remainingAfter: number; bust: boolean; leg: number; checkout: boolean; measurementVersion?:1; doubleAttempts?:number|null };
+export type Stats = { total: number; darts: number; oneEighties: number; highestFinish: number; legsWon?: number; average?: number;measurementComplete?:boolean;hundredPlus?:number;hundredFortyPlus?:number;firstNine?:number|null;bestLegDarts?:number|null;checkoutPercentage?:number|null };
 export type Game = { id: string; players: string[]; startScore: number; bestOf: number; legLimit?: number; legs: number[]; remaining: number[]; turn: number; legStarter: number; status: 'live' | 'finished'; visits: Visit[]; history: Omit<Game, 'history'>[]; stats: Stats[]; winner?: string | null; draw?: boolean };
 export type MatchState = {
   id: string; clubId: string; eventId: string; boardId: string | null; revision: number;
@@ -12,6 +12,7 @@ export type MatchState = {
   players: Profile[]; writerId: string; settings: Settings; accepted: boolean[];
   scoringMode?: 'shared-writer' | 'per-player';
   delegatedWriterId?: string | null;
+  localCompanion?:{playerId:string;writerId:string;lobbyId:string};
   callRef?:string|null;
   paused?:boolean;pausedBy?:string|null;scoringRevision?:number;
   correction?:{id:string;requestedBy:string;reason:string;undoCount:number;visitCount:number;scoringRevision:number}|null;
@@ -36,7 +37,7 @@ export type MatchAction =
   | {type:'resume'}
   | {type:'request-correction';reason:string}
   | {type:'approve-correction'|'reject-correction'|'cancel-correction';correctionId:string}
-  | { type: 'score'; score: number; darts?: number; doubleConfirmed?: boolean }
+  | { type: 'score'; score: number; darts?: number; doubleConfirmed?: boolean;doubleAttempts?:number|null }
   | { type: 'dispute'; reason: string }
   | { type: 'resolve'; reason: string; decision: 'resume' | 'accept' };
 export type MatchCommand = { requestId: string; matchId: string; expectedRevision: number; action: MatchAction };
@@ -52,4 +53,4 @@ export type Overview = {
   standings: { playerId: string; name: string; played: number; won: number; drawn: number; points: number }[];
   permissions: { canManage: boolean };
 };
-export type PublicSnapshot = { sessionKey?:string;scoreEvents?:import('./score-events').ScoreEvent[];boardActivity?:import('./board-activity-types').BoardActivityView; board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'currentLegVisits' | 'currentLegStartScore' | 'winnerId' | 'resultPublished' | 'settings' | 'writerId' | 'scoringMode' | 'stats' | 'legNumber' | 'setNumber' | 'paused'> };
+export type PublicSnapshot = { statistics?:import('./player-statistics-types').OcheHistoricalStatistics;sessionKey?:string;scoreEvents?:import('./score-events').ScoreEvent[];boardActivity?:import('./board-activity-types').BoardActivityView; board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'currentLegVisits' | 'currentLegStartScore' | 'winnerId' | 'resultPublished' | 'settings' | 'writerId' | 'scoringMode' | 'stats' | 'legNumber' | 'setNumber' | 'paused'> };

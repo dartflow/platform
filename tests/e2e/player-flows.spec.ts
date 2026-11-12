@@ -5,6 +5,7 @@ import pg from 'pg';
 import type {MatchView} from '../../lib/types';
 
 try{process.loadEnvFile('.env.local');}catch{/* CI supplies an explicit loopback fixture. */}
+const localUserIds=[1,2,3,4].map(value=>`00000000-0000-4000-8000-${String(value).padStart(12,'0')}`);
 const origin='http://localhost:3000',aId='00000000-0000-4000-8000-000000000002',bId='00000000-0000-4000-8000-000000000003';
 async function login(page:Page,name:string){await page.goto('/inloggen?next=/app');await page.getByRole('button',{name:new RegExp(name)}).click();}
 async function command(context:BrowserContext,action:Record<string,unknown>){const result=await context.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action}});expect(result.status(),await result.text()).toBe(200);return result.json();}
@@ -16,23 +17,39 @@ test('mandatory profile completion and two-browser turn input cover home, hybrid
   const owner=new pg.Client({connectionString:process.env.DARTFLOW_DATABASE_ADMIN_URL});await owner.connect();
   const first=await browser.newContext({viewport:{width:390,height:844}}),second=await browser.newContext();
   const createdMatches:string[]=[];
-  const previous=(await owner.query('select id,name,display_name_confirmed from dartflow_private.profiles where id=any($1::uuid[])',[[aId,bId]])).rows;
+  const previous=(await owner.query('select id,name,display_name,display_name_confirmed,onboarding_complete,show_public_statistics from dartflow_private.profiles where id=any($1::uuid[])',[localUserIds])).rows;
+  const verifiers=(await owner.query('select * from dartflow_private.player_pin_verifiers where user_id=any($1::uuid[])',[localUserIds])).rows;
+  const pinReceipts=(await owner.query('select * from dartflow_private.player_pin_receipts where actor_id=any($1::uuid[]) or target_id=any($1::uuid[])',[localUserIds])).rows;
+  const setupReceipts=(await owner.query('select * from dartflow_private.profile_setup_receipts where actor_id=any($1::uuid[])',[localUserIds])).rows;
+  const pinLimits=(await owner.query("select * from dartflow_private.auth_limits where key like 'pin:%'")).rows;
+  const suffix=randomUUID().slice(0,6),firstHandle=`Noor UI ${suffix}`,secondHandle=`Sam UI ${suffix}`;
   try{
     expect((await(await first.request.get('/api/session')).json()).local).toBe(true);
-    await owner.query("update dartflow_private.profiles set name='Nieuwe speler',display_name_confirmed=false where id=$1",[aId]);
-    // The Google provider proposal follows exactly the same explicit confirmation screen.
-    await owner.query("update dartflow_private.profiles set name='Raymond Google voorstel',display_name_confirmed=false where id=$1",[bId]);
+    await owner.query("update dartflow_private.profiles set name='Nieuwe speler',display_name='Nieuwe speler',display_name_confirmed=false,onboarding_complete=false where id=$1",[aId]);
+    // A local fixture proposal exercises onboarding without calling a Google provider.
+    await owner.query("update dartflow_private.profiles set name='Raymond Google voorstel',display_name='Raymond Google voorstel',display_name_confirmed=false,onboarding_complete=false where id=$1",[bId]);
+    await owner.query('delete from dartflow_private.player_pin_verifiers where user_id=any($1::uuid[])',[[aId,bId]]);
     const a=await first.newPage(),b=await second.newPage();await login(a,'Michael de Groot');
-    await expect(a.getByRole('heading',{name:'Kies je gebruikersnaam'})).toBeVisible();
-    const name=a.getByLabel('Gebruikersnaam',{exact:true});await expect(name).toBeEmpty();await name.fill('   ');
-    await expect(a.getByRole('button',{name:'Gebruikersnaam bevestigen en verder'})).toBeDisabled();
-    const empty=await first.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action:{type:'profile.update',name:'   '}}});expect(empty.status()).toBe(400);
+    await expect(a.getByRole('heading',{name:'Maak je spelersprofiel compleet'})).toBeVisible();
+    const name=a.getByLabel('Gebruikersnaam',{exact:true}),display=a.getByLabel('Weergavenaam',{exact:true}),pin=a.getByLabel('Spelerspincode',{exact:true}),repeat=a.getByLabel('Herhaal spelerspincode',{exact:true}),save=a.getByRole('button',{name:'Profiel opslaan en verder'});
+    await expect(name).toBeEmpty();await expect(display).toBeEmpty();await name.fill('   ');await expect(save).toBeDisabled();
+    const empty=await first.request.post('/api/profile/complete',{headers:{Origin:origin},data:{requestId:randomUUID(),username:'   ',displayName:'Noor Dart',pin:'012345',pinConfirmation:'012345'}});expect(empty.status()).toBe(400);
     const blocked=await first.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action:{type:'lobby.create',setup:'remote'}}});expect(blocked.status()).toBe(409);expect((await blocked.json()).code).toBe('display_name_required');
-    await name.fill('Noor Dart');await a.getByRole('button',{name:'Gebruikersnaam bevestigen en verder'}).click();await expect(a).toHaveURL('/app');
-    await login(b,'Raymond van Dijk');await expect(b.getByLabel('Gebruikersnaam',{exact:true})).toHaveValue('Raymond Google voorstel');
-    await b.getByLabel('Gebruikersnaam',{exact:true}).fill('  nOoR   dArT  ');await b.getByRole('button',{name:'Gebruikersnaam bevestigen en verder'}).click();await expect(b.getByRole('alert').filter({hasText:'Deze gebruikersnaam is al in gebruik'})).toBeVisible();expect((await(await second.request.get('/api/session')).json()).user.displayNameConfirmed).toBe(false);
-    await b.getByLabel('Gebruikersnaam',{exact:true}).fill('Sam Dart');await b.getByRole('button',{name:'Gebruikersnaam bevestigen en verder'}).click();await expect(b).toHaveURL('/app');
-    expect((await(await first.request.get('/api/session')).json()).user.name).toBe('Noor Dart');expect((await(await second.request.get('/api/session')).json()).user.name).toBe('Sam Dart');
+    await name.fill('@'+firstHandle);await display.fill('Noor Dart');await expect(pin).toHaveAttribute('type','password');await expect(pin).toHaveAttribute('inputmode','numeric');
+    for(const value of ['01234','01234a']){await pin.fill(value);await repeat.fill(value);await expect(save).toBeDisabled();await expect(a.getByRole('status').filter({hasText:'Vul precies zes cijfers in.'})).toBeVisible();}
+    await pin.fill('012345');await repeat.fill('012346');await expect(save).toBeDisabled();await expect(a.getByRole('status').filter({hasText:'De spelerspincodes zijn niet gelijk.'})).toBeVisible();
+    await repeat.fill('012345');let failedAttemptId='';
+    await a.route('**/api/profile/complete',async route=>{failedAttemptId=route.request().postDataJSON().requestId;await route.fulfill({status:503,json:{error:'Lokale test: tijdelijk opslaan niet beschikbaar.'}});},{times:1});
+    await save.click();await expect(a.getByRole('alert').filter({hasText:'tijdelijk opslaan niet beschikbaar'})).toBeVisible();await expect(pin).toBeEmpty();await expect(repeat).toBeEmpty();
+    await pin.fill('012345');await repeat.fill('012345');
+    await a.route('**/api/profile/complete',async route=>{expect(route.request().postDataJSON().requestId).toBe(failedAttemptId);await route.continue();},{times:1});
+    await Promise.all([a.waitForEvent('domcontentloaded'),save.click()]);await expect(a).toHaveURL('/app');
+    await login(b,'Raymond van Dijk');await expect(b.getByRole('heading',{name:'Maak je spelersprofiel compleet'})).toBeVisible();await expect(b.getByLabel('Weergavenaam',{exact:true})).toHaveValue('Raymond Google voorstel');
+    await b.getByLabel('Gebruikersnaam',{exact:true}).fill('  @'+firstHandle.toLocaleLowerCase('nl')+'  ');await b.getByLabel('Weergavenaam',{exact:true}).fill('Sam Dart');await b.getByLabel('Spelerspincode',{exact:true}).fill('001234');await b.getByLabel('Herhaal spelerspincode',{exact:true}).fill('001234');await b.getByRole('button',{name:'Profiel opslaan en verder'}).click();
+    await expect(b.getByRole('alert').filter({hasText:'Deze gebruikersnaam is al in gebruik'})).toBeVisible();expect((await(await second.request.get('/api/session')).json()).user.displayNameConfirmed).toBe(false);await expect(b.getByLabel('Spelerspincode',{exact:true})).toBeEmpty();await expect(b.getByLabel('Herhaal spelerspincode',{exact:true})).toBeEmpty();
+    await b.getByLabel('Gebruikersnaam',{exact:true}).fill(secondHandle);await b.getByLabel('Spelerspincode',{exact:true}).fill('001234');await b.getByLabel('Herhaal spelerspincode',{exact:true}).fill('001234');await Promise.all([b.waitForEvent('domcontentloaded'),b.getByRole('button',{name:'Profiel opslaan en verder'}).click()]);await expect(b).toHaveURL('/app');
+    const firstSession=(await(await first.request.get('/api/session')).json()).user,secondSession=(await(await second.request.get('/api/session')).json()).user;
+    expect(firstSession).toMatchObject({id:aId,name:'Noor Dart',username:firstHandle,pinConfigured:true});expect(secondSession).toMatchObject({id:bId,name:'Sam Dart',username:secondHandle,pinConfigured:true});
     for(const setup of ['remote','hybrid','localone']){
       const own=setup!=='localone';
       const lobby=await command(first,{type:'lobby.create',name:`Turn browser ${setup}`,setup,startScore:301,bestOfLegs:1});
@@ -65,7 +82,20 @@ test('mandatory profile completion and two-browser turn input cover home, hybrid
       if(state.status==='result'){await matchAction(first,id,{type:'confirm'});await matchAction(second,id,{type:'confirm'});}
     }catch{/* Preserve the original failure; all records are isolated local fixtures. */}}
     await Promise.allSettled([first.close(),second.close()]);
-    for(const row of previous)await owner.query('update dartflow_private.profiles set name=$2,display_name_confirmed=$3 where id=$1',[row.id,row.name,row.display_name_confirmed]);
-    await owner.end();
+    // Restore every local login fixture, including private verifier/receipt state, without logging secrets.
+    await owner.query('begin');
+    try{
+      await owner.query('update dartflow_private.profiles set display_name_confirmed=false where id=any($1::uuid[])',[localUserIds]);
+      for(const row of previous)await owner.query('update dartflow_private.profiles set name=$2,display_name=$3,display_name_confirmed=$4,onboarding_complete=$5,show_public_statistics=$6 where id=$1',[row.id,row.name,row.display_name,row.display_name_confirmed,row.onboarding_complete,row.show_public_statistics]);
+      await owner.query('delete from dartflow_private.player_pin_receipts where actor_id=any($1::uuid[]) or target_id=any($1::uuid[])',[localUserIds]);
+      await owner.query('delete from dartflow_private.profile_setup_receipts where actor_id=any($1::uuid[])',[localUserIds]);
+      await owner.query('delete from dartflow_private.player_pin_verifiers where user_id=any($1::uuid[])',[localUserIds]);
+      for(const row of verifiers)await owner.query('insert into dartflow_private.player_pin_verifiers select * from jsonb_populate_record(null::dartflow_private.player_pin_verifiers,$1::jsonb)',[JSON.stringify(row)]);
+      for(const row of pinReceipts)await owner.query('insert into dartflow_private.player_pin_receipts select * from jsonb_populate_record(null::dartflow_private.player_pin_receipts,$1::jsonb)',[JSON.stringify(row)]);
+      for(const row of setupReceipts)await owner.query('insert into dartflow_private.profile_setup_receipts select * from jsonb_populate_record(null::dartflow_private.profile_setup_receipts,$1::jsonb)',[JSON.stringify(row)]);
+      await owner.query("delete from dartflow_private.auth_limits where key like 'pin:%'");
+      for(const row of pinLimits)await owner.query('insert into dartflow_private.auth_limits select * from jsonb_populate_record(null::dartflow_private.auth_limits,$1::jsonb)',[JSON.stringify(row)]);
+      await owner.query('commit');
+    }catch(error){await owner.query('rollback');throw error;}finally{await owner.end();}
   }
 });
