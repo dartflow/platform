@@ -48,6 +48,24 @@ De eigenaar heeft op 12 november expliciet de fysieke apparaat-, installatie- en
 
 De eerste volledige v17-ronde vond en corrigeerde onder meer een verdwenen verenigingscode, een verouderde mailcatalogusassertie, een overzichtsrace bij actuele clubtoegang en cursor-/browserresponseraces. De uiteindelijke aantallen en eventuele herhaalde browsergevallen staan bij het releasebewijs; eerdere mislukte pogingen gelden niet als eindresultaat.
 
+## Geverifieerde stagingrelease
+
+Staging is op **12 november 2026 om 02:58 CET** geactiveerd met bron-SHA **`c93903fbc3d0f822a52130f6a4331acb8b475fb9`**, release **`43137840623-1`** en configuratie **`staging-2026-11-11-v15-mail-1`**. [CI op deze SHA](https://github.com/dartflow/platform/actions/runs/43136969056) en [de native stagingdeployment](https://github.com/dartflow/platform/actions/runs/43137840623) zijn geslaagd.
+
+CI bevestigt **206 app-/databasetests, 24 browserproeven, 46 bestaande prototypetests, 57 native-deployertests en 45 host-/Auth-contracttests**. Typecheck, lint en build zijn groen. De afzonderlijk aangeleverde v17-prototypebron heeft lokaal 67 geslaagde tests en een geslaagde build. De eerste lokale volledige browserpoging had vijf fouten; gerichte herhalingen en daarna de volledige CI-ronde op de definitieve SHA zijn groen. De nieuwe rechtenregressies toetsen ook clubmailbeheer en aangepaste organisatierollen op de vaste QR.
+
+De echte 604×933-render heeft een podium van `(18, 0, 532, 933)`. De pixelvergelijking meet **3,70% afwijkende pixels** boven kanaaldrempel 32 en **3,15/255 gemiddelde kanaalafwijking**, binnen de vastgelegde grenzen. Alleen de dynamische QR en de aangepaste footerbediening zijn gemaskeerd. Zie [de echte capture](evidence/v17-oche-live-604x933-actual.png) en [de metingen](evidence/v17-oche-live-604x933-measurements.json). Dit is een lokale dataprojectie op de echte Next-productiebouw; geen fysieke of hosted spelproef.
+
+Vóór de migraties is op de doel-VPS een consistente stagingback-up gemaakt van de 46 voor de runtime leesbare applicatietabellen en de beschermde actieve configuratie. Alle vijf bestandshashes en het volledige archief zijn onafhankelijk gecontroleerd; er is geen restore uitgevoerd. De drie hosted migraties staan geregistreerd als `20261112015520`, `20261112015524` en `20261112015527`. Alle 64 private tabellen hebben RLS, zonder publieke tabelgrants. Aantallen én hashes van de 3 bestaande profielen, 1 wedstrijd en 8 worpen zijn ongewijzigd. Er zijn geen nieuwe security-advisors bijgekomen; de bestaande meldingen over [owner_bootstrap zonder publiek beleid](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) en [wachtwoordlekcontrole](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) zijn onveranderd.
+
+Na deployment geven `/api/health` en `/api/ready` zowel via HTTPS als via VPS-loopback HTTP 200 met dezelfde bron-, release- en configuratie-identiteit. De hosted browsercontrole omvat 12 controles op 390 en 540 pixels: vier onafhankelijke manifestidentiteiten, openbare vaste QR, afgeschermde schermtoegang, offline/online-herstel, de Oche Live-alias, lokale Scorebord-koppeling en de echte spelersloginpagina zonder fixtureaccounts. Er is geen hosted wedstrijd gespeeld en er zijn geen accounts, koppelcodes of scores voor de controle aangemaakt. De bestaande openbare baan was vrij.
+
+De actieve app staat op `/srv/sites/dartflow-staging/current`, dat verwijst naar `releases/c93903fbc3d0-43137840623-1`. De configuratie staat onder `/etc/dg-sites/dartflow-staging/configs/staging-2026-11-11-v15-mail-1/`. De secrets blijven op hun beschermde bestemming. Productie behoudt bron `aa7ac5e49de184fa4eb5ec1a83318c44e1b5d0d6`, release `43102459247-1` en hetzelfde proces. Ook Milo en buildlock `29:6` zijn ongewijzigd.
+
+Het [volledige geanonimiseerde releasebewijs](evidence/v17-staging-2026-11-12.json) en [de hosted browsercontrole](evidence/v17-staging-public-smoke-2026-11-12.json) leggen de controles en grenzen vast.
+
+**Nog te configureren:** in DartFlow zelf zijn bij de laatste stagingcontrole nul Resend-appcredentials opgeslagen. Voeg de Resend HTTP API-sleutel toe onder [Platformbeheer → Integraties](https://staging.dartflow.nl/app/platform/integraties), met afzender `noreply@dartflow.nl` en de toegelaten testontvanger `info@dgwebservices.nl`. Supabase Auth SMTP blijft een afzonderlijke verbinding. Echte appmailaflevering en nieuwe providerlogins zijn niet als geslaagd afgevinkt. De fysieke apparaatproeven blijven op verzoek van de eigenaar voor de grote testronde.
+
 ## Starten en bedienen
 
 ```sh

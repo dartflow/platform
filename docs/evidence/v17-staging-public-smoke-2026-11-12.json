@@ -1,0 +1,179 @@
+{
+  "checkedAt": "2026-11-12T01:58:36.164Z",
+  "origin": "https://staging.dartflow.nl",
+  "sha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+  "releaseId": "43137840623-1",
+  "configId": "staging-2026-11-11-v15-mail-1",
+  "scope": "Read-only hosted routes/manifests, anonymous display and browser-local fallback binding. No hosted login, pairing code, scoring, mail, data mutation or OS installation.",
+  "before": {
+    "health": {
+      "status": 200,
+      "sha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+      "releaseId": "43137840623-1",
+      "configId": "staging-2026-11-11-v15-mail-1"
+    },
+    "ready": {
+      "status": 200,
+      "sha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+      "releaseId": "43137840623-1",
+      "configId": "staging-2026-11-11-v15-mail-1"
+    }
+  },
+  "after": {
+    "health": {
+      "status": 200,
+      "sha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+      "releaseId": "43137840623-1",
+      "configId": "staging-2026-11-11-v15-mail-1"
+    },
+    "ready": {
+      "status": 200,
+      "sha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+      "releaseId": "43137840623-1",
+      "configId": "staging-2026-11-11-v15-mail-1"
+    }
+  },
+  "manifests": [
+    {
+      "url": "/speler/manifest.webmanifest",
+      "id": "/speler",
+      "start_url": "/speler",
+      "scope": "/",
+      "display": "standalone",
+      "icons192And512": true,
+      "noCookieWritten": true
+    },
+    {
+      "url": "/scorebord/manifest.webmanifest",
+      "id": "/scorebord",
+      "start_url": "/scorebord",
+      "scope": "/scorebord",
+      "display": "standalone",
+      "icons192And512": true,
+      "noCookieWritten": true
+    },
+    {
+      "url": "/api/board-screens/6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83/manifest.webmanifest",
+      "id": "/baanscherm/6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83",
+      "start_url": "/baanscherm/6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83",
+      "scope": "/baanscherm/6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83",
+      "display": "standalone",
+      "icons192And512": true,
+      "noCookieWritten": true
+    },
+    {
+      "url": "/api/board-screens/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3/manifest.webmanifest",
+      "id": "/baanscherm/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+      "start_url": "/baanscherm/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+      "scope": "/baanscherm/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+      "display": "standalone",
+      "icons192And512": true,
+      "noCookieWritten": true
+    }
+  ],
+  "views": [
+    {
+      "width": 390,
+      "flow": "public-existing-board-qr-offline-and-recovery",
+      "boardId": "6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+      "correctManifest": true,
+      "noPlayerSessionRequest": true,
+      "noHorizontalOverflow": true,
+      "noScoreMutation": true
+    },
+    {
+      "width": 390,
+      "flow": "private-existing-board-requires-device",
+      "boardId": "6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83",
+      "correctManifest": true,
+      "noPlayerSessionRequest": true,
+      "noHorizontalOverflow": true,
+      "noScoreMutation": true
+    },
+    {
+      "width": 390,
+      "flow": "oche-live-alias-keeps-installed-identity",
+      "correctManifest": true
+    },
+    {
+      "width": 390,
+      "flow": "scoreboard-explicit-local-binding-reopen-and-other-board-isolation",
+      "noHostedRecordCreated": true,
+      "persistentBrowserLocalBinding": true,
+      "manifestUnchanged": true
+    },
+    {
+      "width": 390,
+      "flow": "player-start-to-real-login",
+      "correctNext": true,
+      "noFixtureAccounts": true,
+      "loginSubmitted": false,
+      "googleFollowed": false
+    },
+    {
+      "width": 390,
+      "flow": "request-boundaries",
+      "authActions": 0,
+      "mutations": 0,
+      "foreignRequests": 0,
+      "sessionRequests": 1,
+      "pageErrors": 0
+    },
+    {
+      "width": 540,
+      "flow": "public-existing-board-qr-offline-and-recovery",
+      "boardId": "6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+      "correctManifest": true,
+      "noPlayerSessionRequest": true,
+      "noHorizontalOverflow": true,
+      "noScoreMutation": true
+    },
+    {
+      "width": 540,
+      "flow": "private-existing-board-requires-device",
+      "boardId": "6f5135fb-8ac7-4aeb-a594-f0e9f64f9c83",
+      "correctManifest": true,
+      "noPlayerSessionRequest": true,
+      "noHorizontalOverflow": true,
+      "noScoreMutation": true
+    },
+    {
+      "width": 540,
+      "flow": "oche-live-alias-keeps-installed-identity",
+      "correctManifest": true
+    },
+    {
+      "width": 540,
+      "flow": "scoreboard-explicit-local-binding-reopen-and-other-board-isolation",
+      "noHostedRecordCreated": true,
+      "persistentBrowserLocalBinding": true,
+      "manifestUnchanged": true
+    },
+    {
+      "width": 540,
+      "flow": "player-start-to-real-login",
+      "correctNext": true,
+      "noFixtureAccounts": true,
+      "loginSubmitted": false,
+      "googleFollowed": false
+    },
+    {
+      "width": 540,
+      "flow": "request-boundaries",
+      "authActions": 0,
+      "mutations": 0,
+      "foreignRequests": 0,
+      "sessionRequests": 1,
+      "pageErrors": 0
+    }
+  ],
+  "actualOsInstallationProven": false,
+  "actualIosAndroidOrTvDeviceProven": false,
+  "actualHostedScoreEntryProven": false,
+  "actualHostedPrivatePairingProven": false,
+  "hostedRecordsCreated": false,
+  "authenticatedPlayerSessionCreated": false,
+  "actualHostedLiveMatchObserved": false,
+  "publicBoardStateObserved": "available",
+  "browserVersion": "156.0.8078.4"
+}

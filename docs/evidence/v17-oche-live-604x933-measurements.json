@@ -1,0 +1,127 @@
+{
+  "scope": "Local visual data fixture, actual Next rendering; not hosted or physical-device acceptance.",
+  "viewport": [
+    604,
+    933
+  ],
+  "dpr": 1,
+  "measurements": {
+    "stage": {
+      "x": 18,
+      "y": 0,
+      "width": 532,
+      "height": 933,
+      "centerX": 284,
+      "centerY": 466.5
+    },
+    "logo": {
+      "x": 48.84375,
+      "y": 21.796875,
+      "width": 207.46875,
+      "height": 53.703125,
+      "centerX": 152.578125,
+      "centerY": 48.6484375
+    },
+    "location": {
+      "x": 400.703125,
+      "y": 29.296875,
+      "width": 118.453125,
+      "height": 38.6875,
+      "centerX": 459.9296875,
+      "centerY": 48.640625
+    },
+    "header": {
+      "x": 48.84375,
+      "y": 21.796875,
+      "width": 470.3125,
+      "height": 72.25,
+      "centerX": 284,
+      "centerY": 57.921875
+    },
+    "badge": {
+      "x": 224.640625,
+      "y": 213.734375,
+      "width": 118.71875,
+      "height": 27.8125,
+      "centerX": 284,
+      "centerY": 227.640625
+    },
+    "board": {
+      "x": 211.734375,
+      "y": 255.375,
+      "width": 144.53125,
+      "height": 17.28125,
+      "centerX": 284,
+      "centerY": 264.015625
+    },
+    "heading": {
+      "x": 106.6875,
+      "y": 286.484375,
+      "width": 354.609375,
+      "height": 58.734375,
+      "centerX": 283.9921875,
+      "centerY": 315.8515625
+    },
+    "description": {
+      "x": 100.453125,
+      "y": 359.046875,
+      "width": 367.078125,
+      "height": 53.15625,
+      "centerX": 283.9921875,
+      "centerY": 385.625
+    },
+    "qr": {
+      "x": 156.640625,
+      "y": 434,
+      "width": 254.703125,
+      "height": 254.703125,
+      "centerX": 283.9921875,
+      "centerY": 561.3515625
+    },
+    "caption": {
+      "x": 156.640625,
+      "y": 696.9375,
+      "width": 254.703125,
+      "height": 37.875,
+      "centerX": 283.9921875,
+      "centerY": 715.875
+    },
+    "footer": {
+      "x": 48.84375,
+      "y": 854.5,
+      "width": 470.3125,
+      "height": 56.703125,
+      "centerX": 284,
+      "centerY": 882.8515625
+    },
+    "fullscreen": {
+      "x": 475.15625,
+      "y": 867.203125,
+      "width": 44,
+      "height": 44,
+      "centerX": 497.15625,
+      "centerY": 889.203125
+    }
+  },
+  "comparison": {
+    "changedPixelRatio": 0.036990915245171375,
+    "meanAbsoluteChannelError": 3.151686989659766,
+    "thresholdPerChannel": 32,
+    "masks": [
+      [
+        156,
+        433,
+        256,
+        257
+      ],
+      [
+        49,
+        867,
+        416,
+        46
+      ]
+    ]
+  },
+  "sourceSha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+  "fixtureIdentity": "Local read-only display response on loopback, real production build; no hosted player or device session."
+}
