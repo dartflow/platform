@@ -2,6 +2,8 @@
 
 Deze wijziging bouwt door op de bestaande Next-app, vaste fysieke banen, spelerstoegang, wedstrijdverwerking en DG Webservices-releaseflow. Het schermontwerp gebruikt de officiële logo’s en de fonts uit de opgegeven Oche Live-demo. Voorbeeldscores zijn uitsluitend testdata.
 
+De wijziging staat sinds 12 november 2026 op staging en productie met bron-SHA `0503413f96fcf2288f48f5dbacc9bd54ea42e823`. Actieve release-ID’s, HTTPS-controles en migratiebewijs staan in het [uitrolverslag](oche-live-v18-uitrol.md).
+
 ## Openen en bedienen
 
 - Open **Locaties & banen** op `/app/locations`. Bij een baan staan de effectieve status, actieve partij, gekoppelde banen en geldende reservering.
@@ -42,7 +44,7 @@ Een unieke database-index voorkomt dubbele claims bij gelijktijdig registreren. 
 
 ## Lokaal uitvoeren
 
-De lokale preview luistert op **127.0.0.1:3000 op de dev-VPS**. Gebruik de browserpreview van de VPS of stuur die poort door via SSH. Na een portforward naar poort 3000 zijn deze vaste voorbeelden beschikbaar:
+Start de lokale preview op **127.0.0.1:3000 op de dev-VPS** met de onderstaande commando’s. Gebruik de browserpreview van de VPS of stuur die poort door via SSH. Na een portforward naar poort 3000 zijn deze vaste voorbeelden beschikbaar:
 
 | Baan | Oche Live | Spelers-QR / telefoon |
 | --- | --- | --- |

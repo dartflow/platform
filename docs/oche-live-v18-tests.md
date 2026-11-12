@@ -1,6 +1,6 @@
 # Lokale acceptatie Oche Live v18
 
-Getest op 12 november 2026 op de development-VPS, met de echte Next.js standalone-build en de lokale PostgreSQL-database. Deze oplevering wijzigt staging en productie niet. De lokale readiness meldt `sha: local-unreleased`; er is voor deze wijziging nog geen gepubliceerde release-SHA.
+Getest op 12 november 2026 op de development-VPS, met de echte Next.js standalone-build en de lokale PostgreSQL-database. Dit verslag beschrijft de lokale acceptatie vóór publicatie; de lokale readiness meldde `sha: local-unreleased`. De daaropvolgende CI en uitrol van `0503413f96fcf2288f48f5dbacc9bd54ea42e823` naar staging en productie staan afzonderlijk in het [uitrolverslag](oche-live-v18-uitrol.md).
 
 ## Uitgevoerde controles
 

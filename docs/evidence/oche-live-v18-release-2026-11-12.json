@@ -1,0 +1,722 @@
+{
+  "checkedAt": "2026-11-12T20:46:59.558391+00:00",
+  "sourceSha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+  "releaseFlow": "GitHub main push CI, native target-VPS staging build, same SHA native production build",
+  "ci": {
+    "id": 43300020895,
+    "url": "https://github.com/dartflow/platform/actions/runs/43300020895",
+    "conclusion": "success",
+    "appTests": 249,
+    "prototypeTests": 46,
+    "nativeDeployerTests": 57,
+    "bootstrapAndAuthContractTests": 45,
+    "browserTests": 33,
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed"
+  },
+  "environments": {
+    "staging": {
+      "origin": "https://staging.dartflow.nl",
+      "sourceSha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+      "releaseId": "43301855965-1",
+      "configId": "staging-2026-11-11-v15-mail-1",
+      "deploymentUrl": "https://github.com/dartflow/platform/actions/runs/43301855965",
+      "conclusion": "success",
+      "current": "releases/0503413f96fc-43301855965-1",
+      "appPid": "191156",
+      "health": {
+        "loopback": {
+          "health": {
+            "body": {
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1",
+              "mode": "supabase",
+              "releaseId": "43301855965-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+              "status": "ok"
+            },
+            "httpStatus": 200
+          },
+          "ready": {
+            "body": {
+              "auth": "reachable",
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1",
+              "database": "ok",
+              "releaseId": "43301855965-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "schemaVersion": 1,
+              "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+              "status": "ready"
+            },
+            "httpStatus": 200
+          }
+        },
+        "public": {
+          "health": {
+            "body": {
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1",
+              "mode": "supabase",
+              "releaseId": "43301855965-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+              "status": "ok"
+            },
+            "httpStatus": 200
+          },
+          "ready": {
+            "body": {
+              "auth": "reachable",
+              "buildConfigId": "staging-2026-11-11-v15-mail-1",
+              "configId": "staging-2026-11-11-v15-mail-1",
+              "database": "ok",
+              "releaseId": "43301855965-1",
+              "runtimeConfigId": "staging-2026-11-11-v15-mail-1",
+              "schemaVersion": 1,
+              "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+              "status": "ready"
+            },
+            "httpStatus": 200
+          }
+        }
+      },
+      "httpsBrowserEvidence": "oche-live-v18-staging-https-2026-11-12.json",
+      "maintenanceRestored": {
+        "allCaddyFragmentsUnchanged": true,
+        "exactOriginalBytes": true,
+        "originalSha256": "28878153ef6ae9425deb47a93b4b2b566fd4f6bf8b707d5fd3698be9c100b196",
+        "phase": "restored"
+      },
+      "mailTimerActive": true,
+      "turnActive": "active",
+      "runnerActive": "active",
+      "journalSinceActivation": {
+        "app": {
+          "alert": 0,
+          "critical": 0,
+          "emergency": 0,
+          "entries": 11,
+          "error": 0,
+          "errors": 0,
+          "expiredSessionWorkerFailures": 0,
+          "warning": 1
+        },
+        "mailWorker": {
+          "alert": 0,
+          "critical": 0,
+          "emergency": 0,
+          "entries": 33,
+          "error": 0,
+          "errors": 0,
+          "expiredSessionWorkerFailures": 0,
+          "warning": 0
+        }
+      },
+      "backup": {
+        "directory": "/var/backups/dartflow/v18-oche-live-staging-20261112T203401105751Z",
+        "snapshotAt": "2026-11-12T20:34:01.385065+00:00",
+        "tableCount": 63,
+        "excludedPrivateTables": [
+          "owner_bootstrap"
+        ],
+        "archiveSha256": "807dfb54303d47bc9b7af4f4334608df9f01ac81c363614f0a55358775fcad3e",
+        "archiveBytes": 222790,
+        "scope": "Private application schema/data readable by runtime, plus protected active runtime configuration. Supabase Auth and provider configuration are excluded."
+      },
+      "backupVerification": {
+        "archiveFullyDecoded": true,
+        "credentialsPrinted": false,
+        "databaseConnectionUsed": false,
+        "directory": "/var/backups/dartflow/v18-oche-live-staging-20261112T203401105751Z",
+        "environment": "staging",
+        "hashesVerified": 5,
+        "host": "dg-nxttrack-01",
+        "restoreDrillPerformed": false,
+        "status": "passed"
+      }
+    },
+    "production": {
+      "origin": "https://dartflow.nl",
+      "sourceSha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+      "releaseId": "43302652040-1",
+      "configId": "production-2026-11-11-v15-mail-1",
+      "deploymentUrl": "https://github.com/dartflow/platform/actions/runs/43302652040",
+      "conclusion": "success",
+      "current": "releases/0503413f96fc-43302652040-1",
+      "appPid": "192258",
+      "health": {
+        "loopback": {
+          "health": {
+            "body": {
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1",
+              "mode": "supabase",
+              "releaseId": "43302652040-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+              "status": "ok"
+            },
+            "httpStatus": 200
+          },
+          "ready": {
+            "body": {
+              "auth": "reachable",
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1",
+              "database": "ok",
+              "releaseId": "43302652040-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "schemaVersion": 1,
+              "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+              "status": "ready"
+            },
+            "httpStatus": 200
+          }
+        },
+        "public": {
+          "health": {
+            "body": {
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1",
+              "mode": "supabase",
+              "releaseId": "43302652040-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+              "status": "ok"
+            },
+            "httpStatus": 200
+          },
+          "ready": {
+            "body": {
+              "auth": "reachable",
+              "buildConfigId": "production-2026-11-11-v15-mail-1",
+              "configId": "production-2026-11-11-v15-mail-1",
+              "database": "ok",
+              "releaseId": "43302652040-1",
+              "runtimeConfigId": "production-2026-11-11-v15-mail-1",
+              "schemaVersion": 1,
+              "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+              "status": "ready"
+            },
+            "httpStatus": 200
+          }
+        }
+      },
+      "httpsBrowserEvidence": "oche-live-v18-production-https-2026-11-12.json",
+      "maintenanceRestored": {
+        "allCaddyFragmentsUnchanged": true,
+        "exactOriginalBytes": true,
+        "originalSha256": "101ceb128b0d3f8ab9eb1d8aa5a2bcc1a93f197d3232979a8729454d38d1973f",
+        "phase": "restored"
+      },
+      "mailTimerActive": true,
+      "turnActive": "active",
+      "runnerActive": "active",
+      "journalSinceActivation": {
+        "app": {
+          "alert": 0,
+          "critical": 0,
+          "emergency": 0,
+          "entries": 11,
+          "error": 0,
+          "errors": 0,
+          "expiredSessionWorkerFailures": 0,
+          "warning": 1
+        },
+        "mailWorker": {
+          "alert": 0,
+          "critical": 0,
+          "emergency": 0,
+          "entries": 9,
+          "error": 0,
+          "errors": 0,
+          "expiredSessionWorkerFailures": 0,
+          "warning": 0
+        }
+      },
+      "backup": {
+        "directory": "/var/backups/dartflow/v18-oche-live-production-20261112T203959531271Z",
+        "snapshotAt": "2026-11-12T20:39:59.767755+00:00",
+        "tableCount": 63,
+        "excludedPrivateTables": [
+          "owner_bootstrap"
+        ],
+        "archiveSha256": "1c6f76b144f16f05cbb156086fbf7e8563c32d1f1f599cb61f7afaa5ccf39be9",
+        "archiveBytes": 207266,
+        "scope": "Private application schema/data readable by runtime, plus protected active runtime configuration. Supabase Auth and provider configuration are excluded."
+      },
+      "backupVerification": {
+        "archiveFullyDecoded": true,
+        "credentialsPrinted": false,
+        "databaseConnectionUsed": false,
+        "directory": "/var/backups/dartflow/v18-oche-live-production-20261112T203959531271Z",
+        "environment": "production",
+        "hashesVerified": 5,
+        "host": "dg-nxttrack-01",
+        "restoreDrillPerformed": false,
+        "status": "passed"
+      }
+    }
+  },
+  "migrations": [
+    {
+      "source": "supabase/migrations/20261112183944_board_activity_sessions.sql",
+      "sourceSha256": "42476b5860710cd2ad90a2892b4d61a5e2fe81b4091d7725912b1c6ef5a3b2ba",
+      "executedSqlSha256": "28740804ea4c9b90b2e94798a73bf239aab7c988f04722357f573336f0a2bf63",
+      "lockTimeoutSeconds": 10,
+      "statementTimeoutSeconds": 90,
+      "extraDeploymentGuard": "Require no physical match assignment or valid/malformed held training lease under locks; preserve expired legacy training"
+    },
+    {
+      "source": "supabase/migrations/20261112184741_globally_unique_usernames.sql",
+      "sourceSha256": "30c4002c3ca5e30010e816a32c10c84f3b4a7d5e9b15ad4cd734ea7f10775df6",
+      "executedSqlSha256": "025f1b5e82afcace023ba0691fd7c0857f35642205eacdfea08431cec367d46d",
+      "lockTimeoutSeconds": 10,
+      "statementTimeoutSeconds": 90,
+      "extraDeploymentGuard": "Only local timeouts before existing profile lock"
+    }
+  ],
+  "schemaValidation": {
+    "schemaBefore": {
+      "staging": {
+        "counts": {
+          "boards": 5,
+          "visits": 8,
+          "matches": 1,
+          "profiles": 3,
+          "publishedResults": 0
+        },
+        "project": "postgres",
+        "visitsHash": "b7c34cfce863c2693f982816f9d6cae7",
+        "matchesHash": "29e74d7f3fe3f6edd4e6640d1c849421",
+        "heldTraining": 0,
+        "privateTables": 64,
+        "serverVersion": "17.11",
+        "migrationNames": [
+          "dartflow_private_initial_schema_and_login",
+          "v15_platform_expansion",
+          "v15_privilege_replay_guards",
+          "standalone_club_boards",
+          "per_player_scoring",
+          "short_invitation_codes",
+          "required_scoreboard_names",
+          "board_screen_devices",
+          "v17_club_roles_intake_lifecycle",
+          "v17_community_score_events",
+          "physical_locations_reservations"
+        ],
+        "featureVersions": {
+          "v15": 15,
+          "v17_clubs": 1,
+          "club_boards": 1,
+          "display_names": 1,
+          "v17_community": 1,
+          "v17_score_events": 1,
+          "short_invitations": 1,
+          "per_player_scoring": 1,
+          "physical_locations": 1,
+          "board_screen_devices": 1
+        },
+        "privateWithoutRls": 0,
+        "profileIdentityHash": "f69d964103f5b30c8b94a2045a588145",
+        "activePhysicalMatches": 0
+      },
+      "production": {
+        "counts": {
+          "boards": 1,
+          "visits": 0,
+          "matches": 0,
+          "profiles": 1,
+          "publishedResults": 0
+        },
+        "project": "postgres",
+        "visitsHash": "d41d8cd98f00b204e9800998ecf8427e",
+        "matchesHash": "d41d8cd98f00b204e9800998ecf8427e",
+        "heldTraining": 0,
+        "privateTables": 64,
+        "serverVersion": "17.11",
+        "migrationNames": [
+          "dartflow_private_initial_schema",
+          "remove_unused_bootstrap_hook",
+          "configure_dedicated_runtime_login",
+          "v15_platform_expansion",
+          "v15_privilege_replay_guards",
+          "standalone_club_boards",
+          "per_player_scoring",
+          "short_invitation_codes",
+          "required_scoreboard_names",
+          "board_screen_devices",
+          "v17_club_roles_intake_lifecycle",
+          "v17_community_score_events",
+          "physical_locations_reservations"
+        ],
+        "featureVersions": {
+          "v15": 15,
+          "v17_clubs": 1,
+          "club_boards": 1,
+          "display_names": 1,
+          "v17_community": 1,
+          "v17_score_events": 1,
+          "short_invitations": 1,
+          "per_player_scoring": 1,
+          "physical_locations": 1,
+          "board_screen_devices": 1
+        },
+        "privateWithoutRls": 0,
+        "profileIdentityHash": "340bda8640ac03c5fce87b36e9c15a6b",
+        "activePhysicalMatches": 0
+      }
+    },
+    "schemaAfter": {
+      "staging": {
+        "counts": {
+          "boards": 5,
+          "visits": 8,
+          "matches": 1,
+          "profiles": 3,
+          "publishedResults": 0
+        },
+        "project": "postgres",
+        "visitsHash": "b7c34cfce863c2693f982816f9d6cae7",
+        "matchesHash": "29e74d7f3fe3f6edd4e6640d1c849421",
+        "heldTraining": 0,
+        "privateTables": 67,
+        "serverVersion": "17.11",
+        "migrationNames": [
+          "dartflow_private_initial_schema_and_login",
+          "v15_platform_expansion",
+          "v15_privilege_replay_guards",
+          "standalone_club_boards",
+          "per_player_scoring",
+          "short_invitation_codes",
+          "required_scoreboard_names",
+          "board_screen_devices",
+          "v17_club_roles_intake_lifecycle",
+          "v17_community_score_events",
+          "physical_locations_reservations",
+          "board_activity_sessions",
+          "globally_unique_usernames"
+        ],
+        "featureVersions": {
+          "v15": 15,
+          "v17_clubs": 1,
+          "club_boards": 1,
+          "display_names": 1,
+          "v17_community": 1,
+          "board_activity": 1,
+          "unique_usernames": 1,
+          "v17_score_events": 1,
+          "short_invitations": 1,
+          "per_player_scoring": 1,
+          "physical_locations": 1,
+          "board_screen_devices": 1
+        },
+        "privateWithoutRls": 0,
+        "profileIdentityHash": "f69d964103f5b30c8b94a2045a588145",
+        "activePhysicalMatches": 0
+      },
+      "production": {
+        "counts": {
+          "boards": 1,
+          "visits": 0,
+          "matches": 0,
+          "profiles": 1,
+          "publishedResults": 0
+        },
+        "project": "postgres",
+        "visitsHash": "d41d8cd98f00b204e9800998ecf8427e",
+        "matchesHash": "d41d8cd98f00b204e9800998ecf8427e",
+        "heldTraining": 0,
+        "privateTables": 67,
+        "serverVersion": "17.11",
+        "migrationNames": [
+          "dartflow_private_initial_schema",
+          "remove_unused_bootstrap_hook",
+          "configure_dedicated_runtime_login",
+          "v15_platform_expansion",
+          "v15_privilege_replay_guards",
+          "standalone_club_boards",
+          "per_player_scoring",
+          "short_invitation_codes",
+          "required_scoreboard_names",
+          "board_screen_devices",
+          "v17_club_roles_intake_lifecycle",
+          "v17_community_score_events",
+          "physical_locations_reservations",
+          "board_activity_sessions",
+          "globally_unique_usernames"
+        ],
+        "featureVersions": {
+          "v15": 15,
+          "v17_clubs": 1,
+          "club_boards": 1,
+          "display_names": 1,
+          "v17_community": 1,
+          "board_activity": 1,
+          "unique_usernames": 1,
+          "v17_score_events": 1,
+          "short_invitations": 1,
+          "per_player_scoring": 1,
+          "physical_locations": 1,
+          "board_screen_devices": 1
+        },
+        "privateWithoutRls": 0,
+        "profileIdentityHash": "340bda8640ac03c5fce87b36e9c15a6b",
+        "activePhysicalMatches": 0
+      }
+    },
+    "checks": {
+      "staging": {
+        "activityLinks": 0,
+        "activityReceipts": 0,
+        "activitySessions": 0,
+        "newTablePrivileges": [
+          {
+            "table": "board_activity_sessions",
+            "anonAny": false,
+            "runtimeCRUD": true,
+            "serviceRoleAny": false,
+            "authenticatedAny": false
+          },
+          {
+            "table": "board_activity_links",
+            "anonAny": false,
+            "runtimeCRUD": true,
+            "serviceRoleAny": false,
+            "authenticatedAny": false
+          },
+          {
+            "table": "board_activity_receipts",
+            "anonAny": false,
+            "runtimeCRUD": true,
+            "serviceRoleAny": false,
+            "authenticatedAny": false
+          }
+        ],
+        "purgePublicExecute": false,
+        "usernameIndexValid": true,
+        "purgeRuntimeExecute": true,
+        "duplicateConfirmedClaims": 0,
+        "invalidConfirmedUsernames": 0
+      },
+      "production": {
+        "activityLinks": 0,
+        "activityReceipts": 0,
+        "activitySessions": 0,
+        "newTablePrivileges": [
+          {
+            "table": "board_activity_sessions",
+            "anonAny": false,
+            "runtimeCRUD": true,
+            "serviceRoleAny": false,
+            "authenticatedAny": false
+          },
+          {
+            "table": "board_activity_links",
+            "anonAny": false,
+            "runtimeCRUD": true,
+            "serviceRoleAny": false,
+            "authenticatedAny": false
+          },
+          {
+            "table": "board_activity_receipts",
+            "anonAny": false,
+            "runtimeCRUD": true,
+            "serviceRoleAny": false,
+            "authenticatedAny": false
+          }
+        ],
+        "purgePublicExecute": false,
+        "usernameIndexValid": true,
+        "purgeRuntimeExecute": true,
+        "duplicateConfirmedClaims": 0,
+        "invalidConfirmedUsernames": 0
+      }
+    },
+    "securityAdvisors": {
+      "staging": {
+        "lints": [
+          {
+            "name": "rls_enabled_no_policy",
+            "title": "RLS Enabled No Policy",
+            "level": "INFO",
+            "facing": "EXTERNAL",
+            "categories": [
+              "SECURITY"
+            ],
+            "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+            "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+            "count": 1,
+            "findings": [
+              {
+                "detail": "Table \\`dartflow_private.owner_bootstrap\\` has RLS enabled, but no policies exist",
+                "metadata": {
+                  "name": "owner_bootstrap",
+                  "type": "table",
+                  "schema": "dartflow_private"
+                },
+                "observed_at": "2026-11-12T20:35:37.873Z"
+              }
+            ]
+          },
+          {
+            "name": "auth_leaked_password_protection",
+            "title": "Leaked Password Protection Disabled",
+            "level": "WARN",
+            "facing": "EXTERNAL",
+            "categories": [
+              "SECURITY"
+            ],
+            "description": "Leaked password protection is currently disabled.",
+            "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+            "count": 1,
+            "findings": [
+              {
+                "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+                "metadata": {
+                  "type": "auth",
+                  "entity": "Auth"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "production": {
+        "lints": [
+          {
+            "name": "rls_enabled_no_policy",
+            "title": "RLS Enabled No Policy",
+            "level": "INFO",
+            "facing": "EXTERNAL",
+            "categories": [
+              "SECURITY"
+            ],
+            "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+            "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+            "count": 1,
+            "findings": [
+              {
+                "detail": "Table \\`dartflow_private.owner_bootstrap\\` has RLS enabled, but no policies exist",
+                "metadata": {
+                  "name": "owner_bootstrap",
+                  "type": "table",
+                  "schema": "dartflow_private"
+                },
+                "observed_at": "2026-11-12T20:40:27.438Z"
+              }
+            ]
+          },
+          {
+            "name": "auth_leaked_password_protection",
+            "title": "Leaked Password Protection Disabled",
+            "level": "WARN",
+            "facing": "EXTERNAL",
+            "categories": [
+              "SECURITY"
+            ],
+            "description": "Leaked password protection is currently disabled.",
+            "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+            "count": 1,
+            "findings": [
+              {
+                "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+                "metadata": {
+                  "type": "auth",
+                  "entity": "Auth"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "legacyStaging": {
+      "before": {
+        "payloadHash": "73110592e51ea24d7b3f8c9ad9b0f943",
+        "expiredLeases": 3,
+        "heldTrainingRows": 3
+      },
+      "after": {
+        "payloadHash": "73110592e51ea24d7b3f8c9ad9b0f943",
+        "expiredLeases": 3,
+        "heldTrainingRows": 3
+      }
+    },
+    "appliedMigrations": {
+      "staging": [
+        {
+          "version": "20261112203528",
+          "name": "board_activity_sessions"
+        },
+        {
+          "version": "20261112203533",
+          "name": "globally_unique_usernames"
+        }
+      ],
+      "production": [
+        {
+          "version": "20261112204017",
+          "name": "board_activity_sessions"
+        },
+        {
+          "version": "20261112204021",
+          "name": "globally_unique_usernames"
+        }
+      ]
+    },
+    "profileIdentityHashScope": "Full profile JSON excluding name and display_name_confirmed; match and visit hashes use full row JSON.",
+    "productionLegacyHeldTrainingCount": 0
+  },
+  "newGitHubSecretsRequired": false,
+  "newGitHubVariablesRequired": false,
+  "host": {
+    "checkedAt": "2026-11-12T20:45:26.468151+00:00",
+    "miloUnchanged": true,
+    "caddyPid": "3243",
+    "caddyFingerprint": {
+      "/etc/caddy/Caddyfile": "28478c57f4b6f5d851ef5bc9950e774909556b3b822586c9cd577009a236cdcd",
+      "/etc/caddy/sites/dartflow-production.caddy": "101ceb128b0d3f8ab9eb1d8aa5a2bcc1a93f197d3232979a8729454d38d1973f",
+      "/etc/caddy/sites/dartflow-staging.caddy": "28878153ef6ae9425deb47a93b4b2b566fd4f6bf8b707d5fd3698be9c100b196",
+      "/etc/caddy/sites/milobingo-staging.caddy": "5768de11ddfa25d7bf72052fc3099d283d0a0676903caf0405d3b7ab8b10918e",
+      "/etc/caddy/sites/rondio-production.caddy": "e929b2f72a3864ab8d6f4242530eccbb29c1e97b831dbb9a99e0df8ba8dd555c",
+      "/etc/caddy/sites/rondio-staging.caddy": "85476c3a09889d70bcabfdcb39c848545ef4883e30c471dae04957705c02425b"
+    },
+    "sharedLock": {
+      "device": 29,
+      "gid": 1001,
+      "inode": 6,
+      "mode": "0660",
+      "occupied": false,
+      "uid": 0
+    },
+    "startupWarningMetadata": {
+      "source": "systemd",
+      "codeFile": "src/core/unit.c",
+      "codeLine": "6024",
+      "countPerAppUnit": 1,
+      "rawMessagePublished": false
+    }
+  },
+  "limits": {
+    "physicalDeviceTestsDeferredByUser": true,
+    "actualOsInstallationProven": false,
+    "physicalChromecastProven": false,
+    "newHostedMatchPlayed": false,
+    "newHostedGoogleOrOtpLoginTested": false,
+    "newHostedMailSent": false,
+    "privatePairingTestedHosted": false,
+    "databaseRestoreDrillPerformed": false
+  },
+  "deploymentNotes": [
+    "First staging migration wrapper failed SQL syntax validation before DDL. Absence of new table, markers and migration registrations was verified; corrected wrapper succeeded transactionally.",
+    "Production maintenance initially refused an ambiguous www host substring before mutation; anchored exact-host insertion was tested and applied. Exact original Caddy bytes were restored.",
+    "Initial production smoke assumed private access; the unchanged database configuration explicitly has kind venue and public_screen true. Repeated with verified public expectations; no access configuration was changed.",
+    "Final journal query initially rejected the systemctl display timestamp; the read-only helper was corrected to an explicit epoch and passed.",
+    "Three old staging training records with expired leases were retained byte-for-byte; no new activity sessions were adopted for them.",
+    "Legacy POST replay/undo/finish initialization without an activity session remains a separate hardening follow-up; complete board.start revalidation for that legacy fallback is not proven by this release report."
+  ]
+}

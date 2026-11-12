@@ -1,6 +1,6 @@
 # DartFlow: staging en productie
 
-De oorspronkelijke v17-opdracht van 12 november vroeg uitsluitend staging. Na acceptatie heeft de eigenaar afzonderlijk productie geautoriseerd; dezelfde geteste SHA is inmiddels op beide omgevingen actief. Volg het [v17-stagingverslag](v17-uitrol.md) en het [productieverslag](v17-productie.md) voor de actuele release en acceptatiegrenzen.
+Oche Live v18 is op 12 november 2026 via de bestaande native flow naar staging en productie uitgerold. Beide omgevingen draaien bron-SHA `0503413f96fcf2288f48f5dbacc9bd54ea42e823`. Volg het [v18-uitrolverslag](oche-live-v18-uitrol.md) voor de actieve releases, migraties en HTTPS-controles. Het [v17-stagingverslag](v17-uitrol.md) en [v17-productieverslag](v17-productie.md) blijven het eerdere acceptatiebewijs beschrijven.
 
 De vastgelegde repository is **[dartflow/platform](https://github.com/dartflow/platform)**, integratiebranch **`main`**, doelhost **`dg-nxttrack-01`**. De gebruiker heeft staging én productie geautoriseerd en beheer-SSH/sudo is beschikbaar. Beide omgevingen hebben afzonderlijke backendprojecten, accounts, runners, services, configuratiebundels en releasepaden. De eerdere inventaris waarin repository en beheerlogin ontbraken is historisch; actuele uitrol-/acceptatieresultaten staan in [het v15-opleverrapport](../voorbeelden/opleverrapport-v15.md).
 

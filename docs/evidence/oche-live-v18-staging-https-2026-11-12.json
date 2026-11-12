@@ -1,0 +1,232 @@
+{
+  "checkedAt": "2026-11-12T20:38:42.215Z",
+  "environment": "staging",
+  "origin": "https://staging.dartflow.nl",
+  "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+  "releaseId": "43301855965-1",
+  "configId": "staging-2026-11-11-v15-mail-1",
+  "board": {
+    "id": "6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+    "expectedAccess": "public"
+  },
+  "scope": "Read-only HTTPS release identity, manifests, anonymous fixed-board routes, Chromium DOM fullscreen, installation instructions, network recovery and real unauthenticated player login landing. No intercepted application data, submitted login, pairing, continuation, scoring, mail, hosted mutations or OS installation.",
+  "before": {
+    "health": {
+      "status": 200,
+      "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+      "releaseId": "43301855965-1",
+      "configId": "staging-2026-11-11-v15-mail-1"
+    },
+    "ready": {
+      "status": 200,
+      "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+      "releaseId": "43301855965-1",
+      "configId": "staging-2026-11-11-v15-mail-1"
+    }
+  },
+  "after": {
+    "health": {
+      "status": 200,
+      "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+      "releaseId": "43301855965-1",
+      "configId": "staging-2026-11-11-v15-mail-1"
+    },
+    "ready": {
+      "status": 200,
+      "sha": "0503413f96fcf2288f48f5dbacc9bd54ea42e823",
+      "releaseId": "43301855965-1",
+      "configId": "staging-2026-11-11-v15-mail-1"
+    }
+  },
+  "manifests": [
+    {
+      "path": "/speler/manifest.webmanifest",
+      "id": "/speler",
+      "start_url": "/speler",
+      "scope": "/",
+      "display": "standalone",
+      "icons192And512": true,
+      "noCookieWritten": true
+    },
+    {
+      "path": "/scorebord/manifest.webmanifest",
+      "id": "/scorebord",
+      "start_url": "/scorebord",
+      "scope": "/scorebord",
+      "display": "standalone",
+      "icons192And512": true,
+      "noCookieWritten": true
+    },
+    {
+      "path": "/api/board-screens/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3/manifest.webmanifest",
+      "id": "/baanscherm/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+      "start_url": "/baanscherm/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+      "scope": "/baanscherm/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+      "display": "standalone",
+      "icons192And512": true,
+      "noCookieWritten": true
+    }
+  ],
+  "boardApi": [
+    {
+      "status": 200,
+      "state": "available",
+      "liveMatchObserved": false
+    },
+    {
+      "status": 200,
+      "state": "available",
+      "liveMatchObserved": false
+    }
+  ],
+  "views": [
+    {
+      "flow": "fixed-board-cast",
+      "route": "baanscherm",
+      "anonymousAccess": "public",
+      "geometry": {
+        "logicalWidth": 1080,
+        "logicalHeight": 1920,
+        "matrix": [
+          0,
+          1,
+          -1,
+          0
+        ],
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "frame": {
+          "width": 1080,
+          "height": 1920
+        },
+        "horizontalOverflow": false
+      },
+      "manifestUnchanged": true,
+      "qr": {
+        "naturalWidth": 1024,
+        "naturalHeight": 1024,
+        "decoded": "https://staging.dartflow.nl/baan/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+        "decoder": "jsQR 1.4.0",
+        "input": "Actual rotated screenshot crop",
+        "rect": {
+          "x": 469.984375,
+          "y": 233.203125,
+          "width": 613.59375,
+          "height": 613.59375
+        },
+        "standbyQr1024Observed": true
+      },
+      "nativeDomFullscreen": true,
+      "installVisibleInBrowserFullscreen": true,
+      "instructionBackdrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "instructionDialogInsideSurface": true,
+      "recovery": {
+        "lastReceivedScoreRetained": true,
+        "freshBoardStatusReadAfterOnline": true
+      }
+    },
+    {
+      "flow": "fixed-board-cast",
+      "route": "oche-live",
+      "anonymousAccess": "public",
+      "geometry": {
+        "logicalWidth": 1080,
+        "logicalHeight": 1920,
+        "matrix": [
+          0,
+          1,
+          -1,
+          0
+        ],
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "frame": {
+          "width": 1080,
+          "height": 1920
+        },
+        "horizontalOverflow": false
+      },
+      "manifestUnchanged": true,
+      "qr": {
+        "naturalWidth": 1024,
+        "naturalHeight": 1024,
+        "decoded": "https://staging.dartflow.nl/baan/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3",
+        "decoder": "jsQR 1.4.0",
+        "input": "Actual rotated screenshot crop",
+        "rect": {
+          "x": 469.984375,
+          "y": 233.203125,
+          "width": 613.59375,
+          "height": 613.59375
+        },
+        "standbyQr1024Observed": true
+      },
+      "nativeDomFullscreen": true,
+      "installVisibleInBrowserFullscreen": true,
+      "instructionBackdrop": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      },
+      "instructionDialogInsideSurface": true,
+      "recovery": {
+        "lastReceivedScoreRetained": true,
+        "freshBoardStatusReadAfterOnline": true
+      }
+    },
+    {
+      "flow": "board-request-boundaries",
+      "mutationsBlocked": 0,
+      "authProviderRequestsBlocked": 0,
+      "foreignRequestsBlocked": 0,
+      "playerSessionReads": 0,
+      "boardResponses": 20,
+      "pageErrors": 0
+    },
+    {
+      "flow": "real-player-login-landing",
+      "viewport": [
+        390,
+        844
+      ],
+      "manifestUnchanged": true,
+      "loginIntent": "/speler",
+      "noFixtureAccounts": true,
+      "loginSubmitted": false,
+      "googleFollowed": false,
+      "googleOptionVisible": false,
+      "mutationsBlocked": 0,
+      "authProviderRequestsBlocked": 0,
+      "foreignRequestsBlocked": 0,
+      "playerSessionReads": 2,
+      "boardResponses": 0,
+      "pageErrors": 0
+    }
+  ],
+  "screenshots": [],
+  "skipped": [],
+  "passed": true,
+  "actualOsInstallationProven": false,
+  "physicalCastOrMobileDeviceProven": false,
+  "actualHostedScoreEntryProven": false,
+  "actualHostedPrivatePairingProven": false,
+  "authenticatedPlayerSessionCreated": false,
+  "hostedMutationRequestsInitiated": false,
+  "nativeInstallPromptSuppressedByHarness": true,
+  "browserVersion": "156.0.8078.4",
+  "screenshotScope": "Two production captures are published; remaining captures are retained locally under .local/v18-staging-public-smoke/"
+}
