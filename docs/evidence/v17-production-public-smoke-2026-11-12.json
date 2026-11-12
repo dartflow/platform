@@ -1,0 +1,129 @@
+{
+  "checkedAt": "2026-11-12T11:56:52.795Z",
+  "origin": "https://dartflow.nl",
+  "sha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+  "releaseId": "43213072727-1",
+  "configId": "production-2026-11-11-v15-mail-1",
+  "scope": "Read-only production health/readiness, manifests, anonymous screens and real login landing. Explicit browser-local fallback binding only when an existing public board was supplied. No submitted login, pairing, score, mail, hosted data mutation or OS installation.",
+  "suppliedBoards": [],
+  "testedBoardViews": 0,
+  "fixedBoardScenarioUnavailableWithoutCreation": true,
+  "actualProviderDeliveryProven": false,
+  "providerRequestsInitiatedBySmoke": 0,
+  "before": {
+    "health": {
+      "status": 200,
+      "sha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+      "releaseId": "43213072727-1",
+      "configId": "production-2026-11-11-v15-mail-1"
+    },
+    "ready": {
+      "status": 200,
+      "sha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+      "releaseId": "43213072727-1",
+      "configId": "production-2026-11-11-v15-mail-1"
+    }
+  },
+  "after": {
+    "health": {
+      "status": 200,
+      "sha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+      "releaseId": "43213072727-1",
+      "configId": "production-2026-11-11-v15-mail-1"
+    },
+    "ready": {
+      "status": 200,
+      "sha": "c93903fbc3d0f822a52130f6a4331acb8b475fb9",
+      "releaseId": "43213072727-1",
+      "configId": "production-2026-11-11-v15-mail-1"
+    }
+  },
+  "manifests": [
+    {
+      "url": "/speler/manifest.webmanifest",
+      "id": "/speler",
+      "start_url": "/speler",
+      "scope": "/",
+      "display": "standalone",
+      "icons192And512": true,
+      "noCookieWritten": true
+    },
+    {
+      "url": "/scorebord/manifest.webmanifest",
+      "id": "/scorebord",
+      "start_url": "/scorebord",
+      "scope": "/scorebord",
+      "display": "standalone",
+      "icons192And512": true,
+      "noCookieWritten": true
+    }
+  ],
+  "boardApiChecks": [],
+  "views": [
+    {
+      "width": 390,
+      "flow": "scoreboard-unbound-start",
+      "correctManifest": true,
+      "noPlayerSessionRequest": true,
+      "noHorizontalOverflow": true,
+      "noBindingSubmitted": true
+    },
+    {
+      "width": 390,
+      "flow": "player-start-to-real-login",
+      "correctNext": true,
+      "emailLoginVisible": true,
+      "googleLoginVisible": true,
+      "noFixtureAccounts": true,
+      "loginSubmitted": false,
+      "googleFollowed": false
+    },
+    {
+      "width": 390,
+      "flow": "request-boundaries",
+      "authActions": 0,
+      "mutations": 0,
+      "foreignRequests": 0,
+      "sessionRequests": 2,
+      "pageErrors": 0
+    },
+    {
+      "width": 540,
+      "flow": "scoreboard-unbound-start",
+      "correctManifest": true,
+      "noPlayerSessionRequest": true,
+      "noHorizontalOverflow": true,
+      "noBindingSubmitted": true
+    },
+    {
+      "width": 540,
+      "flow": "player-start-to-real-login",
+      "correctNext": true,
+      "emailLoginVisible": true,
+      "googleLoginVisible": true,
+      "noFixtureAccounts": true,
+      "loginSubmitted": false,
+      "googleFollowed": false
+    },
+    {
+      "width": 540,
+      "flow": "request-boundaries",
+      "authActions": 0,
+      "mutations": 0,
+      "foreignRequests": 0,
+      "sessionRequests": 2,
+      "pageErrors": 0
+    }
+  ],
+  "skipped": [
+    "No existing board IDs supplied: fixed-board screens, Oche Live aliases, board QR, local fallback binding and network recovery were not checked."
+  ],
+  "actualOsInstallationProven": false,
+  "actualIosAndroidOrTvDeviceProven": false,
+  "actualHostedScoreEntryProven": false,
+  "actualHostedPrivatePairingProven": false,
+  "hostedRecordsCreated": false,
+  "authenticatedPlayerSessionCreated": false,
+  "actualHostedLiveMatchObserved": false,
+  "browserVersion": "156.0.8078.4"
+}
