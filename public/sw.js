@@ -1,5 +1,5 @@
 /* Static artwork only. Sessions, HTML, live scores and every mutation use the network. */
-const DARTFLOW_CACHE = 'dartflow-static-v1';
+const DARTFLOW_CACHE = 'dartflow-static-v2';
 const DARTFLOW_STATIC = new Set([
   '/assets/dartflow-logo.svg',
   '/assets/dartflow-icon.svg',
@@ -10,6 +10,9 @@ const DARTFLOW_STATIC = new Set([
   '/assets/pwa/scoreboard-180.png',
   '/assets/pwa/scoreboard-192.png',
   '/assets/pwa/scoreboard-512.png',
+  '/assets/pwa/oche-live-180.png',
+  '/assets/pwa/oche-live-192.png',
+  '/assets/pwa/oche-live-512.png',
 ]);
 self.addEventListener('install', event => {event.waitUntil(self.skipWaiting());});
 self.addEventListener('activate', event => {event.waitUntil((async () => {

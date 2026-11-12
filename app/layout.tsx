@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "@/components/pwa-screens.css";
+import "@/components/oche-live.css";
 import { PwaRuntime } from "@/components/pwa-install";
 import LegacyLink from "@/components/legacy-link";
 export const metadata: Metadata = {

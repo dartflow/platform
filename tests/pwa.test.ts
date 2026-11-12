@@ -11,12 +11,13 @@ test('player, fallback and physical boards have independent immutable installati
   assert.equal(player.start_url,'/speler');assert.equal(player.name,'DartFlow Speler');assert.equal(fallback.start_url,'/scorebord');
   for(const key of ['id','start_url','scope'] as const)assert.equal(a[key],renamed[key]);
   assert.equal(a.start_url,`/baanscherm/${first}`);assert.equal(a.scope,a.start_url);assert.equal(b.scope,b.start_url);
-  assert.equal(renamed.name,'DartFlow · Hoofdbaan');assert.equal(boardManifest(first.toUpperCase(),'Baan').id,a.id);
+  assert.equal(renamed.name,'Oche Live · Hoofdbaan');assert.equal(boardManifest(first.toUpperCase(),'Baan').id,a.id);
   assert.throws(()=>boardManifest('../other','Baan'));
   assert.equal(JSON.stringify(a).includes('token'),false);assert.equal(JSON.stringify(a).includes('wedstrijd'),false);
 });
 test('the manifest reference is derived only from the current physical route',()=>{
   assert.equal(manifestForPath(['baanscherm',first]),`/api/board-screens/${first}/manifest.webmanifest`);
+  assert.equal(manifestForPath(['oche-live',first]),manifestForPath(['baanscherm',first]));
   assert.equal(manifestForPath(['baanscherm',second]),`/api/board-screens/${second}/manifest.webmanifest`);
   assert.equal(manifestForPath(['baanscherm',first]),`/api/board-screens/${first}/manifest.webmanifest`);
   assert.equal(manifestForPath(['baanscherm','invalid']),undefined);assert.equal(manifestForPath([]),undefined);

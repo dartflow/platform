@@ -7,6 +7,7 @@ import {newTraining}from'./platform-domain';
 import {assertBoardUnreserved,boardLease}from'./platform-locks';
 import {addMember,blocked,createEntity,hash,text,uuid,view}from'./platform-store';
 import type {PlatformCommand,PlatformResponse}from'./platform-types';
+import {assertPhysicalBoardEvent,locationManager,physicalBoard} from './location-access';
 
 async function screenGrant(client:PoolClient,actor:string,eventId:string,boardId:string,sessionId?:string):Promise<string>{
  // The hash authenticates both the session reference and 256 random capability bits.
@@ -28,6 +29,9 @@ export async function boardAction(client:PoolClient,actor:string,command:Platfor
   return {ok:true,screenUrl:await screenGrant(client,actor,event.id,boardId,event.canManage?undefined:lease?.id??core?.id)};
  }
  if(a.type!=='board.start')throw new DomainError('invalid_action','Onbekende vrije-baanactie.');
+ const physical=await physicalBoard(client,boardId);
+ if(physical?.kind==='home'&&!await locationManager(client,actor,physical.location_id))throw new DomainError('forbidden','Alleen de eigenaar kan een nieuwe partij op deze thuisbaan starten.',403);
+ await assertPhysicalBoardEvent(client,boardId,event.id);
  if(board.blocked||assigned.rowCount)throw new DomainError('board_occupied','Deze baan is geblokkeerd of heeft al een partij.',409);
  await assertBoardUnreserved(client,boardId,event.id);
  const mode=String(a.mode??'local');if(!['solo','local','remote'].includes(mode))throw new DomainError('invalid_mode','Kies solo, samen op locatie of op afstand.');

@@ -10,7 +10,7 @@ export function boardIdFromInput(value: string, origin: string): string | null {
   if (BOARD_ID_PATTERN.test(input)) return input.toLowerCase();
   try {
     const url = new URL(input, origin);
-    const match = /^\/(?:baanscherm|baan)\/([^/]+)\/?$/.exec(url.pathname);
+    const match = /^\/(?:baanscherm|oche-live|baan)\/([^/]+)\/?$/.exec(url.pathname);
     if (url.origin !== origin || url.username || url.password || url.search || url.hash || !match || !BOARD_ID_PATTERN.test(match[1])) return null;
     return match[1].toLowerCase();
   } catch {return null;}
@@ -54,8 +54,8 @@ export default function ScoreboardLauncher() {
     <details className="scoreboard-fixed-controls"><summary>Vaste baan</summary><div><p>Dit icoon blijft gekoppeld aan baan-ID {boardId}. Het openen van een ander baanscherm wijzigt deze koppeling niet.</p><button className="button ghost" type="button" onClick={() => {setInput(boardId); setEditing(true);}}>Andere baan koppelen</button></div></details>
   </>;
   return <main className="scoreboard-setup"><section className="scoreboard-setup-content">
-    <img src="/assets/dartflow-logo.svg" alt="DartFlow" /><p className="eyebrow">Een scherm, één vaste baan</p><h1>DartFlow Scorebord</h1>
-    <p>Koppel deze app eenmalig aan een fysieke baan. Iedere volgende start toont dezelfde Sprint-weergave. Voor een afgeschermde baan heb je ook de eenmalige koppelcode van de wedstrijdleiding nodig.</p>
+    <img src="/assets/dartflow-logo.svg" alt="DartFlow" /><p className="eyebrow">Een scherm, één vaste baan</p><h1>Oche Live</h1>
+    <p>Koppel deze app eenmalig aan een fysieke baan. Iedere volgende start toont dezelfde Oche Live-weergave. Voor een afgeschermde baan heb je ook de eenmalige koppelcode van de wedstrijdleiding nodig.</p>
     <form className="scoreboard-setup-form" onSubmit={event => void bind(event)}><label htmlFor="scoreboard-board">Vaste baanlink of baan-ID</label><input id="scoreboard-board" value={input} onChange={event => setInput(event.target.value)} autoCapitalize="off" autoCorrect="off" required placeholder="https://…/baanscherm/…" /><button type="submit" className="button gold" disabled={busy}>{busy ? 'Baan controleren…' : 'Dit scherm aan deze baan koppelen'}</button></form>
     {error && <p className="notice error" role="alert">{error}</p>}{boardId && <button className="button ghost" type="button" onClick={() => setEditing(false)}>Terug naar de vaste baan</button>}
     <InstallDartflow kind="scoreboard" /><p>Geen appinstallatie mogelijk? Stel <strong>/scorebord</strong> of de vaste baanlink in als startpagina van de kioskbrowser. Bewaar de browsergegevens om de koppeling te behouden.</p>

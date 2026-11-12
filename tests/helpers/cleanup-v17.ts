@@ -1,0 +1,19 @@
+import type {Client} from 'pg';
+
+/** Extend older UUID-scoped fixtures with v17 children; keep the owner invariant deferred until the parent is removed. */
+export async function beginFixtureCleanup(client:Client,people:string[]){
+ await client.query('rollback');await client.query('begin');
+ const owned="select id from dartflow_private.platform_entities where owner_id=any($1::uuid[])";
+ await client.query(`delete from dartflow_private.community_likes where user_id=any($1::uuid[]) or post_id in(select id from dartflow_private.community_posts where author_id=any($1::uuid[]) or scope_id in(${owned}))`,[people]);
+ await client.query(`delete from dartflow_private.community_posts where parent_id is not null and (author_id=any($1::uuid[]) or scope_id in(${owned}))`,[people]);
+ await client.query(`delete from dartflow_private.community_posts where author_id=any($1::uuid[]) or scope_id in(${owned})`,[people]);
+ await client.query(`delete from dartflow_private.community_messages where author_id=any($1::uuid[]) or scope_id in(${owned})`,[people]);
+ await client.query('delete from dartflow_private.community_moderation where user_id=any($1::uuid[]) or updated_by=any($1::uuid[])',[people]);
+ await client.query(`delete from dartflow_private.club_join_requests where user_id=any($1::uuid[]) or reviewed_by=any($1::uuid[]) or club_id in(${owned})`,[people]);
+ await client.query(`delete from dartflow_private.club_invites where user_id=any($1::uuid[]) or invited_by=any($1::uuid[]) or club_id in(${owned})`,[people]);
+ await client.query('delete from dartflow_private.location_members where user_id=any($1::uuid[]) or granted_by=any($1::uuid[])',[people]);
+ // Legacy club boards are mapped to independent locations by the migration/creation flow.
+ await client.query('delete from dartflow_private.location_boards where location_id in(select id from dartflow_private.locations where owner_id=any($1::uuid[]))',[people]);
+ await client.query('delete from dartflow_private.locations where owner_id=any($1::uuid[])',[people]);
+ await client.query('delete from dartflow_private.location_accounts where user_id=any($1::uuid[])',[people]);
+}

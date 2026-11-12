@@ -1,0 +1,29 @@
+import {test,expect,type Page} from '@playwright/test';
+import {randomUUID} from 'node:crypto';
+import sharp from 'sharp';
+const origin='http://localhost:3000';
+async function login(page:Page,name:string,next:string){await page.goto(`/inloggen?next=${encodeURIComponent(next)}`);await page.getByRole('button',{name:new RegExp(name)}).click();await expect(page).toHaveURL(new URL(next,origin).href);}
+
+test('club intake works on a separate phone, keeps answers private, and the owner reviews and brands the club',async({browser,baseURL})=>{
+ test.setTimeout(120000);
+ if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw new Error('Club acceptance requires the local fixture application.');
+ const owner=await browser.newContext({viewport:{width:1440,height:1050}}),phone=await browser.newContext({viewport:{width:390,height:844}}),outsider=await browser.newContext({viewport:{width:412,height:915}});
+ try{
+  const session=await owner.request.get('/api/session');if(!(await session.json()).local)throw new Error('Only local fixture authentication is allowed.');
+  const manager=await owner.newPage(),player=await phone.newPage(),visitor=await outsider.newPage(),suffix=randomUUID().slice(0,8),name=`Intakevereniging ${suffix}`,privateAnswer=`ALLEEN-BEVEILIGDE-INTAKE-${suffix}`;
+  await login(manager,'Danny Goldenbelt','/app/clubs');
+  const create=manager.locator('form').filter({has:manager.getByRole('heading',{name:'Vereniging oprichten',exact:true})});await create.getByLabel('Naam',{exact:true}).fill(name);await create.getByRole('button',{name:'Vereniging aanmaken',exact:true}).click();await expect(manager).toHaveURL(/\/app\/clubs\/[a-f0-9-]{36}(?:\?|$)/);
+  const clubId=new URL(manager.url()).pathname.split('/').at(-1)!,path=`/app/clubs/${clubId}`;
+  const navigation=manager.getByRole('navigation',{name:'Verenigingsonderdelen'});await navigation.getByRole('button',{name:'Instellingen',exact:true}).click();
+  const settings=manager.locator('.club-workspace section.panel').filter({has:manager.getByRole('heading',{name:'Verenigingsinstellingen',exact:true})});await settings.getByLabel('Lidmaatschapsbeleid').selectOption('intake');await settings.getByLabel('Toelichting bij de intake').fill('Vertel iets over je dartservaring.');
+  const questions=settings.getByRole('group',{name:'Intakevragen'});await questions.getByRole('button',{name:'Vraag toevoegen',exact:true}).click();await questions.getByLabel('Vraag',{exact:true}).nth(0).fill('Motivatie');await questions.getByRole('combobox',{name:'Type',exact:true}).nth(0).selectOption('textarea');await questions.getByLabel('Verplicht',{exact:true}).nth(0).check();await questions.getByRole('button',{name:'Vraag toevoegen',exact:true}).click();await questions.getByLabel('Vraag',{exact:true}).nth(1).fill('Voorkeursavond');await questions.getByRole('combobox',{name:'Type',exact:true}).nth(1).selectOption('select');await questions.getByLabel('Keuzes, één per regel').fill('Woensdag\nVrijdag');await questions.getByLabel('Verplicht',{exact:true}).nth(1).check();await settings.getByLabel('Primaire kleur').fill('#123456');await settings.getByLabel('Secundaire kleur').fill('#789abc');
+  const saved=manager.waitForResponse(r=>r.url().endsWith('/api/platform/actions')&&r.request().method()==='POST');await settings.getByRole('button',{name:'Instellingen opslaan',exact:true}).click();expect((await saved).status()).toBe(200);
+  await expect.poll(async()=>{const data=await(await owner.request.get('/api/platform')).json();return data.clubs.find((c:{id:string})=>c.id===clubId)?.clubDetails?.intakeQuestions.length;}).toBe(2);
+  await login(player,'Michael de Groot',path);await expect(player.getByText('Vertel iets over je dartservaring.',{exact:true})).toBeVisible();await player.getByLabel(/^Motivatie/).fill(privateAnswer);await player.getByLabel(/^Voorkeursavond/).selectOption('Vrijdag');await player.getByRole('button',{name:'Aanvraag versturen',exact:true}).click();await expect(player.getByText('Je aanvraag is opgeslagen.',{exact:false})).toBeVisible();
+  await login(visitor,'Raymond van Dijk',path);const visitorData=await(await outsider.request.get('/api/platform')).json();expect(JSON.stringify(visitorData)).not.toContain(privateAnswer);await expect(visitor.getByText(privateAnswer,{exact:true})).toHaveCount(0);await expect(visitor.getByRole('button',{name:'Aanvragen',exact:true})).toHaveCount(0);await expect(visitor.getByRole('button',{name:'Rollen',exact:true})).toHaveCount(0);
+  await navigation.getByRole('button',{name:'Aanvragen',exact:true}).click();await expect(manager.getByText(privateAnswer,{exact:true})).toBeVisible();const request=manager.locator('.club-workspace article').filter({hasText:privateAnswer});await request.getByLabel(/^Reden/).fill('Welkom bij de vereniging.');await request.getByRole('button',{name:'Accepteren',exact:true}).click();await expect(request.getByRole('button',{name:'Accepteren',exact:true})).toHaveCount(0);
+  await expect(player.locator('.club-workspace .pill')).toHaveText('Clublid');await expect(player.getByRole('button',{name:'Leden',exact:true})).toBeVisible();await expect(player.getByRole('button',{name:'Rollen',exact:true})).toHaveCount(0);
+  await navigation.getByRole('button',{name:'Instellingen',exact:true}).click();const image=await sharp({create:{width:32,height:32,channels:4,background:'#b7f62b'}}).png().toBuffer();await settings.getByLabel(/Verenigingslogo/).setInputFiles({name:'vereniging.png',mimeType:'image/png',buffer:image});await expect(manager.getByRole('img',{name:`Logo ${name}`,exact:true})).toHaveAttribute('src',/^data:image\/webp;base64,/);await expect(settings.getByRole('button',{name:'Instellingen opslaan',exact:true})).toHaveCSS('background-color','rgb(18, 52, 86)');
+  expect(await player.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ }finally{await Promise.all([owner.close(),phone.close(),outsider.close()]);}
+});

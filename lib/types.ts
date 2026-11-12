@@ -48,4 +48,4 @@ export type Overview = {
   standings: { playerId: string; name: string; played: number; won: number; drawn: number; points: number }[];
   permissions: { canManage: boolean };
 };
-export type PublicSnapshot = { board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'winnerId' | 'resultPublished' | 'settings' | 'writerId' | 'stats' | 'legNumber' | 'setNumber' | 'paused'> };
+export type PublicSnapshot = { sessionKey?:string;scoreEvents?:import('./score-events').ScoreEvent[]; board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'winnerId' | 'resultPublished' | 'settings' | 'writerId' | 'stats' | 'legNumber' | 'setNumber' | 'paused'> };

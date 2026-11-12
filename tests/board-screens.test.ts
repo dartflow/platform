@@ -1,3 +1,4 @@
+import {beginFixtureCleanup} from './helpers/cleanup-v17';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash,randomUUID} from 'node:crypto';
@@ -146,6 +147,7 @@ test('fixed board displays isolate durable read-only devices, lifecycle snapshot
   });
  }finally{
   await owner.query('rollback');
+  await beginFixtureCleanup(owner,people);
   const matches=(await owner.query('select id from dartflow_private.matches where event_id=any($1::uuid[])',[events])).rows.map(row=>row.id);
   const entities=(await owner.query('select id from dartflow_private.platform_entities where owner_id=any($1::uuid[])',[people])).rows.map(row=>row.id);
   const jobs=(await owner.query('select id from dartflow_private.mail_outbox where recipient_id=any($1::uuid[])',[people])).rows.map(row=>row.id);
@@ -155,6 +157,6 @@ test('fixed board displays isolate durable read-only devices, lifecycle snapshot
   for(const table of ['audit_events','board_screen_devices','screen_capabilities','matches','standings','entries','event_staff'])await owner.query(`delete from dartflow_private.${table} where event_id=any($1::uuid[])`,[events]);
   await owner.query('delete from dartflow_private.club_boards where board_id=$1',[publicBoard]);await owner.query('delete from dartflow_private.boards where id=any($1::uuid[])',[boards]);await owner.query('delete from dartflow_private.events where id=any($1::uuid[])',[events]);
   await owner.query('delete from dartflow_private.club_memberships where club_id=$1',[club]);await owner.query('delete from dartflow_private.clubs where id=$1',[club]);await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);
-  await owner.query('delete from dartflow_private.auth_limits where key=any($1::text[])',[boards.map(id=>`board-screen-pair:${id}`)]);await owner.end();await closeDatabase();
+  await owner.query('delete from dartflow_private.auth_limits where key=any($1::text[])',[boards.map(id=>`board-screen-pair:${id}`)]);await owner.query('commit');await owner.end();await closeDatabase();
  }
 });

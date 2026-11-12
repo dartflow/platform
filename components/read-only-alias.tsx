@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { MatchView, PublicSnapshot } from "@/lib/types";
 import SprintDisplay from "./sprint-display";
+import OcheCelebration, {useOcheCelebration} from "./oche-celebration";
 import PublicCast from "./public-cast";
 
 const uuid =
@@ -22,6 +23,7 @@ export default function ReadOnlyAlias({
   const [error, setError] = useState("");
   const [login, setLogin] = useState(false);
   const [stale, setStale] = useState(false);
+  const cue = useOcheCelebration(snapshot, Boolean(snapshot) && !stale && !overlay);
   useEffect(() => {
     if (!overlay) return;
     document.body.classList.add("readonly-alias-output");
@@ -31,16 +33,18 @@ export default function ReadOnlyAlias({
   }, [overlay]);
   useEffect(() => {
     let stopped = false,
-      castResolved = false;
+      castResolved = false,
+      refreshing = false;
     const controller = new AbortController();
     const refresh = async () => {
-      if (castResolved) return;
+      if (castResolved || refreshing) return;
       if (!uuid.test(id) && !grant.test(id)) {
         setError(
           "Deze oude schermlink verwijst niet naar een bestaande wedstrijd of schermkoppeling.",
         );
         return;
       }
+      refreshing = true;
       try {
         const response = await fetch(
           uuid.test(id) ? `/api/matches/${id}` : `/api/screen/${id}`,
@@ -124,7 +128,7 @@ export default function ReadOnlyAlias({
           setSnapshot(projection);
           setError("");
           setLogin(false);
-          setStale(false);
+          setStale(document.visibilityState !== "visible" || !navigator.onLine);
         }
       } catch (cause) {
         if (!stopped) {
@@ -135,8 +139,18 @@ export default function ReadOnlyAlias({
               : "De verbinding is onderbroken.",
           );
         }
+      } finally {
+        refreshing = false;
       }
     };
+    const disconnected = () => setStale(true);
+    const visibility = () => {
+      if (document.visibilityState === "visible") void refresh();
+      else disconnected();
+    };
+    window.addEventListener("offline", disconnected);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", visibility);
     void refresh();
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") void refresh();
@@ -144,6 +158,9 @@ export default function ReadOnlyAlias({
     return () => {
       stopped = true;
       clearInterval(timer);
+      window.removeEventListener("offline", disconnected);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", visibility);
       controller.abort();
     };
   }, [id, overlay]);
@@ -151,7 +168,8 @@ export default function ReadOnlyAlias({
   if (!snapshot?.match)
     return (
       <main className="public-screen">
-        <div className="screen-frame">
+        <div className="screen-frame" style={{containerType:"inline-size"}}>
+          <OcheCelebration cue={cue} />
           <div className="screen-wait">
             <img src="/assets/dartflow-logo.svg" alt="DartFlow" />
             <h1>
@@ -206,6 +224,7 @@ export default function ReadOnlyAlias({
     <SprintDisplay
       snapshot={snapshot}
       stale={stale}
+      overlay={<OcheCelebration cue={cue} />}
       qr={<span>Alleen kijken · geen scorebediening</span>}
     />
   );

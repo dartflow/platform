@@ -1,3 +1,4 @@
+import {beginFixtureCleanup} from './helpers/cleanup-v17';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID, createHash } from 'node:crypto';
@@ -106,12 +107,13 @@ test('short invitations persist unique live codes, retain historical links and e
   });
  }finally{
   await owner.query('rollback');
+  await beginFixtureCleanup(owner,people);
   const entities=(await owner.query('select id from dartflow_private.platform_entities where owner_id=any($1::uuid[])',[people])).rows.map(r=>r.id);
   const clubs=(await owner.query('select club_id from dartflow_private.club_memberships where user_id=any($1::uuid[])',[people])).rows.map(r=>r.club_id);
   const jobs=(await owner.query('select id from dartflow_private.mail_outbox where recipient_id=any($1::uuid[])',[people])).rows.map(r=>r.id);
   await owner.query('delete from dartflow_private.mail_provider_events where job_id=any($1::uuid[])',[jobs]);await owner.query('delete from dartflow_private.mail_outbox where recipient_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.mail_events where recipient_key=any($1::text[])',[people.map(p=>`user:${p}`)]);
   await owner.query('delete from dartflow_private.platform_audit where actor_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.platform_members where entity_id=any($1::uuid[])',[entities]);await owner.query('delete from dartflow_private.platform_entities where id=any($1::uuid[])',[entities]);
   await owner.query('delete from dartflow_private.club_memberships where club_id=any($1::uuid[])',[clubs]);await owner.query('delete from dartflow_private.clubs where id=any($1::uuid[])',[clubs]);await owner.query('delete from dartflow_private.platform_relationships where source_id=any($1::uuid[]) or target_id=any($1::uuid[])',[people]);
-  await owner.query('delete from dartflow_private.auth_limits where key=any($1::text[])',[people.map(p=>`invite:actor:${p}`)]);await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);await owner.end();await closeDatabase();
+  await owner.query('delete from dartflow_private.auth_limits where key=any($1::text[])',[people.map(p=>`invite:actor:${p}`)]);await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);await owner.query('commit');await owner.end();await closeDatabase();
  }
 });

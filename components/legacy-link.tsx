@@ -19,13 +19,13 @@ export default function LegacyLink() {
       ]);
       if (publicAnchors.has(route)) return;
       // Preserve the identity in existing scorer and board UUID links.
-      if (/^(?:match|baan-phone)\/[0-9a-f-]{36}$/i.test(route)) {
+      if (/^(?:match|baan-phone|baan-screen)\/[0-9a-f-]{36}$/i.test(route)) {
         const destination = legacyDestination(location.hash);
         if (destination) location.replace(destination);
         return;
       }
       const allowed =
-        /^(?:home|dashboard|play|practice|lobby|training|clubs|mymatches|events|leagues|hall|operations|baan|baan-screen|baan-phone|venue|venue-cast|manage|mail|friends|community|reports|camera|match|spectator|overlay|tournaments|players|registrations|pools|knockout|matches|rankings|statistics|settings)(?:[/?]|$)/;
+        /^(?:feed|reservations|locations|home|dashboard|play|practice|lobby|training|clubs|mymatches|events|leagues|hall|operations|baan|baan-screen|baan-phone|venue|venue-cast|manage|mail|friends|community|reports|camera|match|spectator|overlay|tournaments|players|registrations|pools|knockout|matches|rankings|statistics|settings)(?:[/?]|$)/;
       if (allowed.test(route) && !/[%\\\r\n]/.test(route)) {
         const target = route === "home" ? "" : route;
         location.replace(`/app/${target}`);

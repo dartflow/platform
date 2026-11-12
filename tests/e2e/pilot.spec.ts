@@ -663,10 +663,11 @@ test("a club membership and room message are shared between separate accounts", 
   const clubPath = new URL(a.url()).pathname;
   await login(b, "Raymond van Dijk", clubPath);
   await b
-    .getByRole("button", { name: "Lidmaatschap aanvragen", exact: true })
+    .getByRole("button", { name: "Aanvraag versturen", exact: true })
     .click();
-  await a.getByRole("button", { name: "Goedkeuren", exact: true }).click();
-  await expect(b.getByText("Actief · Lid", { exact: true })).toBeVisible();
+  await a.getByRole("navigation", { name: "Verenigingsonderdelen" }).getByRole("button", { name: "Aanvragen", exact: true }).click();
+  await a.getByRole("button", { name: "Accepteren", exact: true }).click();
+  await expect(b.locator(".club-workspace .pill")).toHaveText("Clublid");
   await a.goto("/app/community");
   const roomName = `V15 browserkamer ${randomUUID().slice(0, 8)}`;
   const createRoom = a.locator("form").filter({

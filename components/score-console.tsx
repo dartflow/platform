@@ -23,6 +23,7 @@ type ScoreConsoleProps={
   checkout?:string|null;
   waiting?:string;
   options?:ReactNode;
+  chat?:ReactNode;
   onSubmit:()=>void;
   onBack:()=>void;
 };
@@ -57,7 +58,7 @@ export default function ScoreConsole(props:ScoreConsoleProps){
       else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
     }
   }}>
-    <header className="score-console-header"><button ref={back} type="button" onClick={props.onBack} aria-label="Terug naar wedstrijd">‹ Terug</button><span>{props.title}</span><span className={props.offline?"score-console-offline":"score-console-connected"}>{props.offline?"Offline":"Live"}</span></header>
+    <header className="score-console-header"><button ref={back} type="button" onClick={props.onBack} aria-label="Terug naar wedstrijd">‹ Terug</button><span>{props.title}</span>{props.chat}<span className={props.offline?"score-console-offline":"score-console-connected"}>{props.offline?"Offline":"Live"}</span></header>
     <div className={`score-console-players ${props.players.length===1?"score-console-solo":""}`} aria-label="Actuele stand">{props.players.map((player,index)=><div key={player.id} className={index===props.active?"is-active":""} data-active={index===props.active}><span>{player.name}</span><strong className="console-remaining">{player.remaining}</strong><small>{index===props.active?"Aan de beurt":"Restscore"}</small></div>)}</div>
     <form className="score-console-form" onSubmit={event=>{event.preventDefault();if(!locked&&!props.offline&&!invalid&&props.score!==""&&(!props.finish||props.doubleConfirmed))props.onSubmit();}}>
       <label className="score-console-entry"><span>Jouw worp</span><input aria-label="Bezoekscore" value={props.score} inputMode="none" readOnly autoComplete="off" maxLength={3} placeholder="0" onKeyDown={event=>{if(locked)return;if(/^\d$/.test(event.key)){event.preventDefault();props.onScore((props.score+event.key).slice(0,3));}else if(event.key==='Backspace'){event.preventDefault();props.onScore(props.score.slice(0,-1));}else if(event.key==='Delete'){event.preventDefault();props.onScore('');}}} disabled={locked} /></label>

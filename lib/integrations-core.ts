@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg';
 import { database } from './db';
 import { DomainError } from './domain';
 import { appConfig } from './config';
+import { clubPermission } from './club-access';
 
 export type IntegrationEnvironment='development'|'staging'|'production';
 export type MailMode='log'|'test'|'live';
@@ -48,8 +49,12 @@ export async function ownerAccess(actor:string,client:PoolClient|ReturnType<type
 export async function mailScopeAccess(actor:string,scope:string,client:PoolClient|ReturnType<typeof database>=database()) {
  if(scope==='platform') return ownerAccess(actor,client);
  if(!/^club:[0-9a-f-]{36}$/i.test(scope))throw new DomainError('mail_scope','Ongeldige mailomgeving.');
- const {rowCount}=await client.query("select 1 from dartflow_private.club_memberships where club_id=$1 and user_id=$2 and role='organizer' union all select 1 from dartflow_private.platform_roles where user_id=$2 and role='owner'",[scope.slice(5),actor]);
- if(!rowCount)throw new DomainError('mail_forbidden','Je beheert de mail van deze vereniging niet.',403);
+ const platformOwner=await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role='owner'",[actor]);
+ if(platformOwner.rowCount)return;
+ const clubId=scope.slice(5);
+ // Transactional callers retain this lock until their mail change commits.
+ await client.query("select id from dartflow_private.platform_entities where id=$1 and kind='club' for share",[clubId]);
+ if(!await clubPermission(client,clubId,actor,'settings.edit'))throw new DomainError('mail_forbidden','Je beheert de mail van deze vereniging niet.',403);
 }
 export async function integrationTransaction<T>(fn:(client:PoolClient)=>Promise<T>) { const client=await database().connect();try{await client.query('begin');const value=await fn(client);await client.query('commit');return value;}catch(error){await client.query('rollback');throw error;}finally{client.release();} }
 export function exactKeys(value:Record<string,unknown>,allowed:readonly string[]) {if(Object.keys(value).some(key=>!allowed.includes(key)))throw new DomainError('unknown_field','De aanvraag bevat een onbekend veld.');}

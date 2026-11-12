@@ -21,6 +21,7 @@ test('standalone club boards persist without competitions and isolate open play 
   for(const [i,id] of people.entries())await owner.query('insert into dartflow_private.profiles(id,name,email) values($1,$2,$3)',[id,`Club board fixture ${i}`,`board-fixture-${i}@example.test`]);
   const club=(await run(admin,{type:'club.create',name:'Standalone board fixture club'})).id!;clubs.push(club);
   const otherClub=(await run(otherOwner,{type:'club.create',name:'Standalone board unrelated club'})).id!;clubs.push(otherClub);
+  await run(admin,{type:'location.enable-venue'});
   await run(member,{type:'club.request',id:club});await run(admin,{type:'club.approve',id:club,userId:member});
   const publicBoard=await create(club,'Open verenigingsbaan');
   const clubBoard=await create(club,'Ledenbaan','club');
@@ -116,13 +117,20 @@ test('standalone club boards persist without competitions and isolate open play 
    await assert.rejects(getBoardForActor(guest,board.id),{status:403});await assert.rejects(run(guest,{type:'board.start',boardId:board.id,mode:'solo'}),{status:403});
    await owner.query('delete from dartflow_private.platform_relationships where source_id=$1 and target_id=$2',[admin,guest]);
   });
-  await t.test('fresh manager roles gate updates and successful receipt replay after demotion',async()=>{
+  await t.test('independent location grants survive club demotion and are checked again on receipt replay',async()=>{
    await run(admin,{type:'club.role',id:club,userId:member,role:'admin'});
+   await run(member,{type:'location.enable-venue'});
    const req=randomUUID(),action={type:'club-board.update',boardId:publicBoard.id,name:'Hernoemde verenigingsbaan'};
+   await assert.rejects(run(member,action,req),{status:403});
+   const locationId=(await owner.query('select location_id from dartflow_private.location_boards where board_id=$1',[publicBoard.id])).rows[0].location_id;
+   await run(admin,{type:'location.manager.add',locationId,userId:member});
    const createReq=randomUUID(),createAction={type:'club-board.create',clubId:club,name:'Gedelegeerde beheerdersbaan'};await run(member,createAction,createReq);
    await run(member,action,req);assert.equal((await getClubBoardScreen(publicBoard.id)).board.name,action.name);
    await run(admin,{type:'club.role',id:club,userId:member,role:'member'});
-   await assert.rejects(run(member,createAction,createReq),{status:403});await assert.rejects(run(member,action,req),{status:403});await assert.rejects(run(member,{type:'club-board.update',boardId:publicBoard.id,blocked:true}),{status:403});
+   await run(member,createAction,createReq);await run(member,action,req);
+   await assert.rejects(run(member,{...createAction,name:'Missing current club setup right'}),{status:403});
+   await run(admin,{type:'location.manager.remove',locationId,userId:member});
+   await assert.rejects(run(member,action,req),{status:403});await assert.rejects(run(member,{type:'club-board.update',boardId:publicBoard.id,blocked:true}),{status:403});
    await assert.rejects(run(otherOwner,{type:'club-board.update',boardId:publicBoard.id,name:'Cross-club change'}),{status:403});
   });
   await t.test('a queued creation rechecks the current manager role after waiting for a concurrent demotion',async()=>{
@@ -145,6 +153,16 @@ test('standalone club boards persist without competitions and isolate open play 
    const result=(await queued)[0];assert.equal(result.status,'rejected');assert.equal(result.status==='rejected'?result.reason.status:null,403);
    assert.equal(Number((await owner.query('select count(*) as n from dartflow_private.club_boards where club_id=$1',[club])).rows[0].n),countBefore);
   });
+  await t.test('inactive clubs stop member-only play while physical ownership and public screen links stay independent',async()=>{
+   await run(admin,{type:'club.deactivate',id:club});
+   await assert.rejects(getBoardForActor(member,clubBoard.id),{status:403});await assert.rejects(run(member,{type:'board.start',boardId:clubBoard.id,mode:'solo'}),{status:403});
+   assert.equal((await getPlatformOverview(member)).clubBoards.some(b=>b.id===clubBoard.id),false);
+   await run(admin,{type:'club-board.update',boardId:clubBoard.id,name:'Fysiek beheer blijft onafhankelijk'});
+   assert.equal((await getClubBoardScreen(clubBoard.id)).board.name,'Fysiek beheer blijft onafhankelijk');
+   assert.equal((await getBoardForActor(guest,publicBoard.id)).canStart,true);
+   const practice=await run(guest,{type:'board.start',boardId:publicBoard.id,mode:'solo'});await run(guest,{type:'training.finish',id:practice.id},randomUUID(),practice.entity!.revision);
+   await run(admin,{type:'club.restore',id:club});assert.equal((await getBoardForActor(member,clubBoard.id)).canStart,true);
+  });
   await t.test('a queued open claim rechecks access after a completed restriction and stable QR survives rename and unblock',async()=>{
    const board=await create(club,'Toegangscontrolebaan');
    await owner.query('begin');const row=await owner.query('select event_id from dartflow_private.club_boards where board_id=$1',[board.id]);await owner.query('select id from dartflow_private.events where id=$1 for update',[row.rows[0].event_id]);
@@ -156,7 +174,9 @@ test('standalone club boards persist without competitions and isolate open play 
    await assert.rejects(getClubBoardScreen(randomUUID()),{status:404});
   });
  }finally{
+  try{
   await owner.query('rollback');
+  await owner.query('begin');
   const entities=(await owner.query('select id from dartflow_private.platform_entities where owner_id=any($1::uuid[])',[people])).rows.map(r=>r.id);
   const events=(await owner.query('select id from dartflow_private.events where club_id=any($1::uuid[])',[clubs])).rows.map(r=>r.id);
   const matches=(await owner.query('select id from dartflow_private.matches where event_id=any($1::uuid[])',[events])).rows.map(r=>r.id);
@@ -167,8 +187,11 @@ test('standalone club boards persist without competitions and isolate open play 
   await owner.query('delete from dartflow_private.platform_audit where actor_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.platform_entities where id=any($1::uuid[])',[entities]);
   await owner.query('delete from dartflow_private.audit_events where actor_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.screen_capabilities where event_id=any($1::uuid[])',[events]);await owner.query('delete from dartflow_private.matches where id=any($1::uuid[])',[matches]);await owner.query('delete from dartflow_private.standings where event_id=any($1::uuid[])',[events]);
   await owner.query('delete from dartflow_private.club_boards where club_id=any($1::uuid[])',[clubs]);
+  const locationIds=(await owner.query('select distinct location_id from dartflow_private.location_boards where home_event_id=any($1::uuid[])',[events])).rows.map(row=>row.location_id);
+  await owner.query('delete from dartflow_private.location_boards where home_event_id=any($1::uuid[])',[events]);await owner.query('delete from dartflow_private.location_members where location_id=any($1::uuid[])',[locationIds]);await owner.query('delete from dartflow_private.locations where id=any($1::uuid[])',[locationIds]);await owner.query('delete from dartflow_private.location_accounts where user_id=any($1::uuid[])',[people]);
   for(const table of ['boards','entries','event_staff'])await owner.query(`delete from dartflow_private.${table} where event_id=any($1::uuid[])`,[events]);
-  await owner.query('delete from dartflow_private.events where id=any($1::uuid[])',[events]);await owner.query('delete from dartflow_private.club_memberships where club_id=any($1::uuid[])',[clubs]);await owner.query('delete from dartflow_private.clubs where id=any($1::uuid[])',[clubs]);
-  await owner.query('delete from dartflow_private.platform_relationships where source_id=any($1::uuid[]) or target_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);await owner.end();await closeDatabase();
+  await owner.query('delete from dartflow_private.events where id=any($1::uuid[])',[events]);await owner.query('delete from dartflow_private.club_memberships where club_id=any($1::uuid[])',[clubs]);await owner.query('delete from dartflow_private.club_join_requests where club_id=any($1::uuid[])',[clubs]);await owner.query('delete from dartflow_private.clubs where id=any($1::uuid[])',[clubs]);
+  await owner.query('delete from dartflow_private.platform_relationships where source_id=any($1::uuid[]) or target_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);await owner.query('commit');
+  }finally{await owner.query('rollback').catch(()=>undefined);await owner.end();await closeDatabase();}
  }
 });

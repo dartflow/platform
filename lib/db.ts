@@ -3,7 +3,11 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {assertBoardUnreserved,assertPlayersFree,boardLease,lockPlayingActors}from'./platform-locks';
 import { enqueueEventTransition,enqueueMatchTransition } from './integrations-domain';
 import {clubBoardEventAccess} from './club-boards';
+import {clubIsActiveMember,clubPermission} from './club-access';
 import {requireScoreboardName} from './profile-name';
+import {assertPhysicalBoardEvent,locationHomeEventAccess,locationManager,physicalBoard,playerReservationContext} from './location-access';
+import {recordMatchScoreEvent,readBoardScoreEvents} from './score-events';
+import type {ReservedBoardContext} from './location-types';
 import { applyMatchAction, checkout, DomainError, matchView, newGame, validateSettings } from './domain';
 import type { Club, EventAction, MatchCommand, MatchState, MatchView, Overview, Profile, PublicSnapshot, ResultView } from './types';
 
@@ -39,6 +43,7 @@ async function transaction<T>(run: (client: PoolClient) => Promise<T>): Promise<
   finally { client.release(); }
 }
 export async function eventAccess(client: Pick<PoolClient,'query'>, actorId: string, eventId: string) {
+  const physical=await locationHomeEventAccess(client,actorId,eventId);if(physical)return physical;
   const board=await clubBoardEventAccess(client,actorId,eventId);
   if(board){
     const {rows}=await client.query('select * from dartflow_private.events where id=$1',[eventId]);
@@ -47,7 +52,12 @@ export async function eventAccess(client: Pick<PoolClient,'query'>, actorId: str
   }
   const { rows } = await client.query(`select e.*, m.role, exists(select 1 from dartflow_private.event_staff s where s.event_id=e.id and s.user_id=$1) as staff from dartflow_private.events e left join dartflow_private.club_memberships m on m.club_id=e.club_id and m.user_id=$1 where e.id=$2 and (m.user_id is not null or (exists(select 1 from dartflow_private.entries x where x.event_id=e.id and x.user_id=$1 and x.status='registered') and exists(select 1 from dartflow_private.platform_entities pe where pe.state->>'eventId'=e.id::text and ((pe.kind='lobby' and pe.state->>'boardId' is null) or (pe.kind in ('league','tournament') and (pe.club_id is null or pe.state->>'eligibility' in ('all','code')))))))`, [assertUuid(actorId), assertUuid(eventId)]);
   if (!rows.length) throw new DomainError('forbidden', 'Je hebt geen toegang tot dit evenement.', 403);
-  return { ...rows[0], canManage: rows[0].role === 'organizer' && rows[0].staff === true };
+  const club=await client.query("select state from dartflow_private.platform_entities where id=$1 and kind='club'",[rows[0].club_id]);
+  if(club.rows.length&&['inactive','deleted'].includes(String(club.rows[0].state.lifecycle)))throw new DomainError('club_inactive','Deze vereniging is inactief.',403);
+  if(rows[0].role&&club.rows.length&&!await clubIsActiveMember(client,rows[0].club_id,actorId))throw new DomainError('forbidden','Je hebt geen actuele toegang tot deze vereniging.',403);
+  const competition=await client.query("select kind from dartflow_private.platform_entities where state->>'eventId'=$1 and kind in('league','tournament')",[eventId]);
+  const canManage=competition.rows.length&&club.rows.length?await clubPermission(client,rows[0].club_id,actorId,competition.rows[0].kind==='league'?'competitions.manage':'tournaments.manage'):rows[0].role==='organizer'&&rows[0].staff===true;
+  return { ...rows[0], canManage };
 }
 async function matchAccess(client: PoolClient | pg.Pool, actorId: string, state: MatchState) {
   const access = await eventAccess(client, actorId, state.eventId);
@@ -81,15 +91,19 @@ export async function getMatchInvitation(actorId:string,matchId:string):Promise<
 }
 export async function getOverview(actorId: string, clubId?: string): Promise<Overview> {
   const profile = await getProfile(actorId);
-  const { rows: clubs } = await database().query<Club>(`select c.id,c.name,m.role from dartflow_private.clubs c join dartflow_private.club_memberships m on m.club_id=c.id where m.user_id=$1 and not exists(select 1 from dartflow_private.platform_entities pe where pe.state->>'coreClubId'=c.id::text and (pe.kind='lobby' or(pe.kind in ('league','tournament') and pe.club_id is null))) order by c.name`, [actorId]);
+  const { rows: clubs } = await database().query<Club>(`select c.id,c.name,m.role from dartflow_private.clubs c join dartflow_private.club_memberships m on m.club_id=c.id where m.user_id=$1 and not exists(select 1 from dartflow_private.platform_entities inactive where inactive.id=c.id and inactive.kind='club' and coalesce(inactive.state->>'lifecycle','active')<>'active') and not exists(select 1 from dartflow_private.platform_entities pe where pe.state->>'coreClubId'=c.id::text and (pe.kind='lobby' or(pe.kind in ('league','tournament') and pe.club_id is null))) order by c.name`, [actorId]);
   const currentClub = clubId ? clubs.find(c => c.id === assertUuid(clubId)) : clubs[0];
   if (clubId && !currentClub) throw new DomainError('forbidden', 'Je hebt geen toegang tot deze vereniging.', 403);
   const empty = { profile, clubs, currentClub: currentClub ?? null, events: [], matches: [], boards: [], participants: [], history: [], standings: [], permissions: { canManage: false } };
   if (!currentClub) return empty;
-  const { rows: events } = await database().query(`select e.id,e.club_id as "clubId",e.name,e.date::text,e.capacity, (m.role='organizer' and exists(select 1 from dartflow_private.event_staff s where s.event_id=e.id and s.user_id=$1)) as "canManage" from dartflow_private.events e join dartflow_private.club_memberships m on m.club_id=e.club_id and m.user_id=$1 where e.club_id=$2 and not exists(select 1 from dartflow_private.club_boards cb where cb.event_id=e.id) order by e.date,e.id`, [actorId, currentClub.id]);
+  const { rows: eventRows } = await database().query<Omit<Overview['events'][number],'canManage'>>(`select e.id,e.club_id as "clubId",e.name,e.date::text,e.capacity from dartflow_private.events e join dartflow_private.club_memberships m on m.club_id=e.club_id and m.user_id=$1 where e.club_id=$2 and not exists(select 1 from dartflow_private.club_boards cb where cb.event_id=e.id) order by e.date,e.id`, [actorId, currentClub.id]);
+  const events:Overview['events']=[];for(const event of eventRows){try{const access=await eventAccess(database(),actorId,event.id);events.push({...event,canManage:access.canManage});}catch(error){if(!(error instanceof DomainError&&[403,404].includes(error.status)))throw error;}}
   const { rows: matchRows } = await database().query('select state from dartflow_private.matches where club_id=$1 order by updated_at,id', [currentClub.id]);
   const matches = matchRows.flatMap(({ state }: { state: MatchState }) => { const manage = events.find(e => e.id === state.eventId)?.canManage === true; return manage || state.players.some(p => p.id === actorId) ? [matchView(state, actorId, manage)] : []; });
-  const { rows: boardRows } = await database().query('select b.id,b.event_id as "eventId",b.name,b.blocked,m.id as "matchId" from dartflow_private.boards b join dartflow_private.events e on e.id=b.event_id left join dartflow_private.matches m on m.board_id=b.id where e.club_id=$1 order by b.name', [currentClub.id]);
+  const { rows: boardRows } = await database().query(`select b.id,coalesce(r.event_id,b.event_id) as "eventId",b.name,b.blocked,case when m.event_id=coalesce(r.event_id,b.event_id) then m.id else null end as "matchId"
+    from dartflow_private.boards b join dartflow_private.events e on e.id=b.event_id left join dartflow_private.matches m on m.board_id=b.id
+    left join lateral(select br.event_id from dartflow_private.reservation_boards rb join dartflow_private.board_reservations br on br.id=rb.reservation_id where rb.board_id=b.id and br.club_id=$1 and br.status='accepted' and br.starts_at<=now() and br.ends_at>now() limit 1) r on true
+    where e.club_id=$1 or r.event_id is not null order by b.name,b.id`, [currentClub.id]);
   const boards=[];for(const board of boardRows){try{await eventAccess(database(),actorId,board.eventId);boards.push(board);}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}
   const { rows: participants } = await database().query('select x.id,x.event_id as "eventId",x.user_id as "playerId",p.name,x.status,x.checked_in as "checkedIn" from dartflow_private.entries x join dartflow_private.profiles p on p.id=x.user_id join dartflow_private.events e on e.id=x.event_id where e.club_id=$1 order by x.created_at,x.id', [currentClub.id]);
   const { rows: historyRows } = await database().query('select r.snapshot from dartflow_private.match_results r join dartflow_private.matches m on m.id=r.match_id where m.club_id=$1 and exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$2) order by r.created_at desc', [currentClub.id, actorId]);
@@ -132,7 +146,8 @@ export async function executeMatchCommand(actorId: string, command: MatchCommand
     if (source.revision !== command.expectedRevision) throw new DomainError('revision_conflict', 'De partij is gewijzigd. Vernieuw de stand en probeer opnieuw.', 409);
     if (command.action.type === 'call') {
       const board = await client.query('select * from dartflow_private.boards where id=$1 for update', [assertUuid(command.action.boardId)]);
-      if (!board.rows.length || board.rows[0].event_id !== source.eventId || board.rows[0].blocked) throw new DomainError('board_unavailable', 'Deze baan is niet beschikbaar voor deze partij.', 409);
+      if (!board.rows.length || board.rows[0].blocked) throw new DomainError('board_unavailable', 'Deze baan is niet beschikbaar voor deze partij.', 409);
+      await assertPhysicalBoardEvent(client,command.action.boardId,source.eventId,source.id,true);
       const linked=await client.query('select entity_id,fixture_id from dartflow_private.platform_match_links where match_id=$1',[source.id]);
       await assertBoardUnreserved(client,command.action.boardId,source.eventId,linked.rows[0]?.entity_id??null,linked.rows[0]?.fixture_id);
       const actors=[...source.players.map(p=>p.id),...(source.delegatedWriterId&&source.writerId===source.delegatedWriterId?[source.delegatedWriterId]:[])];await lockPlayingActors(client,actors);await assertPlayersFree(client,actors,source.id);
@@ -142,8 +157,10 @@ export async function executeMatchCommand(actorId: string, command: MatchCommand
       if (present.rowCount !== 2) throw new DomainError('players_absent', 'Beide spelers moeten eerst ingecheckt zijn.', 409);
 
     }
+    if(['accept','start'].includes(command.action.type)&&source.boardId){await client.query('select id from dartflow_private.boards where id=$1 for update',[source.boardId]);await assertPhysicalBoardEvent(client,source.boardId,source.eventId);}
     const next = applyMatchAction(source, actorId, access.canManage, command.action.type==='call'?{...command.action,callRef:command.requestId}:command.action);
     await client.query('update dartflow_private.matches set state=$2,revision=$3,board_id=$4,updated_at=now() where id=$1', [next.id, JSON.stringify(next), next.revision, next.boardId]);
+    await recordMatchScoreEvent(client,source,next,command);
     if(['score','undo','approve-correction'].includes(command.action.type)||(command.action.type==='resolve'&&command.action.decision==='resume')){
       const visits = [...next.previousSets, next.game].flatMap(game => game.visits);
       await client.query('delete from dartflow_private.visits where match_id=$1', [next.id]);
@@ -244,10 +261,10 @@ export async function getPublicSnapshot(token: string): Promise<PublicSnapshot> 
   }
   if(!row.state&&lease?.kind==='training'){
     const game=lease.state.game as MatchState['game'],profile=await database().query('select name from dartflow_private.profiles where id=$1',[lease.owner_id]);
-    return {board:{id:row.id,name:row.name},event:{name:row.event_name},match:{id:lease.id,revision:Number((await database().query('select revision from dartflow_private.platform_entities where id=$1',[lease.id])).rows[0].revision),status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:game.visits.map(v=>({...v,player:'player-1',playerIndex:0})),writerId:'player-1',stats:[{...game.stats[0],average:game.stats[0].darts?Math.round(game.stats[0].total/game.stats[0].darts*300)/100:0}],legNumber:Math.max(1,...game.visits.map(v=>v.leg)),setNumber:1,winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},paused:false}};
+    return {board:{id:row.id,name:row.name},event:{name:row.event_name},...await readBoardScoreEvents(database(),row.id,lease.id,lease.revision),match:{id:lease.id,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:game.visits.map(v=>({...v,player:'player-1',playerIndex:0})),writerId:'player-1',stats:[{...game.stats[0],average:game.stats[0].darts?Math.round(game.stats[0].total/game.stats[0].darts*300)/100:0}],legNumber:Math.max(1,...game.visits.map(v=>v.leg)),setNumber:1,winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},paused:false}};
   }
   const view = row.state ? matchView(row.state, '', false) : null;
-  return { board: { id: row.id, name: row.name }, event: { name: row.event_name }, match: view ? { id: view.id, revision: view.revision, status: view.status, players: view.players.map((p, i) => ({ id: `player-${i + 1}`, name: p.name })), remaining: view.remaining, legs: view.legs, sets: view.sets, turn: view.turn, checkout: view.checkout, visits: (row.state as MatchState).game.visits.filter(v=>v.leg===view.legNumber).map(v => ({ ...v, player: `player-${v.playerIndex + 1}` })), writerId:view.players.some(p=>p.id===view.writerId)?`player-${view.players.findIndex(p=>p.id===view.writerId)+1}`:'writer-external',stats:view.stats,legNumber:view.legNumber,setNumber:view.setNumber,winnerId: view.winnerId ? `player-${view.players.findIndex(p => p.id === view.winnerId) + 1}` : null, resultPublished: view.resultPublished, settings: view.settings,paused:view.paused } : null };
+  return { board: { id: row.id, name: row.name }, event: { name: row.event_name },...await readBoardScoreEvents(database(),row.id,row.state?.id??lease?.id,view?.revision), match: view ? { id: view.id, revision: view.revision, status: view.status, players: view.players.map((p, i) => ({ id: `player-${i + 1}`, name: p.name })), remaining: view.remaining, legs: view.legs, sets: view.sets, turn: view.turn, checkout: view.checkout, visits: (row.state as MatchState).game.visits.filter(v=>v.leg===view.legNumber).map(v => ({ ...v, player: `player-${v.playerIndex + 1}` })), writerId:view.players.some(p=>p.id===view.writerId)?`player-${view.players.findIndex(p=>p.id===view.writerId)+1}`:'writer-external',stats:view.stats,legNumber:view.legNumber,setNumber:view.setNumber,winnerId: view.winnerId ? `player-${view.players.findIndex(p => p.id === view.winnerId) + 1}` : null, resultPublished: view.resultPublished, settings: view.settings,paused:view.paused } : null };
 }
 export async function consumeRateLimit(key: string, limit: number, windowSeconds: number): Promise<{ allowed: boolean; retryAfter: number }> {
   const { rows } = await database().query(`insert into dartflow_private.auth_limits(key,count,reset_at) values($1,1,now()+$2*interval '1 second') on conflict(key) do update set count=case when dartflow_private.auth_limits.reset_at<=now() then 1 else dartflow_private.auth_limits.count+1 end, reset_at=case when dartflow_private.auth_limits.reset_at<=now() then now()+$2*interval '1 second' else dartflow_private.auth_limits.reset_at end returning count, greatest(1,ceil(extract(epoch from(reset_at-now()))))::int as retry`, [key, windowSeconds]);
@@ -255,14 +272,31 @@ export async function consumeRateLimit(key: string, limit: number, windowSeconds
 }
 
 export async function checkDatabaseReady(): Promise<{ ready: boolean; schemaVersion: number }> {
-  const { rows } = await database().query("select current_user as role,(select max(version) from dartflow_private.schema_migrations) as version,(select version from dartflow_private.feature_versions where name='v15') as feature_version,(select version from dartflow_private.feature_versions where name='club_boards') as club_boards_version,(select version from dartflow_private.feature_versions where name='short_invitations') as short_invitations_version,(select version from dartflow_private.feature_versions where name='display_names') as display_names_version,(select version from dartflow_private.feature_versions where name='per_player_scoring') as per_player_scoring_version,(select version from dartflow_private.feature_versions where name='board_screen_devices') as board_screen_devices_version");
-  return { ready: rows[0].role === 'dartflow_app' && rows[0].version === 1 && rows[0].feature_version === 15 && rows[0].club_boards_version === 1 && rows[0].short_invitations_version===1 && rows[0].display_names_version===1 && rows[0].per_player_scoring_version===1 && rows[0].board_screen_devices_version===1, schemaVersion: rows[0].version ?? 0 };
+  const { rows } = await database().query("select current_user as role,(select max(version) from dartflow_private.schema_migrations) as version,(select version from dartflow_private.feature_versions where name='v15') as feature_version,(select version from dartflow_private.feature_versions where name='club_boards') as club_boards_version,(select version from dartflow_private.feature_versions where name='short_invitations') as short_invitations_version,(select version from dartflow_private.feature_versions where name='display_names') as display_names_version,(select version from dartflow_private.feature_versions where name='per_player_scoring') as per_player_scoring_version,(select version from dartflow_private.feature_versions where name='board_screen_devices') as board_screen_devices_version,(select version from dartflow_private.feature_versions where name='v17_clubs') as v17_clubs_version,(select version from dartflow_private.feature_versions where name='physical_locations') as physical_locations_version,(select version from dartflow_private.feature_versions where name='v17_community') as v17_community_version,(select version from dartflow_private.feature_versions where name='v17_score_events') as v17_score_events_version");
+  return { ready: rows[0].role === 'dartflow_app' && rows[0].version === 1 && rows[0].feature_version === 15 && rows[0].club_boards_version === 1 && rows[0].short_invitations_version===1 && rows[0].display_names_version===1 && rows[0].per_player_scoring_version===1 && rows[0].board_screen_devices_version===1&&rows[0].v17_clubs_version===1&&rows[0].physical_locations_version===1&&rows[0].v17_community_version===1&&rows[0].v17_score_events_version===1, schemaVersion: rows[0].version ?? 0 };
 }
 
 /** A fixed board UUID resolves its actual event, independently of UI club selection. */
-export async function getBoardForActor(actorId:string,boardId:string):Promise<{board:{id:string;name:string;occupied:boolean;blocked?:boolean;access?:'all'|'club'};event:{id:string;name:string};club?:{id:string;name:string};matchId?:string;practiceId?:string;pendingLobbyId?:string;ownLobbyId?:string;canStart:boolean}>{
+export async function getBoardForActor(actorId:string,boardId:string):Promise<{board:{id:string;name:string;occupied:boolean;blocked?:boolean;access?:'all'|'club'};event:{id:string;name:string};club?:{id:string;name:string};location?:{id:string;name:string;kind:'home'|'venue';canManage:boolean};reservation?:ReservedBoardContext;matchId?:string;practiceId?:string;pendingLobbyId?:string;ownLobbyId?:string;canStart:boolean}>{
   const {rows}=await database().query<{id:string;name:string;blocked:boolean;event_id:string;state:MatchState|null}>('select b.id,b.name,b.blocked,b.event_id,m.state from dartflow_private.boards b left join dartflow_private.matches m on m.board_id=b.id where b.id=$1',[assertUuid(boardId)]);
   if(!rows.length)throw new DomainError('not_found','Deze baan bestaat niet.',404);
+  const physical=await physicalBoard(database(),boardId);
+  if(physical){
+    const row=rows[0],reserved=await playerReservationContext(database(),actorId,row.id),manage=await locationManager(database(),actorId,physical.location_id);
+    const ownRunning=Boolean(row.state&&(row.state.players.some(p=>p.id===actorId)||row.state.delegatedWriterId===actorId));
+    if(reserved&&!reserved.canParticipate&&!ownRunning)return {board:{id:row.id,name:row.name,occupied:Boolean(row.state||await boardLease(database(),row.id)),blocked:row.blocked||Boolean(physical.archived_at)},event:{id:row.event_id,name:reserved.context.label},location:{id:physical.location_id,name:physical.location_name,kind:physical.kind,canManage:manage},reservation:reserved.context,canStart:false};
+    const eventId=ownRunning?row.state!.eventId:reserved?.canParticipate?reserved.eventId:row.event_id;
+    const event=await eventAccess(database(),actorId,eventId),lease=await boardLease(database(),row.id);
+    const legacyClub=reserved?.canParticipate?null:await clubBoardEventAccess(database(),actorId,row.event_id);
+    let matchId:string|undefined,practiceId:string|undefined,pendingLobbyId:string|undefined,ownLobbyId:string|undefined;
+    if(row.state){try{await matchAccess(database(),actorId,row.state);matchId=row.state.id;}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}
+    if(lease?.kind==='training'&&lease.owner_id===actorId)practiceId=lease.id;
+    if(lease?.kind==='lobby'&&lease.state.eventId===eventId){
+      if(lease.owner_id===actorId||(await database().query("select 1 from dartflow_private.platform_members where entity_id=$1 and user_id=$2 and status in('active','invited')",[lease.id,actorId])).rowCount)ownLobbyId=lease.id;
+      if(!reserved&&lease.state.setup==='localone'&&!(await database().query("select 1 from dartflow_private.platform_relationships where kind='block' and((source_id=$1 and target_id=$2)or(source_id=$2 and target_id=$1))",[actorId,lease.owner_id])).rowCount)pendingLobbyId=lease.id;
+    }
+    return {board:{id:row.id,name:row.name,occupied:Boolean(row.state||lease),blocked:row.blocked||Boolean(physical.archived_at),access:legacyClub?.access??(physical.kind==='home'?'club':'all')},event:{id:eventId,name:reserved?reserved.context.label:String(event.name)},location:{id:physical.location_id,name:physical.location_name,kind:physical.kind,canManage:manage},...(reserved?{reservation:reserved.context}:{}),canStart:!reserved&&!row.blocked&&!physical.archived_at&&!row.state&&!lease&&(physical.kind!=='home'||manage),...(matchId?{matchId}:{}),...(practiceId?{practiceId}:{}),...(pendingLobbyId?{pendingLobbyId}:{}),...(ownLobbyId?{ownLobbyId}:{})};
+  }
   const row=rows[0],event=await eventAccess(database(),actorId,row.event_id),lease=await boardLease(database(),boardId);
   let matchId:string|undefined,practiceId:string|undefined,pendingLobbyId:string|undefined,ownLobbyId:string|undefined;
   if(row.state){try{await matchAccess(database(),actorId,row.state);matchId=row.state.id;}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}

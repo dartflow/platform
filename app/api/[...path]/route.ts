@@ -15,6 +15,8 @@ import { handleIntegrationPublic, handleIntegrations, workerTokenMatches } from 
 import { getPlatformOverview, executePlatformCommand, getPlatformMessages, getMatchSignals, sendMatchSignal, reconcilePlatformResults, reconcilePlatformCalls, getPlatformCast, getPlatformStatistics, exportPlatformCsv, replayMatchCommands, getMatchChat, sendMatchChat } from '@/lib/platform';
 import { mediaConfiguration } from '@/lib/media';
 import { getClubBoardScreen } from '@/lib/club-boards';
+import {getCommunityFeed,getCommunityChat} from '@/lib/community';
+import {getLocationOverview} from '@/lib/locations';
 import {requiresDisplayName} from '@/lib/display-name';
 import {invitationAttemptRequired} from '@/lib/invitations';
 import {BOARD_SCREEN_COOKIE,boardScreenCookiePath,getBoardScreen,listBoardScreenDevices,createBoardScreenDevice,revokeBoardScreenDevice,pairBoardScreenDevice} from '@/lib/board-screens';
@@ -167,8 +169,11 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     if(method==='DELETE'&&parts.length===4&&uuid(parts[3])){await revokeBoardScreenDevice(actor.id,parts[1],parts[3]);return json({ok:true});}
   }
   if(method==='GET' && path==='platform')return json(await getPlatformOverview(actor.id));
+  if(method==='GET' && path==='locations')return json(await getLocationOverview(actor.id));
+  if(method==='GET' && path==='community/feed')return json(await getCommunityFeed(actor.id,{kind:request.nextUrl.searchParams.get('kind')||'my',id:request.nextUrl.searchParams.get('id'),cursor:request.nextUrl.searchParams.get('cursor'),parentId:request.nextUrl.searchParams.get('parentId')}));
+  if(method==='GET' && parts[0]==='community'&&parts[1]==='chat'&&parts.length===4)return json(await getCommunityChat(actor.id,parts[2],parts[3],Number(request.nextUrl.searchParams.get('after')||'0')));
   if(method==='POST' && path==='platform/actions'){
-    const input=await body(request);
+    const input=await body(request,196608);
     if(input.action&&typeof input.action==='object'&&!Array.isArray(input.action)&&invitationAttemptRequired(input.action as Record<string,unknown>)){
       // Caddy overwrites the forwarding header on the loopback-only app listener.
       const address=(request.headers.get('x-forwarded-for')||'loopback').split(',').at(-1)!.trim();

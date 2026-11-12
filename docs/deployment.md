@@ -1,5 +1,7 @@
 # DartFlow: staging en productie
 
+Voor de v17-opdracht van 12 november is uitsluitend een stagingrelease gevraagd. Volg het actuele [v17-uitrolrapport](v17-uitrol.md); de eerdere autorisatie van beide omgevingen hieronder beschrijft de historische inrichting en is geen nieuwe productieopdracht.
+
 De vastgelegde repository is **[dartflow/platform](https://github.com/dartflow/platform)**, integratiebranch **`main`**, doelhost **`dg-nxttrack-01`**. De gebruiker heeft staging én productie geautoriseerd en beheer-SSH/sudo is beschikbaar. Beide omgevingen hebben afzonderlijke backendprojecten, accounts, runners, services, configuratiebundels en releasepaden. De eerdere inventaris waarin repository en beheerlogin ontbraken is historisch; actuele uitrol-/acceptatieresultaten staan in [het v15-opleverrapport](../voorbeelden/opleverrapport-v15.md).
 
 De native hostcontracten zijn op 11 november 2026 geïnstalleerd en geverifieerd; beide policies hebben `nativeEnabled: true`. De daadwerkelijke accounts, rootbestanden, twee online runners, databaseverbindingen, overdracht van lockdescriptors, afgebroken helpers en geblokkeerde cleanup met gericht rootherstel zijn vastgelegd in `docs/evidence/*-2026-11-11.json`. Dit installatiebewijs staat los van de CI- en applicatierelease: ook de ingeschakelde broncommit moet eerst groene CI krijgen en door de beide deployworkflows lopen.

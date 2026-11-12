@@ -1,0 +1,13 @@
+import type { PlatformEntity } from './platform-types';
+export const CLUB_PERMISSIONS = ['members.invite','members.approve','chat.moderate','competitions.manage','tournaments.manage','settings.edit'] as const;
+export type ClubPermission = typeof CLUB_PERMISSIONS[number];
+export type ClubJoinPolicy = 'closed'|'invite'|'open'|'intake';
+export type IntakeQuestion = {id:string;label:string;type:'text'|'textarea'|'select';required:boolean;options:string[]};
+export type IntakeAnswer = Omit<IntakeQuestion,'options'> & {value:string};
+export type ClubRole = {id:string;name:string;permissions:ClubPermission[];builtin?:boolean};
+export type ClubRequest = {id:string;userId:string;name:string;status:'pending'|'approved'|'rejected';version:number;answers:IntakeAnswer[];createdAt:string;reviewedAt:string|null;reviewedBy:string|null;reason:string|null};
+export type ClubInvite = {id:string;userId:string;name:string;status:string;expiresAt:string};
+export type ClubAccess = {isOwner:boolean;isMember:boolean;permissions:ClubPermission[];canApprove:boolean;canInvite:boolean;canEditSettings:boolean;canManageRoles:boolean};
+export type ClubDetails = {joinPolicy:ClubJoinPolicy;intakeVersion:number;intakeIntroduction:string;intakeQuestions:IntakeQuestion[];roles:ClubRole[];requests:ClubRequest[];invites:ClubInvite[];lifecycle:'active'|'inactive'|'deleted';canRestore:boolean;inactiveAt:string|null;deleteAfter:string|null;primaryColor:string;secondaryColor:string;logoData:string|null};
+export type ClubEntity = PlatformEntity & {clubAccess:ClubAccess;clubDetails:ClubDetails};
+export const BASE_CLUB_ROLES:ClubRole[]=[{id:'admin',name:'Clubbeheerder',permissions:[...CLUB_PERMISSIONS],builtin:true},{id:'captain',name:'Aanvoerder',permissions:[],builtin:true},{id:'member',name:'Clublid',permissions:[],builtin:true}];

@@ -5,9 +5,14 @@ export function legacyDestination(hash:string):string|null {
   const route=hash.replace(/^#\/?/,'');
   const hubs:Record<string,string>={home:'/',play:'/spelen',practice:'/spelen',lobby:'/spelen',training:'/spelen',baan:'/spelen',events:'/evenementen',leagues:'/evenementen',hall:'/evenementen',tournaments:'/evenementen',dashboard:'/wedstrijdleiding',operations:'/wedstrijdleiding',venue:'/wedstrijdleiding',manage:'/clubbeheer',clubs:'/clubbeheer',mymatches:'/historie'};
   if (hubs[route]) return hubs[route];
+  if(route==='baanbeheer')return '/app/locations';
+  if(route==='reservations')return '/app/reservations';
+  if(route==='feed')return '/app/feed';
   const match=route.match(new RegExp(`^match/(${uuid})$`,'i'));
   if (match) return `/wedstrijd/${match[1]}`;
   const board=route.match(new RegExp(`^baan-phone/(${uuid})$`,'i'));
   if (board) return `/baan/${board[1]}`;
+  const screen=route.match(new RegExp(`^baan-screen/(${uuid})$`,'i'));
+  if(screen)return `/oche-live/${screen[1].toLowerCase()}`;
   return '/link-onbekend';
 }

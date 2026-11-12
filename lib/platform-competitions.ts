@@ -11,6 +11,8 @@ import { advanceFixtures, roundRobin, tournamentFixtures } from './platform-doma
 import { acceptsCode, addMember, allowsExternalParticipants, blocked, createCoreEvent, createCoreMatch, createEntity, entity, isClubMember, member, number, requireAccess, save, syncCompetitionRoom, text, uuid, view } from './platform-store';
 import type { EntityRow } from './platform-store';
 import type { PlatformCommand, PlatformResponse, PlatformState } from './platform-types';
+import {assertPhysicalBoardEvent,eventPhysicalBoards,physicalBoard} from './location-access';
+import {clubPermission} from './club-access';
 
 export async function competitionAction(client: PoolClient, actor: string, command: PlatformCommand): Promise<PlatformResponse | null> {
   const a = command.action, type = a.type;
@@ -30,7 +32,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
   if (type === 'league.create' || type === 'tournament.create') {
     const clubId = a.clubId ? uuid(a.clubId) : null;
     if (clubId) {
-      if (!(await isClubMember(client, clubId, actor, true))) throw new DomainError('forbidden', 'Alleen de clubbeheerder kan dit evenement maken.', 403);
+      if (!(await clubPermission(client,clubId,actor,type==='league.create'?'competitions.manage':'tournaments.manage'))) throw new DomainError('forbidden', 'Je mist het organisatierecht voor dit evenement.', 403);
     } else if (!(await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')", [actor])).rowCount) throw new DomainError('forbidden', 'Een wereldwijd evenement vereist platformbeheer. Kies je eigen club.', 403);
     const kind = type === 'league.create' ? 'league' : 'tournament';
     const eligibility=a.eligibility==='invite'?'code':String(a.eligibility??(clubId?'club':'all'));
@@ -154,7 +156,8 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     await save(client,row);return {ok:true,id:row.id,assignments,matchId:assignments[0].matchId,entity:await view(client,row,actor)};
   } else if (type === 'board.reserve') {
     await requireAccess(client,row,actor,true);await client.query('select id from dartflow_private.events where id=$1 for update',[row.state.eventId]);const boardId=uuid(a.boardId);
-    if(!(await client.query('select 1 from dartflow_private.boards where id=$1 and event_id=$2',[boardId,row.state.eventId])).rowCount)throw new DomainError('invalid_board','Deze baan hoort niet bij deze speeldag.',403);
+    await client.query('select id from dartflow_private.boards where id=$1 for update',[boardId]);
+    await assertPhysicalBoardEvent(client,boardId,row.state.eventId!);
     const reservations=(row.state.boardReservations??={})as Record<string,unknown>;
     if(a.reserved!==false&&await boardLease(client,boardId))throw new DomainError('board_occupied','Op deze baan staat al een actieve opstelling.',409);
     if(a.reserved===false)delete reservations[boardId];
@@ -175,6 +178,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     await requireAccess(client, row, actor, true);
     await client.query('select id from dartflow_private.events where id=$1 for update',[row.state.eventId]);
     const board = uuid(a.boardId);
+    if(await physicalBoard(client,board))throw new DomainError('forbidden','Deze fysieke baan wordt door de locatie beheerd.',403);
     if(a.blocked!==false&&await boardLease(client,board))throw new DomainError('board_occupied','Op deze baan staat al een actieve opstelling.',409);
     const assigned = await client.query('select 1 from dartflow_private.matches where board_id=$1', [board]);
     if (assigned.rowCount) throw new DomainError('board_occupied', 'Maak deze baan eerst vrij.', 409);
@@ -184,7 +188,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     await requireAccess(client, row, actor, true);
     const scene = String(a.scene ?? row.state.cast?.scene ?? 'hall');
     if (!['hall', 'board', '180', 'finish', 'result', 'next', 'break'].includes(scene)) throw new DomainError('invalid_scene', 'Kies een geldige schermscene.');
-    if (a.boardId && !(await client.query('select 1 from dartflow_private.boards where id=$1 and event_id=$2', [uuid(a.boardId), row.state.eventId])).rowCount) throw new DomainError('invalid_board', 'Deze baan hoort niet bij deze speeldag.', 403);
+    if(a.boardId)await assertPhysicalBoardEvent(client,uuid(a.boardId),row.state.eventId!);
     const previous = row.state.cast;
     row.state.cast = { scene: a.live === false ? previous?.scene ?? 'hall' : scene, ...(a.boardId ? { boardId: String(a.boardId) } : previous?.boardId ? { boardId: previous.boardId } : {}), preview: scene, updatedAt: new Date().toISOString() };
   } else throw new DomainError('invalid_action', 'Onbekende competitieactie.');
@@ -225,7 +229,7 @@ async function lobbyAction(client: PoolClient, actor: string, command: PlatformC
     const { rows } = await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='active' order by case when role='owner' then 0 else 1 end,created_at,user_id", [row.id]);
     const players = rows.map(r => String(r.user_id));
     if (players.length !== 2 || !players.every(p => row.state.ready?.[p])) throw new DomainError('players_not_ready', 'Beide spelers moeten eerst gereed zijn.', 409);
-    if(boundBoard){await client.query('select id from dartflow_private.events where id=$1 for update',[row.state.eventId]);for(const player of players)await eventAccess(client,player,row.state.eventId!);if(Number(row.state.boardLeaseUntil??0)<=Date.now())throw new DomainError('board_session_expired','Deze baanopstelling is verlopen.',409);const {rows:boards}=await client.query('select blocked from dartflow_private.boards where id=$1 and event_id=$2 for update',[boundBoard,row.state.eventId]);if(!boards.length||boards[0].blocked||(await client.query('select 1 from dartflow_private.matches where board_id=$1',[boundBoard])).rowCount)throw new DomainError('board_occupied','De baan is niet meer beschikbaar.',409);await assertBoardUnreserved(client,boundBoard,row.state.eventId!,row.id);}
+    if(boundBoard){await client.query('select id from dartflow_private.events where id=$1 for update',[row.state.eventId]);for(const player of players)await eventAccess(client,player,row.state.eventId!);if(Number(row.state.boardLeaseUntil??0)<=Date.now())throw new DomainError('board_session_expired','Deze baanopstelling is verlopen.',409);const {rows:boards}=await client.query('select blocked from dartflow_private.boards where id=$1 and event_id=$2 for update',[boundBoard,row.state.eventId]);if(!boards.length||boards[0].blocked||(await client.query('select 1 from dartflow_private.matches where board_id=$1',[boundBoard])).rowCount)throw new DomainError('board_occupied','De baan is niet meer beschikbaar.',409);await assertPhysicalBoardEvent(client,boundBoard,row.state.eventId!);await assertBoardUnreserved(client,boundBoard,row.state.eventId!,row.id);}
     row.state.matchId = await createCoreMatch(client, row, players, row.state.settings!, 'free');
     if(boundBoard){const {rows:matches}=await client.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[row.state.matchId]);const state=matches[0].state,before=structuredClone(state);state.boardId=boundBoard;state.callRef=command.requestId;state.revision++;await client.query('update dartflow_private.matches set board_id=$2,state=$3,revision=$4 where id=$1',[state.id,boundBoard,JSON.stringify(state),state.revision]);await enqueueMatchTransition(client,actor,before,state,{requestId:command.requestId,matchId:state.id,expectedRevision:before.revision,action:{type:'call',boardId:boundBoard}});}
   } else if (a.type === 'lobby.cancel') {
@@ -283,7 +287,7 @@ export async function autoAssign(client: PoolClient, row: EntityRow, manual?:{fi
   if (row.state.paused) throw new DomainError('event_paused', 'Deze speeldag is gepauzeerd.', 409);
   const assignments: { fixtureId: string; matchId: string; boardId: string; writerId?: string }[] = [];
   await client.query('select id from dartflow_private.events where id=$1 for update', [row.state.eventId]);
-  const boards = await client.query('select b.* from dartflow_private.boards b where event_id=$1 and not blocked and not exists(select 1 from dartflow_private.matches m where m.board_id=b.id) order by b.name,b.id', [row.state.eventId]);
+  const boards = await eventPhysicalBoards(client,row.state.eventId!,true);
   const members = await client.query("select user_id,attributes from dartflow_private.platform_members where entity_id=$1 and status='active' and attributes->>'registered'='true'", [row.id]);
   await lockPlayingActors(client,members.rows.map(m=>String(m.user_id)));
   const occupied = await client.query("select state from dartflow_private.matches where state->>'status' in ('called','ready','live','result','disputed') and (exists(select 1 from dartflow_private.match_players p where p.match_id=dartflow_private.matches.id and p.user_id=any($1::uuid[])) or (state->>'delegatedWriterId'=state->>'writerId' and state->>'delegatedWriterId'=any($2::text[])))",[members.rows.map(m=>m.user_id),members.rows.map(m=>m.user_id)]);
@@ -292,7 +296,9 @@ export async function autoAssign(client: PoolClient, row: EntityRow, manual?:{fi
     const m = members.rows.find(m => m.user_id === id);
     return m && m.attributes.checkedIn === true && m.attributes.available !== false && Number(m.attributes.restUntil ?? 0) <= Date.now() && !busy.has(id);
   };
-  for (const board of boards.rows) {
+  for (const board of boards) {
+    if(board.blocked||(await client.query('select 1 from dartflow_private.matches where board_id=$1',[board.id])).rowCount)continue;
+    try{await assertPhysicalBoardEvent(client,board.id,row.state.eventId!);}catch(error){if(error instanceof DomainError&&['board_reserved','reservation_window','board_unavailable'].includes(error.code))continue;throw error;}
     if(await boardLease(client,board.id))continue;
     if(manual&&board.id!==manual.boardId)continue;
     if(Number((row.state.boardCooldowns as Record<string,number>|undefined)?.[board.id]??0)>Date.now())continue;
@@ -306,6 +312,7 @@ export async function autoAssign(client: PoolClient, row: EntityRow, manual?:{fi
     if(manual?.writerId&&!writer)throw new DomainError('writer_unavailable','Deze schrijver is niet beschikbaar of hoort niet bij deze speeldag.',409);
     if (row.state.requireWriter !== false && !writer) continue;
     if (!fixture.matchId) fixture.matchId = await createCoreMatch(client, row, players, row.state.settings!, fixture.id);
+    await assertPhysicalBoardEvent(client,board.id,row.state.eventId!,fixture.matchId,true);
     const match = await client.query('select state from dartflow_private.matches where id=$1 for update', [fixture.matchId]);
     const state = match.rows[0].state;
     const beforeCall=structuredClone(state);

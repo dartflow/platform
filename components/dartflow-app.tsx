@@ -12,11 +12,12 @@ import PlatformWorkspace from "./platform-workspace";
 import ScoreConsole from "./score-console";
 import {InstallDartflow} from "./pwa-install";
 import SprintDisplay from "./sprint-display";
+import OcheCelebration, {useOcheCelebration} from "./oche-celebration";
 import ClubBoardScreen from "./club-board-screen";
 import PublicCast from "./public-cast";
 import ReadOnlyAlias from "./read-only-alias";
 import { MediaRoom } from "./media-room";
-import MatchChat from "./match-chat";
+import {ScopedChat} from "./community-space";
 import OfflineReplayPanel from "./offline-replay-panel";
 import WorkspaceTools from "./workspace-tools";
 import type {
@@ -535,7 +536,9 @@ export default function DartflowApp() {
     { href: "/app/play", label: "Spelen", icon: "target" },
     { href: "/app/events", label: "Evenementen", icon: "calendar" },
     { href: "/app/friends", label: "Vrienden", icon: "users" },
-    { href: "/app/community", label: "Community", icon: "screen" },
+    { href: "/app/feed", label: "My Feed", icon: "screen" },
+    { href: "/app/community", label: "Kamers", icon: "users" },
+    { href: "/app/locations", label: "Banen & locaties", icon: "target" },
     { href: "/app/clubs", label: "Verenigingen", icon: "club" },
     { href: "/app/mymatches", label: "Mijn wedstrijden", icon: "history" },
     { href: "/app/settings", label: "Instellingen", icon: "sliders" },
@@ -545,6 +548,7 @@ export default function DartflowApp() {
     { href: "/wedstrijdleiding", label: "Wedstrijdleiding", icon: "sliders" },
     { href: "/app/events", label: "Evenementen", icon: "calendar" },
     { href: "/app/clubs", label: "Clubbeheer", icon: "club" },
+    { href: "/app/reservations", label: "Baanreserveringen", icon: "calendar" },
     { href: "/app/venue-cast/studio", label: "Schermstudio", icon: "screen" },
     { href: "/app/mail", label: "Mailbeheer", icon: "users" },
     ...(session.data.canManagePlatform
@@ -1382,6 +1386,7 @@ function BoardPage({
     pendingLobbyId?: string;
     ownLobbyId?: string;
     canStart?: boolean;
+    reservation?:import('@/lib/location-types').ReservedBoardContext;
   }>(`/api/boards/${encodeURIComponent(boardId)}`);
   const data = lookup.data;
   async function boardAction(action: Record<string, unknown>) {
@@ -1395,6 +1400,7 @@ function BoardPage({
         lobbyId?: string;
         kind?: string;
         code?: string;
+        matchId?:string;
       }>("/api/platform/actions", { requestId: crypto.randomUUID(), action });
       const trainingId =
         result.trainingId ||
@@ -1404,7 +1410,8 @@ function BoardPage({
         (result.kind === "lobby" || action.type === "lobby.join"
           ? result.id || data?.pendingLobbyId
           : undefined);
-      if (trainingId)
+      if(result.matchId)hardNavigate(`/wedstrijd/${encodeURIComponent(result.matchId)}`);
+      else if (trainingId)
         hardNavigate(`/app/training/${encodeURIComponent(trainingId)}`);
       else if (lobbyId)
         hardNavigate(
@@ -1530,6 +1537,7 @@ function BoardPage({
                 ? data.club ? "Kies je spelvorm en begin op dit bord met je eigen account. Je hoeft je niet voor een evenement in te schrijven." : "Kies je spelvorm en begin op dit bord. Een ingeplande of gereserveerde baan blijft bij de wedstrijdleiding."
                 : "De wedstrijdleiding koppelt de volgende partij aan deze baan. Deze vaste QR blijft naar dezelfde baan wijzen."}
         </Empty>
+        {data.reservation&&<section className="notice"><h2>{data.reservation.label}</h2><p>{new Date(data.reservation.startsAt).toLocaleString('nl-NL')} – {new Date(data.reservation.endsAt).toLocaleString('nl-NL')}</p>{data.reservation.canPrepare&&data.reservation.fixtureId?<button className="button gold full" disabled={busy} onClick={()=>void boardAction({type:'reservation.fixture.start',reservationId:data.reservation!.id,boardId,fixtureId:data.reservation!.fixtureId})}>Mijn ingeplande partij klaarmaken</button>:<p>Wedstrijdleiding of de eerste ingeroosterde speler roept de volgende partij op.</p>}</section>}
         {!data.board.blocked && data.pendingLobbyId ? (
           <div className="board-start">
             <h2>Een speler wacht aan dit bord</h2>
@@ -1567,7 +1575,7 @@ function BoardPage({
           >
             <h2>Vrij spelen op deze baan</h2>
             <p>
-              Deze vaste QR en het gekoppelde Sprint-scherm blijven bij
+              Deze vaste QR en het gekoppelde Oche Live-scherm blijven bij
               hetzelfde fysieke bord.
             </p>
             <label className="field">
@@ -1941,7 +1949,7 @@ function MatchPage({
   const activeConsole = consoleOpen && match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore);
   return (
     <>
-      {activeConsole && <ScoreConsole title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={match.players.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} message={actionError || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
+      {activeConsole && <ScoreConsole title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={match.players.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} message={actionError || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
       {match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore) && <button className="button gold full" onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</button>}
       <Heading
         kicker={`${event?.name || "BAANMODUS"}${match.boardId ? ` · ${boardName}` : ""}`}
@@ -2320,7 +2328,7 @@ function MatchPage({
           {playerIndex >= 0 && (
             <>
               <MediaRoom matchId={id} />
-              <MatchChat matchId={id} />
+              {match.scoringMode==='per-player'&&!activeConsole&&<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat"/>}
             </>
           )}
           <div className="panel visits-panel">
@@ -2775,6 +2783,7 @@ function PublicScreen({ token }: { token: string }) {
     `/api/screen/${encodeURIComponent(token)}`,
   );
   const data = live.data;
+  const cue = useOcheCelebration(data, Boolean(data) && !live.stale);
   const match = data?.match;
   const winner = match?.players.find((p) => p.id === match.winnerId);
   if (data?.match)
@@ -2782,6 +2791,7 @@ function PublicScreen({ token }: { token: string }) {
       <SprintDisplay
         snapshot={data}
         stale={live.stale}
+        overlay={<OcheCelebration cue={cue} />}
         qr={
           <QR
             path={`/baan/${encodeURIComponent(data.board.id)}`}
@@ -2792,7 +2802,8 @@ function PublicScreen({ token }: { token: string }) {
     );
   return (
     <main className="public-screen">
-      <div className="screen-frame">
+      <div className="screen-frame" style={{containerType:"inline-size"}}>
+        <OcheCelebration cue={cue} />
         <header className="public-screen-header">
           <img src="/assets/dartflow-logo.svg" alt="Dartflow" />
           <Connection stale={live.stale} updated={live.updated} />

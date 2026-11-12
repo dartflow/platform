@@ -1,0 +1,42 @@
+{
+  "fixture": "oche-live-standby",
+  "source": "Aangeleverde 604 × 933 px referentie van de vrije thuisbaan",
+  "coordinateSystem": "Bronafbeelding, oorsprong linksboven, x rechts en y omlaag. Bounds hebben de volgorde x, y, breedte, hoogte.",
+  "captureSize": [604, 933],
+  "boardBounds": [18, 0, 532, 933],
+  "anchors": {
+    "centerX": 284,
+    "contentInsetLeftX": 49,
+    "contentInsetRightExclusiveX": 519,
+    "headerRuleY": 91,
+    "footerRuleY": 854,
+    "logoBoundsApprox": [49, 22, 205, 49],
+    "locationBoundsApprox": [401, 26, 118, 40],
+    "badgeBoundsApprox": [224, 213, 120, 28],
+    "boardTitleCenterYApprox": 263,
+    "headingCenterYApprox": 317,
+    "descriptionCenterYApprox": 384,
+    "qrCardBounds": [156, 433, 256, 255],
+    "qrInkBoundsApprox": [180, 457, 208, 208],
+    "qrCaptionCenterYApprox": 714,
+    "fullscreenBoundsApprox": [475, 867, 44, 45],
+    "ringCenterApprox": [401, 224]
+  },
+  "sampledColors": {
+    "outerBackground": "#151719",
+    "boardBase": "#121315",
+    "brandLime": "#b7f62b",
+    "headingLight": "#f2f3f4",
+    "headerRule": "#464a50",
+    "footerRule": "#303337",
+    "qrBorder": "#526938",
+    "qrBackground": "#ffffff",
+    "qrInk": "#10100f"
+  },
+  "comparison": [
+    "Vergelijk op 604 × 933 px na het laden van de eigen fonts. Controleer daarna een exact 9:16-viewport zonder de screenshotranden over te nemen.",
+    "Controleer gemarkeerde coördinaten en afstanden visueel. De zachte ringen en letters hebben geantialiasde randen.",
+    "Vergelijk de QR-kaart en stille zone. Gebruik actuele QR-inhoud en scan de juiste baan en omgeving.",
+    "De afbeelding toont standby. Bewaar onafhankelijke screenshots voor wachten, live, cue, resultaat, offline en buiten gebruik."
+  ]
+}

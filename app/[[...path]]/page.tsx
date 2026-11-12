@@ -13,15 +13,15 @@ export async function generateMetadata({ params }: Context): Promise<Metadata> {
   const production = origin === "https://dartflow.nl";
   if (path.length)
     return {
-      title: "DartFlow · Speelomgeving",
+      title: ["baanscherm","oche-live","scorebord"].includes(path[0]) ? "Oche Live" : "DartFlow · Speelomgeving",
       robots: { index: false, follow: false },
-      appleWebApp: {capable: true, statusBarStyle: "black-translucent", title: path[0] === "scorebord" ? "DartFlow Scorebord" : path[0] === "baanscherm" ? "DartFlow Baanscherm" : "DartFlow Speler"},
-      icons: {icon: "/assets/pwa/player-192.png", apple: path[0] === "baanscherm" || path[0] === "scorebord" ? "/assets/pwa/scoreboard-180.png" : "/assets/pwa/player-180.png"},
+      appleWebApp: {capable: true, statusBarStyle: "black-translucent", title: ["baanscherm","oche-live","scorebord"].includes(path[0]) ? "Oche Live" : "DartFlow Speler"},
+      icons: {icon: ["baanscherm","oche-live","scorebord"].includes(path[0]) ? "/assets/pwa/oche-live-192.png" : "/assets/pwa/player-192.png", apple: ["baanscherm","oche-live","scorebord"].includes(path[0]) ? "/assets/pwa/oche-live-180.png" : "/assets/pwa/player-180.png"},
     };
   return {
     title: "DartFlow | Online darten, live scorebord en darttoernooien",
     description:
-      "Speel darts online of op locatie met DartFlow. Probeer het Sprint-scorebord met invoer op je telefoon en ontdek clubcompetities, toernooiregie en meer.",
+      "Speel darts online of op locatie met DartFlow. Probeer het Oche Live-scorebord met invoer op je telefoon en ontdek clubcompetities, toernooiregie en meer.",
     alternates: { canonical: origin },
     robots: { index: production, follow: production },
     openGraph: {
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Context): Promise<Metadata> {
       siteName: "DartFlow",
       title: "DartFlow | Online darten, live scorebord en darttoernooien",
       description:
-        "Van een oefenleg thuis tot een vol clubtoernooi. Ontdek DartFlow en probeer het interactieve Sprint-scorebord.",
+        "Van een oefenleg thuis tot een vol clubtoernooi. Ontdek DartFlow en probeer het interactieve Oche Live-scorebord.",
       url: origin,
       images: [
         {
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Context): Promise<Metadata> {
 export default async function Page({ params }: Context) {
   const path = (await params).path || [];
   const manifest = manifestForPath(path);
-  const content = path[0] === 'baanscherm' && path.length === 2 && BOARD_ID_PATTERN.test(path[1])
+  const content = ['baanscherm','oche-live'].includes(path[0]) && path.length === 2 && BOARD_ID_PATTERN.test(path[1])
     ? <ClubBoardScreen boardId={path[1].toLowerCase()} />
     : path[0] === 'scorebord' && path.length === 1
       ? <ScoreboardLauncher />

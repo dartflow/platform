@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import {readBoardScoreEvents} from './score-events';
 import { database } from './db';
 import { checkout, DomainError, matchView } from './domain';
 import { boardLease } from './platform-locks';
@@ -6,9 +7,12 @@ import { text, uuid } from './platform-store';
 import type { Client } from './platform-store';
 import type { ClubBoardScreenView, ClubBoardView, PlatformCommand, PlatformResponse } from './platform-types';
 import type { Game, MatchState, PublicSnapshot, Stats, Visit } from './types';
+import {ensureLegacyPhysicalBoard} from './locations';
+import {locationScreenContext} from './location-access';
 
-type BoardRow = {board_id:string;club_id:string;event_id:string;name:string;access:'all'|'club';blocked:boolean;club_name:string;owner_id:string;role:string|null;status:string|null;core_role:string|null;owner_blocked:boolean;occupied:boolean;state:MatchState|null};
-const boardSelect = `select cb.*,b.name,b.blocked,c.name as club_name,ce.owner_id,cm.role,cm.status,core.role as core_role,
+type BoardRow = {board_id:string;club_id:string;event_id:string;name:string;access:'all'|'club';blocked:boolean;club_name:string;club_lifecycle:string;owner_id:string;role:string|null;status:string|null;core_role:string|null;owner_blocked:boolean;occupied:boolean;state:MatchState|null;location_id:string|null;physical_manage:boolean};
+const boardSelect = `select cb.*,b.name,b.blocked,c.name as club_name,coalesce(ce.state->>'lifecycle','active') as club_lifecycle,ce.owner_id,cm.role,cm.status,core.role as core_role,lb.location_id,
+ (l.owner_id=$1 or exists(select 1 from dartflow_private.location_members lm where lm.location_id=l.id and lm.user_id=$1)) as physical_manage,
  exists(select 1 from dartflow_private.platform_relationships r where r.kind='block' and ((r.source_id=$1 and r.target_id=ce.owner_id) or(r.target_id=$1 and r.source_id=ce.owner_id))) as owner_blocked,
  (m.id is not null or exists(select 1 from dartflow_private.platform_entities pe where pe.state->>'boardId'=b.id::text and coalesce(pe.state->>'closed','false')<>'true' and (pe.state->>'boardLeaseUntil')::bigint>floor(extract(epoch from now())*1000) and ((pe.kind='lobby' and pe.state->>'matchId' is null) or(pe.kind='training' and pe.state->>'boardHeld'='true')))) as occupied,
  m.state from dartflow_private.club_boards cb join dartflow_private.boards b on b.id=cb.board_id and b.event_id=cb.event_id
@@ -16,11 +20,12 @@ const boardSelect = `select cb.*,b.name,b.blocked,c.name as club_name,ce.owner_i
  join dartflow_private.platform_entities ce on ce.id=cb.club_id and ce.kind='club'
  left join dartflow_private.platform_members cm on cm.entity_id=ce.id and cm.user_id=$1
  left join dartflow_private.club_memberships core on core.club_id=cb.club_id and core.user_id=$1
+ left join dartflow_private.location_boards lb on lb.board_id=cb.board_id left join dartflow_private.locations l on l.id=lb.location_id
  left join dartflow_private.matches m on m.board_id=b.id`;
-function manager(row:BoardRow):boolean{return row.status==='active'&&['owner','admin'].includes(row.role??'')&&row.core_role==='organizer'&&!row.owner_blocked;}
-function accessible(row:BoardRow):boolean{return row.status!=='banned'&&!row.owner_blocked&&(row.access==='all'||row.status==='active'&&Boolean(row.core_role));}
+function manager(row:BoardRow):boolean{return row.physical_manage===true;}
+function accessible(row:BoardRow):boolean{return row.status!=='banned'&&!row.owner_blocked&&(row.access==='all'||!['inactive','deleted'].includes(row.club_lifecycle)&&row.status==='active'&&Boolean(row.core_role));}
 function assertAccess(row:BoardRow,manage=false):void{
- if(!accessible(row)||manage&&!manager(row))throw new DomainError('forbidden',manage?'Alleen de actuele verenigingsbeheerder kan deze baan beheren.':'Deze baan is niet toegankelijk voor jouw account.',403);
+ if(manage?!manager(row):!accessible(row))throw new DomainError('forbidden',manage?'Alleen de actuele locatie-eigenaar of locatiebeheerder kan deze baan beheren.':'Deze baan is niet toegankelijk voor jouw account.',403);
 }
 async function rowForBoard(client:Client,actor:string,boardId:string):Promise<BoardRow>{
  const {rows}=await client.query<BoardRow>(`${boardSelect} where cb.board_id=$2`,[uuid(actor),uuid(boardId)]);
@@ -65,6 +70,7 @@ export async function clubBoardAction(client:Client,actor:string,command:Platfor
   await client.query('insert into dartflow_private.events(id,club_id,name,date,capacity) values($1,$2,$3,current_date,128)',[eventId,clubId,`Vrij spelen · ${name}`]);
   await client.query('insert into dartflow_private.boards(id,event_id,name) values($1,$2,$3)',[boardId,eventId,name]);
   await client.query('insert into dartflow_private.club_boards(board_id,club_id,event_id,name,access,created_by) values($1,$2,$3,$4,$5,$6)',[boardId,clubId,eventId,name,access,actor]);
+  await ensureLegacyPhysicalBoard(client,actor,boardId,eventId,name);
   const row=await rowForBoard(client,actor,boardId);
   return {ok:true,id:boardId,board:await boardView(client,row)};
  }
@@ -72,6 +78,7 @@ export async function clubBoardAction(client:Client,actor:string,command:Platfor
  const boardId=uuid(a.boardId),before=await rowForBoard(client,actor,boardId);assertAccess(before,true);
  await client.query('select id from dartflow_private.events where id=$1 for update',[before.event_id]);
  await client.query('select id from dartflow_private.platform_entities where id=$1 for update',[before.club_id]);
+ if(before.location_id)await client.query('select id from dartflow_private.locations where id=$1 for update',[before.location_id]);
  const row=await rowForBoard(client,actor,boardId);assertAccess(row,true);
  const name=a.name===undefined?row.name:text(a.name),access=a.access===undefined?row.access:a.access;
  if(access!=='all'&&access!=='club')throw new DomainError('invalid_access','Kies iedereen met een account of alleen verenigingsleden.');
@@ -91,7 +98,7 @@ export async function getClubBoardScreen(boardId:string):Promise<ClubBoardScreen
   join dartflow_private.boards b on b.id=cb.board_id and b.event_id=cb.event_id join dartflow_private.clubs c on c.id=cb.club_id
   left join dartflow_private.matches m on m.board_id=b.id where cb.board_id=$1`,[id]);
  if(!rows.length)throw new DomainError('not_found','Deze verenigingsbaan bestaat niet.',404);
- const row=rows[0],lease=await boardLease(client,id),occupied=Boolean(row.state||lease);
+ const row=rows[0],lease=await boardLease(client,id),occupied=Boolean(row.state||lease),location=await locationScreenContext(client,id,row.state?.id??lease?.id);
  let match:PublicSnapshot['match']=null;
  if(row.state){
   const view=matchView(row.state,'',false);
@@ -99,8 +106,8 @@ export async function getClubBoardScreen(boardId:string):Promise<ClubBoardScreen
  }else if(lease?.kind==='training'){
   const game=lease.state.game as Game;
   const profile=await client.query<{name:string}>('select name from dartflow_private.profiles where id=$1',[lease.owner_id]);
-  const revision=await client.query<{revision:number}>('select revision from dartflow_private.platform_entities where id=$1',[lease.id]);
-  match={id:`board-${id}`,revision:revision.rows[0]?.revision??0,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:visitsForDisplay(game.visits),winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:statsForDisplay([game.stats[0]]),legNumber:Math.max(1,...game.visits.map(v=>v.leg)),setNumber:1,paused:false};
+  match={id:`board-${id}`,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:visitsForDisplay(game.visits),winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:statsForDisplay([game.stats[0]]),legNumber:Math.max(1,...game.visits.map(v=>v.leg)),setNumber:1,paused:false};
  }
- return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked:row.blocked,occupied,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:row.blocked?'blocked':match?'playing':lease?'waiting':'available',snapshot:{board:{id,name:row.name},event:{name:row.club_name},match}};
+ const blocked=row.blocked||Boolean(location?.physical.archived_at);
+ return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:blocked?'blocked':match?'playing':lease?'waiting':'available',snapshot:{board:{id,name:row.name},event:{name:location?.reservation?.label??row.club_name},match,...await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
 }

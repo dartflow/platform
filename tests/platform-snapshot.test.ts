@@ -1,3 +1,4 @@
+import {beginFixtureCleanup} from './helpers/cleanup-v17';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -54,8 +55,32 @@ test('an overview never combines an old tournament revision with a newly approve
   await run(applicant,{type:'competition.checkin',id:tournament.id},approved.revision);
   const checked=(await getPlatformOverview(host)).tournaments.find(e=>e.id===tournament.id)!;
   assert.equal(checked.members.find(m=>m.id===applicant)?.attributes.checkedIn,true);
+  // Independently exercise a directory club losing scope after the same real list
+  // query. Its fresh ACL must exclude it without breaking the authorized event.
+  let directoryReached=()=>{};
+  const directoryRead=new Promise<void>(resolve=>{directoryReached=resolve;}),releaseDirectory=new Promise<void>(resolve=>{resumeRead=resolve;});
+  let directoryIntercepted=false;
+  pool.query=new Proxy(originalQuery,{apply(target,thisArg,args){
+   const response=Reflect.apply(target,thisArg,args) as unknown;if(!(response instanceof Promise))return response;
+   return (response as Promise<pg.QueryResult<Record<string,unknown>>>).then(async result=>{
+    if(!directoryIntercepted&&result.rows.some(row=>row.id===club&&row.kind==='club')){directoryIntercepted=true;directoryReached();await releaseDirectory;}
+    return result;
+   });
+  }});
+  pendingOverview=getPlatformOverview(applicant);
+  let directoryTimeout:ReturnType<typeof setTimeout>|undefined;
+  try{
+   await Promise.race([directoryRead,new Promise<never>((_,reject)=>{directoryTimeout=setTimeout(()=>reject(new Error('The club directory query did not reach its real SQL barrier.')),5000);})]);
+   await owner.query("update dartflow_private.platform_entities set visibility='private' where id=$1",[club]);
+  }finally{if(directoryTimeout)clearTimeout(directoryTimeout);resumeRead();}
+  const filtered=await pendingOverview;assert.equal(directoryIntercepted,true);
+  assert.equal(filtered.clubs.some(item=>item.id===club),false,'A club that became private is omitted from the public directory.');
+  assert.equal(filtered.tournaments.find(item=>item.id===tournament.id)?.members.find(m=>m.id===applicant)?.attributes.checkedIn,true,'The separately authorized tournament remains available with its coherent state.');
+  pool.query=originalQuery;
+
  }finally{
   resumeRead();if(pendingOverview)await Promise.allSettled([pendingOverview]);pool.query=originalQuery;
+  await beginFixtureCleanup(owner,people);
   const entities=(await owner.query('select id from dartflow_private.platform_entities where owner_id=any($1::uuid[])',[people])).rows.map(r=>r.id);
   const clubs=(await owner.query('select club_id from dartflow_private.club_memberships where user_id=any($1::uuid[])',[people])).rows.map(r=>r.club_id);
   const events=(await owner.query('select id from dartflow_private.events where club_id=any($1::uuid[])',[clubs])).rows.map(r=>r.id);
@@ -63,6 +88,6 @@ test('an overview never combines an old tournament revision with a newly approve
   await owner.query('delete from dartflow_private.mail_provider_events where job_id=any($1::uuid[])',[jobs]);await owner.query('delete from dartflow_private.mail_outbox where recipient_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.mail_events where recipient_key=any($1::text[])',[people.map(p=>`user:${p}`)]);
   await owner.query('delete from dartflow_private.platform_audit where actor_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.platform_members where entity_id=any($1::uuid[])',[entities]);await owner.query('delete from dartflow_private.platform_entities where id=any($1::uuid[])',[entities]);
   for(const table of ['boards','entries','event_staff'])await owner.query(`delete from dartflow_private.${table} where event_id=any($1::uuid[])`,[events]);
-  await owner.query('delete from dartflow_private.events where id=any($1::uuid[])',[events]);await owner.query('delete from dartflow_private.club_memberships where club_id=any($1::uuid[])',[clubs]);await owner.query('delete from dartflow_private.clubs where id=any($1::uuid[])',[clubs]);await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);await owner.end();await closeDatabase();
+  await owner.query('delete from dartflow_private.events where id=any($1::uuid[])',[events]);await owner.query('delete from dartflow_private.club_memberships where club_id=any($1::uuid[])',[clubs]);await owner.query('delete from dartflow_private.clubs where id=any($1::uuid[])',[clubs]);await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);await owner.query('commit');await owner.end();await closeDatabase();
  }
 });

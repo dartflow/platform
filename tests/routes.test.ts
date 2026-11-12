@@ -7,4 +7,8 @@ test('legacy hubs resolve but unknown prototype IDs never become a current match
   assert.equal(legacyDestination('#baan-phone/duindorp-baan-1'),'/link-onbekend');
   assert.equal(legacyDestination('#baan-screen/duindorp-baan-1'),'/link-onbekend');
   assert.equal(legacyDestination('#match/30000000-0000-4000-8000-000000000001'),'/wedstrijd/30000000-0000-4000-8000-000000000001');
+  assert.equal(legacyDestination('#baan-screen/30000000-0000-4000-8000-000000000001'),'/oche-live/30000000-0000-4000-8000-000000000001');
+  assert.equal(legacyDestination('#baanbeheer'),'/app/locations');
+  assert.equal(legacyDestination('#reservations'),'/app/reservations');
+  assert.equal(legacyDestination('#feed'),'/app/feed');
 });

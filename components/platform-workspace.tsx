@@ -14,6 +14,10 @@ import ScoreConsole from "./score-console";
 import ScreenDeviceManager from "./screen-device-manager";
 import IntegrationsPanel from "./integrations-panel";
 import { MailPreferences } from "./mail-policy-panel";
+import {FeedSpace,ScopedChat} from './community-space';
+import {ClubWorkspace} from './club-ui';
+import LocationWorkspace from './location-workspace';
+import type {ClubEntity} from '@/lib/club-types';
 
 type RecordValue = Record<string, unknown>;
 type Member = {
@@ -35,6 +39,7 @@ type Entity = {
   members: Member[];
   canManage?: boolean;
   inviteCode?: string;
+  clubAccess?:import('@/lib/club-types').ClubAccess;
 };
 type Platform = {
   profile: Profile;
@@ -358,11 +363,13 @@ function Form({
 function Scope({
   data,
   defaultValue,
+  permission,
 }: {
   data: Platform;
   defaultValue?: string;
+  permission?:'competitions.manage'|'tournaments.manage';
 }) {
-  const manageable = data.clubs.filter((club) => club.canManage);
+  const manageable = data.clubs.filter((club) => permission?club.clubAccess?.permissions.includes(permission):club.canManage);
   return (
     <Field
       label="Omgeving"
@@ -557,6 +564,10 @@ export default function PlatformWorkspace({
         />
       ) : page === "play" || page === "spelen" ? (
         <Play />
+      ) : page === 'feed' ? (
+        <FeedSpace actorId={data.profile.id} kind={(pieces[1]||'my') as 'my'|'platform'|'club'|'league'|'tournament'} scopeId={pieces[2]||''} />
+      ) : page === 'locations' || page === 'reservations' ? (
+        <LocationWorkspace />
       ) : page === "training" ? (
         <Training data={data} id={id} command={command} busy={busy} error={error} online={online} />
       ) : page === "practice" || page === "lobby" ? (
@@ -928,7 +939,7 @@ function BoundBoardScreen({
         <div>
           <strong>Gekoppeld aan het fysieke bord</strong>
           <small>
-            Het Sprint-scherm toont de actuele baan. Via de vaste QR voer je
+            Het Oche Live-scherm toont de actuele baan. Via de vaste QR voer je
             scores in.
           </small>
         </div>
@@ -946,7 +957,7 @@ function BoundBoardScreen({
               target="_blank"
               rel="noreferrer"
             >
-              Alleen-lezen Sprint openen
+              Alleen-lezen Oche Live openen
             </a>
           ) : (
             <Button
@@ -965,7 +976,7 @@ function BoundBoardScreen({
                 );
               }}
             >
-              Sprint-scherm koppelen
+              Oche Live-scherm koppelen
             </Button>
           )}
         </div>
@@ -1541,6 +1552,7 @@ function Clubs({
     (e) => e.id === id || text(e.state.code) === id,
   );
   if (entity) {
+    if('clubDetails' in entity&&section!=='banen')return <><ClubNavigation id={entity.id}/><ClubWorkspace entity={entity as unknown as ClubEntity} actorId={data.profile.id} players={data.players} command={(action,current)=>command(action as Action,current as unknown as Entity)} busy={busy}/></>;
     const own = entity.members.find((m) => m.id === data.profile.id);
     const manager = entity.canManage === true;
     if (section === "banen") return <>
@@ -1751,9 +1763,11 @@ function Clubs({
       <div className="workspace-grid">
         {data.clubs.length ? (
           data.clubs.map((c) => (
-            <article className="panel workspace-tile" key={c.id}>
+            <article className="panel workspace-tile" key={c.id} style={{borderTop:`3px solid ${/^#[0-9a-f]{6}$/i.test(text(c.state.primaryColor))?text(c.state.primaryColor):'#b7f62b'}`}}>
+              {typeof c.state.logoData==='string'&&c.state.logoData.startsWith('data:image/webp;base64,')&&<img src={c.state.logoData} width={48} height={48} alt={`${c.name} logo`} />}
               <h2>{c.name}</h2>
               <p>{text(c.state.description)}</p>
+              <p>{({closed:'Gesloten',invite:'Alleen op uitnodiging',open:'Direct lid worden',intake:'Aanmelden via intake'} as Record<string,string>)[text(c.state.joinPolicy,'intake')]||'Aanmelden via intake'}</p>
               <p>
                 {c.members.filter((m) => m.status === "active").length} leden
               </p>
@@ -1780,7 +1794,7 @@ function ClubBoards({ club, boards, command, busy }: { club: Entity; boards: Clu
   return <>
     <section className="panel club-boards-intro">
       <div className="section-heading"><div><h2>Vaste verenigingsbanen</h2><p>Een eigen scorebord en vaste QR voor ieder fysiek dartbord. Je kunt direct spelen met een DartFlow-account, zonder evenementinschrijving.</p></div>{club.canManage && <Button primary disabled={busy} onClick={() => setAdding(!adding)}>{adding ? "Toevoegen sluiten" : "Baan toevoegen"}</Button>}</div>
-      <p>Het alleen-lezen baanscherm is zichtbaar voor iedereen met de schermlink. Wie mag spelen, bepaal je per baan.</p>
+      <p>Het alleen-lezen baanscherm is zichtbaar voor iedereen met de schermlink. Wie mag spelen, bepaal je per baan.</p><p>Fysiek baanbeheer heeft eigen locatierechten. Activeer die eenmalig bij <a className="text-link" href="/app/locations">Banen &amp; locaties</a>. Verenigingsrollen geven geen baanbeheer.</p>
     </section>
     {adding && club.canManage && <Form title="Baan toevoegen" submit="Baan aanmaken" busy={busy} onSubmit={async form => {
       const result = await command({ type: "club-board.create", clubId: club.id, name: text(form.get("name")), access: text(form.get("access"), "all") });
@@ -2525,6 +2539,7 @@ function Competitions({
     const member = entity.members.find((m) => m.id === data.profile.id);
     const fixtures = list(entity.state.fixtures);
     const standings = list(entity.state.standings);
+    const communityAccess=manager||(member?.status==='active'&&member.attributes?.registered===true);
     return (
       <>
         <Title
@@ -2536,6 +2551,7 @@ function Competitions({
           {text(entity.state.format, "Poules en knock-out")}
           {entity.state.location ? ` · ${text(entity.state.location)}` : ""}
         </Title>
+        {communityAccess&&<><FeedSpace actorId={data.profile.id} kind={entity.kind as 'league'|'tournament'} scopeId={entity.id} compact/><ScopedChat kind={entity.kind as 'league'|'tournament'} scopeId={entity.id} actorId={data.profile.id} label={entity.kind==='tournament'?'Toernooichat':'Competitiechat'}/></>}
         {manager && (
           <CompetitionControls
             entity={entity}
@@ -3033,7 +3049,7 @@ function Competitions({
         >
           <Field label="Naam" name="name" required />
           <Field label="Locatie" name="location" />
-          <Scope data={data} />
+          <Scope data={data} permission={create==='league'?'competitions.manage':'tournaments.manage'} />
           {create === "tournament" && (
             <label className="workspace-checkbox">
               <input name="approvalRequired" type="checkbox" />

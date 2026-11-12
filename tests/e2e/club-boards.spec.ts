@@ -49,6 +49,8 @@ test("club boards provide permanent registration QR and live read-only scoring w
     const suffix = randomUUID().slice(0, 8);
     const clubName = `Verenigingsbanen ${suffix}`, openName = `Vrij bord ${suffix}`, restrictedName = `Ledenbord ${suffix}`;
     await login(manager, "Danny Goldenbelt", "/app/clubs");
+    const activated=await owner.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action:{type:'location.enable-venue'}}});
+    expect(activated.status(),await activated.text()).toBe(200);
     const clubForm = manager.locator("form").filter({ has: manager.getByRole("heading", { name: "Vereniging oprichten", exact: true }) });
     await clubForm.getByLabel("Naam", { exact: true }).fill(clubName);
     await clubForm.getByRole("button", { name: "Vereniging aanmaken", exact: true }).click();
@@ -71,7 +73,7 @@ test("club boards provide permanent registration QR and live read-only scoring w
     await expect(board.getByRole("img", { name: /QR-code:/ })).toHaveAttribute("src", /^data:image\/png/);
     await screen.goto(screenUrl!);
     await expect(screen.getByRole("heading", { name: openName, exact: true })).toBeVisible();
-    await expect(screen.getByRole("heading", { name: "Scan om te registreren of aan te melden en mee te spelen", exact: true })).toBeVisible();
+    await expect(screen.getByRole("heading", { name: "Scan en speel.", exact: true })).toBeVisible();
     await expect(screen.getByRole("link", { name: "Open deze baan ↗", exact: true })).toHaveAttribute("href", playUrl!);
 
     // A visitor follows the permanent QR, authenticates as their own fixture account,
@@ -146,10 +148,10 @@ test("club boards provide permanent registration QR and live read-only scoring w
     await expect(restricted.getByText("Geblokkeerd", { exact: true })).toBeVisible();
     const restrictedScreen = await viewer.newPage();
     await restrictedScreen.goto(`/baanscherm/${restrictedId}`);
-    await expect(restrictedScreen.getByText("Tijdelijk buiten gebruik", { exact: true })).toBeVisible();
+    await expect(restrictedScreen.getByText("Buiten gebruik", { exact: true })).toBeVisible();
     await expect(restrictedScreen.getByRole("link", { name: "Open deze baan ↗", exact: true })).toHaveAttribute("href", restrictedUrl!);
     await restricted.getByRole("button", { name: "Baan vrijgeven", exact: true }).click();
-    await expect(restrictedScreen.getByText("Klaar om te spelen", { exact: true })).toBeVisible();
+    await expect(restrictedScreen.getByText("Baan vrij", { exact: true })).toBeVisible();
     expect(publicAuthRequests).toBe(0);
 
     // Finish this fixture match through the real scorer and both actual players.
@@ -165,7 +167,7 @@ test("club boards provide permanent registration QR and live read-only scoring w
     expect(state.status).toBe("result");
     await matchAction(first, matchId, { type: "confirm" });
     await matchAction(second, matchId, { type: "confirm" });
-    await expect(screen.getByRole("heading", { name: "De baan is van jullie.", exact: true })).toBeVisible();
+    await expect(screen.getByRole("heading", { name: "Scan en speel.", exact: true })).toBeVisible();
     await expect(screen.getByRole("link", { name: "Open deze baan ↗", exact: true })).toHaveAttribute("href", playUrl!);
     expect(publicAuthRequests).toBe(0);
   } finally {

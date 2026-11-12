@@ -13,11 +13,13 @@ export default function SprintDisplay({
   stale,
   qr,
   scanInstruction,
+  overlay,
 }: {
   snapshot: PublicSnapshot;
   stale: boolean;
   qr: ReactNode;
   scanInstruction?: string;
+  overlay?: ReactNode;
 }) {
   const match = snapshot.match as SnapshotMatch;
   const scroll = useRef<HTMLDivElement>(null);
@@ -38,13 +40,14 @@ export default function SprintDisplay({
   return (
     <main
       className="sprint-display bf-display"
-      aria-label="DartFlow Sprint-baanscherm"
+      aria-label="Oche Live-baanscherm"
     >
       <div className="bf-display__frame sprint-frame">
+        {overlay}
         <section
           className="sprint-board"
           data-solo={match.players.length === 1}
-          aria-label="Sprint live scorebord"
+          aria-label="Oche Live-scorebord"
         >
           <header className="sprint-head">
             <div className="sprint-top">

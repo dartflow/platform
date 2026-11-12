@@ -2,6 +2,9 @@
 export type MailFields = {subject:string;preheader:string;title:string;body:string;cta:string};
 export type MailTemplate = {id:string;label:string;category:string;fields:MailFields;details:string[][];enabled:boolean;readOnly:boolean;trigger:string;variables:string[]};
 export const MAIL_CATALOG: readonly MailTemplate[] = [
+  {id:'club-invite',label:'Persoonlijke verenigingsuitnodiging',category:'Vereniging',fields:{subject:'{{actorName}} nodigt je uit voor {{clubName}}',preheader:'Je hebt een persoonlijke uitnodiging ontvangen.',title:'Kom bij de vereniging.',body:'Hoi {{name}},\n{{actorName}} heeft je uitgenodigd voor {{clubName}}. Open de vereniging om de uitnodiging te bekijken.',cta:'Bekijk uitnodiging'},details:[['Vereniging','{{clubName}}']],enabled:true,readOnly:false,trigger:'Een bevoegd verenigingslid nodigt een concrete speler uit.',variables:['name','actorName','clubName']},
+  {id:'club-request-received',label:'Ontvangstbevestiging lidmaatschap',category:'Vereniging',fields:{subject:'Je aanvraag bij {{clubName}} is ontvangen',preheader:'Je aanvraag is veilig opgeslagen.',title:'We hebben je aanvraag ontvangen.',body:'Hoi {{name}},\nJe lidmaatschapsaanvraag voor {{clubName}} is ontvangen. Je kunt de actuele status bekijken in de vereniging.',cta:'Bekijk aanvraag'},details:[['Vereniging','{{clubName}}']],enabled:true,readOnly:false,trigger:'Een geldige aanvraag is opgeslagen.',variables:['name','clubName']},
+
   {
     "id": "auth-otp",
     "label": "Inlogcode",
@@ -99,7 +102,8 @@ export const MAIL_CATALOG: readonly MailTemplate[] = [
       [
         "Besluit",
         "{{status}}"
-      ]
+      ],
+      ["Toelichting", "{{reason}}"]
     ],
     "enabled": true,
     "readOnly": false,
@@ -107,7 +111,8 @@ export const MAIL_CATALOG: readonly MailTemplate[] = [
     "variables": [
       "clubName",
       "status",
-      "name"
+      "name",
+      "reason"
     ]
   },
   {

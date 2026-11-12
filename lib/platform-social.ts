@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg';
 import { DomainError } from './domain';
 import {saveScoreboardName} from './profile-name';
 import { enqueueDomainMail } from './integrations-mail';
+import {clubAction} from './club-domain';
 import { acceptsCode, addMember, available, blocked, createEntity, entity, isClubMember, member, number, requireAccess, save, text, uuid, view } from './platform-store';
 import type { PlatformCommand, PlatformResponse } from './platform-types';
 
@@ -53,14 +54,8 @@ export async function socialAction(client: PoolClient, actor: string, command: P
     for(const reviewer of reviewers.rows)if(reviewer.user_id!==actor&&reviewer.user_id!==target)await notify(client,command.requestId,'moderation-report',reviewer.user_id,{roomName:a.roomId?(await entity(client,a.roomId)).state.name:'DartFlow',actorName:reporter,reason:text(a.reason,2000)});
     return { ok: true, id };
   }
-  if (!type.startsWith('club.') && !type.startsWith('room.')) return null;
-  if (type === 'club.create') {
-    const id = randomUUID(), name = text(a.name);
-    await client.query('insert into dartflow_private.clubs(id,name) values($1,$2)', [id, name]);
-    await client.query("insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,'organizer')", [id, actor]);
-    const { row, code } = await createEntity(client, actor, 'club', { name, description: a.description ? text(a.description, 2000) : '', capacity: number(a.capacity, 64, 2, 1000), news: [] }, 'public', null, id);
-    return { ok: true, id, code, entity: await view(client, row, actor) };
-  }
+  if(type.startsWith('club.'))return clubAction(client,actor,command);
+  if(!type.startsWith('room.'))return null;
   if (type === 'room.create') {
     const visibility = a.visibility ?? 'public';
     if (!['public', 'private', 'club'].includes(String(visibility))) throw new DomainError('invalid_visibility', 'Kies openbaar, besloten of club.');
@@ -71,49 +66,15 @@ export async function socialAction(client: PoolClient, actor: string, command: P
     return { ok: true, id: row.id, code, entity: await view(client, row, actor) };
   }
   const row = await entity(client, a.id, true);
-  if (row.kind !== (type.startsWith('club.') ? 'club' : 'room')) throw new DomainError('invalid_kind', 'Deze actie hoort bij een ander onderdeel.');
+  if (row.kind !== 'room') throw new DomainError('invalid_kind', 'Deze actie hoort bij een ander onderdeel.');
   if (command.expectedRevision !== undefined && command.expectedRevision !== row.revision) throw new DomainError('revision_conflict', 'Dit onderdeel is gewijzigd. Vernieuw en probeer opnieuw.', 409);
   const self = await member(client, row.id, actor);
-  if(type==='club.settings'||type==='room.settings'){
+  if(type==='room.settings'){
     await requireAccess(client,row,actor,true);
     if(a.name!==undefined)row.state.name=text(a.name,80);
     if(a.description!==undefined)row.state.description=text(a.description,2000,false);
-    if(a.capacity!==undefined){const capacity=number(a.capacity,64,2,row.kind==='club'?1000:64),active=await client.query("select count(*)::integer as n from dartflow_private.platform_members where entity_id=$1 and status='active'",[row.id]);if(capacity<active.rows[0].n)throw new DomainError('capacity_below_members','De capaciteit kan niet lager zijn dan het aantal actieve leden.',409);row.state.capacity=capacity;}
-    if(row.kind==='club')await client.query('update dartflow_private.clubs set name=$2 where id=$1',[row.id,row.state.name]);
+    if(a.capacity!==undefined){const capacity=number(a.capacity,64,2,64),active=await client.query("select count(*)::integer as n from dartflow_private.platform_members where entity_id=$1 and status='active'",[row.id]);if(capacity<active.rows[0].n)throw new DomainError('capacity_below_members','De capaciteit kan niet lager zijn dan het aantal actieve leden.',409);row.state.capacity=capacity;}
     if(row.kind==='room'&&a.slowMode!==undefined)row.state.slowMode=number(a.slowMode,0,0,3600);
-  } else if (type === 'club.request') {
-    if (self?.status === 'active') return { ok: true, id: row.id };
-    if (self?.status === 'banned') throw new DomainError('forbidden', 'Je kunt geen lidmaatschap aanvragen.', 403);
-    await addMember(client, row.id, actor, 'member', 'pending');
-    await notify(client, command.requestId, 'club-request', row.owner_id, { clubName: row.state.name, actionUrl: `/app#clubs/${row.id}` }, row.id, row.id);
-  } else if (type === 'club.approve' || type === 'club.reject') {
-    await requireAccess(client, row, actor, true);
-    const user = uuid(a.userId), target = await member(client, row.id, user);
-    if (target?.status !== 'pending') throw new DomainError('request_missing', 'Deze aanvraag staat niet meer open.', 409);
-    if (type === 'club.approve') {
-      await available(client, row); await addMember(client, row.id, user);
-      await client.query("insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,'player') on conflict(club_id,user_id) do update set role='player'", [row.id, user]);
-    } else await addMember(client, row.id, user, 'member', 'left');
-    await notify(client, command.requestId, 'club-decision', user, { clubName: row.state.name, status: type === 'club.approve' ? 'Goedgekeurd' : 'Afgewezen' }, row.id, row.id);
-  } else if (type === 'club.role') {
-    if (row.owner_id !== actor) throw new DomainError('forbidden', 'Alleen de eigenaar kan rollen wijzigen.', 403);
-    const user = uuid(a.userId), role = String(a.role);
-    if (!['owner', 'admin', 'captain', 'member'].includes(role) || user === actor || (await member(client, row.id, user))?.status !== 'active') throw new DomainError('invalid_role', 'Kies een actief lid en een geldige rol.');
-    await client.query('update dartflow_private.platform_members set role=$3 where entity_id=$1 and user_id=$2', [row.id, user, role]);
-    await client.query('update dartflow_private.club_memberships set role=$3 where club_id=$1 and user_id=$2', [row.id, user, ['owner', 'admin'].includes(role) ? 'organizer' : 'player']);
-    if (role === 'owner') { row.owner_id = user; await client.query("update dartflow_private.platform_members set role='admin' where entity_id=$1 and user_id=$2", [row.id, actor]); }
-    await notify(client,command.requestId,'club-role',user,{clubName:row.state.name,role},row.id,row.id);
-  } else if (type === 'club.news') {
-    await requireAccess(client, row, actor, true);
-    const news = Array.isArray(row.state.news) ? row.state.news : [];
-    row.state.news = [{ id: randomUUID(), title: text(a.title, 120), body: text(a.body, 4000), authorId: actor, createdAt: new Date().toISOString() }, ...news].slice(0, 100);
-  } else if (type === 'club.leave') {
-    await requireAccess(client, row, actor);
-    if (row.owner_id === actor) throw new DomainError('owner_transfer_required', 'Draag het eigendom eerst over.');
-    const busy = await client.query("select 1 from dartflow_private.matches where club_id=$1 and state->>'status' not in ('confirmed','planned') and exists(select 1 from dartflow_private.match_players p where p.match_id=dartflow_private.matches.id and p.user_id=$2)", [row.id, actor]);
-    if (busy.rowCount) throw new DomainError('active_match', 'Rond eerst je actieve wedstrijd af.', 409);
-    await client.query('delete from dartflow_private.club_memberships where club_id=$1 and user_id=$2', [row.id, actor]);
-    await client.query("update dartflow_private.platform_members set status='left' where user_id=$1 and entity_id in (select id from dartflow_private.platform_entities where club_id=$2 or id=$2)", [actor, row.id]);
   } else if (type === 'room.join') {
     if(typeof row.state.competitionId==='string'){const competition=await entity(client,row.state.competitionId),entry=await member(client,competition.id,actor);await requireAccess(client,competition,actor,entry?.attributes.registered!==true);}
     if (row.state.closed || self?.status === 'banned') throw new DomainError('room_unavailable', 'Deze kamer is gesloten of je bent verbannen.', 403);

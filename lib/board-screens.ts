@@ -2,21 +2,24 @@ import {createHash,randomBytes,randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {database,eventAccess,consumeRateLimit} from './db';
 import {getClubBoardScreen} from './club-boards';
+import {readBoardScoreEvents} from './score-events';
 import {checkout,DomainError,matchView} from './domain';
 import {boardLease} from './platform-locks';
 import {uuid} from './platform-store';
 import type {ClubBoardScreenView} from './platform-types';
 import type {BoardScreenDevice,Game,MatchState,PublicSnapshot,Stats,Visit} from './types';
+import {locationManager,locationScreenContext,physicalBoard} from './location-access';
 
 export const BOARD_SCREEN_COOKIE='dartflow-screen';
 export const BOARD_SCREEN_DEVICE_SECONDS=365*24*60*60;
 export const boardScreenCookiePath=(boardId:string)=>`/api/board-screens/${uuid(boardId).toLowerCase()}`;
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
-type BoardRow={id:string;event_id:string;club_id:string;name:string;blocked:boolean;event_name:string;club_name:string;public_screen:boolean;state:MatchState|null};
+type BoardRow={id:string;event_id:string;club_id:string;name:string;blocked:boolean;event_name:string;club_name:string;public_screen:boolean;club_screen:boolean;state:MatchState|null};
 async function board(client:Pick<PoolClient,'query'>,boardId:string):Promise<BoardRow>{
- const result=await client.query<BoardRow>(`select b.id,b.event_id,e.club_id,b.name,b.blocked,e.name as event_name,c.name as club_name,(cb.board_id is not null) as public_screen,m.state
+ const result=await client.query<BoardRow>(`select b.id,b.event_id,e.club_id,b.name,b.blocked,e.name as event_name,c.name as club_name,coalesce(lb.public_screen,(cb.board_id is not null)) as public_screen,(cb.board_id is not null) as club_screen,m.state
   from dartflow_private.boards b join dartflow_private.events e on e.id=b.event_id join dartflow_private.clubs c on c.id=e.club_id
   left join dartflow_private.club_boards cb on cb.board_id=b.id and cb.event_id=b.event_id
+  left join dartflow_private.location_boards lb on lb.board_id=b.id
   left join dartflow_private.matches m on m.board_id=b.id where b.id=$1`,[uuid(boardId)]);
  if(!result.rows.length)throw new DomainError('not_found','Deze baan bestaat niet.',404);
  return result.rows[0];
@@ -28,12 +31,16 @@ async function transaction<T>(run:(client:PoolClient)=>Promise<T>):Promise<T>{
  finally{client.release();}
 }
 async function manager(client:Pick<PoolClient,'query'>,actorId:string,row:BoardRow):Promise<void>{
+ const physical=await physicalBoard(client,row.id);
+ if(physical){if(!await locationManager(client,actorId,physical.location_id))throw new DomainError('forbidden','Alleen de actuele locatiebeheerder kan een vast scherm koppelen of intrekken.',403);return;}
  const access=await eventAccess(client,uuid(actorId),row.event_id);
  if(!access.canManage)throw new DomainError('forbidden','Alleen de actuele wedstrijdleiding kan een vast scherm koppelen of intrekken.',403);
 }
 /** Match the event -> club ordering used by board mutations, then read current roles. */
 async function lockedManagerBoard(client:PoolClient,actorId:string,boardId:string):Promise<BoardRow>{
  const before=await board(client,boardId);
+ const physical=await physicalBoard(client,boardId);
+ if(physical){await client.query('select id from dartflow_private.locations where id=$1 for update',[physical.location_id]);const current=await board(client,boardId);await manager(client,actorId,current);return current;}
  await client.query('select id from dartflow_private.events where id=$1 for update',[before.event_id]);
  await client.query("select id from dartflow_private.platform_entities where id=$1 and kind='club' for share",[before.club_id]);
  const current=await board(client,boardId);await manager(client,actorId,current);return current;
@@ -113,17 +120,17 @@ const displayStats=(stats:Stats[]):Stats[]=>stats.map(s=>({total:s.total,darts:s
 /** Fixed physical identity, fresh assignment every read, and only the Sprint display allowlist. */
 export async function getBoardScreen(boardId:string,deviceToken?:string):Promise<ClubBoardScreenView>{
  const row=await board(database(),boardId);await authorizeScreen(row,deviceToken);
- if(row.public_screen)return getClubBoardScreen(row.id);
- const lease=await boardLease(database(),row.id);let match:PublicSnapshot['match']=null;
+ if(row.club_screen)return getClubBoardScreen(row.id);
+ const lease=await boardLease(database(),row.id),location=await locationScreenContext(database(),row.id,row.state?.id??lease?.id);let match:PublicSnapshot['match']=null;
  if(row.state){
   const view=matchView(row.state,'',false);
   match={id:`board-${row.id}`,revision:view.revision,status:view.status,players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:displayVisits(view.visits.filter(v=>v.leg===view.legNumber)),winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:{startScore:view.settings.startScore,bestOfLegs:view.settings.bestOfLegs,bestOfSets:view.settings.bestOfSets,...(view.settings.legLimit===undefined?{}:{legLimit:view.settings.legLimit})},writerId:'',stats:displayStats(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
  }else if(lease?.kind==='training'){
   const game=lease.state.game as Game;
   const profile=await database().query<{name:string}>('select name from dartflow_private.profiles where id=$1',[lease.owner_id]);
-  const revision=await database().query<{revision:number}>('select revision from dartflow_private.platform_entities where id=$1',[lease.id]);
-  match={id:`board-${row.id}`,revision:revision.rows[0]?.revision??0,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:displayVisits(game.visits),winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:displayStats([game.stats[0]]),legNumber:Math.max(1,...game.visits.map(v=>v.leg)),setNumber:1,paused:false};
+  match={id:`board-${row.id}`,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:displayVisits(game.visits),winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:displayStats([game.stats[0]]),legNumber:Math.max(1,...game.visits.map(v=>v.leg)),setNumber:1,paused:false};
  }
  const occupied=Boolean(row.state||lease);
- return {board:{id:row.id,name:row.name,clubName:row.event_name,access:'club',blocked:row.blocked,occupied,playUrl:`/baan/${row.id}`,screenUrl:`/baanscherm/${row.id}`},status:row.blocked?'blocked':match?'playing':lease?'waiting':'available',snapshot:{board:{id:row.id,name:row.name},event:{name:row.event_name},match}};
+ const blocked=row.blocked||Boolean(location?.physical.archived_at),eventName=location?.reservation?.label??location?.physical.location_name??row.event_name;
+ return {board:{id:row.id,name:row.name,clubName:location?.physical.location_name??row.event_name,access:location?.physical.kind==='venue'?'all':'club',blocked,occupied,playUrl:`/baan/${row.id}`,screenUrl:`/baanscherm/${row.id}`,...(location?{locationKind:location.physical.kind}:{})},status:blocked?'blocked':match?'playing':lease?'waiting':'available',snapshot:{board:{id:row.id,name:row.name},event:{name:eventName},match,...await readBoardScoreEvents(database(),row.id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
 }

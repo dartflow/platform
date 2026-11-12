@@ -142,10 +142,10 @@ test("one physical QR binds persisted solo and two real local players to its rea
     fullPage: true,
   });
   await a
-    .getByRole("button", { name: "Sprint-scherm koppelen", exact: true })
+    .getByRole("button", { name: "Oche Live-scherm koppelen", exact: true })
     .click();
   const participantLink = await a
-    .getByRole("link", { name: "Alleen-lezen Sprint openen", exact: true })
+    .getByRole("link", { name: "Alleen-lezen Oche Live openen", exact: true })
     .getAttribute("href");
   expect(participantLink).toMatch(/^\/scherm\/[A-Za-z0-9_-]{64}$/);
   const limitedScreen = await publicViewer.newPage();

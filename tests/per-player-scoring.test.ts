@@ -1,3 +1,4 @@
+import {beginFixtureCleanup} from './helpers/cleanup-v17';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -86,6 +87,7 @@ test('persisted remote/hybrid setup gives each account its own turn while local 
    }finally{await owner.query('rollback');}
   });
  }finally{
+  await beginFixtureCleanup(owner,people);
   const clubs=(await owner.query('select club_id from dartflow_private.club_memberships where user_id=any($1::uuid[])',[people])).rows.map(row=>row.club_id);
   const entities=(await owner.query('select id from dartflow_private.platform_entities where owner_id=any($1::uuid[])',[people])).rows.map(row=>row.id);
   const events=(await owner.query('select id from dartflow_private.events where club_id=any($1::uuid[])',[clubs])).rows.map(row=>row.id);
@@ -106,6 +108,6 @@ test('persisted remote/hybrid setup gives each account its own turn while local 
   await owner.query('delete from dartflow_private.club_memberships where club_id=any($1::uuid[])',[clubs]);
   await owner.query('delete from dartflow_private.clubs where id=any($1::uuid[])',[clubs]);
   await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);
-  await owner.end();await closeDatabase();
+  await owner.query('commit');await owner.end();await closeDatabase();
  }
 });

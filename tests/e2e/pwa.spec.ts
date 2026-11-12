@@ -22,7 +22,7 @@ test('fixed board apps retain separate manifests, QR, live/offline state and exp
   try{
     expect((await(await owner.request.get('/api/session')).json()).local).toBe(true);await login(manager);
     const suffix=randomUUID().slice(0,6),club=await command(owner,{type:'club.create',name:`PWA ${suffix}`});
-    const a=(await command(owner,{type:'club-board.create',clubId:club.id,name:`Baan 1 ${suffix}`})).board;
+    await command(owner,{type:'location.enable-venue'});const a=(await command(owner,{type:'club-board.create',clubId:club.id,name:`Baan 1 ${suffix}`})).board;
     const b=(await command(owner,{type:'club-board.create',clubId:club.id,name:`Baan 2 ${suffix}`})).board;
     let authRequests=0;viewer.on('request',request=>{if(/^\/(api\/session|api\/auth|auth)(\/|$)/.test(new URL(request.url()).pathname))authRequests++;});
     const first=await viewer.newPage(),second=await viewer.newPage();
@@ -31,10 +31,10 @@ test('fixed board apps retain separate manifests, QR, live/offline state and exp
     expect(am.data.id).not.toBe(bm.data.id);expect(am.data.start_url).toBe(a.screenUrl);expect(bm.data.start_url).toBe(b.screenUrl);expect(am.data.scope).toBe(a.screenUrl);expect(bm.data.scope).toBe(b.screenUrl);
     await first.reload();expect((await manifest(first)).data.id).toBe(am.data.id);
     await command(owner,{type:'club-board.update',boardId:a.id,name:`Hoofdbaan ${suffix}`});await expect(first.getByRole('heading',{name:`Hoofdbaan ${suffix}`,exact:true})).toBeVisible();const renamed=await manifest(first);
-    expect(renamed.data.name).toBe(`DartFlow · Hoofdbaan ${suffix}`);for(const key of ['id','start_url','scope'])expect(renamed.data[key]).toBe(am.data[key]);
+    expect(renamed.data.name).toBe(`Oche Live · Hoofdbaan ${suffix}`);for(const key of ['id','start_url','scope'])expect(renamed.data[key]).toBe(am.data[key]);
     await expect(first.getByRole('link',{name:'Open deze baan ↗',exact:true})).toHaveAttribute('href',a.playUrl);
     training=await command(owner,{type:'board.start',boardId:a.id,mode:'solo',startScore:501});
-    await expect(first.locator('.sprint-number').first()).toHaveText('501');await expect(second.getByRole('heading',{name:'De baan is van jullie.',exact:true})).toBeVisible();
+    await expect(first.locator('.sprint-number').first()).toHaveText('501');await expect(second.getByRole('heading',{name:'Scan en speel.',exact:true})).toBeVisible();
     const scored=await command(owner,{type:'training.score',id:training!.id,score:180},training!.entity.revision);training=scored;
     await expect(first.locator('.sprint-number').first()).toHaveText('321');
     await viewer.setOffline(true);await expect(first.getByRole('status').filter({hasText:'Offline'})).toBeVisible();await expect(first.locator('.sprint-number').first()).toHaveText('321');
@@ -43,7 +43,7 @@ test('fixed board apps retain separate manifests, QR, live/offline state and exp
     // A natural checkout releases the board without a separate finish button.
     training=await command(owner,{type:'training.score',id:training!.id,score:180},training!.entity.revision);
     await command(owner,{type:'training.score',id:training!.id,score:121,doubleConfirmed:true},training!.entity.revision);training=null;
-    await expect(first.getByRole('heading',{name:'De baan is van jullie.',exact:true})).toBeVisible();
+    await expect(first.getByRole('heading',{name:'Scan en speel.',exact:true})).toBeVisible();
     const idle=await(await viewer.request.get(`/api/board-screens/${a.id}`)).json();expect(idle.status).toBe('available');expect(idle.snapshot.match).toBeNull();
     const fallback=await viewer.newPage();await fallback.goto(`/scorebord?baan=${a.id}`);await expect(fallback.getByLabel('Vaste baanlink of baan-ID')).toHaveValue(a.id);
     // Query parameters propose a board; only this explicit action persists it.
@@ -54,7 +54,7 @@ test('fixed board apps retain separate manifests, QR, live/offline state and exp
     expect(await fallback.evaluate(()=>localStorage.getItem('dartflow-scorebord-fixed-board-v1'))).toBe(a.id);expect(authRequests).toBe(0);
     await first.evaluate(async()=>{await navigator.serviceWorker.ready;await fetch('/assets/pwa/player-192.png');});
     const cached=await first.evaluate(async()=>{const paths:string[]=[];for(const key of await caches.keys())if(key.startsWith('dartflow-static-')){const cache=await caches.open(key);for(const request of await cache.keys())paths.push(new URL(request.url).pathname);}return paths;});
-    expect(cached.length).toBeGreaterThan(0);expect(cached.every(path=>/^\/assets\/(?:pwa\/(?:player|scoreboard)-(?:180|192|512)\.png|dartflow-logo\.svg|dartflow-icon\.svg|dartboard\.svg)$/.test(path))).toBe(true);
+    expect(cached.length).toBeGreaterThan(0);expect(cached.every(path=>/^\/assets\/(?:pwa\/(?:player|scoreboard|oche-live)-(?:180|192|512)\.png|dartflow-logo\.svg|dartflow-icon\.svg|dartboard\.svg)$/.test(path))).toBe(true);
 
   }finally{
     await viewer.setOffline(false);if(training)await command(owner,{type:'training.finish',id:training.id},training.entity.revision).catch(()=>{});
@@ -92,7 +92,7 @@ test('private board pairing survives reopening, stays board-scoped and revocatio
     await screen.goto(`/baanscherm/${a.id}`);await expect(screen.getByRole('heading',{name:'Koppel dit baanscherm'})).toBeVisible();await expect(screen.getByRole('button',{name:'Installeer dit baanscherm'})).toBeVisible();
     const created=await owner.request.post(`/api/boards/${a.id}/screen-devices`,{headers:{Origin:origin},data:{name:`TV fixture ${suffix}`}});expect(created.status(),await created.text()).toBe(200);const grant=await created.json();
     await screen.getByLabel('Koppelcode van de wedstrijdleiding').fill(grant.pairing.code);await screen.getByRole('button',{name:'Dit baanscherm koppelen',exact:true}).click();await expect(screen.getByRole('heading',{name:a.name,exact:true})).toBeVisible();
-    await expect(screen.getByRole('button',{name:'Installeer dit baanscherm'})).toBeVisible();expect((await manifest(screen)).data.name).toBe(`DartFlow · ${a.name}`);
+    await expect(screen.getByRole('button',{name:'Installeer dit baanscherm'})).toBeVisible();expect((await manifest(screen)).data.name).toBe(`Oche Live · ${a.name}`);
     const cookies=await display.cookies(`${origin}/api/board-screens/${a.id}`);const device=cookies.find(cookie=>cookie.name==='dartflow-screen');expect(device?.httpOnly).toBe(true);expect(device?.path).toBe(`/api/board-screens/${a.id}`);
     expect((await display.cookies(`${origin}/api/board-screens/${b.id}`)).some(cookie=>cookie.name==='dartflow-screen')).toBe(false);expect((await display.cookies(`${origin}/api/session`)).some(cookie=>cookie.name==='dartflow-screen')).toBe(false);
     await screen.reload();await expect(screen.getByRole('heading',{name:a.name,exact:true})).toBeVisible();const other=await display.newPage();await other.goto(`/baanscherm/${b.id}`);await expect(other.getByRole('heading',{name:'Koppel dit baanscherm'})).toBeVisible();

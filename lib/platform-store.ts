@@ -7,6 +7,8 @@ import {allocateInvitationCode,invitationCodeAccepted}from'./invitations';
 import type { PlatformEntity, PlatformKind, PlatformMember, PlatformState } from './platform-types';
 import type { MatchState, Profile, Settings } from './types';
 import { requireScoreboardName } from './profile-name';
+import {clubView} from './club-domain';
+import {clubIsActiveMember,clubPermission} from './club-access';
 
 export type EntityRow = { id: string; kind: PlatformKind; owner_id: string; club_id: string | null; visibility: string; revision: number; state: PlatformState; invite_hash: string | null; invite_expires_at: Date | null;invitation_code?:string|null };
 export type Client = Pick<PoolClient, 'query'>;
@@ -45,8 +47,7 @@ export async function member(client: Client, id: string, actor: string): Promise
   return rows[0];
 }
 export async function isClubMember(client: Client, clubId: string, actor: string, manage = false): Promise<boolean> {
-  const { rows } = await client.query('select role from dartflow_private.club_memberships where club_id=$1 and user_id=$2', [clubId, actor]);
-  return rows.length > 0 && (!manage || rows[0].role === 'organizer');
+  return manage?await clubPermission(client,clubId,actor,'competitions.manage')||await clubPermission(client,clubId,actor,'tournaments.manage'):clubIsActiveMember(client,clubId,actor);
 }
 export async function blocked(client: Client, a: string, b: string): Promise<boolean> {
   return Boolean((await client.query("select 1 from dartflow_private.platform_relationships where kind='block' and ((source_id=$1 and target_id=$2) or (source_id=$2 and target_id=$1))", [a, b])).rowCount);
@@ -58,14 +59,18 @@ export async function requireAccess(client: Client, row: EntityRow, actor: strin
   if (['room','lobby'].includes(row.kind) && await blocked(client,actor,row.owner_id))throw new DomainError('blocked','Deze ruimte is geblokkeerd.',403);
   if (m?.status === 'banned') throw new DomainError('room_banned', 'Je hebt geen toegang tot deze ruimte.', 403);
   if (row.club_id && !(await isClubMember(client, row.club_id, actor))) {if(manage||!allowsExternalParticipants(row)||m?.status!=='active'||m.attributes.registered!==true)throw new DomainError('forbidden','Je hebt geen toegang tot deze club of dit evenement.',403);}
-  if(manage&&row.club_id&&['league','tournament'].includes(row.kind)&&!(await isClubMember(client,row.club_id,actor,true)))throw new DomainError('forbidden','Je hebt geen actuele beheerdersrol in deze club.',403);
+  if(manage&&row.club_id&&['league','tournament'].includes(row.kind)){
+    if(!await clubPermission(client,row.club_id,actor,row.kind==='league'?'competitions.manage':'tournaments.manage'))throw new DomainError('forbidden','Je hebt geen actueel beheerrecht voor dit evenement.',403);
+    return m;
+  }
   if (manage ? !(own || m?.status === 'active' && ['owner', 'admin', 'moderator'].includes(m.role)) : !(own || m?.status === 'active')) throw new DomainError('forbidden', 'Je hebt geen toegang tot dit onderdeel.', 403);
   return m;
 }
 export async function view(client: Client, row: EntityRow, actor: string,cachedMembers?:PlatformMember[]): Promise<PlatformEntity> {
+  if(row.kind==='club')return clubView(client,row,actor,cachedMembers);
   const members=cachedMembers??(await client.query<PlatformMember>('select m.user_id as id,p.name,m.role,m.status,m.attributes from dartflow_private.platform_members m join dartflow_private.profiles p on p.id=m.user_id where m.entity_id=$1 order by m.created_at,m.user_id', [row.id])).rows;
   const own = row.owner_id === actor, self = members.find(m => m.id === actor);
-  const canManage = own || self?.status === 'active' && ['owner', 'admin', 'moderator'].includes(self.role);
+  const canManage = row.club_id&&['league','tournament'].includes(row.kind)?await clubPermission(client,row.club_id,actor,row.kind==='league'?'competitions.manage':'tournaments.manage'):own || self?.status === 'active' && ['owner', 'admin', 'moderator'].includes(self.role);
   const full = own || self?.status === 'active';
   const state = structuredClone(row.state);
   if (!full) { delete state.game; delete state.undo; delete state.ready; delete state.coreClubId; }

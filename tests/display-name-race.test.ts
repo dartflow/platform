@@ -1,3 +1,4 @@
+import {beginFixtureCleanup} from './helpers/cleanup-v17';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -64,6 +65,7 @@ test('profile confirmation and concurrent match creation keep one current scoreb
   });
  }finally{
   await holder.query('rollback');
+  await beginFixtureCleanup(owner,people);
   const entities=(await owner.query('select id from dartflow_private.platform_entities where owner_id=any($1::uuid[])',[people])).rows.map(r=>r.id);
   const clubs=(await owner.query('select club_id from dartflow_private.club_memberships where user_id=any($1::uuid[])',[people])).rows.map(r=>r.club_id);
   const events=(await owner.query('select id from dartflow_private.events where club_id=any($1::uuid[])',[clubs])).rows.map(r=>r.id);

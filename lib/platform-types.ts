@@ -1,7 +1,7 @@
 import type { Game, MatchView, Profile, PublicSnapshot,ResultView, Settings } from './types';
 
 export type ClubBoardView = { id:string;clubId:string;name:string;access:'all'|'club';blocked:boolean;occupied:boolean;canManage:boolean;playUrl:string;screenUrl:string };
-export type ClubBoardScreenView = {board:Omit<ClubBoardView,'clubId'|'canManage'>&{clubName:string};status:'available'|'waiting'|'playing'|'blocked';snapshot:PublicSnapshot};
+export type ClubBoardScreenView = {board:Omit<ClubBoardView,'clubId'|'canManage'>&{clubName:string;locationKind?:'home'|'venue'};status:'available'|'waiting'|'playing'|'blocked';snapshot:PublicSnapshot;reservation?:{label:string;startsAt:string;endsAt:string;overrun:boolean}};
 
 export type PlatformKind = 'training' | 'club' | 'room' | 'lobby' | 'league' | 'tournament';
 export type PlatformMember = { id: string; name: string; role: string; status: string; attributes: Record<string, unknown> };

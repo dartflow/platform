@@ -6,6 +6,10 @@ import { DomainError, matchView } from './domain';
 import {resolveInvitation}from'./invitations';
 import {boardAction}from'./platform-boards';
 import {clubBoardAction,listClubBoards,revalidateClubBoardCommand}from'./club-boards';
+import {communityAction,revalidateCommunityCommand,getCommunityChat} from './community';
+import {recordScoreEvents} from './score-events';
+import {locationAction,revalidateLocationCommand} from './locations';
+import {revalidateClubCommand} from './club-domain';
 import { autoAssign, competitionAction } from './platform-competitions';
 import { advanceFixtures, newTraining, standings, trainingAction } from './platform-domain';
 import { socialAction } from './platform-social';
@@ -20,6 +24,10 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
   const actor = uuid(actorId);
   if (!command || typeof command !== 'object' || !command.action || typeof command.action.type !== 'string' || command.action.type.length > 80 || !command.requestId || (command.expectedRevision !== undefined && (!Number.isSafeInteger(command.expectedRevision) || command.expectedRevision < 0))) throw new DomainError('invalid_command', 'Ongeldig platformcommando.');
   uuid(command.requestId);
+  if(command.action.type.startsWith('community.')){
+    const limit=await consumeRateLimit(`community:actor:${actor}`,80,60);
+    if(!limit.allowed)throw Object.assign(new DomainError('rate_limited',`Te veel berichten. Wacht ${limit.retryAfter} seconden.`,429),{retryAfter:limit.retryAfter});
+  }
   // These counters must commit even when a guessed code fails and its command rolls back.
   if(invitationAttemptRequired(command.action))for(const [key,max] of [[`invite:actor:${actor}`,10],['invite:global',120]] as const){
     const limit=await consumeRateLimit(key,max,60);
@@ -37,12 +45,16 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
       const response=receipts[0].response as PlatformResponse;
       if(command.action.type==='invitation.resolve')await resolveInvitation(client,actor,command.action.code);
       await revalidateClubBoardCommand(client,actor,command,response);
+      await revalidateCommunityCommand(client,actor,command);
+      await revalidateLocationCommand(client,actor,command,response);
+      await revalidateClubCommand(client,actor,command,response);
       if(['board.start','board.screen'].includes(command.action.type)){
         const scope=await client.query('select event_id from dartflow_private.boards where id=$1',[uuid(command.action.boardId)]);
         if(!scope.rows.length)throw new DomainError('not_found','Deze baan bestaat niet.',404);
         await eventAccess(client,actor,scope.rows[0].event_id);
       }
       if(response.entity){const row=await entity(client,response.entity.id);const m=await member(client,row.id,actor);
+        if(row.kind==='club'){response.entity=await view(client,row,actor);return response;}
         if(typeof row.state.boardId==='string'&&typeof row.state.eventId==='string')await eventAccess(client,actor,row.state.eventId);
         if(m?.status==='banned'||(row.club_id&&!(await isClubMember(client,row.club_id,actor)))||await blocked(client,actor,row.owner_id)||(row.visibility==='private'&&row.owner_id!==actor&&!m?.status.match(/^(active|invited|pending|waitlisted)$/)))throw new DomainError('forbidden','Je hebt geen toegang meer tot dit onderdeel.',403);
       }
@@ -50,7 +62,9 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
     }
     const action = command.action;
     let result: PlatformResponse | null = null;
-    if(action.type.startsWith('club-board.'))result=await clubBoardAction(client,actor,command);
+    if(action.type.startsWith('community.'))result=await communityAction(client,actor,command);
+    else if(action.type.startsWith('location.')||action.type.startsWith('reservation.'))result=await locationAction(client,actor,command);
+    else if(action.type.startsWith('club-board.'))result=await clubBoardAction(client,actor,command);
     else if(['board.start','board.screen'].includes(action.type))result=await boardAction(client,actor,command);
     else if (action.type === 'invitation.resolve') {
       result={ok:true,...await resolveInvitation(client,actor,action.code)};
@@ -81,6 +95,7 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
         const occupied=await client.query('select 1 from dartflow_private.matches where board_id=$1',[row.state.boardId]);
         if(Number(row.state.boardLeaseUntil??0)<=Date.now()||row.state.boardHeld!==true||occupied.rowCount)throw new DomainError('board_session_expired','Deze baanopstelling is verlopen. Scan de baan opnieuw; je training blijft bewaard.',409);
       }
+      const previousVisits=row.state.game?.visits.length??0;
       row.state = trainingAction(row.state, action);
       if(typeof row.state.boardId==='string'){
         // A natural checkout ends this physical session in the same transaction as its score.
@@ -89,6 +104,11 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
         else row.state.boardLeaseUntil=Date.now()+30*60_000;
       }
       await save(client, row);
+      if(action.type==='training.score'){
+        const name=String((await client.query('select name from dartflow_private.profiles where id=$1',[actor])).rows[0]?.name??'Speler');
+        await recordScoreEvents(client,typeof row.state.boardId==='string'?row.state.boardId:null,row.id,row.revision,'score',(row.state.game?.visits.slice(previousVisits)??[]).map(visit=>({score:visit.score,checkout:visit.checkout,bust:visit.bust,playerIndex:visit.playerIndex,playerName:visit.playerIndex===0?name:'Dartbot'})));
+      }
+      else if(action.type==='training.undo')await recordScoreEvents(client,typeof row.state.boardId==='string'?row.state.boardId:null,row.id,row.revision,'undo');
       result = { ok: true, id: row.id, entity: await view(client, row, actor) };
     } else result = await socialAction(client, actor, command) ?? await competitionAction(client, actor, command);
     if (!result) throw new DomainError('invalid_action', 'Onbekende platformactie.');
@@ -156,13 +176,21 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
     (select coalesce(jsonb_agg(jsonb_build_object('id',m.user_id,'name',p.name,'role',m.role,'status',m.status,'attributes',m.attributes) order by m.created_at,m.user_id),'[]'::jsonb) from dartflow_private.platform_members m join dartflow_private.profiles p on p.id=m.user_id where m.entity_id=e.id) as member_snapshot,
     (select i.code from dartflow_private.invitation_codes i where i.entity_id=e.id and i.expires_at>now() order by i.created_at desc,i.code limit 1) as invitation_code from dartflow_private.platform_entities e where
     (e.owner_id=$1 or exists(select 1 from dartflow_private.platform_members m where m.entity_id=e.id and m.user_id=$1 and m.status in ('active','invited','pending','waitlisted')) or (e.visibility='public' and e.kind in ('club','room','league','tournament')) or (e.visibility='club' and exists(select 1 from dartflow_private.club_memberships c where c.club_id=e.club_id and c.user_id=$1)))
+    and (e.kind<>'club' or coalesce(e.state->>'lifecycle','active')='active' or (e.owner_id=$1 and e.state->>'lifecycle'='inactive'))
+    and (e.club_id is null or not exists(select 1 from dartflow_private.platform_entities c where c.id=e.club_id and c.kind='club' and coalesce(c.state->>'lifecycle','active')<>'active'))
     and not exists(select 1 from dartflow_private.platform_members m where m.entity_id=e.id and m.user_id=$1 and m.status='banned')
     and (e.club_id is null or exists(select 1 from dartflow_private.club_memberships c where c.club_id=e.club_id and c.user_id=$1) or (e.kind in ('league','tournament') and e.state->>'eligibility' in ('all','code')))
     and (e.kind<>'room' or e.state->>'competitionId' is null or exists(select 1 from dartflow_private.platform_entities ce left join dartflow_private.platform_members cm on cm.entity_id=ce.id and cm.user_id=$1 where ce.id::text=e.state->>'competitionId' and (ce.owner_id=$1 or(cm.status='active' and cm.attributes->>'registered'='true')) and (ce.club_id is null or exists(select 1 from dartflow_private.club_memberships c where c.club_id=ce.club_id and c.user_id=$1) or ce.state->>'eligibility' in ('all','code'))))
     and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$1 and b.target_id=e.owner_id) or (b.target_id=$1 and b.source_id=e.owner_id)))
     order by e.updated_at desc,e.id limit 250`, [actor]);
   const memberRows={rows:entities.flatMap(row=>row.member_snapshot.map(member=>({...member,entityId:row.id})))};
-  const list = await Promise.all(entities.map(row => view(client, row, actor,memberRows.rows.filter(m=>m.entityId===row.id))));
+  // A directory row may lose scope after the list query. Omit that club using
+  // its fresh ACL; unrelated event snapshots retain their original member snapshot.
+  const projected = await Promise.all(entities.map(async row => {
+    try{return await view(client,row,actor,memberRows.rows.filter(m=>m.entityId===row.id));}
+    catch(error){if(row.kind==='club'&&error instanceof DomainError&&[403,404].includes(error.status))return null;throw error;}
+  }));
+  const list = projected.filter((item):item is NonNullable<typeof item>=>item!==null);
   const { rows: people } = await client.query<Profile>(`select p.id,p.name from dartflow_private.profiles p left join dartflow_private.platform_preferences f on f.user_id=p.id where p.id<>$1 and coalesce(f.discoverable,true)
     and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$1 and b.target_id=p.id) or (b.target_id=$1 and b.source_id=p.id))) order by p.name,p.id limit 200`, [actor]);
   const { rows: relationships } = await client.query<{ source_id: string; target_id: string; kind: string; name: string }>('select r.*,p.name from dartflow_private.platform_relationships r join dartflow_private.profiles p on p.id=case when r.source_id=$1 then r.target_id else r.source_id end where r.source_id=$1 or r.target_id=$1', [actor]);
@@ -221,6 +249,12 @@ export async function sendMatchSignal(actorId: string, matchId: string, raw: unk
   const actor = uuid(actorId), requestId = uuid(input?.requestId);
   const kind = input.type === 'leave' ? 'hangup' : input.type;
   if (!['offer', 'answer', 'ice', 'hangup', 'chat', 'preflight'].includes(kind) || Buffer.byteLength(JSON.stringify(input.payload ?? null)) > 65536) throw new DomainError('invalid_signal', 'Ongeldig of te groot verbindingsbericht.');
+  if(kind==='chat'){
+    const body=input.payload&&typeof input.payload==='object'&&'body' in input.payload?input.payload.body:undefined;
+    const result=await executePlatformCommand(actor,{requestId,action:{type:'community.message',scopeKind:'match',scopeId:matchId,body}});
+    const message=await database().query<{id:number}>('select sequence::float8 as id from dartflow_private.community_messages where id=$1',[result.id]);
+    return {ok:true,id:message.rows[0].id};
+  }
   return transaction(async client => {
     await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))', [`command:${actor}`]);
     const players = await signalAccess(client, actor, matchId);
@@ -322,9 +356,8 @@ export async function reconcilePlatformCalls():Promise<void>{
 }
 
 export async function getMatchChat(actorId:string,matchId:string):Promise<{messages:PlatformMessage[]}>{
- await signalAccess(database(),actorId,matchId);
- const {rows}=await database().query<PlatformMessage>(`select * from (select s.id::text as id,s.sender_id as "authorId",p.name as "authorName",s.payload->>'body' as body,s.created_at as "createdAt" from dartflow_private.platform_signals s join dartflow_private.profiles p on p.id=s.sender_id where s.match_id=$1 and s.kind='chat' order by s.id desc limit 100) messages order by "createdAt",id`,[matchId]);
- return {messages:rows};
+ const page=await getCommunityChat(actorId,'match',matchId);
+ return {messages:page.messages.filter(message=>!message.deleted).map(({id,authorId,authorName,body,createdAt})=>({id,authorId,authorName,body,createdAt}))};
 }
 export async function sendMatchChat(actorId:string,matchId:string,input:unknown){
  const value=input as {requestId:string;body:unknown};if(typeof value?.body!=='string'||!value.body.trim()||value.body.length>2000)throw new DomainError('invalid_message','Gebruik een bericht van 1 tot 2000 tekens.');
