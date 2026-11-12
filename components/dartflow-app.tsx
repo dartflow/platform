@@ -31,6 +31,7 @@ import type {
   ResultView,
 } from "../lib/types";
 import {requiresDisplayName,validDisplayName} from "../lib/display-name";
+import BoardActivityNotice from './board-activity-notice';
 import {safeNext} from "../lib/config";
 
 type Session = {
@@ -62,6 +63,8 @@ type IconName =
   | "bolt";
 const labels: Record<string, string> = {
   planned: "Gepland",
+  interrupted: "Onderbroken",
+  abandoned: "Verlopen",
   called: "Opgeroepen",
   ready: "Gereed",
   live: "Live",
@@ -1715,7 +1718,7 @@ function MatchPage({
         await refreshMatch();
       } catch (e) {
         const status = (e as Error & { status?: number }).status;
-        setConflict(status === 409 || status === 400 || status === 403);
+        setConflict(status === 409 || status === 400 || status === 403 || status === 410);
         setActionError(
           e instanceof Error
             ? e.message
@@ -1782,6 +1785,7 @@ function MatchPage({
         )}
       </>
     );
+  if(match.status==='abandoned')return <><Heading kicker="BAANMODUS" title="Baanpartij beëindigd"/><div className="panel"><p>De baan is vrijgegeven. De voorlopige scores en statistieken van deze afgebroken partij zijn gewist.</p><a className="button gold" href="/app/spelen">Nieuwe partij starten</a></div></>;
   const tablet =
     typeof location !== "undefined" &&
     new URLSearchParams(location.search).get("tablet") === "1" &&
@@ -1949,7 +1953,8 @@ function MatchPage({
   const activeConsole = consoleOpen && match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore);
   return (
     <>
-      {activeConsole && <ScoreConsole title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={match.players.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} message={actionError || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
+      {!activeConsole&&<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>}
+      {activeConsole && <ScoreConsole activity={<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={match.players.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} message={actionError || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
       {match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore) && <button className="button gold full" onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</button>}
       <Heading
         kicker={`${event?.name || "BAANMODUS"}${match.boardId ? ` · ${boardName}` : ""}`}
@@ -2400,7 +2405,7 @@ function MatchPage({
             <div className="panel management-actions">
               <div className="panel-kicker">WEDSTRIJDLEIDING</div>
               <h3>Regie van deze partij</h3>
-              {match.status === "planned" && (
+              {["planned","interrupted"].includes(match.status) && (
                 <>
                   <label className="field">
                     Baan
@@ -2522,11 +2527,11 @@ function CompleteProfile({user}:{user:Profile}) {
     }catch(error){setError(error instanceof Error?error.message:'Opslaan is niet gelukt.');}finally{setBusy(false);}
   }
   return <div className="auth-page"><div className="auth-brand"><img src="/assets/dartflow-logo.svg" alt="DartFlow" /></div>
-    <form className="auth-card" onSubmit={complete}><Badge>REGISTRATIE AFRONDEN</Badge><h1>Hoe heet je op het scorebord?</h1>
-      <p>Bevestig je naam of pas het voorstel aan. Deze naam zien andere spelers in de lobby, de wedstrijd en op het scorebord.</p>
-      <label className="field">Naam op het scorebord<input name="name" autoComplete="nickname" required maxLength={80} value={name} onChange={event=>setName(event.target.value)} disabled={busy} /></label>
+    <form className="auth-card" onSubmit={complete}><Badge>REGISTRATIE AFRONDEN</Badge><h1>Kies je gebruikersnaam</h1>
+      <p>Je gebruikersnaam is uniek in heel DartFlow. Hoofdletters maken geen verschil. Deze naam zien andere spelers in de lobby, de wedstrijd en op het scorebord. Bevestig het voorstel of kies een andere naam.</p>
+      <label className="field">Gebruikersnaam<input name="name" autoComplete="username" required maxLength={80} value={name} onChange={event=>setName(event.target.value)} disabled={busy} /></label>
       {error&&<div className="notice error" role="alert">{error}</div>}
-      <button className="button gold full" disabled={busy||!validDisplayName(name)}>{busy?'Naam opslaan…':'Naam bevestigen en verder'}</button>
+      <button className="button gold full" disabled={busy||!validDisplayName(name)}>{busy?'Gebruikersnaam opslaan…':'Gebruikersnaam bevestigen en verder'}</button>
     </form></div>;
 }
 
@@ -2792,6 +2797,7 @@ function PublicScreen({ token }: { token: string }) {
         snapshot={data}
         stale={live.stale}
         overlay={<OcheCelebration cue={cue} />}
+        activityOverlay={<BoardActivityNotice activity={data.boardActivity} display offline={live.stale} onRefresh={live.refresh}/>}
         qr={
           <QR
             path={`/baan/${encodeURIComponent(data.board.id)}`}

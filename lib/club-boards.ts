@@ -9,9 +9,10 @@ import type { ClubBoardScreenView, ClubBoardView, PlatformCommand, PlatformRespo
 import type { Game, MatchState, PublicSnapshot, Stats, Visit } from './types';
 import {ensureLegacyPhysicalBoard} from './locations';
 import {locationScreenContext} from './location-access';
+import {publicBoardActivity,readBoardActivity} from './board-activity';
 
-type BoardRow = {board_id:string;club_id:string;event_id:string;name:string;access:'all'|'club';blocked:boolean;club_name:string;club_lifecycle:string;owner_id:string;role:string|null;status:string|null;core_role:string|null;owner_blocked:boolean;occupied:boolean;state:MatchState|null;location_id:string|null;physical_manage:boolean};
-const boardSelect = `select cb.*,b.name,b.blocked,c.name as club_name,coalesce(ce.state->>'lifecycle','active') as club_lifecycle,ce.owner_id,cm.role,cm.status,core.role as core_role,lb.location_id,
+type BoardRow = {board_id:string;club_id:string;event_id:string;name:string;access:'all'|'club';blocked:boolean;closed_at:Date|null;close_after_session:boolean|null;club_name:string;club_lifecycle:string;owner_id:string;role:string|null;status:string|null;core_role:string|null;owner_blocked:boolean;occupied:boolean;state:MatchState|null;location_id:string|null;physical_manage:boolean};
+const boardSelect = `select cb.*,b.name,b.blocked,c.name as club_name,coalesce(ce.state->>'lifecycle','active') as club_lifecycle,ce.owner_id,cm.role,cm.status,core.role as core_role,lb.location_id,lb.closed_at,lb.close_after_session,
  (l.owner_id=$1 or exists(select 1 from dartflow_private.location_members lm where lm.location_id=l.id and lm.user_id=$1)) as physical_manage,
  exists(select 1 from dartflow_private.platform_relationships r where r.kind='block' and ((r.source_id=$1 and r.target_id=ce.owner_id) or(r.target_id=$1 and r.source_id=ce.owner_id))) as owner_blocked,
  (m.id is not null or exists(select 1 from dartflow_private.platform_entities pe where pe.state->>'boardId'=b.id::text and coalesce(pe.state->>'closed','false')<>'true' and (pe.state->>'boardLeaseUntil')::bigint>floor(extract(epoch from now())*1000) and ((pe.kind='lobby' and pe.state->>'matchId' is null) or(pe.kind='training' and pe.state->>'boardHeld'='true')))) as occupied,
@@ -33,7 +34,7 @@ async function rowForBoard(client:Client,actor:string,boardId:string):Promise<Bo
  return rows[0];
 }
 function boardView(_client:Client,row:BoardRow):ClubBoardView{
- return {id:row.board_id,clubId:row.club_id,name:row.name,access:row.access,blocked:row.blocked,occupied:row.occupied,canManage:manager(row),playUrl:`/baan/${row.board_id}`,screenUrl:`/baanscherm/${row.board_id}`};
+ return {id:row.board_id,clubId:row.club_id,name:row.name,access:row.access,blocked:row.blocked,occupied:row.occupied,closed:Boolean(row.closed_at),closePending:Boolean(row.close_after_session),canManage:manager(row),playUrl:`/baan/${row.board_id}`,screenUrl:`/baanscherm/${row.board_id}`};
 }
 /** Only this dedicated board event receives open admission; it never creates club membership. */
 export async function clubBoardEventAccess(client:Client,actor:string,eventId:string):Promise<{clubId:string;clubName:string;boardId:string;access:'all'|'club';canManage:boolean}|null>{
@@ -92,22 +93,28 @@ export async function clubBoardAction(client:Client,actor:string,command:Platfor
 function visitsForDisplay(visits:Visit[]):Visit[]{return visits.map(v=>({player:`player-${v.playerIndex+1}`,playerIndex:v.playerIndex,score:v.score,darts:v.darts,remainingBefore:v.remainingBefore,remainingAfter:v.remainingAfter,bust:v.bust,leg:v.leg,checkout:v.checkout}));}
 function statsForDisplay(stats:Stats[]):Stats[]{return stats.map(s=>({total:s.total,darts:s.darts,oneEighties:s.oneEighties,highestFinish:s.highestFinish,...(s.legsWon===undefined?{}:{legsWon:s.legsWon}),average:s.darts?Math.round(s.total/s.darts*300)/100:0}));}
 /** Public, read-only physical display: no actor IDs, capabilities, membership or private state. */
-export async function getClubBoardScreen(boardId:string):Promise<ClubBoardScreenView>{
- const client=database(),id=uuid(boardId);
+export async function getClubBoardScreen(boardId:string,client?:Client):Promise<ClubBoardScreenView>{
+ if(!client){const connection=await database().connect();try{await connection.query('begin isolation level repeatable read read only');const result=await getClubBoardScreen(boardId,connection);await connection.query('commit');return result;}catch(error){await connection.query('rollback');throw error;}finally{connection.release();}}
+ const id=uuid(boardId);
  const {rows}=await client.query<{name:string;blocked:boolean;access:'all'|'club';club_name:string;state:MatchState|null}>(`select b.name,b.blocked,cb.access,c.name as club_name,m.state from dartflow_private.club_boards cb
   join dartflow_private.boards b on b.id=cb.board_id and b.event_id=cb.event_id join dartflow_private.clubs c on c.id=cb.club_id
   left join dartflow_private.matches m on m.board_id=b.id where cb.board_id=$1`,[id]);
  if(!rows.length)throw new DomainError('not_found','Deze verenigingsbaan bestaat niet.',404);
+ const rawActivity=await readBoardActivity(client,id);
+ if(!rows[0].state&&rawActivity?.sourceKind==='match'&&['active','warning'].includes(rawActivity.phase))rows[0].state=(await client.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[rawActivity.sourceId])).rows[0]?.state??null;
  const row=rows[0],lease=await boardLease(client,id),occupied=Boolean(row.state||lease),location=await locationScreenContext(client,id,row.state?.id??lease?.id);
  let match:PublicSnapshot['match']=null;
  if(row.state){
   const view=matchView(row.state,'',false);
-  match={id:`board-${id}`,revision:view.revision,status:view.status,players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:visitsForDisplay(view.visits.filter(v=>v.leg===view.legNumber)),winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:{startScore:view.settings.startScore,bestOfLegs:view.settings.bestOfLegs,bestOfSets:view.settings.bestOfSets,...(view.settings.legLimit===undefined?{}:{legLimit:view.settings.legLimit})},writerId:'',stats:statsForDisplay(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
+  const currentLegVisits=visitsForDisplay(view.currentLegVisits??[]);
+  match={id:`board-${id}`,revision:view.revision,status:view.status,players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:currentLegVisits,currentLegVisits,currentLegStartScore:view.currentLegStartScore??view.settings.startScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:{startScore:view.settings.startScore,bestOfLegs:view.settings.bestOfLegs,bestOfSets:view.settings.bestOfSets,...(view.settings.legLimit===undefined?{}:{legLimit:view.settings.legLimit})},writerId:'',stats:statsForDisplay(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
  }else if(lease?.kind==='training'){
   const game=lease.state.game as Game;
   const profile=await client.query<{name:string}>('select name from dartflow_private.profiles where id=$1',[lease.owner_id]);
-  match={id:`board-${id}`,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:visitsForDisplay(game.visits),winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:statsForDisplay([game.stats[0]]),legNumber:Math.max(1,...game.visits.map(v=>v.leg)),setNumber:1,paused:false};
+  const legNumber=game.legs[0]+(game.status==='finished'?0:1),currentLegVisits=visitsForDisplay(game.visits.filter(v=>v.leg===legNumber));
+  match={id:`board-${id}`,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:currentLegVisits,currentLegVisits,currentLegStartScore:game.startScore,winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:statsForDisplay([game.stats[0]]),legNumber,setNumber:1,paused:false};
  }
  const blocked=row.blocked||Boolean(location?.physical.archived_at);
- return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:blocked?'blocked':match?'playing':lease?'waiting':'available',snapshot:{board:{id,name:row.name},event:{name:location?.reservation?.label??row.club_name},match,...await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
+ const closed=Boolean(location?.physical.closed_at),closePending=Boolean(location?.physical.close_after_session),activity=publicBoardActivity(rawActivity);
+ return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied,closed,closePending,publicScan:row.access==='all'&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:closed?'closed':match?'playing':lease?'waiting':blocked?'blocked':closePending?'closed':location?.reservation?'reserved':'available',snapshot:{board:{id,name:row.name},event:{name:location?.reservation?.label??row.club_name},match,...(activity?{boardActivity:activity}:{}),...await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
 }

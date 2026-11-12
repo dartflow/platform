@@ -52,7 +52,7 @@ export default async function Page({ params }: Context) {
   const path = (await params).path || [];
   const manifest = manifestForPath(path);
   const content = ['baanscherm','oche-live'].includes(path[0]) && path.length === 2 && BOARD_ID_PATTERN.test(path[1])
-    ? <ClubBoardScreen boardId={path[1].toLowerCase()} />
+    ? <div className="oche-cast-viewport"><div className="oche-cast-surface"><ClubBoardScreen boardId={path[1].toLowerCase()} /></div></div>
     : path[0] === 'scorebord' && path.length === 1
       ? <ScoreboardLauncher />
       : path.length ? <DartflowApp /> : <MarketingHome origin={appConfig().origin} />;

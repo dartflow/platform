@@ -3,7 +3,7 @@ import {clubPermission} from './club-access';
 import {uuid,type Client} from './platform-store';
 import type {ReservedBoardContext} from './location-types';
 
-export type PhysicalBoardRow={board_id:string;location_id:string;home_event_id:string;owner_id:string;kind:'home'|'venue';location_name:string;timezone:string;reservation_enabled:boolean;public_screen:boolean;archived_at:Date|null;name:string;blocked:boolean};
+export type PhysicalBoardRow={board_id:string;location_id:string;home_event_id:string;owner_id:string;kind:'home'|'venue';location_name:string;timezone:string;reservation_enabled:boolean;public_screen:boolean;archived_at:Date|null;closed_at:Date|null;close_after_session:boolean;name:string;blocked:boolean};
 export type ActiveReservation={id:string;event_id:string;club_id:string;event_name:string;starts_at:Date;ends_at:Date;max_matches:number;location_id:string};
 /** Shared by reservation mutations and the fixed player route; always reads current scoped grants. */
 export async function reservationOrganizer(client:Client,actor:string,eventId:string,lockClub=false):Promise<{id:string;club_id:string;name:string;kind:'league'|'tournament'|'event'}>{
@@ -58,6 +58,8 @@ export async function assertPhysicalBoardEvent(client:Client,boardId:string,even
   return;
  }
  if(physical.archived_at||physical.blocked)throw new DomainError('board_unavailable','Deze fysieke baan is buiten gebruik.',409);
+ if(physical.closed_at)throw new DomainError('board_closed','Deze baan is gesloten voor nieuwe partijen.',409);
+ if(physical.close_after_session&&(!matchId||!(await client.query('select 1 from dartflow_private.matches where id=$1 and board_id=$2',[matchId,boardId])).rowCount))throw new DomainError('board_closed','Deze baan sluit na de huidige partij en neemt geen nieuwe partijen aan.',409);
  const reservation=await activeBoardReservation(client,boardId,consume);
  if(!reservation){
   if(eventId!==physical.home_event_id)throw new DomainError('reservation_window','Deze partij kan alleen in het goedgekeurde tijdvak op deze baan worden gestart.',409);

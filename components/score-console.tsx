@@ -24,6 +24,7 @@ type ScoreConsoleProps={
   waiting?:string;
   options?:ReactNode;
   chat?:ReactNode;
+  activity?:ReactNode;
   onSubmit:()=>void;
   onBack:()=>void;
 };
@@ -60,6 +61,7 @@ export default function ScoreConsole(props:ScoreConsoleProps){
   }}>
     <header className="score-console-header"><button ref={back} type="button" onClick={props.onBack} aria-label="Terug naar wedstrijd">‹ Terug</button><span>{props.title}</span>{props.chat}<span className={props.offline?"score-console-offline":"score-console-connected"}>{props.offline?"Offline":"Live"}</span></header>
     <div className={`score-console-players ${props.players.length===1?"score-console-solo":""}`} aria-label="Actuele stand">{props.players.map((player,index)=><div key={player.id} className={index===props.active?"is-active":""} data-active={index===props.active}><span>{player.name}</span><strong className="console-remaining">{player.remaining}</strong><small>{index===props.active?"Aan de beurt":"Restscore"}</small></div>)}</div>
+    {props.activity}
     <form className="score-console-form" onSubmit={event=>{event.preventDefault();if(!locked&&!props.offline&&!invalid&&props.score!==""&&(!props.finish||props.doubleConfirmed))props.onSubmit();}}>
       <label className="score-console-entry"><span>Jouw worp</span><input aria-label="Bezoekscore" value={props.score} inputMode="none" readOnly autoComplete="off" maxLength={3} placeholder="0" onKeyDown={event=>{if(locked)return;if(/^\d$/.test(event.key)){event.preventDefault();props.onScore((props.score+event.key).slice(0,3));}else if(event.key==='Backspace'){event.preventDefault();props.onScore(props.score.slice(0,-1));}else if(event.key==='Delete'){event.preventDefault();props.onScore('');}}} disabled={locked} /></label>
       {props.finish&&props.canScore&&<div className="score-console-finish"><label><input type="checkbox" checked={props.doubleConfirmed} onChange={event=>props.onDoubleConfirmed(event.target.checked)} disabled={locked} /> Laatste dart op dubbel</label><label>Darts <select aria-label="Darts voor finish" value={props.darts} onChange={event=>props.onDarts(Number(event.target.value))} disabled={locked}>{[1,2,3].map(count=><option key={count}>{count}</option>)}</select></label></div>}

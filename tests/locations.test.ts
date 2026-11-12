@@ -134,6 +134,47 @@ test('locations, personal home boards and UTC event reservations have independen
    assert.equal((await owner.query('select event_id from dartflow_private.boards where id=$1',[board])).rows[0].event_id,before);assert.equal((await owner.query('select count(*)::int as n from dartflow_private.reservation_matches where reservation_id=$1',[r.id])).rows[0].n,1);
    assert.equal((await owner.query('select 1 from dartflow_private.club_memberships where club_id=$1 and user_id=$2',[club,venueOwner])).rowCount,0);
   });
+  await t.test('physical management closes idle boards, plans occupied closure and binds explicit force confirmation to the current session',async()=>{
+   const view=async()=>(await getLocationOverview(venueOwner)).locations.find(l=>l.id===loc)!.boards.find(b=>b.id===board)!;
+   for(const type of ['location.board.open','location.board.close','location.board.force-release'])await assert.rejects(run(clubOwner,{type,locationId:loc,boardId:board}),{status:403});
+   await run(manager,{type:'location.board.close',locationId:loc,boardId:board});assert.equal((await view()).effectiveStatus,'closed');assert.equal((await getBoardScreen(board)).status,'closed');assert.equal((await getBoardForActor(p1,board)).canStart,false);
+   await assert.rejects(run(p1,{type:'board.start',boardId:board,mode:'solo'}),{code:'board_closed'});
+   await run(manager,{type:'location.board.open',locationId:loc,boardId:board});assert.equal((await view()).effectiveStatus,'open');
+   const training=await run(p1,{type:'board.start',boardId:board,mode:'solo',startScore:301});await run(manager,{type:'location.board.close',locationId:loc,boardId:board});
+   assert.equal((await view()).closePending,true);assert.equal((await view()).effectiveStatus,'occupied');assert.equal((await getBoardScreen(board)).status,'playing');
+   const scored=await run(p1,{type:'training.score',id:training.id,score:60},training.entity!.revision);assert.equal((await getBoardScreen(board)).snapshot.match?.remaining[0],241);
+   await run(p1,{type:'training.finish',id:training.id},scored.entity!.revision);assert.equal((await view()).closed,true);assert.equal((await view()).closePending,false);assert.equal((await getBoardScreen(board)).status,'closed');
+   await run(venueOwner,{type:'location.board.open',locationId:loc,boardId:board});const next=await run(p1,{type:'board.start',boardId:board,mode:'solo'}),active=await view();assert.ok(active.activity);assert.equal(active.activeGame?.id,next.id);
+   const action={type:'location.board.force-release',locationId:loc,boardId:board,expectedSessionId:active.activity!.sessionId,confirmedSourceId:next.id,confirmedBoardName:active.name,reason:'Tablet verlaten door spelers'};
+   await assert.rejects(run(venueOwner,{...action,confirmedBoardName:'Verkeerde baan'}),{code:'release_confirmation'});
+   await assert.rejects(run(venueOwner,{...action,confirmedSourceId:training.id}),{code:'release_confirmation'});
+   const requestId=randomUUID();await run(venueOwner,action,undefined,requestId);assert.equal((await view()).effectiveStatus,'open');assert.equal((await getBoardScreen(board)).snapshot.match,null);
+   await assert.rejects(run(p1,{type:'training.score',id:next.id,score:60},next.entity!.revision),{code:'board_session_expired'});
+   const successor=await run(p1,{type:'board.start',boardId:board,mode:'solo'});await run(venueOwner,action,undefined,requestId);assert.equal((await view()).activeGame?.id,successor.id);
+   await assert.rejects(run(venueOwner,action),{code:'assignment_changed'});await run(p1,{type:'training.finish',id:successor.id},successor.entity!.revision);
+   assert.equal((await owner.query("select count(*)::int as n from dartflow_private.audit_events where actor_id=$1 and action='location.board.force-release' and detail->>'reason'=$2",[venueOwner,action.reason])).rows[0].n,1);
+   const lobby=await run(p1,{type:'board.start',boardId:board,mode:'local'});await run(manager,{type:'location.board.close',locationId:loc,boardId:board});assert.equal((await view()).closed,true);assert.equal((await view()).closePending,false);assert.equal((await getBoardScreen(board)).status,'closed');await run(p1,{type:'lobby.cancel',id:lobby.id});await run(manager,{type:'location.board.open',locationId:loc,boardId:board});
+  });
+  await t.test('per-board reservation requests preserve the requested physical board and reject replacement or closed choices',async()=>{
+   const startsAt=new Date(future+12*60*60_000).toISOString(),endsAt=new Date(future+13*60*60_000).toISOString();
+   const action={type:'reservation.request',locationId:loc,eventId:event,preferredBoardId:board,startsAt,endsAt,boardCount:1,maxMatches:1},r=await run(clubOwner,action);
+   assert.equal((await getLocationOverview(venueOwner)).reservations.find(item=>item.id===r.id)?.preferredBoardId,board);
+   await assert.rejects(run(manager,{type:'reservation.accept',reservationId:r.id,boardIds:[board2]},0),{code:'reservation_board'});
+   await run(manager,{type:'reservation.accept',reservationId:r.id,boardIds:[board]},0);await run(manager,{type:'reservation.cancel',reservationId:r.id},1);
+   await run(manager,{type:'location.board.close',locationId:loc,boardId:board});await assert.rejects(run(clubOwner,action),{code:'board_unavailable'});await run(manager,{type:'location.board.open',locationId:loc,boardId:board});
+  });
+  await t.test('forced official release preserves progress and fixture authority while applying planned closure',async()=>{
+   for(const actor of [p1,p2]){await executeEventCommand(actor,event,{type:'register'});await executeEventCommand(actor,event,{type:'check-in'});}
+   const r=await run(clubOwner,{type:'reservation.request',locationId:loc,eventId:event,startsAt:new Date().toISOString(),endsAt:new Date(Date.now()+20*60_000).toISOString(),boardCount:1,maxMatches:1});await run(venueOwner,{type:'reservation.accept',reservationId:r.id,boardIds:[board]},0);
+   const planned=await executeEventCommand(clubOwner,event,{type:'plan',playerIds:[p1,p2],settings:{startScore:301,bestOfLegs:1}});let match=await getMatch(p1,planned.matchId!);
+   const send=async(actor:string,action:MatchAction)=>match=await executeMatchCommand(actor,{requestId:randomUUID(),matchId:match.id,expectedRevision:match.revision,action});
+   await send(clubOwner,{type:'call',boardId:board});await send(p1,{type:'accept'});await send(p2,{type:'accept'});await send(p1,{type:'start'});await send(p1,{type:'score',score:60});
+   const active=(await getLocationOverview(venueOwner)).locations.find(l=>l.id===loc)!.boards.find(b=>b.id===board)!;assert.equal(active.activity?.kind,'official');
+   await run(manager,{type:'location.board.close',locationId:loc,boardId:board});await run(manager,{type:'location.board.force-release',locationId:loc,boardId:board,expectedSessionId:active.activity!.sessionId,confirmedSourceId:match.id,confirmedBoardName:active.name,reason:'Locatie sluit voor onderhoud'});
+   const interrupted=await getMatch(p1,match.id);assert.equal(interrupted.status,'interrupted');assert.equal(interrupted.boardId,null);assert.equal(interrupted.remaining[0],241);assert.equal(interrupted.visits.length,1);assert.equal((await getBoardScreen(board)).status,'closed');
+   assert.equal((await owner.query('select 1 from dartflow_private.match_results where match_id=$1',[match.id])).rowCount,0);assert.equal((await owner.query('select count(*)::int as n from dartflow_private.visits where match_id=$1',[match.id])).rows[0].n,1);
+   await run(manager,{type:'location.board.open',locationId:loc,boardId:board});assert.equal((await getBoardScreen(board)).status,'reserved');await owner.query("update dartflow_private.board_reservations set starts_at=now()-interval '2 minutes',ends_at=now()-interval '1 second' where id=$1",[r.id]);
+  });
   await t.test('a delegated manager is rechecked after a blocked location lock and loses replay rights immediately',async()=>{
    const req=randomUUID(),action={type:'location.board.update',locationId:loc,boardId:board,name:'Nieuwe fysieke baannaam'};await run(manager,action,undefined,req);
    await owner.query('begin');await owner.query('select id from dartflow_private.locations where id=$1 for update',[loc]);

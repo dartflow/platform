@@ -1,0 +1,181 @@
+{
+  "scope": "Local Next standalone build, Chromium 1920x1080 real time. Mocked public display data only; no database or hosted writes; no physical Chromecast or OS installation.",
+  "browser": "156.0.8078.4",
+  "results": [
+    {
+      "state": "brand",
+      "logicalWidth": 1080,
+      "logicalHeight": 1920,
+      "transform": "matrix(0, 1, -1, 0, -540, -960)",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "state": "qr",
+      "logicalWidth": 1080,
+      "logicalHeight": 1920,
+      "transform": "matrix(0, 1, -1, 0, -540, -960)",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "state": "steps",
+      "logicalWidth": 1080,
+      "logicalHeight": 1920,
+      "transform": "matrix(0, 1, -1, 0, -540, -960)",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "state": "live",
+      "logicalWidth": 1080,
+      "logicalHeight": 1920,
+      "transform": "matrix(0, 1, -1, 0, -540, -960)",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "state": "fullscreen",
+      "logicalWidth": 1080,
+      "logicalHeight": 1920,
+      "transform": "matrix(0, 1, -1, 0, -540, -960)",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "state": "install",
+      "logicalWidth": 1080,
+      "logicalHeight": 1920,
+      "transform": "matrix(0, 1, -1, 0, -540, -960)",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "state": "warning",
+      "logicalWidth": 1080,
+      "logicalHeight": 1920,
+      "transform": "matrix(0, 1, -1, 0, -540, -960)",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080
+      }
+    }
+  ],
+  "qr": {
+    "decoder": "jsQR 1.4.0, temporary test tool only",
+    "input": "Pixels cropped from the rotated 1920x1080 Chromium screenshot",
+    "decoded": "http://localhost:3000/baan/55555555-5555-4555-8555-555555555555",
+    "rect": {
+      "x": 469.984375,
+      "y": 233.203125,
+      "width": 613.59375,
+      "height": 613.59375
+    }
+  },
+  "scorecard": {
+    "height": 430,
+    "header": 111,
+    "row": 64,
+    "scrollHeight": 430,
+    "scrollTop": 0
+  },
+  "install": {
+    "visibleInBrowserFullscreen": true,
+    "backdrop": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  "physicalDeviceValidated": false,
+  "verifiedAt": "2026-11-12T20:08:43.777984+00:00",
+  "source": {
+    "releaseSha": "local-unreleased",
+    "baseCommit": "425f3e56d7596274463c1ab45a620860220a04cf",
+    "buildId": "R-k0E2gI3i1CYiuXMM7m_",
+    "filesSha256": {
+      "app/[[...path]]/page.tsx": "e9d43b7eb0ef626ea444cba0c66a6ee61de177e893d9a2f5037c98bb5add15e0",
+      "components/club-board-screen.tsx": "472bdde1a6379993ff1c2ed7c021e7e43adc516394b221ae4b23007d6aaa18e6",
+      "components/oche-live.css": "d9d73fee6c45aa500c6e73ff0dbbfe9f8ed54a357344a73b9949ec5f78eb0fbb",
+      "components/sprint-display.tsx": "6223ef94e6af16ed44c8f49c019a636b3521f0d3f3360d47ad999c24a1182c23",
+      "components/pwa-install.tsx": "6d65f84f310ce378f39ac1e634fe470ec5f48a6d8a186b8b00338b62a007f64f",
+      "tests/e2e/oche-cast.spec.ts": "97c0ac501bb630caf28f9f4a1f8d25178da4dd8d61a46e6188e8ddeaa0e11f40",
+      "tests/e2e/oche-display-v18.spec.ts": "7ebb32deb993f9139553f9328bd01a9313132af559144ed1125c8efd971a5ef7",
+      "tests/e2e/oche-live.spec.ts": "36f549e6b8663b9724b4e41e3432bcddcb26431424f1a6d586b1aff4f869607e",
+      "tests/e2e/pwa.spec.ts": "bc03eb2b8588c3b476e1e5b5bd262e01d910aeca29c59e050969205a98dacde2"
+    }
+  },
+  "checks": {
+    "pureRegressionTests": 24,
+    "finalTargetedBrowserTests": 13,
+    "lint": "passed",
+    "typecheck": "passed",
+    "build": "passed",
+    "readiness": {
+      "status": "ready",
+      "database": "ok",
+      "schemaVersion": 1,
+      "auth": "local-only",
+      "sha": "local-unreleased",
+      "releaseId": null,
+      "buildConfigId": null,
+      "runtimeConfigId": null,
+      "configId": null
+    },
+    "commands": [
+      "npx tsx --test tests/oche-scorecard.test.ts tests/oche-standby.test.ts tests/oche-visual.test.ts tests/pwa.test.ts",
+      "npx playwright test --config .local/oche-playwright.config.ts tests/e2e/oche-cast.spec.ts tests/e2e/oche-display-v18.spec.ts tests/e2e/oche-live.spec.ts tests/e2e/pwa.spec.ts",
+      "npm run lint",
+      "npm run typecheck",
+      "npm run build"
+    ]
+  },
+  "broaderInitialBrowserRun": {
+    "passed": 32,
+    "failed": 1,
+    "resolved": "A cast test used the rotated figure width instead of logical QR width. Corrected to clientWidth; the test passes in the final targeted run."
+  },
+  "routeScope": [
+    "/baanscherm/<boardId>",
+    "/oche-live/<boardId>/"
+  ],
+  "unchangedViewScope": [
+    "player routes",
+    "legacy token and spectator displays",
+    "general /scorebord fallback"
+  ],
+  "installationValidation": "Actual Chromium DOM fullscreen tested. Launch modes and native install prompt modeled as fixtures; no physical OS installation.",
+  "hostedChanges": false,
+  "reviewScreenshots": [
+    "oche-cast-live-1920x1080.png",
+    "oche-cast-qr-1920x1080.png",
+    "oche-cast-install-1920x1080.png"
+  ]
+}

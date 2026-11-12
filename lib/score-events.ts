@@ -23,6 +23,6 @@ export async function readBoardScoreEvents(client:Client,boardId:string,sourceId
   sourceId=latest.rows[0]?.source_id;
  }
  if(!sourceId)return {sessionKey:`idle-${opaque(boardId)}`,scoreEvents:[]};
- const result=await client.query<{id:string;revision:number;kind:'score'|'undo';visit:PublicVisit|null}>('select id,revision,kind,visit from (select id,revision,ordinal,kind,visit from dartflow_private.board_score_events where board_id=$1 and source_id=$2 and ($3::int is null or revision<=$3) order by revision desc,ordinal desc limit 64) e order by revision,ordinal',[boardId,sourceId,revision??null]);
+ const result=await client.query<{id:string;revision:number;kind:'score'|'undo';visit:PublicVisit|null}>('select id,revision,kind,visit from (select id,revision,ordinal,kind,visit from dartflow_private.board_score_events where source_id=$2 and (board_id=$1 or exists(select 1 from dartflow_private.board_activity_links l join dartflow_private.board_activity_sessions s on s.id=l.session_id where l.board_id=$1 and s.source_id=$2)) and ($3::int is null or revision<=$3) order by revision desc,ordinal desc limit 64) e order by revision,ordinal',[boardId,sourceId,revision??null]);
  return {sessionKey:opaque(sourceId),scoreEvents:result.rows.map(row=>({id:row.id,revision:row.revision,kind:row.kind,...row.visit}))};
 }

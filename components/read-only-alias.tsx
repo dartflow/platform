@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { MatchView, PublicSnapshot } from "@/lib/types";
 import SprintDisplay from "./sprint-display";
+import BoardActivityNotice from "./board-activity-notice";
 import OcheCelebration, {useOcheCelebration} from "./oche-celebration";
 import PublicCast from "./public-cast";
 
@@ -96,6 +97,7 @@ export default function ReadOnlyAlias({
           projection = {
             board,
             event,
+            boardActivity:match.boardActivity?{...match.boardActivity,canExtend:false}:undefined,
             match: {
               id: match.id,
               revision: match.revision,
@@ -113,6 +115,8 @@ export default function ReadOnlyAlias({
                 ...visit,
                 player: `player-${visit.playerIndex + 1}`,
               })),
+              currentLegVisits:match.currentLegVisits?.map(visit=>({...visit,player:`player-${visit.playerIndex+1}`})),
+              currentLegStartScore:match.currentLegStartScore,scoringMode:match.scoringMode,
               winnerId: playerId(match.winnerId),
               writerId: playerId(match.writerId) || "writer-external",
               resultPublished: match.resultPublished,
@@ -224,7 +228,7 @@ export default function ReadOnlyAlias({
     <SprintDisplay
       snapshot={snapshot}
       stale={stale}
-      overlay={<OcheCelebration cue={cue} />}
+      overlay={<OcheCelebration cue={cue} />} activityOverlay={<BoardActivityNotice activity={snapshot.boardActivity} display offline={stale}/>}
       qr={<span>Alleen kijken · geen scorebediening</span>}
     />
   );

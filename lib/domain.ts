@@ -72,11 +72,13 @@ const currentScorer = (state:MatchState) => perPlayerScoring(state)?state.player
 const canUndoOwnVisit = (state:MatchState,actorId:string) => !perPlayerScoring(state)||matchVisits(state).at(-1)?.player===actorId;
 export function applyMatchAction(source: MatchState, actorId: string, isOrganizer: boolean, action: MatchAction): MatchState {
   const next = clone(source), index = source.players.findIndex(p => p.id === actorId);
+  if(source.status==='abandoned')fail('Deze baansessie is verlopen of vrijgegeven. Start een nieuwe partij.','board_session_released',410);
+  if(source.status==='interrupted'&&action.type!=='call')fail('Deze officiële wedstrijd is onderbroken. De wedstrijdleiding kan een beschikbare baan opnieuw toewijzen.','match_interrupted',409);
   const participant = () => { if (index < 0) fail('Alleen de toegewezen spelers kunnen dit doen.', 'forbidden', 403); };
   const writer = () => { if (index < 0 && source.delegatedWriterId !== actorId) participant(); };
   const manager = () => { if (!isOrganizer) fail('Alleen de wedstrijdleiding kan dit doen.', 'forbidden', 403); };
   switch (action.type) {
-    case 'call': manager(); if (source.status !== 'planned' && source.status !== 'called') fail('Deze partij kan niet worden opgeroepen.'); next.boardId = action.boardId; next.status = 'called';next.callRef=action.callRef??`${source.id}:${source.revision+1}`;next.accepted=[false,false];next.paused=false;next.correction=null; break;
+    case 'call': manager(); if (!['planned','called','interrupted'].includes(source.status)) fail('Deze partij kan niet worden opgeroepen.'); next.boardId = action.boardId; next.status = 'called';next.callRef=action.callRef??`${source.id}:${source.revision+1}`;next.accepted=[false,false];next.paused=false;next.correction=null; break;
     case 'accept': participant(); if (source.status !== 'called' && source.status !== 'ready') fail('Deze partij wacht niet op akkoord.'); next.accepted[index] = true; if (next.accepted.every(Boolean)) next.status = 'ready'; break;
     case 'start': if (!isOrganizer) participant(); if (source.status !== 'ready' || !source.accepted.every(Boolean)) fail('Beide spelers moeten eerst akkoord geven.'); next.status = 'live'; break;
     case 'take-over': participant(); if(perPlayerScoring(source))fail('Iedere speler voert op de eigen beurt zijn eigen worp in.','per_player_scoring',409);if (source.status !== 'live') fail('Alleen tijdens een lopende partij.'); next.writerId = actorId; break;
@@ -128,11 +130,12 @@ export function applyMatchAction(source: MatchState, actorId: string, isOrganize
 }
 export function matchView(match: MatchState, actorId: string, isOrganizer: boolean): MatchView {
   const { game, previousSets, ...base } = match;
+  const currentLeg=game.legs[0]+game.legs[1]+(game.status==='finished'?0:1);
   const participant = match.players.some(p => p.id === actorId), ownIndex = match.players.findIndex(p => p.id === actorId);
   const writer = participant || match.delegatedWriterId === actorId;
   const canWrite=(perPlayerScoring(match)?participant:writer)&&currentScorer(match)===actorId&&match.status==='live'&&!match.paused&&!match.correction;
   return { ...base,scoringMode:perPlayerScoring(match)?'per-player':'shared-writer',writerId:currentScorer(match),remaining: game.remaining, legs: game.legs, sets: setScore(match), turn: game.turn, checkout: match.status === 'live' ? checkout(game.remaining[game.turn]) : null,
-    visits: [...previousSets, game].flatMap(g => g.visits), stats: [0, 1].map(index => { const stats = [...previousSets, game].reduce((a, g) => ({ total: a.total + g.stats[index].total, darts: a.darts + g.stats[index].darts, oneEighties: a.oneEighties + g.stats[index].oneEighties, highestFinish: Math.max(a.highestFinish, g.stats[index].highestFinish) }), { total: 0, darts: 0, oneEighties: 0, highestFinish: 0 }); return { ...stats, average: stats.darts ? Math.round(stats.total * 30 / stats.darts) / 10 : 0 }; }),
+    visits: [...previousSets, game].flatMap(g => g.visits),currentLegVisits:game.visits.filter(v=>v.leg===currentLeg),currentLegStartScore:game.startScore, stats: [0, 1].map(index => { const stats = [...previousSets, game].reduce((a, g) => ({ total: a.total + g.stats[index].total, darts: a.darts + g.stats[index].darts, oneEighties: a.oneEighties + g.stats[index].oneEighties, highestFinish: Math.max(a.highestFinish, g.stats[index].highestFinish) }), { total: 0, darts: 0, oneEighties: 0, highestFinish: 0 }); return { ...stats, average: stats.darts ? Math.round(stats.total * 30 / stats.darts) / 10 : 0 }; }),
     legNumber: game.legs[0] + game.legs[1] + (game.status === 'finished' ? 0 : 1), setNumber: previousSets.length + 1,
     permissions: { canManage: isOrganizer,canWrite,canScore:canWrite, canAccept: participant && ['called', 'ready'].includes(match.status) && !match.accepted[ownIndex], canConfirm: participant && match.status === 'result' && !match.confirmations[ownIndex] && !match.correction, canTakeOver:!perPlayerScoring(match)&&participant&&match.status==='live'&&match.writerId!==actorId,canUndo:(perPlayerScoring(match)?participant&&canUndoOwnVisit(match,actorId):writer&&match.writerId===actorId)&&['live','result'].includes(match.status)&&!match.resultPublished&&!match.confirmations.some(Boolean)&&!match.paused&&!match.correction&&game.history.length+previousSets.length>0,
       canPause:(participant||isOrganizer)&&match.status==='live'&&!match.paused,canResume:(participant||isOrganizer)&&match.status==='live'&&match.paused===true,

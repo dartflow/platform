@@ -1,10 +1,11 @@
 import type { User } from '@supabase/supabase-js';
 import { database } from './db';
 import { enqueueDomainMail } from './integrations-mail';
+import {normalizeDisplayName} from './display-name';
 
 export function verifiedProfileValues(user:Pick<User,'id'|'email'|'email_confirmed_at'|'user_metadata'>) {
   const candidate = user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? user.user_metadata?.name;
-  const name = typeof candidate==='string' ? candidate.replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,80) : '';
+  const name = typeof candidate==='string' ? normalizeDisplayName(candidate.replace(/[\u0000-\u001f\u007f]/g,'')).slice(0,80) : '';
   const email = typeof user.email==='string' ? user.email.trim().toLowerCase().slice(0,254) : null;
   return {id:user.id,name:name || 'Nieuwe speler',email,emailVerified:Boolean(user.email_confirmed_at && email)};
 }

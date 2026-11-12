@@ -8,6 +8,7 @@ import {boardAction}from'./platform-boards';
 import {clubBoardAction,listClubBoards,revalidateClubBoardCommand}from'./club-boards';
 import {communityAction,revalidateCommunityCommand,getCommunityChat} from './community';
 import {recordScoreEvents} from './score-events';
+import {acceptedTrainingBoardActivity,guardTrainingBoardActivity,readSourceBoardActivity,releaseBoardActivity} from './board-activity';
 import {locationAction,revalidateLocationCommand} from './locations';
 import {revalidateClubCommand} from './club-domain';
 import { autoAssign, competitionAction } from './platform-competitions';
@@ -34,7 +35,7 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
     if(!limit.allowed)throw Object.assign(new DomainError('rate_limited',`Te veel uitnodigingspogingen. Wacht ${limit.retryAfter} seconden.`,429),{retryAfter:limit.retryAfter});
   }
   const payloadHash = hash(canonical({ action: command.action, expectedRevision: command.expectedRevision }));
-  const response = await transaction(async client => {
+  const response = await transaction<PlatformResponse>(async client => {
     // Per-actor command lock serializes duplicate request IDs, independent of entity.
     await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))', [`command:${actor}`]);
     if (!(await client.query('select 1 from dartflow_private.profiles where id=$1', [actor])).rowCount) throw new DomainError('profile_missing', 'Meld je opnieuw aan.', 403);
@@ -43,6 +44,7 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
     if (receipts.length) {
       if (receipts[0].payload_hash !== payloadHash) throw new DomainError('request_reused', 'Dit aanvraag-ID is eerder met andere gegevens gebruikt.', 409);
       const response=receipts[0].response as PlatformResponse;
+      if(response.expired)throw new DomainError('board_session_expired','Deze baanpartij is beëindigd. Scan de baan opnieuw.',409);
       if(command.action.type==='invitation.resolve')await resolveInvitation(client,actor,command.action.code);
       await revalidateClubBoardCommand(client,actor,command,response);
       await revalidateCommunityCommand(client,actor,command);
@@ -54,6 +56,12 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
         await eventAccess(client,actor,scope.rows[0].event_id);
       }
       if(response.entity){const row=await entity(client,response.entity.id);const m=await member(client,row.id,actor);
+        if(row.kind==='training'){
+          if(row.state.discarded)throw new DomainError('board_session_expired','Deze baanpartij is beëindigd. Scan de baan opnieuw.',409);
+          if(row.state.boardHeld===true){const activity=await guardTrainingBoardActivity(client,row);if(activity&&['released','interrupted'].includes(activity.phase))return {ok:true,boardActivityExpired:true};}
+          response.entity=await view(client,row,actor);
+          const activity=await readSourceBoardActivity(client,row.id,actor);if(activity)response.entity.boardActivity=activity;
+        }
         if(row.kind==='club'){response.entity=await view(client,row,actor);return response;}
         if(typeof row.state.boardId==='string'&&typeof row.state.eventId==='string')await eventAccess(client,actor,row.state.eventId);
         if(m?.status==='banned'||(row.club_id&&!(await isClubMember(client,row.club_id,actor)))||await blocked(client,actor,row.owner_id)||(row.visibility==='private'&&row.owner_id!==actor&&!m?.status.match(/^(active|invited|pending|waitlisted)$/)))throw new DomainError('forbidden','Je hebt geen toegang meer tot dit onderdeel.',403);
@@ -87,13 +95,19 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
     } else if (['training.score', 'training.undo', 'training.finish'].includes(action.type)) {
       const row = await entity(client, action.id, true);
       if (row.kind !== 'training' || row.owner_id !== actor) throw new DomainError('forbidden', 'Deze training hoort bij een andere speler.', 403);
+      if(row.state.discarded)throw new DomainError('board_session_expired','Deze baanpartij is beëindigd. Scan de baan opnieuw.',409);
+      if(typeof row.state.boardId==='string'){
+        const activity=await guardTrainingBoardActivity(client,row);
+        // Commit timeout cleanup before reporting a rejected late score to the caller.
+        if(activity&&['released','interrupted'].includes(activity.phase))return {ok:true,boardActivityExpired:true};
+      }
       if (command.expectedRevision === undefined || command.expectedRevision !== row.revision) throw new DomainError('revision_conflict', 'Vernieuw deze training en probeer opnieuw.', 409);
       if(typeof row.state.boardId==='string'&&action.type!=='training.finish'){
         // Serialize lease renewal against every official/free claim of this physical board.
         await client.query('select id from dartflow_private.events where id=$1 for update',[row.state.eventId]);
         await eventAccess(client,actor,String(row.state.eventId));
         const occupied=await client.query('select 1 from dartflow_private.matches where board_id=$1',[row.state.boardId]);
-        if(Number(row.state.boardLeaseUntil??0)<=Date.now()||row.state.boardHeld!==true||occupied.rowCount)throw new DomainError('board_session_expired','Deze baanopstelling is verlopen. Scan de baan opnieuw; je training blijft bewaard.',409);
+        if(row.state.boardHeld!==true||occupied.rowCount)throw new DomainError('board_session_expired','Deze baanopstelling is verlopen. Scan de baan opnieuw.',409);
       }
       const previousVisits=row.state.game?.visits.length??0;
       row.state = trainingAction(row.state, action);
@@ -109,13 +123,18 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
         await recordScoreEvents(client,typeof row.state.boardId==='string'?row.state.boardId:null,row.id,row.revision,'score',(row.state.game?.visits.slice(previousVisits)??[]).map(visit=>({score:visit.score,checkout:visit.checkout,bust:visit.bust,playerIndex:visit.playerIndex,playerName:visit.playerIndex===0?name:'Dartbot'})));
       }
       else if(action.type==='training.undo')await recordScoreEvents(client,typeof row.state.boardId==='string'?row.state.boardId:null,row.id,row.revision,'undo');
+      await acceptedTrainingBoardActivity(client,row,action.type);
+      const activity=await readSourceBoardActivity(client,row.id,actor);
+      if(activity&&row.state.boardHeld===true){row.state.boardLeaseUntil=activity.deadlineAt;await client.query('update dartflow_private.platform_entities set state=$2 where id=$1',[row.id,JSON.stringify(row.state)]);}
       result = { ok: true, id: row.id, entity: await view(client, row, actor) };
+      if(activity)result.entity!.boardActivity=activity;
     } else result = await socialAction(client, actor, command) ?? await competitionAction(client, actor, command);
     if (!result) throw new DomainError('invalid_action', 'Onbekende platformactie.');
     await client.query('insert into dartflow_private.platform_receipts(actor_id,request_id,payload_hash,response) values($1,$2,$3,$4)', [actor, command.requestId, payloadHash, JSON.stringify(result)]);
     await client.query('insert into dartflow_private.platform_audit(actor_id,entity_id,action,detail) values($1,$2,$3,$4)', [actor, result.entity?.id ?? null, action.type, JSON.stringify({ requestId: command.requestId, ...(result.entity ? { revision: result.entity.revision } : {}) })]);
     return result;
   });
+  if(response.boardActivityExpired)throw new DomainError('board_session_expired','De baan is wegens inactiviteit vrijgegeven. Scan opnieuw om een nieuwe partij te starten.',409);
   return response;
 }
 export async function reconcilePlatformResults(): Promise<void> {
@@ -133,13 +152,17 @@ export async function reconcilePlatformResults(): Promise<void> {
       }
       await client.query('update dartflow_private.platform_match_links set projected=true where match_id=$1', [item.match_id]);
       // Release the exact confirmed match's board; published results are immutable.
+      const eventId=(await client.query<{event_id:string}>('select event_id from dartflow_private.matches where id=$1',[item.match_id])).rows[0]?.event_id;
+      if(eventId)await client.query('select id from dartflow_private.events where id=$1 for update',[eventId]);
       const locked = await client.query<{ state: MatchState }>('select state from dartflow_private.matches where id=$1 for update', [item.match_id]);
       if (locked.rows[0]?.state.status === 'confirmed' && locked.rows[0].state.boardId) {
         const state = locked.rows[0].state;
         const cooldowns=(row.state.boardCooldowns??={})as Record<string,number>;cooldowns[state.boardId!]=Date.now()+Number(row.state.cooldownSeconds??30)*1000;
         const calls=row.state.calls as Record<string,unknown>|undefined;if(calls)delete calls[item.fixture_id];
+        const activity=await readSourceBoardActivity(client,state.id);
         state.boardId = null;state.callRef=null; state.revision++;
         await client.query('update dartflow_private.matches set board_id=null,state=$2,revision=$3,updated_at=now() where id=$1', [state.id, JSON.stringify(state), state.revision]);
+        if(activity)await releaseBoardActivity(client,{sessionId:activity.sessionId,reason:'completed'});
       }
     }
     if (row.state.fixtures) {
@@ -187,11 +210,11 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
   // A directory row may lose scope after the list query. Omit that club using
   // its fresh ACL; unrelated event snapshots retain their original member snapshot.
   const projected = await Promise.all(entities.map(async row => {
-    try{return await view(client,row,actor,memberRows.rows.filter(m=>m.entityId===row.id));}
+    try{const projected=await view(client,row,actor,memberRows.rows.filter(m=>m.entityId===row.id));if(row.kind==='training'&&(typeof row.state.boardId==='string'||row.state.discarded)){const activity=await readSourceBoardActivity(client,row.id,actor);if(activity)projected.boardActivity=activity;}return projected;}
     catch(error){if(row.kind==='club'&&error instanceof DomainError&&[403,404].includes(error.status))return null;throw error;}
   }));
   const list = projected.filter((item):item is NonNullable<typeof item>=>item!==null);
-  const { rows: people } = await client.query<Profile>(`select p.id,p.name from dartflow_private.profiles p left join dartflow_private.platform_preferences f on f.user_id=p.id where p.id<>$1 and coalesce(f.discoverable,true)
+  const { rows: people } = await client.query<Profile>(`select p.id,p.name from dartflow_private.profiles p left join dartflow_private.platform_preferences f on f.user_id=p.id where p.id<>$1 and p.display_name_confirmed and coalesce(f.discoverable,true)
     and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$1 and b.target_id=p.id) or (b.target_id=$1 and b.source_id=p.id))) order by p.name,p.id limit 200`, [actor]);
   const { rows: relationships } = await client.query<{ source_id: string; target_id: string; kind: string; name: string }>('select r.*,p.name from dartflow_private.platform_relationships r join dartflow_private.profiles p on p.id=case when r.source_id=$1 then r.target_id else r.source_id end where r.source_id=$1 or r.target_id=$1', [actor]);
   const friends: PlatformOverview['friends'] = [];
@@ -219,7 +242,7 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
     (c.role='organizer' and exists(select 1 from dartflow_private.event_staff s where s.event_id=m.event_id and s.user_id=$1)) as can_manage,
     exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and e.kind='tournament') as offline_supported
     from dartflow_private.matches m left join dartflow_private.club_memberships c on c.club_id=m.club_id and c.user_id=$1
-    where (exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$1) or m.state->>'delegatedWriterId'=$1::text)
+    where m.state->>'status'<>'abandoned' and (exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$1) or m.state->>'delegatedWriterId'=$1::text)
     and (exists(select 1 from dartflow_private.club_boards cb where cb.event_id=m.event_id) or c.user_id is not null or (exists(select 1 from dartflow_private.entries x where x.event_id=m.event_id and x.user_id=$1 and x.status='registered') and exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and ((e.kind='lobby' and e.state->>'boardId' is null) or (e.kind in ('league','tournament') and (e.club_id is null or e.state->>'eligibility' in ('all','code'))))))) order by m.updated_at desc,m.id limit 200`,[actor]);
   const matches=[];for(const row of ownMatchRows){try{const access=await eventAccess(client,actor,row.state.eventId);matches.push({...matchView(row.state,actor,access.canManage),offlineSupported:row.offline_supported});}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}
   const clubBoards=await listClubBoards(client,actor,list.filter(e=>e.kind==='club').map(e=>e.id));
@@ -291,7 +314,7 @@ export async function getPlatformStatistics(actorId: string) {
   const total={played:rows.length,won:0,drawn:0,average:0,oneEighties:0,highestFinish:0,totalDarts:0,trainingSessions:0};let scored=0;
   for(const {state}of rows){const i=state.players.findIndex(p=>p.id===actor),stats=matchView(state,actor,false).stats[i];if(state.winnerId===actor)total.won++;if(state.winnerId===null)total.drawn++;total.oneEighties+=stats.oneEighties;total.highestFinish=Math.max(total.highestFinish,stats.highestFinish);total.totalDarts+=stats.darts;scored+=stats.total;}
   total.average=total.totalDarts?Math.round(scored*30/total.totalDarts)/10:0;
-  total.trainingSessions=Number((await database().query("select count(*)::integer as n from dartflow_private.platform_entities where kind='training' and owner_id=$1",[actor])).rows[0].n);
+  total.trainingSessions=Number((await database().query("select count(*)::integer as n from dartflow_private.platform_entities where kind='training' and owner_id=$1 and coalesce(state->>'discarded','false')<>'true'",[actor])).rows[0].n);
   return total;
 }
 export async function exportPlatformCsv(actorId:string,kind:string,clubId?:string):Promise<string>{

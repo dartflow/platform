@@ -3,6 +3,7 @@ import type {PoolClient} from 'pg';
 import {database} from './db';
 import {DomainError} from './domain';
 import {boardLease} from './platform-locks';
+import {lockBoardActivity,readBoardActivity,releaseBoardActivity} from './board-activity';
 import {autoAssign} from './platform-competitions';
 import {entity,save,uuid} from './platform-store';
 import type {Client} from './platform-store';
@@ -11,7 +12,7 @@ import type {BoardReservation,LocationBoard,LocationOverview,PhysicalLocation} f
 import {activeBoardReservation,locationManager,physicalBoard,reservationOrganizer as organizer,canOrganizeReservedEvent as currentOrganizer} from './location-access';
 
 type LocationRow={id:string;owner_id:string;kind:'home'|'venue';name:string;timezone:string};
-type ReservationRow={id:string;location_id:string;requester_id:string;club_id:string;event_id:string;starts_at:Date;ends_at:Date;board_count:number;max_matches:number;status:BoardReservation['status'];revision:number;reason:string};
+type ReservationRow={id:string;location_id:string;requester_id:string;club_id:string;event_id:string;preferred_board_id:string|null;starts_at:Date;ends_at:Date;board_count:number;max_matches:number;status:BoardReservation['status'];revision:number;reason:string};
 function label(value:unknown,max=60):string{
  const normalized=typeof value==='string'?value.normalize('NFC').trim().replace(/\s+/g,' '):'';
  if(!normalized||normalized.length>max||/[\p{Cc}\p{Cf}]/u.test(normalized))throw new DomainError('invalid_text',`Vul geldige tekst in van maximaal ${max} tekens.`);
@@ -43,6 +44,25 @@ async function reservation(client:Client,id:string,lock=false):Promise<Reservati
  const result=await client.query<ReservationRow>(`select * from dartflow_private.board_reservations where id=$1${lock?' for update':''}`,[uuid(id)]);
  if(!result.rows.length)throw new DomainError('not_found','Deze reservering bestaat niet.',404);return result.rows[0];
 }
+async function managedBoardState(client:Client,boardId:string):Promise<Pick<LocationBoard,'activity'|'activeGame'|'reservation'|'closed'|'closePending'|'effectiveStatus'>>{
+ const physical=await physicalBoard(client,boardId);if(!physical)throw new DomainError('not_found','Deze fysieke baan bestaat niet.',404);
+ const activity=await readBoardActivity(client,boardId),match=(await client.query<{id:string;state:{players:{name:string}[];scoringMode?:string}}>('select id,state from dartflow_private.matches where board_id=$1',[boardId])).rows[0],lease=match?null:await boardLease(client,boardId);
+ const sourceId=activity?.sourceId??match?.id??lease?.id;
+ let activeGame:LocationBoard['activeGame']=null;
+ if(sourceId){
+  const playerNames=match?match.state.players.map(p=>p.name):(await client.query<{name:string}>(`select p.name from dartflow_private.platform_entities pe join dartflow_private.profiles p on p.id=pe.owner_id where pe.id=$1
+   union select p.name from dartflow_private.platform_members pm join dartflow_private.profiles p on p.id=pm.user_id where pm.entity_id=$1 and pm.status in('active','invited') order by name`,[sourceId])).rows.map(p=>p.name);
+  const boards=(await client.query<{id:string;name:string}>('select id,name from dartflow_private.boards where id=any($1::uuid[]) order by id',[activity?.boardIds??[boardId]])).rows;
+  activeGame={id:sourceId,kind:activity?.kind??'free',label:playerNames.length?playerNames.join(' – '):lease?.kind==='training'?'Solo-oefenpartij':'Huidige partij',playerNames,remote:Boolean(boards.length>1||match?.state.scoringMode==='per-player'||lease?.state.setup==='remote'||lease?.state.setup==='hybrid'),boards};
+ }
+ let reserved=await activeBoardReservation(client,boardId);
+ if(match){const linked=(await client.query<NonNullable<typeof reserved>>(`select r.id,r.event_id,r.club_id,e.name as event_name,r.starts_at,r.ends_at,r.max_matches,r.location_id
+   from dartflow_private.reservation_matches rm join dartflow_private.board_reservations r on r.id=rm.reservation_id join dartflow_private.events e on e.id=r.event_id where rm.match_id=$1 and rm.board_id=$2`,[match.id,boardId])).rows[0];if(linked)reserved=linked;}
+ const reservationView=reserved?{id:reserved.id,label:reserved.event_name,eventId:reserved.event_id,startsAt:reserved.starts_at.toISOString(),endsAt:reserved.ends_at.toISOString(),overrun:reserved.ends_at.getTime()<=Date.now()}:null;
+ const closed=Boolean(physical.closed_at),closePending=physical.close_after_session;
+ const effectiveStatus=physical.archived_at?'archived':physical.blocked?'blocked':closed?'closed':activeGame?'occupied':closePending?'closed':reservationView?'reserved':'open';
+ return {activity,activeGame,reservation:reservationView,closed,closePending,effectiveStatus};
+}
 export async function getLocationOverview(actor:string):Promise<LocationOverview>{
  const client=database(),id=uuid(actor);
  const rights=(await client.query<{home_enabled:boolean;venue_enabled:boolean}>('select home_enabled,venue_enabled from dartflow_private.location_accounts where user_id=$1',[id])).rows[0];
@@ -53,9 +73,10 @@ export async function getLocationOverview(actor:string):Promise<LocationOverview
    (exists(select 1 from dartflow_private.matches m where m.board_id=b.id) or exists(select 1 from dartflow_private.platform_entities pe where pe.state->>'boardId'=b.id::text and coalesce(pe.state->>'closed','false')<>'true' and (pe.state->>'boardLeaseUntil')::bigint>floor(extract(epoch from now())*1000) and((pe.kind='training' and pe.state->>'boardHeld'='true') or(pe.kind='lobby' and pe.state->>'matchId' is null)))) as occupied
    from dartflow_private.location_boards lb join dartflow_private.boards b on b.id=lb.board_id where lb.location_id=$1 order by lb.created_at,b.id`,[loc.id])).rows;
   const managers=loc.owner_id===id?(await client.query<{id:string;name:string}>('select p.id,p.name from dartflow_private.location_members lm join dartflow_private.profiles p on p.id=lm.user_id where lm.location_id=$1 order by p.name,p.id',[loc.id])).rows:[];
-  locations.push({id:loc.id,name:loc.name,kind:loc.kind,timezone:loc.timezone,role:loc.owner_id===id?'owner':'manager',managers,boards:boards.map((b):LocationBoard=>({id:b.id,name:b.name,locationId:loc.id,enabled:b.reservation_enabled,archived:Boolean(b.archived_at),publicScreen:b.public_screen,legacyClub:b.legacy_club,blocked:b.blocked,occupied:b.occupied,playUrl:`/baan/${b.id}`,screenUrl:`/baanscherm/${b.id}`}))});
+  const projected:LocationBoard[]=[];for(const b of boards)projected.push({id:b.id,name:b.name,locationId:loc.id,enabled:b.reservation_enabled,archived:Boolean(b.archived_at),publicScreen:b.public_screen,legacyClub:b.legacy_club,blocked:b.blocked,occupied:b.occupied,...await managedBoardState(client,b.id),playUrl:`/baan/${b.id}`,screenUrl:`/baanscherm/${b.id}`});
+  locations.push({id:loc.id,name:loc.name,kind:loc.kind,timezone:loc.timezone,role:loc.owner_id===id?'owner':'manager',managers,boards:projected});
  }
- const available=(await client.query<{id:string;name:string;timezone:string;board_id:string;board_name:string}>(`select l.id,l.name,l.timezone,b.id as board_id,b.name as board_name from dartflow_private.locations l join dartflow_private.location_boards lb on lb.location_id=l.id join dartflow_private.boards b on b.id=lb.board_id where l.kind='venue' and lb.reservation_enabled and lb.archived_at is null and not b.blocked order by l.name,l.id,b.name,b.id limit 500`)).rows;
+ const available=(await client.query<{id:string;name:string;timezone:string;board_id:string;board_name:string}>(`select l.id,l.name,l.timezone,b.id as board_id,b.name as board_name from dartflow_private.locations l join dartflow_private.location_boards lb on lb.location_id=l.id join dartflow_private.boards b on b.id=lb.board_id where l.kind='venue' and lb.reservation_enabled and lb.archived_at is null and lb.closed_at is null and not lb.close_after_session and not b.blocked order by l.name,l.id,b.name,b.id limit 500`)).rows;
  const bookableLocations=[...new Set(available.map(row=>row.id))].map(locationId=>{const first=available.find(row=>row.id===locationId)!;return {id:first.id,name:first.name,timezone:first.timezone,boards:available.filter(row=>row.id===locationId).map(row=>({id:row.board_id,name:row.board_name}))};});
  const candidates=(await client.query<{id:string;name:string;club_id:string;club_name:string}>(`select e.id,e.name,e.club_id,c.name as club_name from dartflow_private.events e join dartflow_private.clubs c on c.id=e.club_id join dartflow_private.club_memberships cm on cm.club_id=c.id and cm.user_id=$1 where not exists(select 1 from dartflow_private.location_boards lb where lb.home_event_id=e.id) and not exists(select 1 from dartflow_private.club_boards cb where cb.event_id=e.id) order by e.date desc,e.id limit 200`,[id])).rows;
  const events:LocationOverview['events']=[];for(const candidate of candidates)if(await currentOrganizer(client,id,candidate.id)){const e=await organizer(client,id,candidate.id);events.push({id:e.id,name:e.name,clubId:e.club_id,clubName:candidate.club_name,kind:e.kind});}
@@ -67,9 +88,9 @@ export async function getLocationOverview(actor:string):Promise<LocationOverview
  const reservations:BoardReservation[]=[];
  for(const r of rows){const canDecide=await locationManager(client,id,r.location_id),canOrganize=events.some(e=>e.id===r.event_id);if(!canDecide&&!canOrganize&&r.requester_id!==id)continue;
   const boards=(await client.query<{id:string;name:string}>('select b.id,b.name from dartflow_private.reservation_boards rb join dartflow_private.boards b on b.id=rb.board_id where rb.reservation_id=$1 order by b.name,b.id',[r.id])).rows;
-  reservations.push({id:r.id,locationId:r.location_id,locationName:r.location_name,timezone:r.timezone,eventId:r.event_id,eventName:r.event_name,clubId:r.club_id,clubName:r.club_name,requesterId:r.requester_id,startsAt:r.starts_at.toISOString(),endsAt:r.ends_at.toISOString(),boardCount:r.board_count,maxMatches:r.max_matches,status:r.status,revision:r.revision,reason:r.reason,canDecide,canCancel:(canDecide||canOrganize)&&(r.status==='pending'||r.status==='accepted'&&r.starts_at.getTime()>Date.now()),boards,usedMatches:r.used_matches,overrun:r.overrun});
+  reservations.push({id:r.id,locationId:r.location_id,locationName:r.location_name,timezone:r.timezone,eventId:r.event_id,eventName:r.event_name,clubId:r.club_id,clubName:r.club_name,requesterId:r.requester_id,startsAt:r.starts_at.toISOString(),endsAt:r.ends_at.toISOString(),boardCount:r.board_count,maxMatches:r.max_matches,status:r.status,revision:r.revision,reason:r.reason,canDecide,canCancel:(canDecide||canOrganize)&&(r.status==='pending'||r.status==='accepted'&&r.starts_at.getTime()>Date.now()),...(r.preferred_board_id?{preferredBoardId:r.preferred_board_id}:{}),boards,usedMatches:r.used_matches,overrun:r.overrun});
  }
- return {rights:{home:Boolean(rights?.home_enabled),venue:Boolean(rights?.venue_enabled)},locations,bookableLocations,events,reservations};
+ return {serverNow:Number((await client.query<{now:string}>('select extract(epoch from clock_timestamp())*1000 as now')).rows[0].now),rights:{home:Boolean(rights?.home_enabled),venue:Boolean(rights?.venue_enabled)},locations,bookableLocations,events,reservations};
 }
 /** Compatibility creation requires independently activated physical ownership. */
 export async function ensureLegacyPhysicalBoard(client:Client,actor:string,boardId:string,eventId:string,name:string):Promise<void>{
@@ -123,10 +144,12 @@ export async function locationAction(client:PoolClient,actor:string,command:Plat
   if(loc.kind!=='venue')throw new DomainError('location_unavailable','Een thuisbaan kan niet worden gereserveerd.',403);
   const start=instant(a.startsAt),end=instant(a.endsAt),boardCount=count(a.boardCount,16),maxMatches=count(a.maxMatches,32);
   if(start.getTime()<Date.now()-300_000||end.getTime()<=Math.max(Date.now(),start.getTime())||end.getTime()-start.getTime()>7*24*60*60_000)throw new DomainError('invalid_window','Kies een toekomstig tijdvak van maximaal zeven dagen.');
-  const available=await client.query<{count:number}>('select count(*)::int as count from dartflow_private.location_boards lb join dartflow_private.boards b on b.id=lb.board_id where lb.location_id=$1 and lb.reservation_enabled and lb.archived_at is null and not b.blocked',[loc.id]);
+  const available=await client.query<{count:number}>('select count(*)::int as count from dartflow_private.location_boards lb join dartflow_private.boards b on b.id=lb.board_id where lb.location_id=$1 and lb.reservation_enabled and lb.archived_at is null and lb.closed_at is null and not lb.close_after_session and not b.blocked',[loc.id]);
   if(available.rows[0].count<boardCount)throw new DomainError('reservation_capacity','Deze locatie heeft onvoldoende opengestelde banen.',409);
-  const id=randomUUID();await client.query('insert into dartflow_private.board_reservations(id,location_id,requester_id,club_id,event_id,starts_at,ends_at,board_count,max_matches) values($1,$2,$3,$4,$5,$6,$7,$8,$9)',[id,loc.id,actor,event.club_id,event.id,start.toISOString(),end.toISOString(),boardCount,maxMatches]);
-  await audit(client,actor,a.type,{reservationId:id,locationId:loc.id,startsAt:start.toISOString(),endsAt:end.toISOString(),boardCount,maxMatches},event.id,event.club_id);return {ok:true,id};
+  const preferredBoardId=a.preferredBoardId===undefined?null:uuid(a.preferredBoardId);
+  if(preferredBoardId&&!(await client.query('select 1 from dartflow_private.location_boards lb join dartflow_private.boards b on b.id=lb.board_id where lb.location_id=$1 and lb.board_id=$2 and lb.reservation_enabled and lb.archived_at is null and lb.closed_at is null and not lb.close_after_session and not b.blocked',[loc.id,preferredBoardId])).rowCount)throw new DomainError('board_unavailable','Deze aangevraagde baan is niet beschikbaar bij de gekozen locatie.',409);
+  const id=randomUUID();await client.query('insert into dartflow_private.board_reservations(id,location_id,requester_id,club_id,event_id,starts_at,ends_at,board_count,max_matches,preferred_board_id) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[id,loc.id,actor,event.club_id,event.id,start.toISOString(),end.toISOString(),boardCount,maxMatches,preferredBoardId]);
+  await audit(client,actor,a.type,{reservationId:id,locationId:loc.id,startsAt:start.toISOString(),endsAt:end.toISOString(),boardCount,maxMatches,preferredBoardId},event.id,event.club_id);return {ok:true,id};
  }
  if(['reservation.accept','reservation.decline','reservation.cancel'].includes(a.type)){
   const before=await reservation(client,uuid(a.reservationId));
@@ -146,7 +169,8 @@ export async function locationAction(client:PoolClient,actor:string,command:Plat
   const desired=a.type==='reservation.accept'?'accepted':a.type==='reservation.decline'?'declined':'cancelled';
   if(desired==='accepted'){
    await organizer(client,r.requester_id,r.event_id);
-   const valid=await client.query('select 1 from dartflow_private.location_boards lb join dartflow_private.boards b on b.id=lb.board_id where lb.location_id=$1 and lb.board_id=any($2::uuid[]) and lb.reservation_enabled and lb.archived_at is null and not b.blocked',[loc.id,boardIds]);
+   if(r.preferred_board_id&&!boardIds.includes(r.preferred_board_id))throw new DomainError('reservation_board','Wijs ook de expliciet aangevraagde baan toe.',409);
+   const valid=await client.query('select 1 from dartflow_private.location_boards lb join dartflow_private.boards b on b.id=lb.board_id where lb.location_id=$1 and lb.board_id=any($2::uuid[]) and lb.reservation_enabled and lb.archived_at is null and lb.closed_at is null and not lb.close_after_session and not b.blocked',[loc.id,boardIds]);
    if(valid.rowCount!==boardIds.length)throw new DomainError('board_unavailable','Een gekozen baan is uitgeschakeld of hoort bij een andere locatie.',409);
    const overlaps=await client.query(`select 1 from dartflow_private.reservation_boards rb join dartflow_private.board_reservations other on other.id=rb.reservation_id where rb.board_id=any($1::uuid[]) and other.status='accepted' and other.starts_at<$3 and $2<other.ends_at limit 1`,[boardIds,r.starts_at,r.ends_at]);
    if(overlaps.rowCount)throw new DomainError('reservation_overlap','Een gekozen baan is in dit tijdvak al gereserveerd.',409);
@@ -176,6 +200,33 @@ export async function locationAction(client:PoolClient,actor:string,command:Plat
   await client.query('insert into dartflow_private.boards(id,event_id,name) values($1,$2,$3)',[boardId,eventId,name]);
   await client.query('insert into dartflow_private.location_boards(board_id,location_id,home_event_id,home_owner_id,public_screen) values($1,$2,$3,$4,$5)',[boardId,loc.id,eventId,loc.kind==='home'?loc.owner_id:null,loc.kind==='venue']);
   await audit(client,actor,a.type,{locationId:loc.id,boardId});return {ok:true,id:boardId,locationId:loc.id};
+ }else if(['location.board.open','location.board.close','location.board.force-release'].includes(a.type)){
+  const boardId=uuid(a.boardId),before=await physicalBoard(client,boardId);if(before?.location_id!==loc.id)throw new DomainError('not_found','Deze baan hoort niet bij deze locatie.',404);
+  if(a.type==='location.board.force-release'){
+   const sessionId=uuid(a.expectedSessionId),locked=await lockBoardActivity(client,sessionId),current=await readBoardActivity(client,boardId);
+   if(!locked||!current||current.sessionId!==sessionId||!['active','warning','completed'].includes(locked.view.phase)||!locked.view.boardIds.includes(boardId))throw new DomainError('assignment_changed','Deze baan heeft inmiddels een andere of geen actieve partij. Vernieuw de bevestiging.',409);
+   const physical=await physicalBoard(client,boardId),sourceId=uuid(a.confirmedSourceId),detail=await managedBoardState(client,boardId);
+   if(physical?.location_id!==loc.id||!await locationManager(client,actor,loc.id))throw new DomainError('forbidden','Je hebt geen actueel beheerrecht voor deze baan.',403);
+   if(typeof a.confirmedBoardName!=='string'||a.confirmedBoardName.normalize('NFC').trim()!==physical.name.normalize('NFC')||sourceId!==current.sourceId)throw new DomainError('release_confirmation','Bevestig de actuele baannaam en wedstrijd voordat je vrijgeeft.');
+   if(detail.activeGame?.remote&&a.confirmedRemoteEffect!==true)throw new DomainError('remote_confirmation','Bevestig dat de tegenstander en alle gekoppelde banen ook worden geraakt.');
+   const reason=label(a.reason,300);
+   await releaseBoardActivity(client,{sessionId,reason:'forced',actorId:actor});
+   await audit(client,actor,a.type,{locationId:loc.id,boardId,sessionId,sourceId,kind:current.kind,boardIds:current.boardIds,reason,remote:Boolean(detail.activeGame?.remote)});
+   return {ok:true,id:loc.id,releasedSessionId:sessionId};
+  }
+  await client.query('select id from dartflow_private.boards where id=$1 for update',[boardId]);
+  const physical=await physicalBoard(client,boardId);if(!physical||physical.location_id!==loc.id)throw new DomainError('not_found','Deze baan hoort niet bij deze locatie.',404);
+  if(a.type==='location.board.open'){
+   if(physical.archived_at)throw new DomainError('board_unavailable','Herstel deze buiten gebruik gestelde baan eerst.',409);
+   await client.query('update dartflow_private.location_boards set closed_at=null,close_after_session=false where board_id=$1',[boardId]);
+   await client.query('update dartflow_private.boards set blocked=false where id=$1',[boardId]);
+   await audit(client,actor,a.type,{locationId:loc.id,boardId});
+  }else{
+   const lease=await boardLease(client,boardId),occupied=Boolean((await client.query('select 1 from dartflow_private.matches where board_id=$1',[boardId])).rowCount||lease?.kind==='training');
+   await client.query('update dartflow_private.location_boards set closed_at=case when $2 then null else clock_timestamp() end,close_after_session=$2 where board_id=$1',[boardId,occupied]);
+   await audit(client,actor,a.type,{locationId:loc.id,boardId,afterCurrentSession:occupied});
+  }
+  return {ok:true,id:loc.id};
  }else if(a.type==='location.board.update'){
   const boardId=uuid(a.boardId),before=await physicalBoard(client,boardId);if(before?.location_id!==loc.id)throw new DomainError('not_found','Deze baan hoort niet bij deze locatie.',404);
   await client.query('select id from dartflow_private.boards where id=$1 for update',[boardId]);

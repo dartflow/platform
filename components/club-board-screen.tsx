@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {InstallDartflow} from "./pwa-install";
 import type { ClubBoardScreenView } from "@/lib/types";
 import SprintDisplay from "./sprint-display";
-import OcheLiveStandby,{OcheFullscreen} from "./oche-live-standby";
+import BoardActivityNotice from "./board-activity-notice";
+import OcheLiveStandby from "./oche-live-standby";
 import OcheCelebration,{useOcheCelebration} from "./oche-celebration";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -18,7 +19,7 @@ export function ClubBoardQr({ boardId, label = "Registreren, aanmelden en spelen
     let cancelled = false;
     const target = new URL(path, window.location.origin).href;
     void import("qrcode").then(module => module.toDataURL(target, {
-      width: 320, margin: variant === "oche" ? 4 : 3, errorCorrectionLevel: "M",
+      width: variant === "oche" ? 1024 : 320, margin: variant === "oche" ? 4 : 3, errorCorrectionLevel: "M",
       color: { dark: "#111917", light: "#ffffff" },
     })).then(value => { if (!cancelled) setImage(value); }).catch(() => {});
     return () => { cancelled = true; };
@@ -68,6 +69,8 @@ export default function ClubBoardScreen({ boardId, installKind = 'board' }: { bo
   const [pairCode, setPairCode] = useState('');
   const [pairBusy, setPairBusy] = useState(false);
   const [generation, setGeneration] = useState(0);
+  const refreshScreenRef=useRef<()=>void>(()=>{});
+  const refreshScreen=useCallback(()=>refreshScreenRef.current(),[]);
   useEffect(() => {
     let stopped = false;
     let busy = false;
@@ -97,9 +100,10 @@ export default function ClubBoardScreen({ boardId, installKind = 'board' }: { bo
       } finally {clearTimeout(timeout); busy = false;}
     };
     const offline = () => {if (!stopped) {setStale(true); setError('Verbinding onderbroken.'); request?.abort();}};
+    refreshScreenRef.current=()=>void refresh();
     const visible = () => {setStale(true);if (document.visibilityState === 'visible') void refresh();};
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 2000);
+    const timer = window.setInterval(() => void refresh(), 700);
     window.addEventListener('online', refresh); window.addEventListener('offline', offline); document.addEventListener('visibilitychange', visible);
     return () => {stopped = true; request?.abort(); clearInterval(timer); window.removeEventListener('online', refresh); window.removeEventListener('offline', offline); document.removeEventListener('visibilitychange', visible);};
   }, [boardId, generation]);
@@ -128,6 +132,6 @@ export default function ClubBoardScreen({ boardId, installKind = 'board' }: { bo
   const pairForm=<form className="board-pair-form" onSubmit={event=>void pair(event)}><label htmlFor="screen-pair-code">Koppelcode van de wedstrijdleiding</label><input id="screen-pair-code" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={30} value={pairCode} onChange={event=>setPairCode(event.target.value)} required placeholder="XXXX XXXX XXXX"/><button className="button gold" type="submit" disabled={pairBusy}>{pairBusy?'Koppelen…':'Dit baanscherm koppelen'}</button>{error&&<p className="notice error" role="alert">{error}</p>}</form>;
   const qr=data?<figure className="oche-qr"><ClubBoardQr boardId={data.board.id} variant="oche"/><figcaption><a href={data.board.playUrl} aria-label="Open deze baan ↗">Open deze baan met je telefoon</a></figcaption></figure>:null;
   return <div className={`club-board-screen${data?.snapshot.match?' club-board-screen-live':''}`}>{offline}{data?.snapshot.match?<>
-    <div className="oche-live-tools">{install}{options}<OcheFullscreen/></div><SprintDisplay snapshot={data.snapshot} stale={stale} qr={<ClubBoardQr boardId={data.board.id}/>} scanInstruction={scanInstruction} overlay={overlay}/>
+    <SprintDisplay controls={<>{install}{options}</>} snapshot={data.snapshot} stale={stale} qr={<ClubBoardQr boardId={data.board.id}/>} scanInstruction={scanInstruction} overlay={overlay} activityOverlay={<BoardActivityNotice activity={data.snapshot.boardActivity} display boardId={boardId} offline={stale} onRefresh={refreshScreen}/>}/>
   </>:<OcheLiveStandby data={data} error={error} stale={stale} needsPairing={needsPairing} pairForm={pairForm} qr={qr} controls={<>{install}{options}</>} overlay={overlay}/>}</div>;
 }

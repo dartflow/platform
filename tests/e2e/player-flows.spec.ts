@@ -23,14 +23,15 @@ test('mandatory profile completion and two-browser turn input cover home, hybrid
     // The Google provider proposal follows exactly the same explicit confirmation screen.
     await owner.query("update dartflow_private.profiles set name='Raymond Google voorstel',display_name_confirmed=false where id=$1",[bId]);
     const a=await first.newPage(),b=await second.newPage();await login(a,'Michael de Groot');
-    await expect(a.getByRole('heading',{name:'Hoe heet je op het scorebord?'})).toBeVisible();
-    const name=a.getByLabel('Naam op het scorebord',{exact:true});await expect(name).toBeEmpty();await name.fill('   ');
-    await expect(a.getByRole('button',{name:'Naam bevestigen en verder'})).toBeDisabled();
+    await expect(a.getByRole('heading',{name:'Kies je gebruikersnaam'})).toBeVisible();
+    const name=a.getByLabel('Gebruikersnaam',{exact:true});await expect(name).toBeEmpty();await name.fill('   ');
+    await expect(a.getByRole('button',{name:'Gebruikersnaam bevestigen en verder'})).toBeDisabled();
     const empty=await first.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action:{type:'profile.update',name:'   '}}});expect(empty.status()).toBe(400);
     const blocked=await first.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action:{type:'lobby.create',setup:'remote'}}});expect(blocked.status()).toBe(409);expect((await blocked.json()).code).toBe('display_name_required');
-    await name.fill('Noor Dart');await a.getByRole('button',{name:'Naam bevestigen en verder'}).click();await expect(a).toHaveURL('/app');
-    await login(b,'Raymond van Dijk');await expect(b.getByLabel('Naam op het scorebord',{exact:true})).toHaveValue('Raymond Google voorstel');
-    await b.getByLabel('Naam op het scorebord',{exact:true}).fill('Sam Dart');await b.getByRole('button',{name:'Naam bevestigen en verder'}).click();await expect(b).toHaveURL('/app');
+    await name.fill('Noor Dart');await a.getByRole('button',{name:'Gebruikersnaam bevestigen en verder'}).click();await expect(a).toHaveURL('/app');
+    await login(b,'Raymond van Dijk');await expect(b.getByLabel('Gebruikersnaam',{exact:true})).toHaveValue('Raymond Google voorstel');
+    await b.getByLabel('Gebruikersnaam',{exact:true}).fill('  nOoR   dArT  ');await b.getByRole('button',{name:'Gebruikersnaam bevestigen en verder'}).click();await expect(b.getByRole('alert').filter({hasText:'Deze gebruikersnaam is al in gebruik'})).toBeVisible();expect((await(await second.request.get('/api/session')).json()).user.displayNameConfirmed).toBe(false);
+    await b.getByLabel('Gebruikersnaam',{exact:true}).fill('Sam Dart');await b.getByRole('button',{name:'Gebruikersnaam bevestigen en verder'}).click();await expect(b).toHaveURL('/app');
     expect((await(await first.request.get('/api/session')).json()).user.name).toBe('Noor Dart');expect((await(await second.request.get('/api/session')).json()).user.name).toBe('Sam Dart');
     for(const setup of ['remote','hybrid','localone']){
       const own=setup!=='localone';

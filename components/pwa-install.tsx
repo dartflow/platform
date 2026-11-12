@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 type InstallEvent = Event & {prompt: () => Promise<void>; userChoice: Promise<{outcome: 'accepted' | 'dismissed'}>};
 type InstallState = {standalone: boolean | null; prompt: InstallEvent | null; clear: () => void};
@@ -10,9 +10,15 @@ const InstallContext = createContext<InstallState>({standalone: null, prompt: nu
 export function PwaRuntime({children}: {children: ReactNode}) {
   const [standalone, setStandalone] = useState<boolean | null>(null);
   const [prompt, setPrompt] = useState<InstallEvent | null>(null);
+  const appWindow = useRef(false);
   useEffect(() => {
-    const media = window.matchMedia('(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui)');
-    const update = () => setStandalone(media.matches || Boolean((navigator as Navigator & {standalone?: boolean}).standalone));
+    const media = window.matchMedia('(display-mode: standalone), (display-mode: minimal-ui)');
+    const update = () => {
+      // Browser fullscreen alone does not identify an installed app. Remember an
+      // observed app window when that window temporarily enters DOM fullscreen.
+      appWindow.current ||= media.matches || Boolean((navigator as Navigator & {standalone?: boolean}).standalone);
+      setStandalone(appWindow.current);
+    };
     const beforeInstall = (event: Event) => {event.preventDefault(); setPrompt(event as InstallEvent);};
     const installed = () => {setPrompt(null); update();};
     update();

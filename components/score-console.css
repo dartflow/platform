@@ -10,3 +10,9 @@ body.score-console-open{overflow:hidden;overscroll-behavior:none}
 
 body.score-console-open .app-shell{visibility:hidden}
 .screen-device-manager{width:100%;padding:12px 0}.screen-device-manager summary{cursor:pointer;font-size:12px;font-weight:700}.screen-device-manager p{font-size:12px;line-height:1.5}.screen-device-manager .notice strong{overflow-wrap:anywhere;font-size:17px}
+
+/* Keep breathing room at both normal and compact phone heights. */
+.score-console{gap:16px;padding:max(16px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}.score-console-form{gap:12px}.score-console-players{gap:16px}.score-console-keypad{gap:10px}.score-console-players>div{padding:10px 14px}
+@media(min-width:761px){.score-console{padding-left:max(32px,calc((100vw - 740px)/2));padding-right:max(32px,calc((100vw - 740px)/2));gap:20px}}
+@media(max-height:740px){.score-console{gap:12px;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}.score-console-form{gap:8px}.score-console-keypad{gap:8px}.score-console-players{gap:12px;flex-basis:68px}.score-console-players>div{padding:6px 10px}}
+@media(max-height:550px){.score-console{gap:6px;padding:8px 16px}.score-console-form{gap:4px}.score-console-players{flex-basis:52px}.score-console-keypad{min-height:116px}.score-console-entry{height:32px}.score-console-confirm{height:40px}.score-console-message{height:18px}.score-console-footer{flex-basis:26px}}

@@ -8,7 +8,7 @@ export type Stats = { total: number; darts: number; oneEighties: number; highest
 export type Game = { id: string; players: string[]; startScore: number; bestOf: number; legLimit?: number; legs: number[]; remaining: number[]; turn: number; legStarter: number; status: 'live' | 'finished'; visits: Visit[]; history: Omit<Game, 'history'>[]; stats: Stats[]; winner?: string | null; draw?: boolean };
 export type MatchState = {
   id: string; clubId: string; eventId: string; boardId: string | null; revision: number;
-  status: 'planned' | 'called' | 'ready' | 'live' | 'result' | 'confirmed' | 'disputed';
+  status: 'planned' | 'called' | 'ready' | 'live' | 'result' | 'confirmed' | 'disputed' | 'abandoned' | 'interrupted';
   players: Profile[]; writerId: string; settings: Settings; accepted: boolean[];
   scoringMode?: 'shared-writer' | 'per-player';
   delegatedWriterId?: string | null;
@@ -16,11 +16,15 @@ export type MatchState = {
   paused?:boolean;pausedBy?:string|null;scoringRevision?:number;
   correction?:{id:string;requestedBy:string;reason:string;undoCount:number;visitCount:number;scoringRevision:number}|null;
   administrativeDecision?:{type:'walkover';actorId:string;reason:string};
+  boardInterruption?:{sessionId:string;reason:'timeout'|'forced';at:string;previousStatus:MatchState['status']};
   confirmations: boolean[]; resultRevision: number | null; game: Game; previousSets: Game[];
   winnerId: string | null; resultPublished: boolean; dispute: string | null;
 };
 export type MatchView = Omit<MatchState, 'game' | 'previousSets'> & {
   offlineSupported?: boolean;
+  boardActivity?:import('./board-activity-types').BoardActivityView;
+  currentLegVisits?:Visit[];
+  currentLegStartScore?:number;
   remaining: number[]; legs: number[]; sets: number[]; turn: number; checkout: string | null;
   visits: Visit[]; stats: Stats[]; legNumber: number; setNumber: number;
   permissions: { canScore: boolean; canWrite: boolean; canManage: boolean; canAccept: boolean; canConfirm: boolean; canTakeOver: boolean; canUndo: boolean;canPause:boolean;canResume:boolean;canRequestCorrection:boolean;canAnswerCorrection:boolean;canCancelCorrection:boolean };
@@ -48,4 +52,4 @@ export type Overview = {
   standings: { playerId: string; name: string; played: number; won: number; drawn: number; points: number }[];
   permissions: { canManage: boolean };
 };
-export type PublicSnapshot = { sessionKey?:string;scoreEvents?:import('./score-events').ScoreEvent[]; board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'winnerId' | 'resultPublished' | 'settings' | 'writerId' | 'stats' | 'legNumber' | 'setNumber' | 'paused'> };
+export type PublicSnapshot = { sessionKey?:string;scoreEvents?:import('./score-events').ScoreEvent[];boardActivity?:import('./board-activity-types').BoardActivityView; board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'currentLegVisits' | 'currentLegStartScore' | 'winnerId' | 'resultPublished' | 'settings' | 'writerId' | 'scoringMode' | 'stats' | 'legNumber' | 'setNumber' | 'paused'> };

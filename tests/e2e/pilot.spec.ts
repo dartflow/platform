@@ -184,7 +184,7 @@ test("two players, an organizer and independent screen complete the authoritativ
   expect(capResponse.status()).toBe(200);
   const capability = await capResponse.json();
   await display.goto(capability.url);
-  await expect(display.locator(".sprint-top h1")).toHaveText("Browserbaan");
+  await expect(display.locator(".sprint-board-badge")).toHaveText("Browserbaan");
   await a.goto(`/wedstrijd/${matchId}`);
   await a.getByRole("button", { name: "Ik ben klaar om te spelen" }).click();
   await b.goto(`/wedstrijd/${matchId}`);

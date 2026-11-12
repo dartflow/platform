@@ -31,7 +31,8 @@ test("club boards provide permanent registration QR and live read-only scoring w
   const owner = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const first = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const second = await browser.newContext();
-  const viewer = await browser.newContext({ viewport: { width: 540, height: 960 }, serviceWorkers: "block" });
+  const viewer = await browser.newContext({ viewport: { width: 960, height: 540 }, serviceWorkers: "block" });
+  let fixtureMatchId: string | undefined;
   try {
     const session = await owner.request.get("/api/session");
     if (!(await session.json()).local) throw new Error("Local fixture authentication is required.");
@@ -102,6 +103,7 @@ test("club boards provide permanent registration QR and live read-only scoring w
     await a.getByRole("button", { name: "Wedstrijd starten", exact: true }).click();
     await expect(a).toHaveURL(/\/wedstrijd\/[a-f0-9-]{36}$/);
     const matchId = new URL(a.url()).pathname.split("/").at(-1)!;
+    fixtureMatchId = matchId;
     await b.goto(playUrl!);
     await expect(b.locator(".scoreboard")).toBeVisible();
     await a.getByRole("button", { name: "Ik ben klaar om te spelen", exact: true }).click();
@@ -114,6 +116,7 @@ test("club boards provide permanent registration QR and live read-only scoring w
     await a.getByRole("button", { name: "Score invoeren", exact: true }).click();
     await expect(screen.locator(".sprint-number").first()).toHaveText("201");
     await expect(screen.locator(".score-form, .sidebar")).toHaveCount(0);
+    await screen.locator('summary[aria-label="Wedstrijdinformatie"]').click();
     await expect(screen.getByRole("link", { name: "Registreren, aanmelden en spelen", exact: true })).toHaveAttribute("href", playUrl!);
     await expect(screen.locator(".sprint-writer")).toHaveText("Scan om te registreren of aan te melden en mee te spelen");
     expect(await screen.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
@@ -171,6 +174,21 @@ test("club boards provide permanent registration QR and live read-only scoring w
     await expect(screen.getByRole("link", { name: "Open deze baan ↗", exact: true })).toHaveAttribute("href", playUrl!);
     expect(publicAuthRequests).toBe(0);
   } finally {
+    // Keep a failed display assertion from leaving the shared local test players busy.
+    if (fixtureMatchId) try {
+      let state: MatchView = await (await first.request.get(`/api/matches/${fixtureMatchId}`)).json();
+      for (let turn = 0; state.status === "live" && turn < 8; turn++) {
+        const remaining = state.remaining[0];
+        state = await matchAction(first, fixtureMatchId, {
+          type: "score", score: state.turn === 0 ? remaining > 170 ? remaining - 40 : remaining : 0,
+          ...(state.turn === 0 && remaining <= 170 ? { doubleConfirmed: true } : {}),
+        });
+      }
+      if (state.status === "result") {
+        await matchAction(first, fixtureMatchId, { type: "confirm" });
+        await matchAction(second, fixtureMatchId, { type: "confirm" });
+      }
+    } catch { /* Preserve the original failure; cleanup only targets this fixture match. */ }
     await Promise.allSettled([owner.close(), first.close(), second.close(), viewer.close()]);
   }
 });

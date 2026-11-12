@@ -12,10 +12,10 @@ export default function MarketingHome({ origin }: { origin: string }) {
     operatingSystem: "Web",
     inLanguage: "nl-NL",
     description:
-      "Darten met live scoretelling, Sprint-scorebord, online en lokale wedstrijden, clubcompetities en toernooiregie.",
+      "Darten met live scoretelling, Oche Live, online en lokale wedstrijden, clubcompetities en toernooiregie.",
     featureList: [
       "X01-scoretelling met legs en checkout-suggesties",
-      "Sprint-scorebord met score-invoer op telefoon",
+      "Oche Live met score-invoer op telefoon",
       "Training, clubcompetities en toernooien",
       "Toernooiregie met check-in, baantoewijzing en schermweergave",
     ],

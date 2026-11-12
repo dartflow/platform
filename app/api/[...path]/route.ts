@@ -20,6 +20,7 @@ import {getLocationOverview} from '@/lib/locations';
 import {requiresDisplayName} from '@/lib/display-name';
 import {invitationAttemptRequired} from '@/lib/invitations';
 import {BOARD_SCREEN_COOKIE,boardScreenCookiePath,getBoardScreen,listBoardScreenDevices,createBoardScreenDevice,revokeBoardScreenDevice,pairBoardScreenDevice} from '@/lib/board-screens';
+import {extendBoardActivity,processBoardActivityBatch,publicBoardActivity} from '@/lib/board-activity';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -65,6 +66,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     const forwarded=(request.headers.get('x-forwarded-for') || '').split(',').map(value=>value.trim()).filter(Boolean);
     if (!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host) || forwarded.some(value=>!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(value))) throw new DomainError('forbidden','Geen toegang.',403);
     if(method==='POST' && workerTokenMatches(request)) {
+      await processBoardActivityBatch();
       await reconcilePlatformResults();
       await reconcilePlatformCalls();
     }
@@ -147,6 +149,12 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     }
     // A fixed display always uses its independent device credential, never a player session.
     if(method==='GET' && parts.length===2)return json(await getBoardScreen(parts[1],request.cookies.get(BOARD_SCREEN_COOKIE)?.value));
+    if(method==='POST'&&parts.length===3&&parts[2]==='continue'){
+      const data=await body(request);
+      if(!uuid(data.sessionId)||!uuid(data.warningEpoch)||!uuid(data.requestId))throw new DomainError('invalid_command','Ververs de baanstatus en probeer opnieuw.');
+      const activity=await extendBoardActivity(null,{sessionId:data.sessionId,warningEpoch:data.warningEpoch,requestId:data.requestId,boardId:parts[1],deviceToken:request.cookies.get(BOARD_SCREEN_COOKIE)?.value});
+      return json({activity:publicBoardActivity(activity,activity.canExtend)});
+    }
     if(method==='POST' && parts.length===3 && parts[2]==='pair'){
       const address=(request.headers.get('x-forwarded-for')||'loopback').split(',').at(-1)!.trim();
       await limit(`board-screen-pair:ip:${digest(address)}`,40,60);
@@ -159,6 +167,11 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if (method==='GET' && parts[0]==='club-boards' && uuid(parts[1]) && parts[2]==='screen' && parts.length===3) return json(await getClubBoardScreen(parts[1]));
   if (method==='GET' && parts[0]==='platform' && parts[1]==='cast' && parts.length===3) return json(await getPlatformCast(parts[2]));
   const actor=await requireActor(request);
+  if(method==='POST'&&path==='board-activity/continue'){
+    const data=await body(request);
+    if(!uuid(data.sessionId)||!uuid(data.warningEpoch)||!uuid(data.requestId))throw new DomainError('invalid_command','Ververs de baanstatus en probeer opnieuw.');
+    return json({activity:await extendBoardActivity(actor.id,{sessionId:data.sessionId,warningEpoch:data.warningEpoch,requestId:data.requestId})});
+  }
   const integration=await handleIntegrations(request,actor.id,parts);
   if(integration)return integration;
   if(method==='GET' && parts[0]==='media' && uuid(parts[1]) && parts.length===2) return json(await mediaConfiguration(actor.id,parts[1]));

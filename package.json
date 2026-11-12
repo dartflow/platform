@@ -13,7 +13,7 @@
     "start": "node scripts/start.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint app components lib proxy.ts tests --max-warnings 0",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
     "test:prototype": "npm test --prefix prototype-v15",
     "test:e2e": "playwright test",
     "db:start": "node scripts/db-local.mjs start",

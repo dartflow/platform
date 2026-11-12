@@ -1,0 +1,335 @@
+{
+  "scope": "Local development-VPS only; real Next standalone build with loopback PostgreSQL. No staging or production changes.",
+  "verifiedAt": "2026-11-12T19:40:23.826251+00:00",
+  "source": {
+    "baseCommit": "425f3e56d7596274463c1ab45a620860220a04cf",
+    "branch": "codex/staging",
+    "workingTree": "uncommitted local implementation",
+    "releaseSha": "local-unreleased",
+    "nextBuildId": "gLHkUKyWMhUFx5MllUt0X",
+    "changedSourceManifestSha256": "35b99f40493e48cd7f672d0ba2ca391a7042bbb1a86074ad03e2930005cf3689",
+    "changedSourceFilesSha256": {
+      "app/api/[...path]/route.ts": "4ce2cb8ab6344103640623ebbb58aa645dc19242c0888ec3de390c8cec99d370",
+      "app/globals.css": "ae7a24f4da40e3cb58a6661d55af94bd41ad2e36da530da82cd07d009dc65676",
+      "components/board-activity-notice.css": "a1fe30b4c71359e3091e2035c9869944c44c19565370437b9b838a6a2f431350",
+      "components/board-activity-notice.tsx": "a740d64f097b570bb6329447b773396bf8d9f492463e7a7b4d714b5fa16aff51",
+      "components/club-board-screen.tsx": "f3772aa65ebc3c5936a083f56ca1249382fad2f2a867cea55646ae610e6a592d",
+      "components/dartflow-app.tsx": "1fc1af47510662566118b78a2cc89fd04d817ff19af6802ca0ee1f4678a47e80",
+      "components/location-workspace.css": "3efa88c4ed89849062657483134f350e73872b57fecf84448cbac5cc60fb2ee3",
+      "components/location-workspace.tsx": "3642948ba21251ed937eba05ecbda641233cdfaf60e2ad2f7c0e2124890acbf9",
+      "components/marketing-home.tsx": "eda60b083d5e523aa0c62f175e523be7e4ea74f33438adb5da5bd9a3d160ff6a",
+      "components/oche-live-standby.tsx": "340fe0cc663aa99ffa782deb4442e0a2b21aab08eaacb0bffd1e6f8fd994b984",
+      "components/oche-live.css": "57558207bc13f2fde132de503ed708b5a7501845a35e20046f5f57a8cabb2244",
+      "components/platform-workspace.tsx": "4fa5e2d6faec086fe767cc9c73980e7700415cc4ad6697c47d6867b34d7e2799",
+      "components/read-only-alias.tsx": "5fe264e5cd28c450f05d9a92fe66e88b6eaaa934fedf0cebb15a16e4449403ff",
+      "components/score-console.css": "203684dd0733c1aabdd2cafda5e375f974cee583b8f0d5854c365c1974fca651",
+      "components/score-console.tsx": "3249efcb419b2b7f9aad200b960453e182127a6bcb43ac2dc093bc74b9f78ef0",
+      "components/sprint-display.tsx": "24567f296b960de31816b06b47f412597316df5cc677e999343ba8594bb9072b",
+      "lib/accounts.ts": "c4ea888af05407db25e111e1d59d539e4106286a8b1b47bbfdf7b462d45abca1",
+      "lib/board-activity-types.ts": "1b8c41d1d76fa45b1c83bab2c4e045ce62b452e520977dfffb67d53df94510d1",
+      "lib/board-activity-worker.ts": "32c258dd7ce852a41f16c55d9900c314adb2365f02bb62ae44b51b836bb7fa1a",
+      "lib/board-activity.ts": "b4bb5ac70e5f02d77c6c78cad1fa270adafce05b0170ab2c2f5a3994649c76f1",
+      "lib/board-screens.ts": "cad1e5c996caa51a9976154edba5ede04aacf586613eecbd00269d6dbf5c1ac2",
+      "lib/club-boards.ts": "4cc622680ae865fe13c6b1f6146d80d1874799c07d0425540ee2eae0224826c9",
+      "lib/db.ts": "40af1c1f12faa5657295581f58423af92f6ae5ceedd8f5365f62928523c74cb0",
+      "lib/display-name.ts": "e221ec683a6a39a147a36dba117fe442470e9b0222f89e789830f93bc4f5e8dd",
+      "lib/domain.ts": "99edf1490c88b2555cb67c374c61e9efbf2f12f23e048d9c5745fe5614acd8ff",
+      "lib/location-access.ts": "cef350ea6ec193d5dd76876e12bbe22ceaae2ae5db969685016fb4cdfa17e17a",
+      "lib/location-types.ts": "938c7be227719643a2af99da598e1979be8e46223afda743b3eb295dbbee6231",
+      "lib/locations.ts": "2e73d25c7327c0e95782f9a8aeb9b488e443e33b163944ee3a8337f34e4efce1",
+      "lib/oche-scorecard.ts": "ba370abff0000b1b4361b38d6c856b15a4ba0bf7bdd7773cd67cf8f1216cee62",
+      "lib/oche-standby.ts": "08823cac18739b6fabac3e78b0a8a9dedaccd8a969e0fcd06651aaf7644af0d0",
+      "lib/platform-boards.ts": "df0f515c1e6d154aaf671ef3319555f2ee523f735da2ac5749e235ad572c7815",
+      "lib/platform-competitions.ts": "4c2d6c9749250a0266e372dd1a5458e74076c35b0c219e592fbcf3a63d2cc4a9",
+      "lib/platform-locks.ts": "f42f248289263f57fc41511a3b346a24fb3c866b6b2fbcaa6589e10268263948",
+      "lib/platform-types.ts": "0e87579a39faa304a21d195dd11c690b41a8d8f4bd09e591f59d1c23ce5bd54f",
+      "lib/platform.ts": "6682629835c137aeb53bbfe08d9341d10cfd32562da8805c233ff1fdd42dcf76",
+      "lib/profile-name.ts": "0e2e2124ade02aa03afa94b02bbafc5785020ac81d9fffb00472b42d17e34632",
+      "lib/score-events.ts": "6cd8a09af083a65d418c96f0a72306ef2819947aaaa9e795e75e48adc79ddd46",
+      "lib/types.ts": "c9bdb52ee0bcd90cdaabbf9b426e15256933d6b92feb48f2ccc849f33878ecd2",
+      "public/assets/oche-wordmark.png": "7ca5691f0ae30bfb7f7cadc02cfaad0ad6400a71a3cc00806e92da54790d0026",
+      "public/fonts/oche-barlow-condensed-700.woff2": "3787a5a419171630e6890cfa47c4da067474d005cd0ff8dc11ec090fdc3ee2b8",
+      "public/fonts/oche-barlow-condensed-800.woff2": "2515494e8cc2ca07c86ea78766cfa104b796aa6ed5d66821c01d51dbb0b52bce",
+      "public/fonts/oche-dm-sans-400-750.woff2": "9fea608a947e67020c33cad9a6fe3d60c54119dfb8cff87768a8117a15ed7543",
+      "scripts/board-activity-worker.ts": "11247b163bbb3ed84dca15d059067dce4c478c582ef47d7693ebc2861ae5da76",
+      "supabase/migrations/20261112183944_board_activity_sessions.sql": "42476b5860710cd2ad90a2892b4d61a5e2fe81b4091d7725912b1c6ef5a3b2ba",
+      "supabase/migrations/20261112184741_globally_unique_usernames.sql": "30c4002c3ca5e30010e816a32c10c84f3b4a7d5e9b15ad4cd734ea7f10775df6",
+      "tests/board-activity-db.test.ts": "a1defa9cae772e15b10c71b88015d95c0df0bd2aeff736e6bfd22859de987706",
+      "tests/board-activity-start-db.test.ts": "779db07c63c49197dfa7b68a91a999362b07489b4ea5cf668221569cd5d52a6b",
+      "tests/board-activity.test.ts": "1de15fdc5e5be0aa349ddf22ef683743bc2449c0db5cce056223276469bb7b46",
+      "tests/club-boards.test.ts": "014e8514be05013266db56289ee4801512bfa6dd8f9af1694ddb22421fb75120",
+      "tests/display-name-race.test.ts": "784c61ccbb42c3b2c289d77cee8bb33c512f436f299d32a2f126af76f4d8e34e",
+      "tests/domain.test.ts": "950e4ff75fd89c8b2d584eddaa1b7e4eb6788004ed06c7a6cf1e4a57e72fb5b5",
+      "tests/e2e/activity-console.spec.ts": "95ffd962889ac8bbbfc71e5f8d5287b1a685b6f354da806762cfb7410dc92ba1",
+      "tests/e2e/club-boards.spec.ts": "b9d349e630ae24db1b28d7f4ef553a15b203fad8457d7b2c5c04d47796411cd8",
+      "tests/e2e/club-v17.spec.ts": "695644adf6f58463d2588bf44a287d0abe1b00d2b351aa45e917888b21acbf31",
+      "tests/e2e/oche-display-v18.spec.ts": "28634293e2eaa1e351633b287fadbdefddedb768178ba41b21081faa7d74ed6f",
+      "tests/e2e/oche-live.spec.ts": "e48794562abef4aaf6d7ddee62e1ce68d90c770c6277456bb1938a5bc11e28c0",
+      "tests/e2e/pilot.spec.ts": "782046df5276e03ca92ef86bdf81839c39fd650cd9217009f1708579b0f7db63",
+      "tests/e2e/player-flows.spec.ts": "4825a396be05e8d7a5b05fd36bc0ee1a207f15e5ec4ed08f152e2625b95397cf",
+      "tests/integrations-db.test.ts": "8e1dc5649733b0e323be3da8b5a3f02e71563ffbeb46b205a12e377fd30af5b6",
+      "tests/integrations.test.ts": "3660dccf28c1ffb137a685c0deacb1dc2b395b3976f5cfb35ca0740e938d3bee",
+      "tests/locations.test.ts": "570e4b0fe4b85970dec5f4e12e4e054f537f30ed58a41532f9b28d917f9fee7b",
+      "tests/oche-scorecard.test.ts": "35211d6d1d4e39d500194070c97f5a01df3d28be12853b990dacfd47ef12123d",
+      "tests/oche-standby.test.ts": "cecdff01b18ce2dafede804890423219858379f5c71be496aac985c15455145b",
+      "tests/platform-db.test.ts": "a6299b8bd742ac0f02a2c88e9abf8301abf624142aa22d6a8a14ccbdd378e6c2",
+      "tests/username-db.test.ts": "6c52839c967030da49ec213a5a15b8c944afd40b3155323ac3b31e4f2c27cd97",
+      "tests/username.test.ts": "dd17e594352f8c31737bd34bda428e90e9acc104c502a016c06924d75d896c45"
+    }
+  },
+  "checks": {
+    "app": {
+      "passed": 249,
+      "failed": 0,
+      "skipped": 0,
+      "command": "npx tsx --test --test-concurrency=1 tests/*.test.ts"
+    },
+    "prototype": {
+      "passed": 46,
+      "command": "npm run test:prototype"
+    },
+    "nativeDeployer": {
+      "passed": 57,
+      "command": "npm run test:deploy"
+    },
+    "browser": {
+      "passed": 29,
+      "failed": 0,
+      "browser": "Chromium 156.0.8078.4",
+      "workers": 1,
+      "command": "npx playwright test --config .local/oche-playwright.config.ts"
+    },
+    "lint": {
+      "passed": true,
+      "command": "npm run lint"
+    },
+    "typecheckAndBuild": {
+      "passed": true,
+      "command": "npm run build"
+    },
+    "readiness": {
+      "status": "ready",
+      "database": "ok",
+      "schemaVersion": 1,
+      "auth": "local-only",
+      "sha": "local-unreleased",
+      "releaseId": null,
+      "buildConfigId": null,
+      "runtimeConfigId": null,
+      "configId": null
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "npm run typecheck"
+    }
+  },
+  "realLoopbackFlows": [
+    "Two browser accounts: own turns for remote/hybrid and one writer locally",
+    "Fixed board QR route to lobby, accepted score and public read-only projection",
+    "Reservation becoming active after secondary remote board binding refuses start atomically",
+    "Database deadline, shared extension race, idempotency, successor protection and two-board release",
+    "Forced/open/reserve/close management with current scoped rights",
+    "Free abandoned scores excluded from stats/history/exports; normal result retained; official interruption resumes",
+    "Global confirmed username race across clubs, legacy conflict migration and Google metadata proposal gating"
+  ],
+  "mockedBrowserFlows": {
+    "display": "Precise 148–188 → accepted 60 on left → 88–188; canonical leg, bust, undo, font and manual scroll fixtures",
+    "pairedContinuation": "Mock capability and transport; preserves same scorecard DOM and scroll. Actual device-token authority covered separately by DB tests.",
+    "smallPhone": [
+      {
+        "viewport": [
+          390,
+          844
+        ]
+      },
+      {
+        "viewport": [
+          360,
+          640
+        ]
+      }
+    ],
+    "smallPhoneScope": "Session, match, score and extension transport mocked for geometric keypad/confirm reachability; no OS/device claim",
+    "googleProposal": "Metadata/confirmation flow only; no real OAuth provider interaction"
+  },
+  "clock": {
+    "scope": "Isolated loopback fixture; real 181.5 seconds, no browser/player/display connected, no clock adjustment.",
+    "activityAt": 1794510784207,
+    "warningAt": 1794510904207,
+    "deadlineAt": 1794510964207,
+    "readings": [
+      {
+        "elapsedMs": 5,
+        "phase": "active",
+        "linked": true,
+        "deadlineAt": 1794510964207
+      },
+      {
+        "elapsedMs": 119018,
+        "phase": "active",
+        "linked": true,
+        "deadlineAt": 1794510964207
+      },
+      {
+        "elapsedMs": 120052,
+        "phase": "warning",
+        "linked": true,
+        "deadlineAt": 1794510964207
+      },
+      {
+        "elapsedMs": 179007,
+        "phase": "warning",
+        "linked": true,
+        "deadlineAt": 1794510964207
+      },
+      {
+        "elapsedMs": 181504,
+        "phase": "released",
+        "linked": false,
+        "deadlineAt": 1794510964207
+      }
+    ],
+    "sourceDiscarded": true,
+    "scoreGameAbsent": true,
+    "cleanup": {
+      "cleaned": true,
+      "profiles": 1,
+      "boards": 1,
+      "clubs": 1,
+      "locations": 1
+    },
+    "cleanupNote": "Functional clock check passed; original harness cleanup-order error was repaired and fixture cleanup verified separately.",
+    "workerSemantics": "New actions rejected at absolute deadline; physical detach on next successful worker tick, normally every second."
+  },
+  "visual": {
+    "scope": "Local mocked public display responses on the real Next standalone production build at loopback; no hosted writes, real player/device sessions or OS/device acceptance. Reference assets and fonts preserved.",
+    "captures": 15,
+    "viewports": [
+      [
+        1080,
+        1920
+      ],
+      [
+        720,
+        1280
+      ],
+      [
+        1920,
+        1080
+      ]
+    ],
+    "horizontalOverflow": false,
+    "liveScorecardRows": [
+      {
+        "viewport": [
+          1080,
+          1920
+        ],
+        "visibleRows": 5.002942618930849,
+        "scoreFont": "205.2px"
+      },
+      {
+        "viewport": [
+          720,
+          1280
+        ],
+        "visibleRows": 5.012141280353201,
+        "scoreFont": "136.8px"
+      },
+      {
+        "viewport": [
+          1920,
+          1080
+        ],
+        "visibleRows": 5.0082860880941995,
+        "scoreFont": "115.425px"
+      }
+    ],
+    "warningPreservesHeaderAndFooter": true,
+    "qrWrapComparedWithSource": true,
+    "reviewCaptures": [
+      "oche-v18-local-brand-720x1280.png",
+      "oche-v18-local-steps-720x1280.png",
+      "oche-v18-local-live-720x1280.png",
+      "oche-v18-local-warning-720x1280.png",
+      "oche-v18-local-qr-720x1280.png"
+    ],
+    "qrCaptureNote": "Final QR review capture refreshed with a real-time browser clock after a virtual-clock screenshot paint artifact; header opacity and visible logo verified."
+  },
+  "unverified": [
+    "Hosted staging/production migrations and release",
+    "Real Google OAuth and SMTP",
+    "Physical Android/iOS/tv-box installs, QR camera scan, wake-lock/kiosk power recovery",
+    "Real two-phone camera operation"
+  ],
+  "physicalDeviceTests": "Deferred by user until large test round; not counted as passed",
+  "migrations": [
+    "20261112183944_board_activity_sessions.sql",
+    "20261112184741_globally_unique_usernames.sql"
+  ],
+  "newSecrets": [],
+  "localExample": {
+    "scope": "Persistent local development example, no hosted writes",
+    "clubId": "1a372c19-01d8-43fb-b821-bccc0e59b810",
+    "boards": [
+      {
+        "id": "0d68f40f-ef9e-48cc-bea0-1d85f5342a27",
+        "clubId": "1a372c19-01d8-43fb-b821-bccc0e59b810",
+        "name": "Baan 04",
+        "access": "all",
+        "blocked": false,
+        "occupied": false,
+        "closed": false,
+        "closePending": false,
+        "canManage": true,
+        "playUrl": "/baan/0d68f40f-ef9e-48cc-bea0-1d85f5342a27",
+        "screenUrl": "/baanscherm/0d68f40f-ef9e-48cc-bea0-1d85f5342a27"
+      },
+      {
+        "id": "43f036ae-bbaa-4505-88c8-a8b740c65920",
+        "clubId": "1a372c19-01d8-43fb-b821-bccc0e59b810",
+        "name": "Baan 05",
+        "access": "all",
+        "blocked": false,
+        "occupied": false,
+        "closed": false,
+        "closePending": false,
+        "canManage": true,
+        "playUrl": "/baan/43f036ae-bbaa-4505-88c8-a8b740c65920",
+        "screenUrl": "/baanscherm/43f036ae-bbaa-4505-88c8-a8b740c65920"
+      }
+    ],
+    "scoreAcceptance": {
+      "matchId": "6c0e846f-58cd-4d5e-b764-c9e2c827922d",
+      "actors": [
+        "00000000-0000-4000-8000-000000000001",
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "before": [
+        148,
+        188
+      ],
+      "accepted": [
+        88,
+        188
+      ],
+      "lastAcceptedVisit": {
+        "player": "player-1",
+        "playerIndex": 0,
+        "score": 60,
+        "darts": 3,
+        "remainingBefore": 148,
+        "remainingAfter": 88,
+        "bust": false,
+        "leg": 1,
+        "checkout": false
+      },
+      "restored": [
+        148,
+        188
+      ],
+      "verifiedAt": "2026-11-12T19:38:33.589Z",
+      "note": "Real local accepted server commands; this live preview expires after 180 seconds of inactivity."
+    }
+  }
+}

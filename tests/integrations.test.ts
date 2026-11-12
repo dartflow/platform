@@ -28,7 +28,7 @@ test('club mail access follows current settings grants and lifecycle while prese
  await admin.connect();const app=await appPool.connect();
  try{
   await admin.query('begin');
-  for(const id of people)await admin.query('insert into dartflow_private.profiles(id,name) values($1,$2)',[id,'Club mail regression']);
+  for(const id of people)await admin.query('insert into dartflow_private.profiles(id,name) values($1,$2)',[id,`Mail-${id.slice(0,8)}`]);
   await admin.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[club,'Scoped mail regression']);
   for(const [id,coreRole]of [[owner,'organizer'],[manager,'organizer'],[editor,'player']])await admin.query('insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,$3)',[club,id,coreRole]);
   await admin.query("insert into dartflow_private.platform_entities(id,kind,owner_id,visibility,state) values($1,'club',$2,'public',$3)",[club,owner,JSON.stringify({name:'Scoped mail regression',lifecycle:'active'})]);

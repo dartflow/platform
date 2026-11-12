@@ -17,7 +17,7 @@ async function manifest(page:Page){
 test('fixed board apps retain separate manifests, QR, live/offline state and explicit fallback binding',async({browser,baseURL})=>{
   test.setTimeout(120000);
   if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('PWA tests require a loopback fixture.');
-  const owner=await browser.newContext(),viewer=await browser.newContext({viewport:{width:540,height:960}});
+  const owner=await browser.newContext(),viewer=await browser.newContext({viewport:{width:960,height:540}});
   const manager=await owner.newPage();let training:{id:string;entity:{revision:number}}|null=null;
   try{
     expect((await(await owner.request.get('/api/session')).json()).local).toBe(true);await login(manager);
@@ -82,7 +82,7 @@ test('private board pairing survives reopening, stays board-scoped and revocatio
   test.setTimeout(90000);
   const databaseUrl=process.env.DARTFLOW_DATABASE_ADMIN_URL;if(!databaseUrl||!['localhost','127.0.0.1'].includes(new URL(databaseUrl).hostname))throw Error('Private screen browser tests require a local database.');
   const database=new pg.Client({connectionString:databaseUrl});await database.connect();
-  const owner=await browser.newContext(),display=await browser.newContext({viewport:{width:540,height:960}});
+  const owner=await browser.newContext(),display=await browser.newContext({viewport:{width:960,height:540}});
   try{
     const manager=await owner.newPage();await login(manager);const suffix=randomUUID().slice(0,6);
     const tournament=await command(owner,{type:'tournament.create',name:`Private screen ${suffix}`,boards:2});
@@ -98,4 +98,49 @@ test('private board pairing survives reopening, stays board-scoped and revocatio
     await screen.reload();await expect(screen.getByRole('heading',{name:a.name,exact:true})).toBeVisible();const other=await display.newPage();await other.goto(`/baanscherm/${b.id}`);await expect(other.getByRole('heading',{name:'Koppel dit baanscherm'})).toBeVisible();
     const revoked=await owner.request.delete(`/api/boards/${a.id}/screen-devices/${grant.device.id}`,{headers:{Origin:origin}});expect(revoked.status()).toBe(200);await expect(screen.getByRole('heading',{name:'Koppel dit baanscherm'})).toBeVisible();await expect(screen.getByRole('heading',{name:a.name,exact:true})).toHaveCount(0);await expect(screen.locator('.sprint-number')).toHaveCount(0);expect(authRequests).toBe(0);
   }finally{await Promise.allSettled([owner.close(),display.close()]);await database.end();}
+});
+
+const installFixtureBoard='11111111-1111-4111-8111-111111111111';
+async function installFixture(context:BrowserContext){
+ await context.route(`**/api/board-screens/${installFixtureBoard}`,route=>route.fulfill({json:{board:{id:installFixtureBoard,name:'Baan installatie',clubName:'Lokale fixture',access:'all',publicScan:true,blocked:false,occupied:false,playUrl:`/baan/${installFixtureBoard}`,screenUrl:`/baanscherm/${installFixtureBoard}`,locationKind:'venue'},status:'available',snapshot:{board:{id:installFixtureBoard,name:'Baan installatie'},event:{name:'Lokale fixture'},match:null,sessionKey:'pwa-install-fixture',scoreEvents:[]}}}));
+}
+
+test('browser DOM fullscreen retains board installation, its fallback instructions and a native prompt through exit',async({browser,baseURL})=>{
+ if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Fullscreen installation fixtures require loopback.');
+ const context=await browser.newContext({viewport:{width:1920,height:1080},serviceWorkers:'block'});
+ try{
+  await installFixture(context);const page=await context.newPage();await page.goto(`/baanscherm/${installFixtureBoard}`);const install=page.getByRole('button',{name:'Installeer dit baanscherm',exact:true});await expect(install).toBeVisible();
+  // This is Chromium's actual DOM Fullscreen API; no installed-app media mode is mocked here.
+  await page.getByRole('button',{name:'Volledig scherm',exact:true}).click();await expect.poll(()=>page.evaluate(()=>Boolean(document.fullscreenElement))).toBe(true);await expect(install).toBeVisible();
+  await install.click();await expect(page.getByRole('dialog',{name:'Installeer dit baanscherm',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:`/baanscherm/${installFixtureBoard}`,exact:true})).toBeVisible();await page.getByRole('button',{name:'Installatie sluiten',exact:true}).click();
+  await page.evaluate(()=>{const event=new Event('beforeinstallprompt',{cancelable:true}) as Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:string}>};(window as Window&{pwaPrompts?:number}).pwaPrompts=0;event.prompt=async()=>{(window as Window&{pwaPrompts?:number}).pwaPrompts!++;};event.userChoice=Promise.resolve({outcome:'dismissed'});window.dispatchEvent(event);});
+  await install.click();expect(await page.evaluate(()=>(window as Window&{pwaPrompts?:number}).pwaPrompts)).toBe(1);await expect(page.getByRole('dialog',{name:'Installeer dit baanscherm',exact:true})).toHaveCount(0);
+  await page.evaluate(()=>document.exitFullscreen());await expect.poll(()=>page.evaluate(()=>Boolean(document.fullscreenElement))).toBe(false);await expect(install).toBeVisible();await install.click();await expect(page.getByRole('dialog',{name:'Installeer dit baanscherm',exact:true})).toBeVisible();
+ }finally{await context.close();}
+});
+
+test('fullscreen alone is not an app window while observed standalone, minimal-ui and iOS app windows remain installed',async({browser,baseURL})=>{
+ if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Display-mode fixtures require loopback.');
+ for(const scenario of [{mode:'fullscreen',ios:false,app:false},{mode:'standalone',ios:false,app:true},{mode:'minimal-ui',ios:false,app:true},{mode:'browser',ios:true,app:true}]){
+  const context=await browser.newContext({viewport:{width:1920,height:1080},serviceWorkers:'block'});
+  try{
+   // These media modes model launch context; they do not claim a physical OS installation.
+   await context.addInitScript(({initialMode,ios})=>{
+    let mode=initialMode;const original=window.matchMedia.bind(window),queries=new Set<MediaQueryList>();
+    const matches=(query:string)=>Array.from(query.matchAll(/\(display-mode:\s*([-\w]+)\)/g)).some(match=>match[1]===mode);
+    window.matchMedia=query=>{const result=original(query);if(query.includes('display-mode:')){Object.defineProperty(result,'matches',{get:()=>matches(query)});queries.add(result);}return result;};
+    Object.defineProperty(navigator,'standalone',{get:()=>ios});
+    (window as Window&{setPwaDisplayMode?:(next:string)=>void}).setPwaDisplayMode=next=>{const previous=new Map(Array.from(queries,query=>[query,query.matches]));mode=next;for(const query of queries)if(previous.get(query)!==query.matches)query.dispatchEvent(new MediaQueryListEvent('change',{matches:query.matches,media:query.media}));};
+   },{initialMode:scenario.mode,ios:scenario.ios});
+   await installFixture(context);const page=await context.newPage();await page.goto(`/baanscherm/${installFixtureBoard}`);await expect(page.locator('.oche-stage')).toBeVisible();const install=page.getByRole('button',{name:'Installeer dit baanscherm',exact:true});
+   if(scenario.app){
+    await expect(install).toHaveCount(0);await page.getByRole('button',{name:'Volledig scherm',exact:true}).click();await expect.poll(()=>page.evaluate(()=>Boolean(document.fullscreenElement))).toBe(true);
+    await page.evaluate(()=>(window as Window&{setPwaDisplayMode?:(next:string)=>void}).setPwaDisplayMode!('fullscreen'));await expect(install).toHaveCount(0);
+    await page.evaluate(()=>document.exitFullscreen());await page.evaluate(()=>(window as Window&{setPwaDisplayMode?:(next:string)=>void}).setPwaDisplayMode!('browser'));await expect(install).toHaveCount(0);
+   }else{
+    await expect(install).toBeVisible();await install.click();await expect(page.getByRole('dialog',{name:'Installeer dit baanscherm',exact:true})).toBeVisible();await page.getByRole('button',{name:'Installatie sluiten',exact:true}).click();
+    await page.evaluate(()=>(window as Window&{setPwaDisplayMode?:(next:string)=>void}).setPwaDisplayMode!('browser'));await expect(install).toBeVisible();
+   }
+  }finally{await context.close();}
+ }
 });

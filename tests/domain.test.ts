@@ -4,6 +4,28 @@ import { applyMatchAction, newGame, scoreGame, validateSettings, checkout, match
 import type { MatchState, Settings } from '../lib/types';
 const settings: Settings = { startScore: 301, bestOfLegs: 1, bestOfSets: 1 };
 function match(overrides: Partial<MatchState> = {}): MatchState { return { id: 'match', clubId: 'club', eventId: 'event', boardId: 'board', revision: 0, status: 'live', players: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], writerId: 'a', settings, accepted: [true, true], confirmations: [false, false], resultRevision: null, game: newGame('match', ['a', 'b'], settings), previousSets: [], winnerId: null, resultPublished: false, dispute: null, ...overrides }; }
+test('current-leg display projection never mixes equal leg numbers from previous sets',()=>{
+  const multi={...settings,bestOfSets:3};
+  const previous=scoreGame(newGame('match',['a','b'],multi),180);
+  previous.status='finished';previous.winner='a';previous.legs=[1,0];
+  const current=scoreGame(newGame('match',['a','b'],multi),60);
+  const view=matchView(match({settings:multi,previousSets:[previous],game:current}),'a',false);
+  assert.deepEqual(view.visits.map(visit=>visit.score),[180,60]);
+  assert.deepEqual(view.currentLegVisits?.map(visit=>visit.score),[60]);
+  assert.equal(view.currentLegStartScore,301);assert.equal(view.setNumber,2);assert.equal(view.legNumber,1);
+});
+test('discarded free games cannot mutate; an official interruption can only resume through an authorized fresh call',()=>{
+  const game=scoreGame(newGame('match',['a','b'],settings),60);
+  const abandoned=match({status:'abandoned',boardId:null,game});
+  for(const action of [{type:'score',score:60},{type:'undo'},{type:'call',boardId:'next-board'}] as const)assert.throws(()=>applyMatchAction(abandoned,'a',true,action),{code:'board_session_released',status:410});
+  const interrupted=match({status:'interrupted',boardId:null,game,paused:true});
+  assert.throws(()=>applyMatchAction(interrupted,'a',false,{type:'score',score:20}),{code:'match_interrupted'});
+  assert.throws(()=>applyMatchAction(interrupted,'a',false,{type:'call',boardId:'next-board'}),{code:'forbidden'});
+  let resumed=applyMatchAction(interrupted,'organizer',true,{type:'call',boardId:'next-board'});
+  assert.deepEqual(resumed.game,game);assert.equal(resumed.paused,false);assert.deepEqual(resumed.accepted,[false,false]);
+  resumed=applyMatchAction(resumed,'a',false,{type:'accept'});resumed=applyMatchAction(resumed,'b',false,{type:'accept'});resumed=applyMatchAction(resumed,'a',false,{type:'start'});
+  assert.equal(resumed.status,'live');assert.deepEqual(resumed.game,game);assert.equal(resumed.boardId,'next-board');
+});
 test('x01 rejects impossible visits; bust preserves remaining but counts darts; finish requires explicit double', () => {
   for (const startScore of [301, 501, 701] as const) {
     const game = newGame('match', ['a', 'b'], { ...settings, startScore });

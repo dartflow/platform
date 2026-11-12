@@ -11,7 +11,7 @@ import { advanceFixtures, roundRobin, tournamentFixtures } from './platform-doma
 import { acceptsCode, addMember, allowsExternalParticipants, blocked, createCoreEvent, createCoreMatch, createEntity, entity, isClubMember, member, number, requireAccess, save, syncCompetitionRoom, text, uuid, view } from './platform-store';
 import type { EntityRow } from './platform-store';
 import type { PlatformCommand, PlatformResponse, PlatformState } from './platform-types';
-import {assertPhysicalBoardEvent,eventPhysicalBoards,physicalBoard} from './location-access';
+import {assertPhysicalBoardEvent,eventPhysicalBoards,physicalBoard,locationManager} from './location-access';
 import {clubPermission} from './club-access';
 
 export async function competitionAction(client: PoolClient, actor: string, command: PlatformCommand): Promise<PlatformResponse | null> {
@@ -201,7 +201,28 @@ async function lobbyAction(client: PoolClient, actor: string, command: PlatformC
   const self = await member(client, row.id, actor);
   const boundBoard=typeof row.state.boardId==='string'?row.state.boardId:null;
   if(boundBoard){await eventAccess(client,actor,row.state.eventId!);if(!row.state.matchId&&Number(row.state.boardLeaseUntil??0)<=Date.now())throw new DomainError('board_session_expired','De wachtende baanopstelling is verlopen. Scan opnieuw.',409);}
-  if (a.type === 'lobby.join') {
+  if(a.type==='lobby.board.bind'){
+    await requireAccess(client,row,actor);
+    if(!['remote','hybrid'].includes(String(row.state.setup))||row.state.closed||row.state.matchId)throw new DomainError('remote_board_unavailable','Koppel je eigen fysieke baan voordat de remote partij start.',409);
+    const target=uuid(a.boardId),scope=(await client.query<{event_id:string}>('select event_id from dartflow_private.boards where id=$1',[target])).rows[0];
+    if(!scope)throw new DomainError('not_found','Deze baan bestaat niet.',404);
+    if(!boundBoard&&row.owner_id!==actor)throw new DomainError('host_board_required','De host koppelt eerst zijn fysieke baan.',409);
+    if(boundBoard&&row.owner_id===actor&&target!==boundBoard)throw new DomainError('host_board_fixed','De host speelt op de baan waarop deze opstelling is begonnen.',409);
+    const events=[...new Set([scope.event_id,...(typeof row.state.eventId==='string'?[row.state.eventId]:[])])].sort();
+    await client.query('select id from dartflow_private.events where id=any($1::uuid[]) order by id for update',[events]);
+    const access=await eventAccess(client,actor,scope.event_id),physical=await physicalBoard(client,target);
+    if(physical?.kind==='home'&&!await locationManager(client,actor,physical.location_id))throw new DomainError('forbidden','Je kunt alleen je eigen toegestane thuisbaan koppelen.',403);
+    const map={...((row.state.remoteBoardIds as Record<string,string>|undefined)??{}),[actor]:target};
+    if(boundBoard)map[row.owner_id]=boundBoard;
+    if(Object.entries(map).some(([user,board])=>user!==actor&&board===target))throw new DomainError('remote_board_duplicate','Kies voor de remote tegenstander een andere fysieke baan.',409);
+    const boardIds=[...new Set(Object.values(map))].sort();if(boardIds.length>2)throw new DomainError('remote_board_limit','Deze partij heeft maximaal twee fysieke banen.',409);
+    await client.query('select id from dartflow_private.boards where id=any($1::uuid[]) order by id for update',[boardIds]);
+    await assertPhysicalBoardEvent(client,target,scope.event_id);
+    if((await client.query('select 1 from dartflow_private.matches where board_id=$1',[target])).rowCount)throw new DomainError('board_occupied','Deze baan heeft al een actieve partij.',409);
+    await assertBoardUnreserved(client,target,scope.event_id,row.id);
+    if(!boundBoard){row.state.boardId=target;row.state.eventId=scope.event_id;row.state.coreClubId=access.club_id;row.state.boardLeaseUntil=Date.now()+120000;}
+    row.state.remoteBoardIds=map;row.state.ready={};
+  }else if (a.type === 'lobby.join') {
     if (row.state.closed || row.state.matchId || await blocked(client, actor, row.owner_id)) throw new DomainError('lobby_unavailable', 'Deze lobby is niet beschikbaar.', 409);
     if (self?.status !== 'active' && self?.status !== 'invited' && !(boundBoard&&a.boardId===boundBoard&&row.state.setup==='localone') && !acceptsCode(row, a.code)) throw new DomainError('invite_required', 'Gebruik een geldige uitnodiging.', 403);
     if (self?.status !== 'active') {
@@ -230,6 +251,18 @@ async function lobbyAction(client: PoolClient, actor: string, command: PlatformC
     const players = rows.map(r => String(r.user_id));
     if (players.length !== 2 || !players.every(p => row.state.ready?.[p])) throw new DomainError('players_not_ready', 'Beide spelers moeten eerst gereed zijn.', 409);
     if(boundBoard){await client.query('select id from dartflow_private.events where id=$1 for update',[row.state.eventId]);for(const player of players)await eventAccess(client,player,row.state.eventId!);if(Number(row.state.boardLeaseUntil??0)<=Date.now())throw new DomainError('board_session_expired','Deze baanopstelling is verlopen.',409);const {rows:boards}=await client.query('select blocked from dartflow_private.boards where id=$1 and event_id=$2 for update',[boundBoard,row.state.eventId]);if(!boards.length||boards[0].blocked||(await client.query('select 1 from dartflow_private.matches where board_id=$1',[boundBoard])).rowCount)throw new DomainError('board_occupied','De baan is niet meer beschikbaar.',409);await assertPhysicalBoardEvent(client,boundBoard,row.state.eventId!);await assertBoardUnreserved(client,boundBoard,row.state.eventId!,row.id);}
+    if(row.state.remoteBoardIds&&typeof row.state.remoteBoardIds==='object'){
+      const map=row.state.remoteBoardIds as Record<string,string>,boardIds=[...new Set(Object.values(map).map(uuid))].sort();
+      await client.query('select id from dartflow_private.boards where id=any($1::uuid[]) order by id for update',[boardIds]);
+      for(const [player,id]of Object.entries(map)){
+        if(!players.includes(player))throw new DomainError('remote_board_owner','De gekoppelde baan hoort niet bij een deelnemer.',409);
+        const scope=(await client.query<{event_id:string}>('select event_id from dartflow_private.boards where id=$1',[id])).rows[0];if(!scope)throw new DomainError('not_found','Een gekoppelde baan bestaat niet.',404);
+        await eventAccess(client,player,scope.event_id);await assertPhysicalBoardEvent(client,id,scope.event_id);
+        const physical=await physicalBoard(client,id);if(physical?.kind==='home'&&!await locationManager(client,player,physical.location_id))throw new DomainError('forbidden','De deelnemer heeft geen actuele toegang tot zijn thuisbaan.',403);
+        if((await client.query('select 1 from dartflow_private.matches where board_id=$1',[id])).rowCount)throw new DomainError('board_occupied','Een gekoppelde baan heeft al een actieve partij.',409);
+        await assertBoardUnreserved(client,id,scope.event_id,row.id);
+      }
+    }
     row.state.matchId = await createCoreMatch(client, row, players, row.state.settings!, 'free');
     if(boundBoard){const {rows:matches}=await client.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[row.state.matchId]);const state=matches[0].state,before=structuredClone(state);state.boardId=boundBoard;state.callRef=command.requestId;state.revision++;await client.query('update dartflow_private.matches set board_id=$2,state=$3,revision=$4 where id=$1',[state.id,boundBoard,JSON.stringify(state),state.revision]);await enqueueMatchTransition(client,actor,before,state,{requestId:command.requestId,matchId:state.id,expectedRevision:before.revision,action:{type:'call',boardId:boundBoard}});}
   } else if (a.type === 'lobby.cancel') {
@@ -290,7 +323,9 @@ export async function autoAssign(client: PoolClient, row: EntityRow, manual?:{fi
   const boards = await eventPhysicalBoards(client,row.state.eventId!,true);
   const members = await client.query("select user_id,attributes from dartflow_private.platform_members where entity_id=$1 and status='active' and attributes->>'registered'='true'", [row.id]);
   await lockPlayingActors(client,members.rows.map(m=>String(m.user_id)));
-  const occupied = await client.query("select state from dartflow_private.matches where state->>'status' in ('called','ready','live','result','disputed') and (exists(select 1 from dartflow_private.match_players p where p.match_id=dartflow_private.matches.id and p.user_id=any($1::uuid[])) or (state->>'delegatedWriterId'=state->>'writerId' and state->>'delegatedWriterId'=any($2::text[])))",[members.rows.map(m=>m.user_id),members.rows.map(m=>m.user_id)]);
+  const requestedMatch=manual?row.state.fixtures?.find(f=>f.id===manual.fixtureId)?.matchId:null;
+  const resumeMatch=requestedMatch&&(await client.query("select id from dartflow_private.matches where id=$1 and state->>'status'='interrupted' and board_id is null",[requestedMatch])).rows[0]?.id;
+  const occupied = await client.query("select state from dartflow_private.matches where ($3::uuid is null or id<>$3) and state->>'status' in ('called','ready','live','result','disputed','interrupted') and (exists(select 1 from dartflow_private.match_players p where p.match_id=dartflow_private.matches.id and p.user_id=any($1::uuid[])) or (state->>'delegatedWriterId'=state->>'writerId' and state->>'delegatedWriterId'=any($2::text[])))",[members.rows.map(m=>m.user_id),members.rows.map(m=>m.user_id),resumeMatch??null]);
   const busy = new Set<string>(occupied.rows.flatMap(r => [...r.state.players.map((p: { id: string }) => p.id), ...(r.state.delegatedWriterId&&r.state.writerId===r.state.delegatedWriterId ? [r.state.delegatedWriterId] : [])]));
   const eligible = (id: string) => {
     const m = members.rows.find(m => m.user_id === id);
@@ -304,7 +339,7 @@ export async function autoAssign(client: PoolClient, row: EntityRow, manual?:{fi
     if(Number((row.state.boardCooldowns as Record<string,number>|undefined)?.[board.id]??0)>Date.now())continue;
     const reservation=(row.state.boardReservations as Record<string,{fixtureId?:string}>|undefined)?.[board.id];
     if(reservation&&!reservation.fixtureId)continue;
-    const fixture = row.state.fixtures?.find(f => f.status === 'scheduled' && (!manual||f.id===manual.fixtureId) && (!reservation?.fixtureId||f.id===reservation.fixtureId) && (manual||!f.time||new Date(f.time).getTime()<=Date.now()+5*60_000) && f.players.every((p): p is string => p !== null && Boolean(eligible(p))));
+    const fixture = row.state.fixtures?.find(f => (f.status === 'scheduled'||Boolean(manual&&resumeMatch&&f.matchId===resumeMatch)) && (!manual||f.id===manual.fixtureId) && (!reservation?.fixtureId||f.id===reservation.fixtureId) && (manual||!f.time||new Date(f.time).getTime()<=Date.now()+5*60_000) && f.players.every((p): p is string => p !== null && Boolean(eligible(p))));
     if (!fixture) continue;
     try{await assertBoardUnreserved(client,board.id,row.state.eventId!,row.id,fixture.id);}catch(error){if(error instanceof DomainError&&error.code==='board_reserved')continue;throw error;}
     const players = fixture.players as string[];
@@ -316,8 +351,8 @@ export async function autoAssign(client: PoolClient, row: EntityRow, manual?:{fi
     const match = await client.query('select state from dartflow_private.matches where id=$1 for update', [fixture.matchId]);
     const state = match.rows[0].state;
     const beforeCall=structuredClone(state);
-    if(!['planned','called'].includes(state.status)||state.boardId)throw new DomainError('match_active','Deze partij is al actief.',409);
-    state.boardId = board.id; state.status = 'called'; state.revision++;state.callRef=context?.requestId??randomUUID();state.accepted=[false,false];
+    if(!['planned','called',...(manual?['interrupted']:[])].includes(state.status)||state.boardId)throw new DomainError('match_active','Deze partij is al actief.',409);
+    state.boardId = board.id; state.status = 'called'; state.revision++;state.callRef=context?.requestId??randomUUID();state.accepted=[false,false];state.paused=false;state.correction=null;
     if (writer) {
       // Writer came from this event's checked-in, registered, unoccupied members.
       if(!(await client.query("select 1 from dartflow_private.entries where event_id=$1 and user_id=$2 and status='registered' and checked_in",[row.state.eventId,writer])).rowCount)throw new DomainError('writer_unavailable','Deze schrijver heeft geen bevestigde, ingecheckte deelname.',409);

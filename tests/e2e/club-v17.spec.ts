@@ -25,5 +25,11 @@ test('club intake works on a separate phone, keeps answers private, and the owne
   await expect(player.locator('.club-workspace .pill')).toHaveText('Clublid');await expect(player.getByRole('button',{name:'Leden',exact:true})).toBeVisible();await expect(player.getByRole('button',{name:'Rollen',exact:true})).toHaveCount(0);
   await navigation.getByRole('button',{name:'Instellingen',exact:true}).click();const image=await sharp({create:{width:32,height:32,channels:4,background:'#b7f62b'}}).png().toBuffer();await settings.getByLabel(/Verenigingslogo/).setInputFiles({name:'vereniging.png',mimeType:'image/png',buffer:image});await expect(manager.getByRole('img',{name:`Logo ${name}`,exact:true})).toHaveAttribute('src',/^data:image\/webp;base64,/);await expect(settings.getByRole('button',{name:'Instellingen opslaan',exact:true})).toHaveCSS('background-color','rgb(18, 52, 86)');
   expect(await player.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  for(const viewport of [{width:390,height:844},{width:412,height:915}]){
+   await player.setViewportSize(viewport);
+   const layout=await player.evaluate(()=>{const club=document.querySelector('.club-workspace')!.getBoundingClientRect(),tabs=document.querySelector('.community-feed-tabs') as HTMLElement;tabs.scrollLeft=tabs.scrollWidth;const reached=tabs.scrollLeft,max=Math.max(0,tabs.scrollWidth-tabs.clientWidth);tabs.scrollLeft=0;return{clubWidth:club.width,clubRight:club.right,tabsWidth:tabs.getBoundingClientRect().width,tabsOverflow:getComputedStyle(tabs).overflowX,reached,max,pageWidth:document.documentElement.scrollWidth};});
+   expect(layout.clubWidth).toBeLessThanOrEqual(viewport.width);expect(layout.clubRight).toBeLessThanOrEqual(viewport.width+1);expect(layout.tabsWidth).toBeLessThanOrEqual(layout.clubWidth+1);expect(layout.tabsOverflow).toBe('auto');expect(layout.reached).toBe(layout.max);expect(layout.pageWidth).toBeLessThanOrEqual(viewport.width+1);
+  }
+
  }finally{await Promise.all([owner.close(),phone.close(),outsider.close()]);}
 });

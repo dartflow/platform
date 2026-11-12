@@ -10,3 +10,7 @@ export function validDisplayName(value: unknown): boolean {
 export function requiresDisplayName(profile: {name: string; displayNameConfirmed?: boolean}): boolean {
   return profile.displayNameConfirmed === false || !validDisplayName(profile.name);
 }
+/** The server-owned confirmation flag is backed by the global unique username index. */
+export function hasConfirmedUsername(profile:{name:string;displayNameConfirmed?:boolean}):boolean{
+  return profile.displayNameConfirmed===true&&validDisplayName(profile.name);
+}

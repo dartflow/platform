@@ -11,6 +11,7 @@ import type { Overview, Profile, MatchView, ResultView, ClubBoardView } from "@/
 import { ClubBoardQr } from "./club-board-screen";
 import MailWorkspace from "./mail-workspace";
 import ScoreConsole from "./score-console";
+import BoardActivityNotice from "./board-activity-notice";
 import ScreenDeviceManager from "./screen-device-manager";
 import IntegrationsPanel from "./integrations-panel";
 import { MailPreferences } from "./mail-policy-panel";
@@ -39,6 +40,7 @@ type Entity = {
   members: Member[];
   canManage?: boolean;
   inviteCode?: string;
+  boardActivity?:import("@/lib/board-activity-types").BoardActivityView;
   clubAccess?:import('@/lib/club-types').ClubAccess;
 };
 type Platform = {
@@ -459,10 +461,12 @@ export default function PlatformWorkspace({
     const wake = () => {setOnline(navigator.onLine);if(navigator.onLine)void refresh();};
     window.addEventListener("online", wake);
     window.addEventListener("offline", wake);
+    document.addEventListener("visibilitychange", wake);
     return () => {
       clearInterval(timer);
       window.removeEventListener("online", wake);
       window.removeEventListener("offline", wake);
+      document.removeEventListener("visibilitychange", wake);
     };
   }, [refresh]);
   const command: Command = async (action, entity, attempt) => {
@@ -1090,7 +1094,7 @@ function Training({
         <section className="panel">
           <h2>Jouw trainingen</h2>
           {data.trainings.length ? (
-            data.trainings.map((e) => (
+            data.trainings.filter(e=>!e.state.discarded).map((e) => (
               <a
                 key={e.id}
                 className="workspace-row"
@@ -1111,6 +1115,7 @@ function Training({
         </section>
       </>
     );
+  if(entity.state.discarded)return <><Title title="Baanpartij beëindigd"/><section className="panel"><p>De baan is vrijgegeven. De voorlopige scores van deze afgebroken partij zijn gewist.</p><a className="button gold" href="/app/spelen">Nieuwe partij starten</a></section></>;
   const game = record(entity.state.game);
   const remain = Array.isArray(game.remaining) ? game.remaining : [];
   const visits = list(game.visits);
@@ -1120,7 +1125,8 @@ function Training({
     game.status === "finished";
   return (
     <>
-      {!finished && entity.state.mode !== 'around' && consoleOpen && <ScoreConsole title={entity.name} players={[{id:data.profile.id,name:data.profile.name,remaining:number(remain[0] ?? entity.state.target ?? entity.state.remaining,501)},...(entity.state.mode==='bot'&&remain.length>1?[{id:'dartbot',name:'Dartbot',remaining:number(remain[1])}]:[])]} active={number(game.turn,0)} score={score} onScore={updateTrainingScore} darts={number(visitDarts,3)} onDarts={value=>setVisitDarts(String(value))} finish={score!==''&&number(score)===number(remain[0]??entity.state.remaining??entity.state.target)} doubleConfirmed={double} onDoubleConfirmed={setDouble} canScore={!finished} busy={busy} disabled={busy||Boolean(pendingScore)} offline={!online} message={error || (pendingScore&&!busy?'Controleer de stand. Je bewaarde worp kan met hetzelfde actie-ID opnieuw worden verzonden.':'')} checkout={text(entity.state.checkout||game.checkout)} onBack={()=>setConsoleOpen(false)} onSubmit={()=>void submitTrainingScore()} options={<>
+      {(!consoleOpen||finished)&&<BoardActivityNotice activity={entity.boardActivity} offline={!online}/>}
+      {!finished && entity.state.mode !== 'around' && consoleOpen && <ScoreConsole activity={<BoardActivityNotice activity={entity.boardActivity} offline={!online}/>} title={entity.name} players={[{id:data.profile.id,name:data.profile.name,remaining:number(remain[0] ?? entity.state.target ?? entity.state.remaining,501)},...(entity.state.mode==='bot'&&remain.length>1?[{id:'dartbot',name:'Dartbot',remaining:number(remain[1])}]:[])]} active={number(game.turn,0)} score={score} onScore={updateTrainingScore} darts={number(visitDarts,3)} onDarts={value=>setVisitDarts(String(value))} finish={score!==''&&number(score)===number(remain[0]??entity.state.remaining??entity.state.target)} doubleConfirmed={double} onDoubleConfirmed={setDouble} canScore={!finished} busy={busy} disabled={busy||Boolean(pendingScore)} offline={!online} message={error || (pendingScore&&!busy?'Controleer de stand. Je bewaarde worp kan met hetzelfde actie-ID opnieuw worden verzonden.':'')} checkout={text(entity.state.checkout||game.checkout)} onBack={()=>setConsoleOpen(false)} onSubmit={()=>void submitTrainingScore()} options={<>
         {pendingScore&&!busy&&<div className="notice"><p>Dezelfde bewaarde worp opnieuw verzenden boekt nooit een extra beurt.</p><Button onClick={()=>void submitTrainingScore()}>Zelfde worp opnieuw proberen</Button><Button onClick={()=>{setPendingScore(null);try{sessionStorage.removeItem(pendingKey);}catch{/* Optional storage. */}}}>Bewaarde worp verwerpen</Button></div>}
         <Button disabled={busy||Boolean(pendingScore)||!Array.isArray(entity.state.undo)||!entity.state.undo.length} onClick={()=>void command({type:'training.undo',id:entity.id},entity)}>Laatste beurt terug</Button>
         <Button disabled={busy||Boolean(pendingScore)} onClick={()=>void command({type:'training.finish',id:entity.id},entity)}>Training bewaren en beëindigen</Button>
@@ -2269,6 +2275,7 @@ function Lobby({
               Deel de code of uitnodigingslink met je tegenstander.
             </p>
             <ShareInvitation section="lobby" id={entity.id} entity={entity} />
+            {selfActive&&!entity.state.matchId&&!entity.state.closed&&['remote','hybrid'].includes(text(entity.state.setup))&&<label className="field">Mijn fysieke baan (optioneel)<select value={text(record(entity.state.remoteBoardIds)[data.profile.id])} disabled={busy} onChange={event=>{if(event.target.value)void command({type:'lobby.board.bind',id:entity.id,boardId:event.target.value},entity);}}><option value="">Thuis zonder gekoppeld baanscherm</option>{(data.clubBoards??[]).filter(board=>(!board.occupied&&!board.blocked&&!board.closed&&!board.closePending)||board.id===record(entity.state.remoteBoardIds)[data.profile.id]).map(board=><option key={board.id} value={board.id}>{board.name}</option>)}</select><small>Deze vaste baan volgt dezelfde live stand en deadline als je tegenstander.</small></label>}
             {entity.members.map((m) => (
               <div className="workspace-row" key={m.id}>
                 <strong>{m.name}</strong>
@@ -3520,7 +3527,7 @@ function Preferences({
         }}
       >
         <Field
-          label="Naam op het scorebord"
+          label="Gebruikersnaam (uniek in DartFlow)"
           name="name"
           defaultValue={data.profile.name}
           required

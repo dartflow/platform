@@ -5,6 +5,7 @@ import {getClubBoardScreen} from './club-boards';
 import {readBoardScoreEvents} from './score-events';
 import {checkout,DomainError,matchView} from './domain';
 import {boardLease} from './platform-locks';
+import {readBoardActivity,publicBoardActivity,boardDeviceCanExtend} from './board-activity';
 import {uuid} from './platform-store';
 import type {ClubBoardScreenView} from './platform-types';
 import type {BoardScreenDevice,Game,MatchState,PublicSnapshot,Stats,Visit} from './types';
@@ -105,13 +106,13 @@ export async function pairBoardScreenDevice(boardId:string,input:unknown):Promis
  });
 }
 function screenDenied():DomainError{return new DomainError('screen_pairing_required','Dit baanscherm moet eenmalig door de wedstrijdleiding worden gekoppeld.',403);}
-async function authorizeScreen(row:BoardRow,token?:string):Promise<void>{
+async function authorizeScreen(row:BoardRow,token?:string,client:Pick<PoolClient,'query'>=database()):Promise<void>{
  // Existing club screen visibility is independent of the club's playing admission rules.
  if(row.public_screen)return;
  if(token&&/^[A-Za-z0-9_-]{43}$/.test(token)){
-  const devices=await database().query<{created_by:string}>(`select created_by from dartflow_private.board_screen_devices where board_id=$1 and event_id=$2 and token_hash=$3
+  const devices=await client.query<{created_by:string}>(`select created_by from dartflow_private.board_screen_devices where board_id=$1 and event_id=$2 and token_hash=$3
    and paired_at is not null and revoked_at is null and expires_at>now()`,[row.id,row.event_id,hash(token)]);
-  if(devices.rows.length){try{await manager(database(),devices.rows[0].created_by,row);return;}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}
+  if(devices.rows.length){try{await manager(client,devices.rows[0].created_by,row);return;}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}
  }
  throw screenDenied();
 }
@@ -119,18 +120,28 @@ const displayVisits=(visits:Visit[]):Visit[]=>visits.map(v=>({player:`player-${v
 const displayStats=(stats:Stats[]):Stats[]=>stats.map(s=>({total:s.total,darts:s.darts,oneEighties:s.oneEighties,highestFinish:s.highestFinish,...(s.legsWon===undefined?{}:{legsWon:s.legsWon}),average:s.darts?Math.round(s.total/s.darts*300)/100:0}));
 /** Fixed physical identity, fresh assignment every read, and only the Sprint display allowlist. */
 export async function getBoardScreen(boardId:string,deviceToken?:string):Promise<ClubBoardScreenView>{
- const row=await board(database(),boardId);await authorizeScreen(row,deviceToken);
- if(row.club_screen)return getClubBoardScreen(row.id);
- const lease=await boardLease(database(),row.id),location=await locationScreenContext(database(),row.id,row.state?.id??lease?.id);let match:PublicSnapshot['match']=null;
+ const client=await database().connect();
+ try{await client.query('begin isolation level repeatable read read only');const result=await readBoardScreen(client,boardId,deviceToken);await client.query('commit');return result;}
+ catch(error){await client.query('rollback');throw error;}finally{client.release();}
+}
+async function readBoardScreen(client:PoolClient,boardId:string,deviceToken?:string):Promise<ClubBoardScreenView>{
+ const row=await board(client,boardId);await authorizeScreen(row,deviceToken,client);
+ const rawActivity=await readBoardActivity(client,row.id);
+ const deviceCanExtend=Boolean(rawActivity&&await boardDeviceCanExtend(client,row.id,deviceToken));
+ const activity=publicBoardActivity(rawActivity,deviceCanExtend);
+ if(row.club_screen){const projection=await getClubBoardScreen(row.id,client);if(activity)projection.snapshot.boardActivity=activity;return projection;}
+ if(!row.state&&rawActivity?.sourceKind==='match'&&['active','warning'].includes(rawActivity.phase))row.state=(await client.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[rawActivity.sourceId])).rows[0]?.state??null;
+ const lease=await boardLease(client,row.id),location=await locationScreenContext(client,row.id,row.state?.id??lease?.id);let match:PublicSnapshot['match']=null;
  if(row.state){
   const view=matchView(row.state,'',false);
-  match={id:`board-${row.id}`,revision:view.revision,status:view.status,players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:displayVisits(view.visits.filter(v=>v.leg===view.legNumber)),winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:{startScore:view.settings.startScore,bestOfLegs:view.settings.bestOfLegs,bestOfSets:view.settings.bestOfSets,...(view.settings.legLimit===undefined?{}:{legLimit:view.settings.legLimit})},writerId:'',stats:displayStats(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
+  match={id:`board-${row.id}`,revision:view.revision,status:view.status,players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:displayVisits(view.currentLegVisits??[]),currentLegVisits:displayVisits(view.currentLegVisits??[]),currentLegStartScore:view.currentLegStartScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:{startScore:view.settings.startScore,bestOfLegs:view.settings.bestOfLegs,bestOfSets:view.settings.bestOfSets,...(view.settings.legLimit===undefined?{}:{legLimit:view.settings.legLimit})},writerId:'',stats:displayStats(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
  }else if(lease?.kind==='training'){
   const game=lease.state.game as Game;
-  const profile=await database().query<{name:string}>('select name from dartflow_private.profiles where id=$1',[lease.owner_id]);
-  match={id:`board-${row.id}`,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:displayVisits(game.visits),winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:displayStats([game.stats[0]]),legNumber:Math.max(1,...game.visits.map(v=>v.leg)),setNumber:1,paused:false};
+  const profile=await client.query<{name:string}>('select name from dartflow_private.profiles where id=$1',[lease.owner_id]);
+  match={id:`board-${row.id}`,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:displayVisits(game.visits),currentLegVisits:displayVisits(game.visits.filter(v=>v.leg===game.legs[0]+(game.status==='finished'?0:1))),currentLegStartScore:game.startScore,winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:displayStats([game.stats[0]]),legNumber:Math.max(1,...game.visits.map(v=>v.leg)),setNumber:1,paused:false};
  }
  const occupied=Boolean(row.state||lease);
+ const closed=Boolean(location?.physical.closed_at),closePending=Boolean(location?.physical.close_after_session);
  const blocked=row.blocked||Boolean(location?.physical.archived_at),eventName=location?.reservation?.label??location?.physical.location_name??row.event_name;
- return {board:{id:row.id,name:row.name,clubName:location?.physical.location_name??row.event_name,access:location?.physical.kind==='venue'?'all':'club',blocked,occupied,playUrl:`/baan/${row.id}`,screenUrl:`/baanscherm/${row.id}`,...(location?{locationKind:location.physical.kind}:{})},status:blocked?'blocked':match?'playing':lease?'waiting':'available',snapshot:{board:{id:row.id,name:row.name},event:{name:eventName},match,...await readBoardScoreEvents(database(),row.id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
+ return {board:{id:row.id,name:row.name,clubName:location?.physical.location_name??row.event_name,access:location?.physical.kind==='venue'?'all':'club',blocked,occupied,closed,closePending,publicScan:row.public_screen&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${row.id}`,screenUrl:`/baanscherm/${row.id}`,...(location?{locationKind:location.physical.kind}:{})},status:match?'playing':blocked?'blocked':closed||closePending?'closed':lease?'waiting':location?.reservation?'reserved':'available',snapshot:{board:{id:row.id,name:row.name},event:{name:eventName},match,...(activity?{boardActivity:activity}:{}),...await readBoardScoreEvents(client,row.id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
 }
