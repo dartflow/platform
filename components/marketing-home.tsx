@@ -8,12 +8,13 @@ export default async function MarketingHome({ origin }: { origin: string }) {
   let latest = "";
   try { latest = renderLatestBlog(await liveBlogPosts(), origin); } catch { /* The marketing homepage remains available during database maintenance. */ }
   const withBlog = marketingContent.replace('<section id="veelgestelde-vragen"', latest + '<section id="veelgestelde-vragen"');
+  const withPrivacy = withBlog.replace('<nav aria-label="Footernavigatie">', '<nav aria-label="Footernavigatie"><a href="/privacy">Privacybeleid</a>');
   const content = process.env.DARTFLOW_DATA_MODE === "supabase"
-    ? withBlog.replace(
+    ? withPrivacy.replace(
         '<nav aria-label="Footernavigatie">',
         '<nav aria-label="Footernavigatie"><button type="button" class="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>',
       )
-    : withBlog;
+    : withPrivacy;
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",

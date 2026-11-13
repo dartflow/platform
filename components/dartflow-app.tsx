@@ -512,6 +512,7 @@ export default function DartflowApp() {
         </div>
         <footer className="auth-footer">
           <span>DartFlow · DG Webservices</span>
+          <a className="dartflow-privacy-link" href="/privacy">Privacybeleid</a>
           {session.data?.local === false && (
             <button type="button" className="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>
           )}
@@ -836,6 +837,7 @@ export default function DartflowApp() {
           <footer className="app-footer">
             <span>© {new Date().getFullYear()} DartFlow · DG Webservices</span>
             <span>Speel. Ontmoet. Competeer.</span>
+            <a className="dartflow-privacy-link" href="/privacy">Privacybeleid</a>
             {session.data.local === false && (
               <button type="button" className="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>
             )}
@@ -2815,6 +2817,7 @@ function Login({ session }: { session: Session | null }) {
       )}
       <footer className="auth-footer">
         <span>DartFlow · DG Webservices</span>
+        <a className="dartflow-privacy-link" href="/privacy">Privacybeleid</a>
         {session?.local === false && (
           <button type="button" className="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>
         )}
