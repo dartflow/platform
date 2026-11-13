@@ -15,6 +15,7 @@ import LocalPlayerAdd from "./local-player-add";
 import BoardActivityNotice from "./board-activity-notice";
 import ScreenDeviceManager from "./screen-device-manager";
 import IntegrationsPanel from "./integrations-panel";
+import BlogWorkspace from "./blog-workspace";
 import { MailPreferences } from "./mail-policy-panel";
 import {FeedSpace,ScopedChat} from './community-space';
 import {ClubWorkspace} from './club-ui';
@@ -514,6 +515,7 @@ export default function PlatformWorkspace({
     .filter(Boolean);
   const page = pieces[0] || "home";
   const id = pieces[1];
+  if (page === "blog") return <BlogWorkspace />;
   if (page === "platform") return <IntegrationsPanel />;
   if (page === "mail") return <MailWorkspace clubId={clubId} />;
   return (

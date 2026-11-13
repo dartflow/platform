@@ -1,14 +1,19 @@
 /* eslint-disable @next/next/no-css-tags -- The public marketing page alone loads its verified reference stylesheet. */
 import { marketingContent } from "./marketing-content";
 import MarketingInteractions from "./marketing-interactions";
+import {liveBlogPosts} from "./blog-data";
+import {renderLatestBlog} from "./blog-public";
 
-export default function MarketingHome({ origin }: { origin: string }) {
+export default async function MarketingHome({ origin }: { origin: string }) {
+  let latest = "";
+  try { latest = renderLatestBlog(await liveBlogPosts(), origin); } catch { /* The marketing homepage remains available during database maintenance. */ }
+  const withBlog = marketingContent.replace('<section id="veelgestelde-vragen"', latest + '<section id="veelgestelde-vragen"');
   const content = process.env.DARTFLOW_DATA_MODE === "supabase"
-    ? marketingContent.replace(
+    ? withBlog.replace(
         '<nav aria-label="Footernavigatie">',
         '<nav aria-label="Footernavigatie"><button type="button" class="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>',
       )
-    : marketingContent;
+    : withBlog;
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
@@ -29,6 +34,7 @@ export default function MarketingHome({ origin }: { origin: string }) {
   return (
     <>
       <link rel="stylesheet" href="/marketing.css" />
+      <link rel="stylesheet" href="/blog.css" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

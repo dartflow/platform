@@ -577,6 +577,7 @@ export default function DartflowApp() {
     { href: "/app/mail", label: "Mailbeheer", icon: "users" },
     ...(session.data.canManagePlatform
       ? [
+          {href:"/app/blog",label:"Blogbeheer",icon:"shield" as IconName},
           {
             href: "/app/platform/integraties",
             label: "Platformbeheer",
@@ -594,6 +595,7 @@ export default function DartflowApp() {
       "/app/manage",
       "/app/mail",
       "/app/platform",
+      "/app/blog",
       "/app/venue-cast",
       "/app/venue",
     ].some((prefix) => path.startsWith(prefix));

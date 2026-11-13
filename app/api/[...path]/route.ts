@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {handleBlogAdminApi} from '@/lib/blog-admin-api';
+import {handleBlogApi} from '@/lib/blog-api';
+import {processScheduledBlogPublications,processBlogInvalidations} from '@/lib/blog-store';
+import {revalidatePath} from 'next/cache';
 import { createGoogleAttempt, GOOGLE_ATTEMPT_COOKIE } from '@/lib/google-proof';
 import { googleSignInOptions,hasRecentVerifiedAuthentication } from '@/lib/reauth';
 import { googleConfigurationRevision } from '@/lib/integrations';
@@ -71,11 +75,17 @@ async function limit(key:string,max:number,seconds:number) {
 async function handle(request:NextRequest,parts:string[],method:string) {
   const path=parts.join('/');
   if(appConfig().mode==='local' && !isLocalRequest(request)) throw new DomainError('local_only','Deze testomgeving is alleen lokaal bereikbaar.',403);
+  const blogAdmin=await handleBlogAdminApi(request,parts);
+  if(blogAdmin){if(request.method!=='GET'&&blogAdmin.ok)await processBlogInvalidations(revalidatePath);return blogAdmin;}
+  const blog=await handleBlogApi(request,parts);
+  if(blog){if(request.method!=='GET'&&blog.ok)await processBlogInvalidations(revalidatePath);return blog;}
   if (path==='mail/process') {
     const host=request.headers.get('host') || '';
     const forwarded=(request.headers.get('x-forwarded-for') || '').split(',').map(value=>value.trim()).filter(Boolean);
     if (!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host) || forwarded.some(value=>!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(value))) throw new DomainError('forbidden','Geen toegang.',403);
     if(method==='POST' && workerTokenMatches(request)) {
+      await processScheduledBlogPublications();
+      await processBlogInvalidations(revalidatePath);
       await processBoardActivityBatch();
       await reconcilePlatformResults();
       await reconcilePlatformCalls();

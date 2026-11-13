@@ -4,8 +4,10 @@ const config: NextConfig = {
   // The local-session helper uses fs; never trace developer databases or env files.
   outputFileTracingExcludes: {'/*':['./.local/**/*','./.env*','./.git/**/*']},
   poweredByHeader: false,
+  // Publish canonical and verification markers inside the initial head for every crawler.
+  htmlLimitedBots: /.*/,
   async headers() {
-    return [{source: '/:path*', headers: [
+    return [{source:'/blog/beheer/:path*',headers:[{key:'X-Robots-Tag',value:'noindex, nofollow, noarchive'}]},{source: '/:path*', headers: [
       {key:'Cache-Control',value:'private, no-store'},
       {key:'X-Content-Type-Options',value:'nosniff'},
       {key:'Referrer-Policy',value:'same-origin'},
