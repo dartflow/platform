@@ -20,7 +20,7 @@ test('persistent Oche device grants enforce scopes, quotas, retries, rotation an
  const people=Array.from({length:5},()=>randomUUID()),[owner,player,outsider,central,manager]=people,club=randomUUID(),locations:string[]=[],events:string[]=[],boards:string[]=[],installations:string[]=[],requests:string[]=[],matches:string[]=[],legacyIds:string[]=[];
  const request=()=>{const id=randomUUID();requests.push(id);return id;};
  const start=async(platform:OchePlatform='android')=>{const result=await startOcheInstallation({platform,requestId:request()});installations.push(result.installationId);return result;};
- const claim=(device:OchePairing,extra:Partial<OcheClaim>={},actor=owner)=>claimOcheInstallation(actor,{code:device.code,scope:'home',name:'Testscherm',requestId:request(),...extra});
+ const claim=(device:OchePairing,extra:Partial<OcheClaim>={},actor:string=owner)=>claimOcheInstallation(actor,{code:device.code,scope:'home',name:'Testscherm',requestId:request(),...extra});
  const redeem=(device:OchePairing&{installationSecret:string},nonce=request())=>redeemOcheInstallation(device.installationId,device.installationSecret,nonce);
  const venue=async()=>{const id=randomUUID();locations.push(id);await admin.query("insert into dartflow_private.locations(id,owner_id,kind,name) values($1,$2,'venue','Oche testlocatie')",[id,owner]);return id;};
  const board=async(locationId:string,publicScreen=false)=>{const id=randomUUID(),eventId=randomUUID();boards.push(id);events.push(eventId);await admin.query("insert into dartflow_private.events(id,club_id,name,date,capacity) values($1,$2,'Oche testevenement',current_date,8)",[eventId,club]);await admin.query("insert into dartflow_private.boards(id,event_id,name) values($1,$2,'Baan 1')",[id,eventId]);await admin.query('insert into dartflow_private.location_boards(board_id,location_id,home_event_id,public_screen) values($1,$2,$3,$4)',[id,locationId,eventId,publicScreen]);return id;};
@@ -37,6 +37,17 @@ test('persistent Oche device grants enforce scopes, quotas, retries, rotation an
    const row=(await admin.query('select * from dartflow_private.oche_installations where id=$1',[first.installationId])).rows[0];assert.equal(row.secret_hash,secretHash(first.installationSecret));assert.equal(JSON.stringify(row).includes(first.installationSecret),false);assert.equal(JSON.stringify(row).includes(first.code),false);
    assert.equal((await getOcheInstallationStatus(first.installationId,first.installationSecret)).pairing?.code,first.code);
    await assert.rejects(getOcheInstallationStatus(first.installationId,'x'.repeat(43)),{status:401});
+  });
+  await t.test('equivalent UUID casing shares bootstrap, account and nonce retry receipts',async()=>{
+   const bootstrap=request(),first=await startOcheInstallation({platform:'android',requestId:bootstrap});installations.push(first.installationId);
+   assert.deepEqual(await startOcheInstallation({platform:'android',requestId:bootstrap.toUpperCase()}),first);
+   const claimKey=request(),input={code:first.code,scope:'home' as const,name:'Case-safe scherm',requestId:claimKey};const approved=await claimOcheInstallation(owner,input);
+   assert.deepEqual(await claimOcheInstallation(owner.toUpperCase(),{...input,requestId:claimKey.toUpperCase()}),approved);
+   const nonce=request(),session=await redeem(first,nonce);assert.deepEqual(await redeemOcheInstallation(first.installationId.toUpperCase(),first.installationSecret,nonce.toUpperCase()),session);
+   const refreshNonce=request(),rotated=await refreshOcheSession(session.refreshToken!,refreshNonce);assert.deepEqual(await refreshOcheSession(session.refreshToken!,refreshNonce.toUpperCase()),rotated);
+   const rename=request();await manageOcheDevice(owner,session.deviceId,{action:'rename',name:'Gelijke aanvraag',requestId:rename});assert.deepEqual(await manageOcheDevice(owner.toUpperCase(),session.deviceId.toUpperCase(),{action:'rename',name:'Gelijke aanvraag',requestId:rename.toUpperCase()}),{ok:true});
+   const selection=request();await selectOcheHomeSession(owner,{sourceId:null,requestId:selection});assert.deepEqual(await selectOcheHomeSession(owner.toUpperCase(),{sourceId:null,requestId:selection.toUpperCase()}),{ok:true});await revoke(session.deviceId);
+   const locationId=await venue(),limitKey=request(),limit=await setOcheLimit(central,{locationId,maximum:3,requestId:limitKey});assert.deepEqual(await setOcheLimit(central.toUpperCase(),{locationId:locationId.toUpperCase(),maximum:3,requestId:limitKey.toUpperCase()}),limit);
   });
   await t.test('only one simultaneous home claim succeeds and Android/browser share the same reserved slot',async()=>{
    const first=await start('android'),second=await start('browser');
@@ -70,11 +81,19 @@ test('persistent Oche device grants enforce scopes, quotas, retries, rotation an
   });
   await t.test('new-code regeneration racing approval cannot leave a hidden reservation or a stale active code',async()=>{
    for(let iteration=0;iteration<5;iteration++){
-    const first=await start();const result=await Promise.allSettled([claim(first),startOcheInstallation({platform:'android',requestId:request(),installationId:first.installationId,installationSecret:first.installationSecret})]);
+    const first=await start();const result=await Promise.allSettled([claim(first),startOcheInstallation({platform:'android',requestId:request().toUpperCase(),installationId:first.installationId.toUpperCase(),installationSecret:first.installationSecret})]);
     const regenerated=result[1];if(regenerated.status!=='fulfilled')throw regenerated.reason;
     assert.equal((await getOcheInstallationStatus(first.installationId,first.installationSecret)).state,'pending');assert.equal((await getOcheManagement(owner)).home.reserved,0);
     await assert.rejects(claim(first),{code:'invalid_code'});await claim(regenerated.value);const session=await redeem(regenerated.value);await revoke(session.deviceId);
    }
+  });
+  await t.test('an uppercase installation waits on the same lower-case regeneration/claim guard',async()=>{
+   const first=await start();let completed=false;
+   await admin.query('begin');await admin.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`oche:installation:${first.installationId}`]);
+   const regenerating=startOcheInstallation({platform:'android',requestId:request(),installationId:first.installationId.toUpperCase(),installationSecret:first.installationSecret}).then(value=>{completed=true;return value;});
+   try{await new Promise(resolve=>setTimeout(resolve,75));assert.equal(completed,false);const claiming=claim(first);await admin.query('commit');const results=await Promise.allSettled([regenerating,claiming]);const next=results[0];if(next.status!=='fulfilled')throw next.reason;
+    assert.equal((await getOcheManagement(owner)).home.reserved,0);await claim(next.value);const session=await redeem(next.value);await revoke(session.deviceId);
+   }finally{await admin.query('rollback');await regenerating;}
   });
   await t.test('expired codes/reservations release capacity without a client, and stale redeem cannot activate',async()=>{
    const expired=await start();await admin.query("update dartflow_private.oche_installations set expires_at=clock_timestamp()-interval '1 second' where id=$1",[expired.installationId]);assert.equal((await getOcheInstallationStatus(expired.installationId,expired.installationSecret)).state,'expired');await assert.rejects(claim(expired),{code:'invalid_code'});
@@ -107,6 +126,16 @@ test('persistent Oche device grants enforce scopes, quotas, retries, rotation an
    const replacement=await start();await assert.rejects(claim(replacement,{scope:'location',locationId,replaceDeviceId:active[0].deviceId}),{code:'device_limit'});
    await revoke(active[2].deviceId);await claim(replacement,{scope:'location',locationId,replaceDeviceId:active[0].deviceId});const swapped=await redeem(replacement);assert.equal((await getOcheManagement(owner)).locations.find(row=>row.locationId===locationId)?.active,2);
    await revoke(active[1].deviceId);await revoke(swapped.deviceId);
+  });
+  await t.test('upper/lower-case location UUIDs share one last-slot capacity mutex',async()=>{
+   const locationId=await venue(),initial=await start();await claim(initial,{scope:'location',locationId});const active=await redeem(initial),first=await start(),second=await start('browser');
+   await admin.query('begin');await admin.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`oche:v1:location:${locationId}`]);let completed=false;
+   const upper=claim(second,{scope:'location',locationId:locationId.toUpperCase()},owner.toUpperCase()).then(result=>{completed=true;return result;},error=>{completed=true;throw error;});
+   try{
+    await new Promise(resolve=>setTimeout(resolve,100));assert.equal(completed,false);const lower=claim(first,{scope:'location',locationId});await admin.query('commit');const attempts=await Promise.allSettled([lower,upper]);
+    assert.equal(attempts.filter(result=>result.status==='fulfilled').length,1);const blocked=attempts.find(result=>result.status==='rejected');assert.equal(blocked?.status==='rejected'&&blocked.reason.code,'device_limit');
+    const winner=attempts[0].status==='fulfilled'?first:second,paired=await redeem(winner);assert.equal((await getOcheManagement(owner)).locations.find(row=>row.locationId===locationId)?.active,2);await revoke(active.deviceId);await revoke(paired.deviceId);
+   }finally{await admin.query('rollback');await upper.catch(()=>undefined);}
   });
   await t.test('legacy private browser grants consume the same quota; the old provisioning endpoint cannot bypass it',async()=>{
    const locationId=await venue(),physical=await board(locationId),eventId=(await admin.query('select event_id from dartflow_private.boards where id=$1',[physical])).rows[0].event_id,id=randomUUID(),raw='k'.repeat(43);legacyIds.push(id);

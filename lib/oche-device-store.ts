@@ -4,7 +4,7 @@ import {database} from './db';
 import {DomainError} from './domain';
 import {appConfig} from './config';
 import {locationManager} from './location-access';
-import {uuid} from './platform-store';
+import {uuid as parseUuid} from './platform-store';
 import {codeDigest,createOcheAccess,decryptOcheReceipt,encryptOcheReceipt,formatOcheCode,newOcheCode,readOcheAccess,secretHash} from './oche-device-crypto';
 import type {OcheCapacity,OcheClaim,OcheClaimResult,OcheDevice,OcheManagement,OchePairing,OchePairingStatus,OchePlatform,OcheScope,OcheSession} from './oche-device-types';
 
@@ -14,6 +14,10 @@ export type OcheDeviceRow={id:string;installation_id:string;scope:OcheScope;owne
 type Installation={id:string;platform:OchePlatform;secret_hash:string;code_hash:string|null;code_cipher:string|null;state:'pending'|'approved'|'redeemed'|'revoked';expires_at:Date};
 type Reservation={scope:OcheScope;id:string;installation_id:string;owner_id:string|null;location_id:string|null;board_id:string|null;created_by:string;name:string;replaces_device_id:string|null;expires_at:Date;state:'approved'|'redeemed'|'expired'|'cancelled'};
 const credential=/^[A-Za-z0-9_-]{43}$/;
+// PostgreSQL UUID equality is case-insensitive. Lock/receipt identities must use
+// the same canonical representation or equivalent inputs can bypass a mutex.
+const uuid=(value:unknown):string=>parseUuid(value).toLowerCase();
+const principalKey=(value:string):string=>value.toLowerCase();
 const ms=(value:Date|string)=>new Date(value).getTime();
 const iso=(value:Date|string)=>new Date(value).toISOString();
 const unavailable=()=>new DomainError('device_unauthorized','Dit scherm moet opnieuw worden gekoppeld.',401);
@@ -23,17 +27,17 @@ export async function ocheTransaction<T>(run:(client:PoolClient)=>Promise<T>):Pr
  const client=await database().connect();try{await client.query('begin');const value=await run(client);await client.query('commit');return value;}catch(error){await client.query('rollback');throw error;}finally{client.release();}
 }
 async function now(client:Client):Promise<number>{return Math.floor(Number((await client.query<{now:string}>('select extract(epoch from clock_timestamp())*1000 as now')).rows[0].now));}
-async function lockScope(client:Client,scope:Scope):Promise<void>{await client.query("select pg_advisory_xact_lock(hashtextextended($1,0))",[`oche:v1:${scope.scope}:${scope.ownerId??scope.locationId}`]);}
-async function lockInstallation(client:Client,id:string):Promise<void>{await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`oche:installation:${id}`]);}
-async function lockRequest(client:Client,principal:string,operation:string,requestId:string):Promise<void>{await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`oche:receipt:${principal}:${operation}:${requestId}`]);}
+async function lockScope(client:Client,scope:Scope):Promise<void>{await client.query("select pg_advisory_xact_lock(hashtextextended($1,0))",[`oche:v1:${scope.scope}:${uuid(scope.ownerId??scope.locationId)}`]);}
+async function lockInstallation(client:Client,id:string):Promise<void>{await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`oche:installation:${uuid(id)}`]);}
+async function lockRequest(client:Client,principal:string,operation:string,requestId:string):Promise<void>{await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`oche:receipt:${principalKey(principal)}:${operation}:${uuid(requestId)}`]);}
 async function receipt<T>(client:Client,principal:string,operation:string,requestId:string,payload:unknown):Promise<T|undefined>{
- const row=(await client.query<{payload_hash:string;response_cipher:string}>('select payload_hash,response_cipher from dartflow_private.oche_device_receipts where principal=$1 and operation=$2 and request_id=$3 and expires_at>clock_timestamp()',[principal,operation,uuid(requestId)])).rows[0];
+ const row=(await client.query<{payload_hash:string;response_cipher:string}>('select payload_hash,response_cipher from dartflow_private.oche_device_receipts where principal=$1 and operation=$2 and request_id=$3 and expires_at>clock_timestamp()',[principalKey(principal),operation,uuid(requestId)])).rows[0];
  if(!row)return;
  if(row.payload_hash!==secretHash(JSON.stringify(payload)))throw new DomainError('idempotency_conflict','Deze aanvraag is al gebruikt met andere gegevens.',409);
  return decryptOcheReceipt<T>(row.response_cipher);
 }
 async function saveReceipt(client:Client,principal:string,operation:string,requestId:string,payload:unknown,response:unknown,seconds=600):Promise<void>{
- const saved=await client.query('insert into dartflow_private.oche_device_receipts(principal,operation,request_id,payload_hash,response_cipher,expires_at) values($1,$2,$3,$4,$5,clock_timestamp()+$6*interval \'1 second\') on conflict(principal,operation,request_id) do update set payload_hash=excluded.payload_hash,response_cipher=excluded.response_cipher,expires_at=excluded.expires_at where dartflow_private.oche_device_receipts.expires_at<=clock_timestamp()',[principal,operation,requestId,secretHash(JSON.stringify(payload)),encryptOcheReceipt(response),seconds]);
+ const saved=await client.query('insert into dartflow_private.oche_device_receipts(principal,operation,request_id,payload_hash,response_cipher,expires_at) values($1,$2,$3,$4,$5,clock_timestamp()+$6*interval \'1 second\') on conflict(principal,operation,request_id) do update set payload_hash=excluded.payload_hash,response_cipher=excluded.response_cipher,expires_at=excluded.expires_at where dartflow_private.oche_device_receipts.expires_at<=clock_timestamp()',[principalKey(principal),operation,uuid(requestId),secretHash(JSON.stringify(payload)),encryptOcheReceipt(response),seconds]);
  if(saved.rowCount!==1)throw new DomainError('idempotency_conflict','Deze aanvraag is al gebruikt met andere gegevens.',409);
 }
 async function audit(client:Client,actor:string|null,action:string,deviceId:string|null,detail:unknown={}):Promise<void>{await client.query('insert into dartflow_private.oche_device_audit(actor_id,device_id,action,detail) values($1,$2,$3,$4)',[actor,deviceId,action,JSON.stringify(detail)]);}
@@ -68,10 +72,10 @@ async function installation(client:Client,id:string,secret:string,lock=false):Pr
 }
 function pairing(row:Installation,code:string,serverNow:number):OchePairing{return {installationId:row.id,code:formatOcheCode(code),expiresAt:iso(row.expires_at),serverNow,verificationUrl:`${appConfig().origin}/koppel-scherm#code=${code}`,pollAfterMs:2000};}
 export async function startOcheInstallation(input:{platform:OchePlatform;requestId:string;installationId?:string;installationSecret?:string}):Promise<OchePairing&{installationSecret:string}>{
- if(!['browser','android','android-tv'].includes(input.platform))throw new DomainError('invalid_platform','Kies een ondersteund schermtype.');uuid(input.requestId);
+ if(!['browser','android','android-tv'].includes(input.platform))throw new DomainError('invalid_platform','Kies een ondersteund schermtype.');
+ input={...input,requestId:uuid(input.requestId),...(input.installationId?{installationId:uuid(input.installationId)}:{})};
  return ocheTransaction(async client=>{
   const principal=`bootstrap:${input.requestId}`;
-  if(input.installationId)uuid(input.installationId);
   await lockRequest(client,principal,'start',input.requestId);
   if(input.installationId)await lockInstallation(client,input.installationId);
   if(input.installationId)await installation(client,input.installationId,input.installationSecret??'');
@@ -103,6 +107,7 @@ export async function getOcheInstallationStatus(id:string,secret:string):Promise
  return {state,serverNow,expiresAt:iso(row.expires_at),pollAfterMs:2000,...(state==='pending'&&row.code_cipher?{pairing:pairing(row,decryptOcheReceipt<string>(row.code_cipher),serverNow)}:{})};
 }
 export async function claimOcheInstallation(actor:string,input:OcheClaim):Promise<OcheClaimResult>{
+ actor=uuid(actor);
  const digest=codeDigest(input.code),name=ocheName(input.name),scope:Scope={scope:input.scope,ownerId:input.scope==='home'?uuid(actor):null,locationId:input.scope==='location'?uuid(input.locationId):null};
  if(!['home','location'].includes(input.scope))throw new DomainError('invalid_scope','Kies thuis of een eigen locatie.');
  const boardId=input.boardId?uuid(input.boardId):null,replacementId=input.replaceDeviceId?uuid(input.replaceDeviceId):null,requestId=uuid(input.requestId);
@@ -151,7 +156,7 @@ async function recoveredAccess(client:Client,session:OcheSession,device:OcheDevi
  return session;
 }
 export async function redeemOcheInstallation(id:string,secret:string,nonce:string):Promise<OcheSession>{
- uuid(nonce);return ocheTransaction(async client=>{
+ id=uuid(id);nonce=uuid(nonce);return ocheTransaction(async client=>{
   await lockInstallation(client,id);
   await installation(client,id,secret);
   const before=(await client.query<Reservation>('select * from dartflow_private.oche_reservations where installation_id=$1',[id])).rows[0];if(!before)throw new DomainError('not_approved','Bevestig deze code eerst op je telefoon.',409);
@@ -173,7 +178,7 @@ export async function redeemOcheInstallation(id:string,secret:string,nonce:strin
  });
 }
 export async function refreshOcheSession(refreshToken:string,nonce:string):Promise<OcheSession>{
- if(!credential.test(refreshToken))throw unavailable();uuid(nonce);const digest=secretHash(refreshToken);
+ if(!credential.test(refreshToken))throw unavailable();nonce=uuid(nonce);const digest=secretHash(refreshToken);
  return ocheTransaction(async client=>{
   await lockRequest(client,`refresh:${digest}`,'refresh',nonce);
   // The receipt principal is a one-way digest of the previous refresh credential.
@@ -188,7 +193,7 @@ export async function refreshOcheSession(refreshToken:string,nonce:string):Promi
  });
 }
 export async function authorizeOcheAccess(token:string,client:Client=database()):Promise<OcheDeviceRow>{
- const access=readOcheAccess(token);uuid(access.deviceId);const row=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1',[access.deviceId])).rows[0];
+ const access=readOcheAccess(token),deviceId=uuid(access.deviceId);const row=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1',[deviceId])).rows[0];
  const device=await assertCurrentDevice(client,row);if(device.grant_version!==access.version||access.expires<=await now(client))throw unavailable();
  await client.query("update dartflow_private.oche_devices set last_seen_at=clock_timestamp() where id=$1 and(last_seen_at is null or last_seen_at<clock_timestamp()-interval '10 seconds')",[row.id]);return device;
 }
@@ -198,6 +203,7 @@ async function listDevices(client:Client,actor:string):Promise<OcheDevice[]>{
  const serverNow=await now(client);return rows.map(row=>({id:row.id,name:row.name,platform:row.platform,scope:row.scope,locationId:row.location_id,locationName:row.location_name,boardId:row.board_id,boardName:row.board_name,lastSeenAt:row.last_seen_at?iso(row.last_seen_at):null,online:!row.revoked_at&&Boolean(row.last_seen_at&&serverNow-ms(row.last_seen_at)<15000),createdAt:iso(row.created_at),revoked:Boolean(row.revoked_at),grantVersion:row.grant_version}));
 }
 export async function getOcheManagement(actor:string):Promise<OcheManagement>{
+ actor=uuid(actor);
  const client=database();await requireProfile(client,actor);
  const canManageLimits=Boolean((await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in('owner','admin')",[actor])).rowCount);
  const locations=(await client.query<{id:string;name:string}>(`select l.id,l.name from dartflow_private.locations l where l.kind='venue' and(l.owner_id=$1 or exists(select 1 from dartflow_private.location_members lm where lm.location_id=l.id and lm.user_id=$1) or $2) order by l.name,l.id limit 200`,[actor,canManageLimits])).rows;
@@ -223,6 +229,7 @@ export async function assertOcheLegacyActivationCapacity(client:Client,scope:Sco
  if(!scope)return;await sweepScope(client,scope);const count=await capacity(client,scope);if(count.aboveLimit)throw Object.assign(new DomainError('device_limit','Limiet bereikt. Ontkoppel eerst een bestaand scherm in Schermen.',409),{capacity:count});
 }
 export async function manageOcheDevice(actor:string,id:string,input:{action:'rename'|'assign'|'revoke';name?:unknown;boardId?:unknown;requestId:string}):Promise<{ok:true}>{
+ actor=uuid(actor);
  const deviceId=uuid(id),requestId=uuid(input.requestId);if(!['rename','assign','revoke'].includes(input.action))throw new DomainError('invalid_action','Onbekende schermactie.');
  return ocheTransaction(async client=>{
   await lockRequest(client,`actor:${actor}`,'device',requestId);
@@ -243,18 +250,20 @@ export async function manageOcheDevice(actor:string,id:string,input:{action:'ren
  });
 }
 export async function setOcheLimit(actor:string,input:{locationId:string;maximum:number;requestId:string}):Promise<OcheCapacity>{
+ actor=uuid(actor);
  const locationId=uuid(input.locationId),requestId=uuid(input.requestId);if(!Number.isSafeInteger(input.maximum)||input.maximum<1||input.maximum>1000)throw new DomainError('invalid_limit','Kies een geheel maximum van 1 tot en met 1000.');
  return ocheTransaction(async client=>{
   await lockRequest(client,`actor:${actor}`,'limit',requestId);
   const scope:Scope={scope:'location',ownerId:null,locationId};await lockScope(client,scope);
   if(!(await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in('owner','admin')",[actor])).rowCount)throw new DomainError('forbidden','Alleen centraal beheer kan schermlimieten wijzigen.',403);
   if(!(await client.query("select 1 from dartflow_private.locations where id=$1 and kind='venue'",[locationId])).rowCount)throw new DomainError('not_found','Deze locatie bestaat niet.',404);
-  const replay=await receipt<OcheCapacity>(client,`actor:${actor}`,'limit',requestId,input);if(replay)return replay;
+  const payload={locationId,maximum:input.maximum};const replay=await receipt<OcheCapacity>(client,`actor:${actor}`,'limit',requestId,payload);if(replay)return replay;
   await sweepScope(client,scope);await client.query('insert into dartflow_private.oche_location_limits(location_id,maximum,updated_by) values($1,$2,$3) on conflict(location_id) do update set maximum=$2,updated_by=$3,updated_at=clock_timestamp()',[locationId,input.maximum,actor]);
-  const result=await capacity(client,scope);await saveReceipt(client,`actor:${actor}`,'limit',requestId,input,result);await audit(client,actor,'screen.limit',null,{locationId,maximum:input.maximum});return result;
+  const result=await capacity(client,scope);await saveReceipt(client,`actor:${actor}`,'limit',requestId,payload,result);await audit(client,actor,'screen.limit',null,{locationId,maximum:input.maximum});return result;
  });
 }
 export async function selectOcheHomeSession(actor:string,input:{sourceId:string|null;requestId:string}):Promise<{ok:true}>{
+ actor=uuid(actor);
  const sourceId=input.sourceId===null?null:uuid(input.sourceId),requestId=uuid(input.requestId);
  return ocheTransaction(async client=>{
   await lockRequest(client,`actor:${actor}`,'home-session',requestId);

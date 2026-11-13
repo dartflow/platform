@@ -45,8 +45,9 @@ export default function OcheDeviceDisplay(){
     else if(status.state==='approved'||status.state==='redeemed'){await ocheDeviceRequest('redeem',{nonce:publicNonce(nonceKey)},request.signal);accept(await loadSnapshot(request.signal));}
     else{clearPrivate();setState(status.state==='expired'?'expired':'revoked');mode='terminal';}
    }catch(cause){if(stopped)return;if(cause instanceof OcheClientError&&[401,403,404,410].includes(cause.status)){
-     if(mode==='display'&&cause.status===401){try{accept(await loadSnapshot(request!.signal));return;}catch(refreshCause){if(!(refreshCause instanceof OcheClientError)){setOffline(true);setError('Offline · Laatst ontvangen stand.');return;}}}
-     clearPrivate();setOffline(false);setState('revoked');setError(cause.message);mode='terminal';
+     let denial=cause;
+     if(mode==='display'&&cause.status===401){try{accept(await loadSnapshot(request!.signal));return;}catch(refreshCause){if(!(refreshCause instanceof OcheClientError)||![401,403,404,410].includes(refreshCause.status)){if(refreshCause instanceof OcheClientError&&refreshCause.retryAfter)nextPollAt=Date.now()+refreshCause.retryAfter*1000;setOffline(true);setError(refreshCause instanceof OcheClientError?refreshCause.message:'Offline · Laatst ontvangen stand.');return;}denial=refreshCause;}}
+     clearPrivate();setOffline(false);setState('revoked');setError(denial.message);mode='terminal';
     }else{if(cause instanceof OcheClientError&&cause.retryAfter)nextPollAt=Date.now()+cause.retryAfter*1000;setOffline(true);setError(cause instanceof OcheClientError?cause.message:'Offline · De actuele stand wordt na herstel opgehaald.');}
    }finally{clearTimeout(timeout);busy=false;}
   };
