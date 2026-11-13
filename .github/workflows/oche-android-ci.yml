@@ -1,0 +1,234 @@
+name: Oche Live Android CI
+on:
+  workflow_dispatch:
+    inputs:
+      signed_bundle:
+        description: Bouw alleen een gesigneerde eerste AAB; upload niet naar Play
+        type: boolean
+        default: false
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Android lint, tests en debugbuild
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: android/oche-live
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: ${{ vars.OCHE_JAVA_VERSION || '17' }}
+      - name: Installeer Android SDK-platform indien nodig
+        run: |
+          if [[ ! -d "$ANDROID_HOME/platforms/android-36" ]]; then
+            sdkmanager "platforms;android-36"
+          fi
+      - name: Test veilige Play-promotie zonder credentials
+        run: python3 -B ci/test_play_release.py
+      - name: Controleer en bouw
+        run: ./gradlew --no-daemon :app:lintStagingDebug :app:testStagingDebugUnitTest :app:assembleStagingDebug :app:lintProductionDebug :app:testProductionDebugUnitTest :app:bundleProductionRelease
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: oche-android-build-${{ github.sha }}
+          path: |
+            android/oche-live/app/build/outputs/apk/staging/debug/app-staging-debug.apk
+            android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab
+          retention-days: 14
+          if-no-files-found: error
+
+  ui:
+    name: Android UI · ${{ matrix.target }}
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [google_apis, android-tv]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: ${{ vars.OCHE_JAVA_VERSION || '17' }}
+      - name: Geef de runner toegang tot hardwareversnelling
+        run: |
+          test -c /dev/kvm
+          sudo setfacl -m "u:$(id -un):rw" /dev/kvm
+      - name: Test native renderers zonder productiegegevens
+        uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
+        with:
+          api-level: 36
+          target: ${{ matrix.target }}
+          arch: x86_64
+          working-directory: android/oche-live
+          disable-animations: true
+          script: ./gradlew --no-daemon :app:connectedStagingDebugAndroidTest
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: oche-android-ui-${{ matrix.target }}
+          path: android/oche-live/app/build/reports/androidTests/
+          if-no-files-found: ignore
+
+  internal:
+    name: AAB signeren en intern publiceren
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'push' && vars.OCHE_PLAY_ENABLED == 'true') || (github.event_name == 'workflow_dispatch' && inputs.signed_bundle && vars.OCHE_SIGNING_ENABLED == 'true'))
+    needs: [verify, ui]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    environment: play-internal
+    concurrency:
+      group: oche-play-release
+      queue: max
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: android/oche-live
+    env:
+      VERSION_CODE_BASE: ${{ vars.OCHE_VERSION_CODE_BASE }}
+      PLAY_PACKAGE: ${{ vars.PLAY_PACKAGE_NAME }}
+      INTERNAL_TRACKS: ${{ vars.PLAY_INTERNAL_TRACKS }}
+      PLAY_APP_SIGNING_SHA256: ${{ vars.PLAY_APP_SIGNING_SHA256 }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: ${{ vars.OCHE_JAVA_VERSION || '17' }}
+      - name: Installeer Android SDK-platform indien nodig
+        run: |
+          if [[ ! -d "$ANDROID_HOME/platforms/android-36" ]]; then
+            sdkmanager "platforms;android-36"
+          fi
+      - name: Bepaal release-identiteit
+        id: version
+        run: |
+          set -euo pipefail
+          version_name="$(sed -n 's/^versionName=//p' version.properties)"
+          [[ "$version_name" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$VERSION_CODE_BASE" =~ ^[1-9][0-9]{0,9}$ ]]
+          : "${PLAY_PACKAGE:?PLAY_PACKAGE_NAME ontbreekt}"
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then : "${INTERNAL_TRACKS:?PLAY_INTERNAL_TRACKS ontbreekt}"; fi
+          version_code=$((VERSION_CODE_BASE + GITHUB_RUN_NUMBER))
+          ((version_code <= 2100000000))
+          printf 'code=%s\nname=%s\n' "$version_code" "$version_name" >> "$GITHUB_OUTPUT"
+      - name: Herstel dezelfde bundle bij een herstart
+        id: existing-bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          artifacts="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=oche-signed-aab")"
+          artifact_id="$(jq -er '[.artifacts[] | select(.name == "oche-signed-aab" and .expired == false)] | if length == 0 then "" elif length == 1 then .[0].id else error("Meerdere releasebundels voor dezelfde run") end' <<< "$artifacts")"
+          if [[ -z "$artifact_id" ]]; then
+            echo 'found=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          archive="$RUNNER_TEMP/oche-signed-aab.zip"
+          bundle=app/build/outputs/bundle/productionRelease/app-production-release.aab
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$archive"
+          mkdir -p "$(dirname "$bundle")"
+          unzip -p "$archive" app-production-release.aab > "$bundle"
+          echo 'found=true' >> "$GITHUB_OUTPUT"
+      - name: Bouw gesigneerde releasebundle
+        if: steps.existing-bundle.outputs.found == 'false'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+        run: |
+          set -euo pipefail
+          umask 077
+          export ANDROID_UPLOAD_KEYSTORE_PATH="$(mktemp "$RUNNER_TEMP/oche-upload.XXXXXXXX")"
+          trap 'rm -f -- "$ANDROID_UPLOAD_KEYSTORE_PATH"' EXIT
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$ANDROID_UPLOAD_KEYSTORE_PATH"
+          unset KEYSTORE_BASE64
+          ./gradlew --no-daemon :app:lintProductionRelease :app:testProductionReleaseUnitTest :app:bundleProductionRelease -PocheRequireSigning=true \
+            "-PocheVersionCode=$VERSION_CODE" "-PocheVersionName=$VERSION_NAME"
+      - name: Controleer de AAB-handtekening
+        run: |
+          set -euo pipefail
+          bundle=app/build/outputs/bundle/productionRelease/app-production-release.aab
+          test -s "$bundle"
+          jarsigner -J-Duser.language=en -J-Duser.country=US -verify "$bundle" \
+            | tee "$RUNNER_TEMP/oche-bundle-verification.txt"
+          grep -Fxq 'jar verified.' "$RUNNER_TEMP/oche-bundle-verification.txt"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: steps.existing-bundle.outputs.found == 'false'
+        with:
+          name: oche-signed-aab
+          path: android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab
+          retention-days: 90
+          if-no-files-found: error
+      - name: Autoriseer bij Google Play
+        if: github.event_name == 'push' && vars.OCHE_PLAY_ENABLED == 'true'
+        id: play-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.PLAY_WIF_PROVIDER }}
+          service_account: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Verifieer live backend en echte Play App Links
+        if: github.event_name == 'push' && vars.OCHE_PLAY_ENABLED == 'true'
+        run: python3 ci/check_release_readiness.py --package "$PLAY_PACKAGE" --fingerprint "$PLAY_APP_SIGNING_SHA256"
+      - name: Upload AAB en publiceer naar intern testen
+        if: github.event_name == 'push' && vars.OCHE_PLAY_ENABLED == 'true'
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.play-auth.outputs.access_token }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+        run: |
+          python3 ci/play_release.py upload-internal \
+            --package "$PLAY_PACKAGE" \
+            --bundle app/build/outputs/bundle/productionRelease/app-production-release.aab \
+            --version-code "$VERSION_CODE" --tracks "$INTERNAL_TRACKS" \
+            --release-name "Oche Live $VERSION_NAME ($VERSION_CODE)"
+      - name: Schrijf versiegegevens voor productie
+        if: github.event_name == 'push' && vars.OCHE_PLAY_ENABLED == 'true'
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+        run: |
+          set -euo pipefail
+          bundle_sha="$(sha256sum app/build/outputs/bundle/productionRelease/app-production-release.aab | cut -d ' ' -f 1)"
+          jq -n \
+            --arg commit "$GITHUB_SHA" --arg package "$PLAY_PACKAGE" \
+            --arg versionName "$VERSION_NAME" --argjson versionCode "$VERSION_CODE" \
+            --arg bundleSha256 "$bundle_sha" --arg tracks "$INTERNAL_TRACKS" \
+            --arg runId "$GITHUB_RUN_ID" \
+            '{commit:$commit, package:$package, versionName:$versionName, versionCode:$versionCode, bundleSha256:$bundleSha256, tracks:($tracks | split(",")), runId:$runId}' \
+            > "$RUNNER_TEMP/oche-play-receipt.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: github.event_name == 'push' && vars.OCHE_PLAY_ENABLED == 'true'
+        with:
+          name: oche-play-receipt
+          path: ${{ runner.temp }}/oche-play-receipt.json
+          retention-days: 90
+          if-no-files-found: error
+          overwrite: true

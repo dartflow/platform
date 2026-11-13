@@ -1,0 +1,26 @@
+{
+  "apiVersion": 1,
+  "serverNow": 1794582000000,
+  "state": "unassigned",
+  "scope": "location",
+  "device": {
+    "id": "00000000-0000-4000-8000-000000000101",
+    "name": "Tablet Baan 1",
+    "platform": "android-tv",
+    "grantVersion": 1
+  },
+  "location": {
+    "id": "00000000-0000-4000-8000-000000000201",
+    "name": "Demo kantine"
+  },
+  "board": null,
+  "display": null,
+  "eventId": "fixture-unassigned",
+  "revision": 0,
+  "pollAfterMs": 2000,
+  "permissions": {
+    "read": true,
+    "score": false,
+    "extend": false
+  }
+}

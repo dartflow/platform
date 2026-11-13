@@ -4,7 +4,9 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import pg from 'pg';
 import {getLocationOverview} from '../lib/locations';
-import {getBoardScreen,createBoardScreenDevice,pairBoardScreenDevice} from '../lib/board-screens';
+import {getBoardScreen,createBoardScreenDevice} from '../lib/board-screens';
+import {startOcheInstallation,claimOcheInstallation,redeemOcheInstallation,selectOcheHomeSession,manageOcheDevice} from '../lib/oche-device-store';
+import {getOcheDeviceSnapshot} from '../lib/oche-device-projection';
 import {closeDatabase,database,eventAccess,executeEventCommand,executeMatchCommand,getBoardForActor,getMatch,getOverview} from '../lib/db';
 import {executePlatformCommand,reconcilePlatformResults} from '../lib/platform';
 import type {PlatformCommand} from '../lib/platform-types';
@@ -19,6 +21,7 @@ test('locations, personal home boards and UTC event reservations have independen
  const club=randomUUID(),otherClub=randomUUID(),event=randomUUID(),otherEvent=randomUUID(),clubs:string[]=[club,otherClub];
  const run=(actor:string,action:PlatformCommand['action'],expectedRevision?:number,requestId=randomUUID())=>executePlatformCommand(actor,{requestId,action,...(expectedRevision===undefined?{}:{expectedRevision})});
  let loc='',board='',board2='',foreignBoard='',foreignLocation='';
+ const ocheInstallations:string[]=[],ocheRequests:string[]=[],ocheRequest=()=>{const id=randomUUID();ocheRequests.push(id);return id;};
  const future=Math.floor((Date.now()+60*60_000)/1000)*1000;
  const request=(start=future,end=future+60*60_000,boardCount=1,eventId=event,maxMatches=4)=>run(eventId===otherEvent?otherClubOwner:clubOwner,{type:'reservation.request',locationId:loc,eventId,startsAt:new Date(start).toISOString(),endsAt:new Date(end).toISOString(),boardCount,maxMatches});
  try{
@@ -34,8 +37,13 @@ test('locations, personal home boards and UTC event reservations have independen
    const ownHome=(await getLocationOverview(p1)).locations.find(l=>l.kind==='home')!.boards[0];assert.equal(ownHome.publicScreen,false);assert.equal(ownHome.playUrl,`/baan/${ownHome.id}`);
    await assert.rejects(run(clubOwner,{type:'location.board.update',locationId:home.id,boardId:ownHome.id,name:'Club cannot manage'}),{status:403});
    await assert.rejects(getBoardForActor(p2,ownHome.id),{status:403});await assert.rejects(getBoardScreen(ownHome.id),{code:'screen_pairing_required'});
-   const pairing=await createBoardScreenDevice(p1,ownHome.id,'Eigen scoretablet'),paired=await pairBoardScreenDevice(ownHome.id,pairing.pairing.code);assert.equal((await getBoardScreen(ownHome.id,paired.token)).board.name,ownHome.name);
-   const practice=await run(p1,{type:'board.start',boardId:ownHome.id,mode:'solo'});await run(p1,{type:'training.finish',id:practice.id},practice.entity!.revision);
+   await assert.rejects(createBoardScreenDevice(p1,ownHome.id,'Eigen scoretablet'),{code:'use_screen_pairing'});
+   const pairing=await startOcheInstallation({platform:'browser',requestId:ocheRequest()});ocheInstallations.push(pairing.installationId);
+   await claimOcheInstallation(p1,{code:pairing.code,scope:'home',name:'Eigen scoretablet',requestId:ocheRequest()});const paired=await redeemOcheInstallation(pairing.installationId,pairing.installationSecret,ocheRequest());
+   assert.equal((await getOcheDeviceSnapshot(paired.accessToken!)).display,null);
+   const practice=await run(p1,{type:'board.start',boardId:ownHome.id,mode:'solo'});await selectOcheHomeSession(p1,{sourceId:practice.id!,requestId:ocheRequest()});
+   const snapshot=await getOcheDeviceSnapshot(paired.accessToken!);assert.equal(snapshot.scope,'home');assert.equal(snapshot.display?.snapshot.match?.remaining[0],501);assert.equal(snapshot.display?.board.publicScan,false);
+   await run(p1,{type:'training.finish',id:practice.id},practice.entity!.revision);await manageOcheDevice(p1,paired.deviceId,{action:'revoke',requestId:ocheRequest()});
    const homeCount=(await owner.query('select count(*)::int as n from dartflow_private.location_boards where home_owner_id=$1',[p1])).rows[0].n;assert.equal(homeCount,1);
   });
   await t.test('location owners delegate physical management without granting club membership or event access',async()=>{
@@ -194,6 +202,8 @@ test('locations, personal home boards and UTC event reservations have independen
   try{
   await owner.query('rollback');
   await owner.query('begin');
+  await owner.query('delete from dartflow_private.oche_device_receipts where request_id=any($1::uuid[])',[ocheRequests]);await owner.query('delete from dartflow_private.oche_device_audit where actor_id=any($1::uuid[])',[people]);
+  await owner.query('delete from dartflow_private.oche_reservations where created_by=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.oche_devices where created_by=any($1::uuid[])',[people]);await owner.query('delete from dartflow_private.oche_installations where id=any($1::uuid[])',[ocheInstallations]);await owner.query('delete from dartflow_private.oche_home_selections where owner_id=any($1::uuid[])',[people]);
   await cleanupFeedFixtures(owner,people);
   const locations=(await owner.query('select id from dartflow_private.locations where owner_id=any($1::uuid[])',[people])).rows.map(row=>row.id);
   const physicalEvents=(await owner.query('select home_event_id from dartflow_private.location_boards where location_id=any($1::uuid[])',[locations])).rows.map(row=>row.home_event_id);

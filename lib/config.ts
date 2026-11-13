@@ -31,7 +31,7 @@ export function safeNext(value: unknown): string {
   if(/^\/app\/(?:feed(?:\/(?:platform|club\/[a-f0-9-]{36}|league\/[a-f0-9-]{36}|tournament\/[a-f0-9-]{36}))?|locations|reservations)$/.test(value))return value;
   if (/^\/app(?:\/(?:vandaag|spelen|baan|training|vrienden|clubs|kamers|uitdagingen|competities|toernooien|evenementen|wedstrijdleiding|schermen|mail|integraties|profiel|historie))?$/.test(value)) return value;
   if (/^\/app(?:\/(?:play|practice|lobby|events|friends|community|mymatches|settings|dashboard|operations|manage|leagues|tournaments|hall|players|registrations|matches|rankings|statistics|camera|pools|knockout))?$/.test(value)) return value;
-  if(value==='/app/blog'||value==='/blog/beheer'||new RegExp(`^/blog/beheer/voorbeeld/${id}$`).test(value))return value;
+  if(value==='/app/blog'||value==='/app/schermen'||value==='/koppel-scherm'||value==='/blog/beheer'||new RegExp(`^/blog/beheer/voorbeeld/${id}$`).test(value))return value;
   if (value==='/app/platform/integraties' || /^\/app\/venue-cast\/(?:studio|hall|obs|public)$/.test(value) || /^\/app\/venue(?:\/(?:entries|boards|schedule))?$/.test(value)) return value;
   if(new RegExp(`^/app/(?:clubs|community|lobby|leagues|tournaments|training|match|hall|spectator|overlay)/${id}$`).test(value))return value;
   if(new RegExp(`^/app/clubs/${id}/banen$`).test(value))return value;

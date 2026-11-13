@@ -1,0 +1,10 @@
+{
+  "production": {
+    "packageName": "nl.dartflow.ochelive",
+    "sha256CertFingerprints": []
+  },
+  "staging": {
+    "packageName": "nl.dartflow.ochelive.staging",
+    "sha256CertFingerprints": []
+  }
+}

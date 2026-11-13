@@ -1,0 +1,122 @@
+name: Oche Live Google Play productie
+on:
+  push:
+    tags:
+      - 'oche-v*'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Actie voor bestaande uitrol
+        type: choice
+        options: [complete, halt]
+        required: true
+      version_code:
+        description: Google Play-versiecode van de uitrol
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: oche-play-release
+  queue: max
+
+jobs:
+  release:
+    if: vars.OCHE_PLAY_ENABLED == 'true' && (github.event_name == 'push' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: play-production
+    env:
+      PLAY_PACKAGE: ${{ vars.PLAY_PACKAGE_NAME }}
+      INTERNAL_TRACKS: ${{ vars.PLAY_INTERNAL_TRACKS }}
+      PRODUCTION_TRACKS: ${{ vars.PLAY_PRODUCTION_TRACKS }}
+      ROLLOUT_FRACTION: ${{ vars.PLAY_ROLLOUT_FRACTION || '1' }}
+      PLAY_APP_SIGNING_SHA256: ${{ vars.PLAY_APP_SIGNING_SHA256 }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Controleer tag of handmatige uitrolactie
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISPATCH_ACTION: ${{ inputs.action }}
+          DISPATCH_VERSION: ${{ inputs.version_code }}
+          RELEASE_REF_PROTECTED: ${{ github.ref_protected }}
+        run: |
+          set -euo pipefail
+          : "${PLAY_PACKAGE:?PLAY_PACKAGE_NAME ontbreekt}"
+          : "${INTERNAL_TRACKS:?PLAY_INTERNAL_TRACKS ontbreekt}"
+          : "${PRODUCTION_TRACKS:?PLAY_PRODUCTION_TRACKS ontbreekt}"
+          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            [[ "$GITHUB_REF" == refs/heads/main ]]
+            [[ "$DISPATCH_ACTION" == complete || "$DISPATCH_ACTION" == halt ]]
+            [[ "$DISPATCH_VERSION" =~ ^[1-9][0-9]{0,9}$ ]]
+            ((DISPATCH_VERSION <= 2100000000))
+            printf 'action=%s\ncode=%s\n' "$DISPATCH_ACTION" "$DISPATCH_VERSION" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          [[ "$GITHUB_REF_NAME" =~ ^oche-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          if [[ "$RELEASE_REF_PROTECTED" != true ]]; then
+            echo 'Bescherm eerst oche-v* releasetags via een GitHub-ruleset; de huidige repository-inrichting bevestigt geen beschermde tag.' >&2
+            exit 1
+          fi
+          commit="$(git rev-parse 'HEAD^{commit}')"
+          git merge-base --is-ancestor "$commit" refs/remotes/origin/main
+          version_name="${GITHUB_REF_NAME#oche-v}"
+          [[ "$(sed -n 's/^versionName=//p' android/oche-live/version.properties)" == "$version_name" ]]
+
+          runs="$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/oche-android-ci.yml/runs" \
+            -f branch=main -f event=push -f status=success -f head_sha="$commit" -F per_page=100)"
+          run_id="$(jq -er --arg sha "$commit" \
+            '[.workflow_runs[] | select(.head_sha == $sha and .head_branch == "main" and .event == "push" and .conclusion == "success")] | sort_by(.run_number) | last | .id' <<< "$runs")"
+          artifacts="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?name=oche-play-receipt")"
+          artifact_id="$(jq -er \
+            '[.artifacts[] | select(.name == "oche-play-receipt" and .expired == false)] | if length == 1 then .[0].id else error("Exact één geldig releasebewijs vereist") end' \
+            <<< "$artifacts")"
+          archive="$RUNNER_TEMP/oche-play-receipt.zip"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$archive"
+          receipt="$(unzip -p "$archive" oche-play-receipt.json)"
+          version_code="$(jq -er --arg sha "$commit" --arg name "$version_name" --arg package "$PLAY_PACKAGE" \
+            --arg runId "$run_id" --arg tracks "$INTERNAL_TRACKS" \
+            'select(.commit == $sha and .package == $package and .versionName == $name and .runId == $runId)
+            | select(.tracks == ($tracks | split(",")))
+            | .versionCode | select(type == "number" and floor == . and . >= 1 and . <= 2100000000)' \
+            <<< "$receipt")"
+          digest="$(jq -er '.bundleSha256 | select(test("^[a-f0-9]{64}$"))' <<< "$receipt")"
+          printf 'action=start\ncode=%s\nsha256=%s\n' "$version_code" "$digest" >> "$GITHUB_OUTPUT"
+      - name: Verifieer productiebackend en App Links
+        if: steps.release.outputs.action != 'halt'
+        run: python3 android/oche-live/ci/check_release_readiness.py --package "$PLAY_PACKAGE" --fingerprint "$PLAY_APP_SIGNING_SHA256"
+      - name: Autoriseer bij Google Play
+        id: play-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.PLAY_WIF_PROVIDER }}
+          service_account: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Werk de productie-uitrol bij
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.play-auth.outputs.access_token }}
+          RELEASE_ACTION: ${{ steps.release.outputs.action }}
+          VERSION_CODE: ${{ steps.release.outputs.code }}
+          BUNDLE_SHA256: ${{ steps.release.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          extra_args=()
+          if [[ -n "$BUNDLE_SHA256" ]]; then
+            extra_args+=(--sha256 "$BUNDLE_SHA256")
+          fi
+          python3 android/oche-live/ci/play_release.py promote \
+            --package "$PLAY_PACKAGE" --version-code "$VERSION_CODE" \
+            --source-tracks "$INTERNAL_TRACKS" --tracks "$PRODUCTION_TRACKS" \
+            --action "$RELEASE_ACTION" --fraction "$ROLLOUT_FRACTION" "${extra_args[@]}"

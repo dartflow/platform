@@ -1,0 +1,58 @@
+{
+  "apiVersion": 1,
+  "serverNow": 1794582000000,
+  "state": "waiting",
+  "scope": "location",
+  "device": {
+    "id": "00000000-0000-4000-8000-000000000101",
+    "name": "Tablet Baan 1",
+    "platform": "android-tv",
+    "grantVersion": 1
+  },
+  "location": {
+    "id": "00000000-0000-4000-8000-000000000201",
+    "name": "Demo kantine"
+  },
+  "board": {
+    "id": "00000000-0000-4000-8000-000000000301",
+    "name": "Baan 1"
+  },
+  "display": {
+    "board": {
+      "id": "00000000-0000-4000-8000-000000000301",
+      "name": "Baan 1",
+      "clubName": "Demo kantine",
+      "access": "all",
+      "blocked": false,
+      "occupied": false,
+      "publicScan": true,
+      "playUrl": "/baan/00000000-0000-4000-8000-000000000301",
+      "screenUrl": "/oche-live/00000000-0000-4000-8000-000000000301/"
+    },
+    "status": "waiting",
+    "screen": {
+      "rotation": 0,
+      "paired": false
+    },
+    "snapshot": {
+      "board": {
+        "id": "00000000-0000-4000-8000-000000000301",
+        "name": "Baan 1"
+      },
+      "event": {
+        "name": "Demo kantine"
+      },
+      "match": null,
+      "sessionKey": "synthetic-session-one",
+      "scoreEvents": []
+    }
+  },
+  "eventId": "fixture-waiting",
+  "revision": 0,
+  "pollAfterMs": 2000,
+  "permissions": {
+    "read": true,
+    "score": false,
+    "extend": false
+  }
+}

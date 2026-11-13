@@ -1,0 +1,349 @@
+{
+  "apiVersion": 1,
+  "serverNow": 1794582000000,
+  "state": "result",
+  "scope": "location",
+  "device": {
+    "id": "00000000-0000-4000-8000-000000000101",
+    "name": "Tablet Baan 1",
+    "platform": "android-tv",
+    "grantVersion": 1
+  },
+  "location": {
+    "id": "00000000-0000-4000-8000-000000000201",
+    "name": "Demo kantine"
+  },
+  "board": {
+    "id": "00000000-0000-4000-8000-000000000301",
+    "name": "Baan 1"
+  },
+  "display": {
+    "board": {
+      "id": "00000000-0000-4000-8000-000000000301",
+      "name": "Baan 1",
+      "clubName": "Demo kantine",
+      "access": "all",
+      "blocked": false,
+      "occupied": true,
+      "publicScan": true,
+      "playUrl": "/baan/00000000-0000-4000-8000-000000000301",
+      "screenUrl": "/oche-live/00000000-0000-4000-8000-000000000301/"
+    },
+    "status": "playing",
+    "screen": {
+      "rotation": 0,
+      "paired": false
+    },
+    "snapshot": {
+      "board": {
+        "id": "00000000-0000-4000-8000-000000000301",
+        "name": "Baan 1"
+      },
+      "event": {
+        "name": "Demo kantine"
+      },
+      "match": {
+        "id": "board-00000000-0000-4000-8000-000000000301",
+        "revision": 10,
+        "status": "result",
+        "players": [
+          {
+            "id": "player-1",
+            "name": "Danny"
+          },
+          {
+            "id": "player-2",
+            "name": "Rick"
+          }
+        ],
+        "remaining": [
+          0,
+          188
+        ],
+        "legs": [
+          0,
+          0
+        ],
+        "sets": [
+          0,
+          0
+        ],
+        "turn": 0,
+        "checkout": "T20 T20 D14",
+        "visits": [
+          {
+            "player": "player-1",
+            "playerIndex": 0,
+            "score": 85,
+            "darts": 3,
+            "remainingBefore": 501,
+            "remainingAfter": 416,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-2",
+            "playerIndex": 1,
+            "score": 45,
+            "darts": 3,
+            "remainingBefore": 501,
+            "remainingAfter": 456,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-1",
+            "playerIndex": 0,
+            "score": 100,
+            "darts": 3,
+            "remainingBefore": 416,
+            "remainingAfter": 316,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-2",
+            "playerIndex": 1,
+            "score": 100,
+            "darts": 3,
+            "remainingBefore": 456,
+            "remainingAfter": 356,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-1",
+            "playerIndex": 0,
+            "score": 60,
+            "darts": 3,
+            "remainingBefore": 316,
+            "remainingAfter": 256,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-2",
+            "playerIndex": 1,
+            "score": 60,
+            "darts": 3,
+            "remainingBefore": 356,
+            "remainingAfter": 296,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-1",
+            "playerIndex": 0,
+            "score": 58,
+            "darts": 3,
+            "remainingBefore": 256,
+            "remainingAfter": 198,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-2",
+            "playerIndex": 1,
+            "score": 60,
+            "darts": 3,
+            "remainingBefore": 296,
+            "remainingAfter": 236,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-1",
+            "playerIndex": 0,
+            "score": 50,
+            "darts": 3,
+            "remainingBefore": 198,
+            "remainingAfter": 148,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-2",
+            "playerIndex": 1,
+            "score": 48,
+            "darts": 3,
+            "remainingBefore": 236,
+            "remainingAfter": 188,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          }
+        ],
+        "currentLegVisits": [
+          {
+            "player": "player-1",
+            "playerIndex": 0,
+            "score": 85,
+            "darts": 3,
+            "remainingBefore": 501,
+            "remainingAfter": 416,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-2",
+            "playerIndex": 1,
+            "score": 45,
+            "darts": 3,
+            "remainingBefore": 501,
+            "remainingAfter": 456,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-1",
+            "playerIndex": 0,
+            "score": 100,
+            "darts": 3,
+            "remainingBefore": 416,
+            "remainingAfter": 316,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-2",
+            "playerIndex": 1,
+            "score": 100,
+            "darts": 3,
+            "remainingBefore": 456,
+            "remainingAfter": 356,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-1",
+            "playerIndex": 0,
+            "score": 60,
+            "darts": 3,
+            "remainingBefore": 316,
+            "remainingAfter": 256,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-2",
+            "playerIndex": 1,
+            "score": 60,
+            "darts": 3,
+            "remainingBefore": 356,
+            "remainingAfter": 296,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-1",
+            "playerIndex": 0,
+            "score": 58,
+            "darts": 3,
+            "remainingBefore": 256,
+            "remainingAfter": 198,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-2",
+            "playerIndex": 1,
+            "score": 60,
+            "darts": 3,
+            "remainingBefore": 296,
+            "remainingAfter": 236,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-1",
+            "playerIndex": 0,
+            "score": 50,
+            "darts": 3,
+            "remainingBefore": 198,
+            "remainingAfter": 148,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          },
+          {
+            "player": "player-2",
+            "playerIndex": 1,
+            "score": 48,
+            "darts": 3,
+            "remainingBefore": 236,
+            "remainingAfter": 188,
+            "bust": false,
+            "leg": 1,
+            "checkout": false
+          }
+        ],
+        "currentLegStartScore": 501,
+        "winnerId": "player-1",
+        "resultPublished": false,
+        "settings": {
+          "startScore": 501,
+          "bestOfLegs": 3,
+          "bestOfSets": 1
+        },
+        "writerId": "",
+        "stats": [
+          {
+            "total": 353,
+            "darts": 15,
+            "average": 70.6,
+            "oneEighties": 0,
+            "highestFinish": 0
+          },
+          {
+            "total": 313,
+            "darts": 15,
+            "average": 62.6,
+            "oneEighties": 0,
+            "highestFinish": 0
+          }
+        ],
+        "legNumber": 1,
+        "setNumber": 1,
+        "paused": false
+      },
+      "sessionKey": "synthetic-session-one",
+      "scoreEvents": [
+        {
+          "id": "fixture-score-10",
+          "revision": 10,
+          "kind": "score",
+          "score": 48,
+          "playerIndex": 1,
+          "playerName": "Rick",
+          "checkout": false,
+          "bust": false
+        }
+      ]
+    }
+  },
+  "eventId": "fixture-result",
+  "revision": 10,
+  "pollAfterMs": 2000,
+  "permissions": {
+    "read": true,
+    "score": false,
+    "extend": false
+  }
+}

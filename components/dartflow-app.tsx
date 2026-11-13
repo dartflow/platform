@@ -18,6 +18,7 @@ import {InstallDartflow} from "./pwa-install";
 import SprintDisplay from "./sprint-display";
 import OcheCelebration, {useOcheCelebration} from "./oche-celebration";
 import ClubBoardScreen from "./club-board-screen";
+import OcheDeviceManager from "./oche-device-manager";
 import PublicCast from "./public-cast";
 import ReadOnlyAlias from "./read-only-alias";
 import { MediaRoom } from "./media-room";
@@ -557,6 +558,7 @@ export default function DartflowApp() {
     { href: "/app/feed", label: "My Feed", icon: "screen" },
     { href: "/app/community", label: "Kamers", icon: "users" },
     { href: "/app/locations", label: "Banen & locaties", icon: "target" },
+    { href: "/app/schermen", label: "Schermen", icon: "screen" },
     { href: "/app/baanfavorieten", label: "Favoriete banen", icon: "target" },
     { href: "/app/training-advies", label: "Training op maat", icon: "bolt" },
     { href: "/app/speeldag", label: "Mijn speeldag", icon: "calendar" },
@@ -573,6 +575,7 @@ export default function DartflowApp() {
     { href: "/app/reservations", label: "Baanreserveringen", icon: "calendar" },
     { href: "/app/competities", label: "Competities", icon: "club" },
     { href: "/app/schermbeheer", label: "Schermbeheer", icon: "screen" },
+    { href: "/app/schermen", label: "Oche Live-schermen", icon: "screen" },
     { href: "/app/venue-cast/studio", label: "Schermstudio", icon: "screen" },
     { href: "/app/mail", label: "Mailbeheer", icon: "users" },
     ...(session.data.canManagePlatform
@@ -779,7 +782,7 @@ export default function DartflowApp() {
             <LegacyEventsPage data={data} refresh={overview.refresh} />
           ) : path === "/historie" ? (
             <LegacyHistoryPage data={scorerOverview} />
-          ) : platformPath.startsWith('/app/feed') ? <FeedWorkspace path={platformPath} userId={user.id} urgentActions={personal.data?.actions??[]}/> : /^\/app\/competities(?:\/|$)/.test(platformPath)?<SeasonWorkspace id={platformPath.split('/')[3]} user={user}/> : /^\/app\/(?:leagues|competitions)\/[^/]+$/.test(platformPath)?<SeasonCompatibility id={platformPath.split('/')[3]} user={user}><PlatformWorkspace path={platformPath} user={user} overview={data} clubId={clubId}/></SeasonCompatibility> : ['/app/speeldag','/app/baanfavorieten','/app/training-advies','/app/schermbeheer'].includes(platformPath)?<PlayerExperienceWorkspace path={platformPath}/> : platformPath === "/app/baan" ? (
+          ) : platformPath === '/app/schermen' ? <OcheDeviceManager/> : platformPath.startsWith('/app/feed') ? <FeedWorkspace path={platformPath} userId={user.id} urgentActions={personal.data?.actions??[]}/> : /^\/app\/competities(?:\/|$)/.test(platformPath)?<SeasonWorkspace id={platformPath.split('/')[3]} user={user}/> : /^\/app\/(?:leagues|competitions)\/[^/]+$/.test(platformPath)?<SeasonCompatibility id={platformPath.split('/')[3]} user={user}><PlatformWorkspace path={platformPath} user={user} overview={data} clubId={clubId}/></SeasonCompatibility> : ['/app/speeldag','/app/baanfavorieten','/app/training-advies','/app/schermbeheer'].includes(platformPath)?<PlayerExperienceWorkspace path={platformPath}/> : platformPath === "/app/baan" ? (
             data ? (
               <>
                 <Heading

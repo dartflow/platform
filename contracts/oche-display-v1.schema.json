@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dartflow.nl/contracts/oche-display-v1.schema.json",
+  "title": "Oche Display v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "serverNow",
+    "state",
+    "scope",
+    "device",
+    "location",
+    "board",
+    "display",
+    "eventId",
+    "revision",
+    "pollAfterMs",
+    "permissions"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": 1
+    },
+    "serverNow": {
+      "type": "number"
+    },
+    "state": {
+      "enum": [
+        "unassigned",
+        "waiting",
+        "standby",
+        "reserved",
+        "closed",
+        "blocked",
+        "live",
+        "warning",
+        "result"
+      ]
+    },
+    "scope": {
+      "enum": [
+        "home",
+        "location"
+      ]
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "platform",
+        "grantVersion"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "platform": {
+          "enum": [
+            "browser",
+            "android",
+            "android-tv"
+          ]
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "location": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "board": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "display": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Existing ClubBoardScreenView allowlist; only pseudonymous player IDs. No writer authority, account secrets or private profile fields."
+    },
+    "eventId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pollAfterMs": {
+      "const": 2000
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "read",
+        "score",
+        "extend"
+      ],
+      "properties": {
+        "read": {
+          "const": true
+        },
+        "score": {
+          "const": false
+        },
+        "extend": {
+          "const": false
+        }
+      }
+    }
+  }
+}

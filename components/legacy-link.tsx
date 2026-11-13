@@ -4,6 +4,8 @@ import { legacyDestination } from "@/lib/routes";
 export default function LegacyLink() {
   useEffect(() => {
     const apply = () => {
+      // Pairing fragments belong to the explicit confirmation flow, never prototype routing.
+      if (location.pathname === '/koppel-scherm') return;
       if (!location.hash) return;
       const route = location.hash.replace(/^#\/?/, "");
       const publicAnchors = new Set([

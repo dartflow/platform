@@ -12,6 +12,7 @@ import {uuid} from './platform-store';
 import type {ClubBoardScreenView} from './platform-types';
 import type {BoardScreenDevice,Game,MatchState,PublicSnapshot,Stats,Visit} from './types';
 import {locationManager,locationScreenContext,physicalBoard} from './location-access';
+import {lockOcheLegacyBoardScope,assertOcheLegacyActivationCapacity} from './oche-device-store';
 
 export const BOARD_SCREEN_COOKIE='dartflow-screen';
 export const BOARD_SCREEN_DEVICE_SECONDS=365*24*60*60;
@@ -41,6 +42,7 @@ async function manager(client:Pick<PoolClient,'query'>,actorId:string,row:BoardR
 }
 /** Match the event -> club ordering used by board mutations, then read current roles. */
 async function lockedManagerBoard(client:PoolClient,actorId:string,boardId:string):Promise<BoardRow>{
+ await lockOcheLegacyBoardScope(client,boardId);
  const before=await board(client,boardId);
  const physical=await physicalBoard(client,boardId);
  if(physical){await client.query('select id from dartflow_private.locations where id=$1 for update',[physical.location_id]);const current=await board(client,boardId);await manager(client,actorId,current);return current;}
@@ -54,16 +56,17 @@ function deviceView(row:Record<string,unknown>):BoardScreenDevice{
 async function audit(client:PoolClient,actorId:string,row:BoardRow,action:string,deviceId:string):Promise<void>{
  await client.query('insert into dartflow_private.audit_events(actor_id,club_id,event_id,action,detail) values($1,$2,$3,$4,$5)',[actorId,row.club_id,row.event_id,action,JSON.stringify({boardId:row.id,deviceId})]);
 }
-export async function listBoardScreenDevices(actorId:string,boardId:string):Promise<{publicScreen:boolean;devices:BoardScreenDevice[]}>{
+export async function listBoardScreenDevices(actorId:string,boardId:string):Promise<{publicScreen:boolean;devices:BoardScreenDevice[];newPairingUrl:string|null}>{
  const row=await board(database(),boardId);await manager(database(),actorId,row);
  const result=await database().query('select id,name,created_at,expires_at,paired_at,revoked_at,last_seen_at from dartflow_private.board_screen_devices where board_id=$1 order by created_at desc limit 100',[row.id]);
- return {publicScreen:row.public_screen,devices:result.rows.map(deviceView)};
+ return {publicScreen:row.public_screen,devices:result.rows.map(deviceView),newPairingUrl:await physicalBoard(database(),row.id)?'/oche-live':null};
 }
 export async function createBoardScreenDevice(actorId:string,boardId:string,name?:unknown):Promise<{device:BoardScreenDevice;pairing:{code:string;expiresAt:string;screenUrl:string}}>{
  const label=name===undefined?'Vast baanscherm':typeof name==='string'?name.trim().replace(/\s+/g,' '):'';
  if(!label||label.length>80||/[\p{Cc}\p{Cf}]/u.test(label))throw new DomainError('device_name','Geef het scherm een naam van maximaal 80 tekens.');
  return transaction(async client=>{
   const row=await lockedManagerBoard(client,actorId,boardId);
+  if(await physicalBoard(client,row.id))throw new DomainError('use_screen_pairing','Open /oche-live op het scherm en bevestig de code via /koppel-scherm. Nieuwe schermen gebruiken het gezamenlijke schermbeheer.',409);
   const count=await client.query<{count:number}>('select count(*)::int as count from dartflow_private.board_screen_devices where board_id=$1 and revoked_at is null and expires_at>now() and (paired_at is not null or pairing_expires_at>now())',[row.id]);
   if(count.rows[0].count>=20)throw new DomainError('device_limit','Trek eerst een oude schermkoppeling in. Per baan zijn maximaal twintig schermen toegestaan.',409);
   const id=randomUUID();
@@ -96,12 +99,14 @@ export async function pairBoardScreenDevice(boardId:string,input:unknown):Promis
  const code=typeof input==='string'?input.replace(/[\s-]/g,'').toUpperCase():'';
  if(!/^[A-F0-9]{12}$/.test(code))throw new DomainError('invalid_pairing','De koppelcode is ongeldig, gebruikt of verlopen.',400);
  return transaction(async client=>{
+  const capacityScope=await lockOcheLegacyBoardScope(client,id);
   const result=await client.query<{id:string;event_id:string;created_by:string}>(`select id,event_id,created_by from dartflow_private.board_screen_devices where board_id=$1 and pairing_hash=$2
     and paired_at is null and revoked_at is null and expires_at>now() and pairing_expires_at>now() for update`,[id,hash(code)]);
   if(!result.rows.length)throw new DomainError('invalid_pairing','De koppelcode is ongeldig, gebruikt of verlopen.',400);
   const device=result.rows[0],row=await board(client,id);
   // Removing the issuing manager's rights also removes their outstanding device authority.
   try{await manager(client,device.created_by,row);}catch(error){if(error instanceof DomainError&&error.status===403)throw new DomainError('invalid_pairing','De koppelcode is ongeldig, gebruikt of verlopen.',400);throw error;}
+  await assertOcheLegacyActivationCapacity(client,capacityScope);
   const token=randomBytes(32).toString('base64url');
   await client.query('update dartflow_private.board_screen_devices set token_hash=$2,pairing_hash=null,paired_at=now() where id=$1',[device.id,hash(token)]);
   return {token,maxAge:BOARD_SCREEN_DEVICE_SECONDS};
@@ -142,8 +147,17 @@ export async function setBoardScreenPreferences(actor:string,boardId:string,inpu
  if(![0,90,270].includes(input.rotation as number))throw new DomainError('invalid_rotation','Kies 0°, 90° of 270°.');
  return transaction(async client=>{const row=await lockedManagerBoard(client,actor,boardId);await client.query('insert into dartflow_private.board_screen_preferences(board_id,rotation,updated_by) values($1,$2,$3) on conflict(board_id) do update set rotation=$2,updated_by=$3,updated_at=now()',[row.id,input.rotation,actor]);await audit(client,actor,row,'board-screen.rotation',row.id);return{ok:true};});
 }
-async function readBoardScreen(client:PoolClient,boardId:string,deviceToken?:string):Promise<ClubBoardScreenView>{
- const row=await board(client,boardId);await authorizeScreen(row,deviceToken,client);
+/** Internal device projection: caller must already verify its current location/device grant.
+ * No HTTP flag can select this path; generic display devices never gain extension authority.
+ */
+export async function projectBoardScreenForDevice(client:PoolClient,boardId:string):Promise<ClubBoardScreenView>{
+ const projection=await readBoardScreen(client,boardId,undefined,true);
+ projection.screen={paired:false,rotation:0};
+ if(projection.snapshot.boardActivity)projection.snapshot.boardActivity.canExtend=false;
+ return projection;
+}
+async function readBoardScreen(client:PoolClient,boardId:string,deviceToken?:string,authorizedDevice=false):Promise<ClubBoardScreenView>{
+ const row=await board(client,boardId);if(!authorizedDevice)await authorizeScreen(row,deviceToken,client);
  const rawActivity=await readBoardActivity(client,row.id);
  const deviceCanExtend=Boolean(rawActivity&&await boardDeviceCanExtend(client,row.id,deviceToken));
  const activity=publicBoardActivity(rawActivity,deviceCanExtend);
