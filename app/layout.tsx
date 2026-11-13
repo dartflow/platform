@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import "@/components/pwa-screens.css";
 import "@/components/oche-live.css";
@@ -25,6 +26,14 @@ export default function RootLayout({
       <body>
         <LegacyLink />
         <PwaRuntime>{children}</PwaRuntime>
+        {process.env.DARTFLOW_DATA_MODE === "supabase" && (
+          <Script
+            id="socialhero-pixel"
+            async
+            src="https://socialhero.dgwebservices.nl/api/pixel/script?site=sh_HAeYD7iQCpoinCRx1dqn9-QpiDSgAPA2"
+            strategy="afterInteractive"
+          />
+        )}
       </body>
     </html>
   );
