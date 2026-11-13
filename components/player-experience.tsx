@@ -9,7 +9,7 @@ const status:Record<string,string>={scheduled:'Gepland',proposed:'Tijdvoorstel',
 // The existing application shell resolves its route at mount, so match entry needs a fresh shell.
 const navigate=(path:string)=>window.location.assign(new URL(path,window.location.origin).href);
 const date=(v:string|null)=>v?new Date(v).toLocaleString('nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'}):'Nog te plannen';
-async function api(path:string,input?:unknown){const response=await fetch(path,{cache:'no-store',...(input?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}:{})});const body=await response.json();if(!response.ok)throw Object.assign(Error(typeof body.error==='string'?body.error:'De actie kon niet worden uitgevoerd.'),{status:response.status});return body;}
+async function api(path:string,input?:unknown){const response=await fetch(path,{cache:'no-store',signal:AbortSignal.timeout(15000),...(input?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)}:{})});const body=await response.json();if(!response.ok)throw Object.assign(Error(typeof body.error==='string'?body.error:'De actie kon niet worden uitgevoerd.'),{status:response.status});return body;}
 export default function PlayerExperienceWorkspace({path='/app',compact=false}:{path?:string;compact?:boolean}){
  const [data,setData]=useState<PlayerExperience|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[awaiting,setAwaiting]=useState(false);
  const generation=useRef(0),active=useRef(true),mutating=useRef(false),pending=useRef<{url:string;signature:string;input:unknown}|null>(null);

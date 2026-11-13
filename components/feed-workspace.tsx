@@ -1,5 +1,7 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
+import {ScopedChat} from './community-space';
+import type {CommunityScope} from '@/lib/community-types';
 import type {FeedAction,FeedChannel,FeedReply,FeedResult,FeedState} from '@/lib/feed-types';
 import './feed-workspace.css';
 type PersonalAction={id:string;label:string;href:string;detail?:string};
@@ -20,21 +22,64 @@ function Policy({channel,onAction,busy}:{channel:FeedChannel;onAction:(a:FeedAct
 export function FeedWorkspace({path='/app/feed',userId,urgentActions=[]}:Props){
  const parts=path.replace(/^\/app\/feed\/?/,'').split('/').filter(Boolean),isResult=['share','result'].includes(parts[0]);
  if(isResult)return <ResultPage id={parts[1]??''} preview={parts[0]==='share'} signedIn={Boolean(userId)}/>;
- return <Timeline key={path} mode={parts[0]==='discover'?'discover':'mine'} selected={parts[0]&&parts[0]!=='discover'?parts.join(':'):''} urgentActions={urgentActions}/>;
+ return <Timeline key={path} mode={parts[0]==='discover'?'discover':'mine'} selected={parts[0]&&parts[0]!=='discover'?parts.join(':'):''} urgentActions={urgentActions} userId={userId}/>;
 }
-function Timeline({mode,selected,urgentActions}:{mode:string;selected:string;urgentActions:PersonalAction[]}){
+function Timeline({mode,selected,urgentActions,userId}:{mode:string;selected:string;urgentActions:PersonalAction[];userId?:string}){
  const [state,setState]=useState<FeedState|null>(null),[filter,setFilter]=useState('all'),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[body,setBody]=useState(''),[compose,setCompose]=useState(''),[preferences,setPreferences]=useState(false),[mobileChannels,setMobileChannels]=useState(false),[topic,setTopic]=useState('all');
  const [thread,setThread]=useState(''),[replies,setReplies]=useState<FeedReply[]>([]),[reply,setReply]=useState(''),[replyCursor,setReplyCursor]=useState<string|null>(null);
- const request=useRef(0),active=useRef(true),pages=useRef(1),pending=useRef<{requestId:string;action:FeedAction}|null>(null);
- const stopRequests=useCallback(()=>{active.current=false;request.current++;},[]);
+ const [chatScope,setChatScope]=useState<{kind:'club'|'league'|'tournament';id:string}|null>(null);
+ const request=useRef(0),replyRequest=useRef(0),rights=useRef(0),active=useRef(true),pages=useRef(1),threadRef=useRef(''),chatRef=useRef<string|null>(null),pending=useRef<{requestId:string;action:FeedAction}|null>(null);
+ const closeThread=useCallback(()=>{replyRequest.current++;threadRef.current='';setThread('');setReplies([]);setReplyCursor(null);setReply('');},[]);
+ const clearPrivateFeed=useCallback(()=>{request.current++;rights.current++;setState(null);closeThread();},[closeThread]);
+ const stopRequests=useCallback(()=>{active.current=false;request.current++;replyRequest.current++;rights.current++;},[]);
  const query=new URLSearchParams({mode,filter,...(selected?{channel:selected}:{})}).toString();
- const refresh=useCallback(async()=>{const n=++request.current;try{let page=await api<FeedState>(`/api/feed?${query}`),posts=page.posts,pins=page.pins;for(let i=1;i<pages.current&&page.nextCursor;i++){page=await api<FeedState>(`/api/feed?${query}&cursor=${encodeURIComponent(page.nextCursor)}`);posts=[...posts,...page.posts];pins=[...pins,...page.pins];}if(active.current&&n===request.current){setState({...page,posts,pins});setError('');}}catch(e){if(active.current&&n===request.current){setError(e instanceof Error?e.message:'Geen verbinding. Probeer opnieuw.');if(terminal(e))setState(null);}}},[query]);
- useEffect(()=>{active.current=true;pages.current=1;void refresh();const poll=()=>{if(document.visibilityState==='visible')void refresh();};const timer=setInterval(poll,30000);window.addEventListener('online',poll);document.addEventListener('visibilitychange',poll);return()=>{stopRequests();clearInterval(timer);window.removeEventListener('online',poll);document.removeEventListener('visibilitychange',poll);};},[refresh,stopRequests]);
- const loadReplies=async(id:string,cursor?:string)=>{try{const page=await api<{replies:FeedReply[];nextCursor:string|null}>(`/api/feed/replies/${id}${cursor?`?cursor=${encodeURIComponent(cursor)}`:''}`);setReplies(old=>cursor?[...page.replies,...old]:page.replies);setReplyCursor(page.nextCursor);}catch(e){setError(e instanceof Error?e.message:'Gesprek niet beschikbaar.');if(terminal(e))setReplies([]);}};
- const send=async(action:FeedAction,done?:()=>void)=>{if(busy)return;setBusy(true);setError('');setMessage('');const attempt=pending.current??{requestId:crypto.randomUUID(),action};pending.current=attempt;try{await api('/api/feed/actions',attempt);pending.current=null;done?.();setMessage({compose:'Bericht geplaatst.',reply:'Reactie geplaatst.',follow:'Kanaalvoorkeur opgeslagen.',mode:'Meldingsvoorkeur opgeslagen.',policy:'Kanaalinstellingen opgeslagen.',pin:'Vastzetten bijgewerkt.',delete:'Bericht verwijderd.'}[String(action.type)]??'Opgeslagen.');await refresh();if(thread)await loadReplies(thread);}catch(e){if(e&&typeof e==='object'&&'status'in e&&Number(e.status)<500)pending.current=null;setError(e instanceof Error?e.message:'Geen verbinding. Probeer dezelfde actie opnieuw.');}finally{setBusy(false);}};
+ const refresh=useCallback(async()=>{
+  const n=++request.current;
+  try{
+   let page=await api<FeedState>(`/api/feed?${query}`),posts=page.posts,pins=page.pins;
+   for(let i=1;i<pages.current&&page.nextCursor;i++){
+    if(!active.current||n!==request.current)return;
+    page=await api<FeedState>(`/api/feed?${query}&cursor=${encodeURIComponent(page.nextCursor)}`);posts=[...posts,...page.posts];pins=[...pins,...page.pins];
+   }
+   if(!active.current||n!==request.current)return;
+   setState({...page,posts,pins});setError('');
+   if(threadRef.current&&![...posts,...pins].some(post=>post.id===threadRef.current))closeThread();
+   // The private club Feed already proves community access. Public legacy event
+   // channels require the existing participant-only community check as well.
+   const scope=page.channels.find(channel=>channel.key===selected);
+   if(userId&&scope&&['club','league','tournament'].includes(scope.kind)&&chatRef.current!==scope.key){
+    if(scope.kind!=='club'){
+     const proof=await api<{scope:CommunityScope}>(`/api/community/chat/${scope.kind}/${scope.id}`).catch(()=>null);
+     if(!active.current||n!==request.current||proof?.scope.kind!==scope.kind||proof?.scope.id!==scope.id)return;
+    }
+    chatRef.current=scope.key;setChatScope({kind:scope.kind as 'club'|'league'|'tournament',id:scope.id});
+   }
+  }catch(e){if(active.current&&n===request.current){setError(e instanceof Error?e.message:'Geen verbinding. Probeer opnieuw.');if(terminal(e))clearPrivateFeed();}}
+ },[query,selected,userId,closeThread,clearPrivateFeed]);
+ const loadReplies=useCallback(async(id:string,cursor?:string)=>{
+  const n=++replyRequest.current,epoch=rights.current;
+  try{
+   const page=await api<{replies:FeedReply[];nextCursor:string|null}>(`/api/feed/replies/${id}${cursor?`?cursor=${encodeURIComponent(cursor)}`:''}`);
+   if(!active.current||n!==replyRequest.current||epoch!==rights.current||threadRef.current!==id)return;
+   setReplies(old=>cursor?[...page.replies,...old.filter(reply=>!page.replies.some(older=>older.id===reply.id))]:page.replies);setReplyCursor(page.nextCursor);
+  }catch(e){if(active.current&&n===replyRequest.current&&epoch===rights.current&&threadRef.current===id){setError(e instanceof Error?e.message:'Gesprek niet beschikbaar.');if(terminal(e))clearPrivateFeed();}}
+ },[clearPrivateFeed]);
+ useEffect(()=>{
+  active.current=true;pages.current=1;void refresh();
+  const poll=()=>{if(document.visibilityState==='visible'){void refresh();if(threadRef.current)void loadReplies(threadRef.current);}};
+  const timer=setInterval(poll,5000);window.addEventListener('online',poll);document.addEventListener('visibilitychange',poll);
+  return()=>{stopRequests();clearInterval(timer);window.removeEventListener('online',poll);document.removeEventListener('visibilitychange',poll);};
+ },[refresh,loadReplies,stopRequests]);
+ const openThread=(id:string)=>{if(threadRef.current===id){closeThread();return;}closeThread();threadRef.current=id;setThread(id);void loadReplies(id);};
+ const send=async(action:FeedAction,done?:()=>void)=>{
+  if(busy)return;setBusy(true);setError('');setMessage('');const attempt=pending.current??{requestId:crypto.randomUUID(),action};pending.current=attempt;const epoch=rights.current;
+  try{await api('/api/feed/actions',attempt);if(!active.current||epoch!==rights.current)return;pending.current=null;done?.();setMessage({compose:'Bericht geplaatst.',reply:'Reactie geplaatst.',follow:'Kanaalvoorkeur opgeslagen.',mode:'Meldingsvoorkeur opgeslagen.',policy:'Kanaalinstellingen opgeslagen.',pin:'Vastzetten bijgewerkt.',delete:'Bericht verwijderd.'}[String(action.type)]??'Opgeslagen.');await refresh();if(threadRef.current&&active.current&&epoch===rights.current)await loadReplies(threadRef.current);}
+  catch(e){if(active.current&&epoch===rights.current){if(e&&typeof e==='object'&&'status'in e&&Number(e.status)<500)pending.current=null;setError(e instanceof Error?e.message:'Geen verbinding. Probeer dezelfde actie opnieuw.');if(terminal(e))clearPrivateFeed();}}
+  finally{if(active.current)setBusy(false);}
+ };
  const available=state?.channels.filter(c=>c.canPost)??[],chosen=available.find(c=>c.key===compose)||available.find(c=>c.key===selected)||available[0],current=state?.channels.find(c=>c.key===selected),shownChannels=state?.channels.filter(c=>mode!=='discover'||c.visibility==='public')??[];
  const sourceList=()=>shownChannels.map(c=><div className={`df-feed-source ${c.key===selected?'is-current':''}`} key={c.key}><a href={href(c)}><span className="df-feed-avatar small">{initials(c.name)}</span><span><strong>{c.name}</strong><small>{c.visibility==='public'?'Openbaar':c.kind==='friends'?'Je DartFlow-vrienden':'Besloten kanaal'}</small></span></a><button type="button" aria-label={`${c.following?'Ontvolg':'Volg'} ${c.name}`} aria-pressed={c.following} disabled={busy||Boolean(pending.current)} onClick={()=>void send({type:'follow',channel:c.key,following:!c.following})}><Icon name={c.following?'tick':'plus'}/></button></div>);
- return <section className="df-feed" aria-label="My Feed"><header className="df-feed-page-head"><div><span className="df-feed-kicker"><Icon name="layout"/>Community</span><h1>{current?.name??'My Feed'}</h1><p>Uitslagen, speeldagen en berichten uit jouw dartwereld.</p></div><button className="df-feed-button df-feed-desktop-preferences" aria-expanded={preferences} onClick={()=>setPreferences(!preferences)}><Icon name="settings"/>Voorkeuren</button><button className="df-feed-button df-feed-mobile-channels" aria-expanded={mobileChannels} onClick={()=>setMobileChannels(!mobileChannels)}>Kanalen</button></header>
+ return <><section className="df-feed" aria-label="My Feed"><header className="df-feed-page-head"><div><span className="df-feed-kicker"><Icon name="layout"/>Community</span><h1>{current?.name??'My Feed'}</h1><p>Uitslagen, speeldagen en berichten uit jouw dartwereld.</p></div><button className="df-feed-button df-feed-desktop-preferences" aria-expanded={preferences} onClick={()=>setPreferences(!preferences)}><Icon name="settings"/>Voorkeuren</button><button className="df-feed-button df-feed-mobile-channels" aria-expanded={mobileChannels} onClick={()=>setMobileChannels(!mobileChannels)}>Kanalen</button></header>
  <nav className="df-feed-tabs" aria-label="Feedweergave"><a href="/app/feed" className={mode==='mine'?'active':''}><Icon name="layout"/>Mijn feed</a><a href="/app/feed/discover" className={mode==='discover'?'active':''}><Icon name="target"/>Ontdekken</a></nav>
  {preferences&&<section className="df-feed-preferences"><header><div><h2>Jouw kanaalvoorkeuren</h2><p>Volgen is geen inschrijving. Meldingen veranderen je deelname niet.</p></div><button aria-label="Sluit voorkeuren" onClick={()=>setPreferences(false)}>×</button></header>{shownChannels.map(c=><label key={c.key}>{c.name}<select aria-label={`Meldingen ${c.name}`} disabled={busy||Boolean(pending.current)} value={c.mode} onChange={e=>void send({type:'mode',channel:c.key,mode:e.target.value})}><option value="all">Alle updates</option><option value="important">Belangrijke updates</option><option value="muted">Gedempt</option></select></label>)}</section>}
  {mobileChannels&&<section className="df-feed-mobile-channel-list"><h2>Jouw kanalen</h2>{sourceList()}<button className="df-feed-button" onClick={()=>setPreferences(!preferences)}>Voorkeuren</button></section>}
@@ -48,11 +93,11 @@ function Timeline({mode,selected,urgentActions}:{mode:string;selected:string;urg
  {!state&&!error&&<p role="status">Feed ophalen…</p>}{state&&![...state.pins,...state.posts].length&&<section className="df-feed-empty"><Icon name="layout"/><h2>Geen berichten</h2><p>Er staan nog geen berichten bij dit filter.</p><a className="df-feed-button" href="/app/feed/discover">Ontdek kanalen<Icon name="arrow"/></a></section>}
  {state&&[...state.pins,...state.posts].map((item,index)=>{const ch=state.channels.find(c=>c.key===item.channel);return <div key={item.id}>{index===state.pins.length&&<div className="df-feed-date"><time dateTime={item.createdAt}>{date(item.createdAt)}</time></div>}<article id={`feed-post-${item.id}`} className="df-feed-card"><header className="df-feed-card-header"><span className={`df-feed-avatar is-${item.category}`}><Icon name={item.category==='result'?'target':'layout'}/></span><div className="df-feed-by"><strong>{item.authorName}</strong><span>{ch?.name} · <time dateTime={item.createdAt}>{date(item.createdAt)}</time></span></div><span className={`df-feed-tag is-${item.category}`}>{labels[item.category]}</span>{(item.canDelete||item.canManage)&&<details className="df-feed-more"><summary aria-label="Berichtopties">···</summary><div>{item.canDelete&&<button disabled={busy} onClick={()=>void send({type:'delete',itemId:item.id})}>Bericht verwijderen</button>}{item.canManage&&<label>Vastzetten<select aria-label="Vastzetten" defaultValue="" disabled={busy} onChange={e=>{if(e.target.value!=='')void send({type:'pin',itemId:item.id,days:Number(e.target.value)});}}><option value="">Kies looptijd</option><option value="0">Losmaken</option>{[1,3,7].filter(d=>d<=(ch?.maxPinDays??7)).map(d=><option key={d} value={d}>{d} dagen</option>)}</select></label>}</div></details>}</header>
  {item.pinUntil&&<span className="df-feed-pin"><Icon name="pin"/>Vastgezet tot {date(item.pinUntil)}</span>}{item.title&&<h2>{item.title}</h2>}{item.body&&<p className="df-feed-post-body">{item.body}</p>}{item.result&&<Score result={item.result}/>}{item.href&&<a className="df-feed-card-cta" href={item.href}>{item.category==='result'?'Bekijk uitslag':'Bekijk evenement'}<Icon name="arrow"/></a>}
- <footer className="df-feed-card-actions">{item.reactions&&<><button disabled={busy||Boolean(pending.current)} aria-label={`Vind bericht leuk (${item.likes})`} aria-pressed={item.liked} onClick={()=>void send({type:'like',itemId:item.id,liked:!item.liked})}><Icon name="heart"/>{item.likes}</button><button aria-expanded={thread===item.id} onClick={()=>{if(thread===item.id)setThread('');else{setThread(item.id);setReplies([]);void loadReplies(item.id);}}}><Icon name="comment"/>{item.replyCount} reacties</button></>}{item.result?.canShare&&<a href={`/app/feed/share/${item.result.id}`}><Icon name="share"/>Delen</a>}</footer>
+ <footer className="df-feed-card-actions">{item.reactions&&<><button disabled={busy||Boolean(pending.current)} aria-label={`Vind bericht leuk (${item.likes})`} aria-pressed={item.liked} onClick={()=>void send({type:'like',itemId:item.id,liked:!item.liked})}><Icon name="heart"/>{item.likes}</button><button aria-expanded={thread===item.id} onClick={()=>openThread(item.id)}><Icon name="comment"/>{item.replyCount} reacties</button></>}{item.result?.canShare&&<a href={`/app/feed/share/${item.result.id}`}><Icon name="share"/>Delen</a>}</footer>
  {thread===item.id&&item.reactions&&<div className="df-feed-thread">{replyCursor&&<button disabled={busy} onClick={()=>void loadReplies(item.id,replyCursor)}>Eerdere reacties</button>}{replies.map(r=><div className="df-feed-reply" key={r.id}><div><strong>{r.authorName}</strong><small>{date(r.createdAt)}</small><p>{r.body}</p></div></div>)}<form onSubmit={e=>{e.preventDefault();void send({type:'reply',itemId:item.id,body:reply},()=>setReply(''));}}><label className="df-feed-sr" htmlFor="feed-reply">Reactie</label><input id="feed-reply" placeholder="Schrijf een reactie…" value={reply} onChange={e=>setReply(e.target.value)} required maxLength={400} disabled={busy||Boolean(pending.current)}/><button className="df-feed-button" disabled={busy||!reply.trim()||Boolean(pending.current)}>Reageren</button></form></div>}</article></div>;})}
  {state?.nextCursor&&<button className="df-feed-button df-feed-load" disabled={busy} onClick={()=>{pages.current++;void refresh();}}>Laad meer berichten</button>}
  </section><aside className="df-feed-aside"><section className="df-feed-side-panel"><header><h2>Jouw kanalen</h2><button aria-label="Kanaalvoorkeuren" onClick={()=>setPreferences(!preferences)}><Icon name="settings"/></button></header>{sourceList()}<a className="df-feed-side-link" href="/app/feed/discover">Ontdek kanalen<Icon name="arrow"/></a></section><section className="df-feed-side-panel"><header><h2>Binnenkort</h2><Icon name="calendar"/></header>{state?.upcoming.length?state.upcoming.map(e=><a className="df-feed-upcoming" key={e.id} href={e.href}><span>{date(e.at)}</span><span><strong>{e.name}</strong><small>Bekijk programma en inschrijving</small></span></a>):<p className="df-feed-empty-side">Geen komende evenementen in je gevolgde kanalen.</p>}<a className="df-feed-side-link" href="/app/events">Alle evenementen<Icon name="arrow"/></a></section>{state?.channels.filter(c=>c.canManage&&(selected?c.key===selected:true)).map(c=><Policy key={c.key} channel={c} busy={busy} onAction={a=>void send(a)}/>)}</aside></div>
- {mobileChannels&&state?.channels.filter(c=>c.canManage).map(c=><Policy key={c.key} channel={c} busy={busy} onAction={a=>void send(a)}/>)}</section>;
+ {mobileChannels&&state?.channels.filter(c=>c.canManage).map(c=><Policy key={c.key} channel={c} busy={busy} onAction={a=>void send(a)}/>)}</section>{chatScope&&userId&&<ScopedChat key={`${userId}:${chatScope.kind}:${chatScope.id}`} kind={chatScope.kind} scopeId={chatScope.id} actorId={userId} label={chatScope.kind==='club'?'Verenigingschat':'Evenementchat'}/>}</>;
 }
 function ResultPage({id,preview,signedIn}:{id:string;preview:boolean;signedIn:boolean}){
  const [result,setResult]=useState<FeedResult|null>(null),[channels,setChannels]=useState<FeedChannel[]>([]),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[selected,setSelected]=useState(''),[scope,setScope]=useState('private'),[body,setBody]=useState(''),[shareUrl,setShareUrl]=useState('');

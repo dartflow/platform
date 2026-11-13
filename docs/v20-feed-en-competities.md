@@ -41,6 +41,8 @@ De uitslagpagina kan voor een ingelogde bevoegde gebruiker ook een bron-ID oplos
 
 De persoonlijke tijdlijn en reacties gebruiken chronologische paginering met een tijdstip en UUID als vaste tweede sleutel. De cursor bewaart ook PostgreSQL-microseconden. Bestaande compacte club- en evenementfeeds houden dezelfde bericht- en reactie-ID's; likes, reacties en verwijderingen worden tussen die weergaven aangesloten.
 
+Op een toegestaan clubkanaal blijft de bestaande verenigingschat beschikbaar. Bij een openbaar competitie- of toernooikanaal geven volgen en het lezen van openbare updates geen toegang tot de deelnemerschat. Ook oudere deelnemersberichten en hun reacties houden hun oorspronkelijke rechten. Intrekken van toegang wist ontvangen privégegevens uit het scherm; een eerder gestart antwoord kan die gegevens daarna niet terugzetten.
+
 Na definitieve wedstrijdbevestiging opent **Deel uitslag of speel revanche** de voorvertoning. Kies het toegestane publiek en eventueel een passend kanaal. Een besloten bron kan niet door alleen de publiekskeuze openbaar worden. Een uitnodigingsevenement blijft afgeschermd, ook wanneer een oude algemene zichtbaarheidsvlag `public` bevat.
 
 Een deelkaart bevat geen volledige wedstrijdpayload in de URL. De server bewaart een intrekbaar deel-ID en haalt bij ieder openen de actuele bevestigde bron en huidige toegangsrechten op. Broncorrecties gebruiken dezelfde identiteit. Intrekken van de kaart, verlies van toegang of intrekken van de openbare bron werkt door op bestaande links. Een openbare kaart bevat de vrijgegeven namen en uitslag; account-ID's, schrijfrechten en privégegevens worden niet meegegeven. De bestaande profielvoorkeur voor openbare statistieken wordt opnieuw toegepast.
