@@ -3,6 +3,12 @@ import { marketingContent } from "./marketing-content";
 import MarketingInteractions from "./marketing-interactions";
 
 export default function MarketingHome({ origin }: { origin: string }) {
+  const content = process.env.DARTFLOW_DATA_MODE === "supabase"
+    ? marketingContent.replace(
+        '<nav aria-label="Footernavigatie">',
+        '<nav aria-label="Footernavigatie"><button type="button" class="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>',
+      )
+    : marketingContent;
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
@@ -31,7 +37,7 @@ export default function MarketingHome({ origin }: { origin: string }) {
       />
       <div
         className="marketing-page"
-        dangerouslySetInnerHTML={{ __html: marketingContent }}
+        dangerouslySetInnerHTML={{ __html: content }}
       />
       <MarketingInteractions />
     </>

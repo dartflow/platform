@@ -1,6 +1,8 @@
 # SocialHero-analytics
 
-De website toont bij een eerste bezoek een analyticsbanner met **Analytics accepteren** en **Analytics weigeren**. Beide keuzes hebben dezelfde nadruk. Na een keuze opent **Privacyvoorkeuren** de instellingen opnieuw; kiezen voor weigeren trekt eerdere toestemming direct in.
+De website toont bij een eerste bezoek een analyticsbanner met **Analytics accepteren** en **Analytics weigeren**. Beide keuzes hebben dezelfde nadruk. **Privacyvoorkeuren** staat in de footer van de website, spelersomgeving en aanmeldpagina's; er is geen zwevende knop na het maken van een keuze. De footerknop opent de instellingen opnieuw; kiezen voor weigeren trekt eerdere toestemming direct in.
+
+Een browser of privacyhulpmiddel kan de automatische banner verbergen. Dat verleent geen toestemming. De zelf geopende instellingen via de footer staan los van de automatische banner. Een opslagupdate in een ander tabblad sluit een geopend voorkeurenpaneel niet.
 
 Zonder geldige toestemming wordt het externe SocialHero-script niet opgehaald. De callback zet eerst `window.socialheroConsent` en verstuurt daarna `CustomEvent('socialhero:consent', {detail: true})` of dezelfde gebeurtenis met `false`. Daardoor werkt toestemming ook als het script later pas arriveert. Intrekken tijdens het laden houdt de uiteindelijke pixel uitgeschakeld.
 

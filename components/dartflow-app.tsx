@@ -509,6 +509,12 @@ export default function DartflowApp() {
             {path.startsWith("/baan/") ? "Registreren of aanmelden" : "Inloggen"} <Icon name="arrow" />
           </a>
         </div>
+        <footer className="auth-footer">
+          <span>DartFlow · DG Webservices</span>
+          {session.data?.local === false && (
+            <button type="button" className="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>
+          )}
+        </footer>
       </div>
     );
   const user = session.data.user;
@@ -825,6 +831,9 @@ export default function DartflowApp() {
           <footer className="app-footer">
             <span>© {new Date().getFullYear()} DartFlow · DG Webservices</span>
             <span>Speel. Ontmoet. Competeer.</span>
+            {session.data.local === false && (
+              <button type="button" className="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>
+            )}
           </footer>
         </main>
       </div>
@@ -2799,7 +2808,12 @@ function Login({ session }: { session: Session | null }) {
           </div>
         </div>
       )}
-      <p className="auth-footer">DartFlow · DG Webservices</p>
+      <footer className="auth-footer">
+        <span>DartFlow · DG Webservices</span>
+        {session?.local === false && (
+          <button type="button" className="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>
+        )}
+      </footer>
     </div>
   );
 }
