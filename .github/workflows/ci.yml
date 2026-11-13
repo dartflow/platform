@@ -72,7 +72,19 @@ jobs:
           test -z "${PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS:-}"
           test -z "${DARTFLOW_BROWSER_PATH:-}"
           npx --no-install playwright install chromium
+      - name: Verify scoped Feed and chat regression
+        run: npx --no-install playwright test tests/e2e/community-v17.spec.ts
       - run: npm run test:e2e
+      - name: Preserve browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: browser-diagnostics-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 3
       - name: Package standalone candidate
         run: node ops/package-release.mjs
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
