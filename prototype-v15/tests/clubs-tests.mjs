@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
+import {mock} from 'node:test';
 import {createClubs} from '../public/clubs.js';
+// Demo room IDs add a random 0–99 offset to Date.now(). Keep fixture
+// allocations in separate time ranges so lookup assertions cannot hit an
+// unrelated seeded room created in the same real millisecond.
+let fixtureTime=Date.UTC(2026,10,13);
+mock.method(Date,'now',()=>fixtureTime+=1000);
 let route='',lastToast='',saved=0;
 global.document={addEventListener(){},getElementById(){return null;}};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
