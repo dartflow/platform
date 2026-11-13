@@ -1,0 +1,558 @@
+{
+  "date": "2026-11-13",
+  "scope": "staging acceptance; production unchanged",
+  "dartflow": {
+    "sourceSha": "daacf7af967b9db83dafc533efded6d055315e0d",
+    "releaseId": "43426760881-1",
+    "origin": "https://staging.dartflow.nl",
+    "configId": "staging-2026-11-12-v19-pin-1",
+    "ci": "https://github.com/dartflow/platform/actions/runs/43425459356",
+    "deploy": "https://github.com/dartflow/platform/actions/runs/43426760881",
+    "domainTests": 386,
+    "prototypeTests": 46,
+    "browserTests": 66,
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed"
+  },
+  "socialhero": {
+    "sourceSha": "083b0d80b4231c0dc12e10340cb31e3434786f17",
+    "releaseId": "083b0d80b4231c0dc12e10340cb31e3434786f17-43425449172-1",
+    "origin": "https://socialhero-staging.dgwebservices.nl",
+    "tests": 206,
+    "uiFixtureChecks": 22,
+    "build": "https://github.com/socialherodgweb/platform/actions/runs/43425449172",
+    "deploy": "https://github.com/socialherodgweb/platform/actions/runs/43425644775",
+    "realIntegration": {
+      "startedAt": "2026-11-13T12:46:03.207Z",
+      "environment": "staging",
+      "sourceSha": "083b0d80b4231c0dc12e10340cb31e3434786f17",
+      "workspaceId": "socialhero-staging",
+      "projectId": "brand-dartflow",
+      "mode": "real DartFlow staging, existing encrypted credential, real persisted approval/worker; supplied image, no AI or social delivery",
+      "checks": [
+        {
+          "name": "Read-only capabilities confirm DartFlow site and staging destination",
+          "passed": true,
+          "at": "2026-11-13T12:46:03.500Z",
+          "siteId": "dartflow",
+          "connectionVersion": 1,
+          "blogPath": "/blog"
+        },
+        {
+          "name": "Supplied reference exported to exact independent portrait and wide files",
+          "passed": true,
+          "at": "2026-11-13T12:46:04.577Z",
+          "hero": {
+            "assetId": "7979d8b4-b769-4f4c-ba41-a69a35edb9da",
+            "width": 1200,
+            "height": 1800
+          },
+          "og": {
+            "assetId": "b28be16a-c7c3-4bae-bf57-1be4452948b0",
+            "width": 1200,
+            "height": 630
+          },
+          "sourceSha256": "695c4011c78083dbe9cc39eb0c6dec47aba6001538ff85b411d8644edf1a8007"
+        },
+        {
+          "name": "One approval queued immutable content; paused campaign creates no website draft and holds dependent job",
+          "passed": true,
+          "at": "2026-11-13T12:46:04.793Z",
+          "campaignId": "dartflow-blog-acceptance-ef08c3da",
+          "scheduledAt": "2026-11-13T12:50:00.000Z",
+          "dependent": {
+            "status": "waiting",
+            "reason": "WAITING_FOR_WEBSITE"
+          }
+        },
+        {
+          "name": "Real private draft prepared before publication; exact draft operation replay retains revision",
+          "passed": true,
+          "at": "2026-11-13T12:47:07.742Z",
+          "externalId": "sh_content_eacc92ff-8fc3-4356-ab69-105410faadc2",
+          "remoteRevision": "1",
+          "scheduledAt": "2026-11-13T12:50:00.000Z",
+          "observedBeforeSchedule": true
+        },
+        {
+          "name": "Real media and publish replays preserve original results; changed input conflicts",
+          "passed": true,
+          "at": "2026-11-13T12:50:04.016Z",
+          "externalId": "sh_content_eacc92ff-8fc3-4356-ab69-105410faadc2",
+          "publishedRevision": "1",
+          "publicUrl": "https://staging.dartflow.nl/blog/socialhero-integratietest-ef08c3da"
+        },
+        {
+          "name": "Public HTML confirms exact canonical and revision before dependency release; UTM only on social link",
+          "passed": true,
+          "at": "2026-11-13T12:50:04.019Z",
+          "canonical": "https://staging.dartflow.nl/blog/socialhero-integratietest-ef08c3da",
+          "landingUrl": "https://staging.dartflow.nl/blog/socialhero-integratietest-ef08c3da?utm_source=facebook&utm_medium=social&utm_campaign=dartflow-blog-acceptance-ef08c3da",
+          "dependent": {
+            "status": "waiting",
+            "reason": "PROVIDER_NOT_CONFIGURED"
+          },
+          "socialDelivery": "Not executed: provider remains unconfigured."
+        }
+      ],
+      "passed": true,
+      "campaignId": "dartflow-blog-acceptance-ef08c3da",
+      "scheduledAt": "2026-11-13T12:50:00.000Z",
+      "publicUrl": "https://staging.dartflow.nl/blog/socialhero-integratietest-ef08c3da",
+      "publishedRevision": "1",
+      "completedAt": "2026-11-13T12:50:04.020Z"
+    },
+    "executionNote": "Operator harness invoked the deployed persistent worker class tick; exclusive background-daemon execution not claimed."
+  },
+  "migration": "supabase/migrations/20261113120254_blog_publication.sql",
+  "apiMapping": "/api/socialhero/v1; no endpoint deviations; see runbooks for error normalization",
+  "newGithubSecrets": [],
+  "localVisualComparison": {
+    "passed": true,
+    "checks": 20,
+    "viewports": [
+      "1440x1000",
+      "390x844",
+      "540x960",
+      "900x1200"
+    ],
+    "maximumGeometryDeltaPx": 0,
+    "maximumDifferentPixelPercent": 0.01914
+  },
+  "stagingBrowser": {
+    "origin": "https://staging.dartflow.nl",
+    "environment": "staging",
+    "sourceSha": "daacf7af967b9db83dafc533efded6d055315e0d",
+    "scope": "Actual staging HTTPS; anonymous browser; analytics explicitly declined in this test browser; no response interception or hosted writes",
+    "views": [
+      {
+        "name": "home",
+        "width": 1440,
+        "height": 900,
+        "screenshot": "artifacts/blog-staging/home-1440.png",
+        "actualImages": 3
+      },
+      {
+        "name": "archive",
+        "width": 1440,
+        "height": 900,
+        "screenshot": "artifacts/blog-staging/archive-1440.png",
+        "actualImages": 5
+      },
+      {
+        "name": "article",
+        "width": 1440,
+        "height": 900,
+        "screenshot": "artifacts/blog-staging/article-1440.png",
+        "actualImages": 5
+      },
+      {
+        "name": "home",
+        "width": 1024,
+        "height": 768,
+        "screenshot": "artifacts/blog-staging/home-1024.png",
+        "actualImages": 3
+      },
+      {
+        "name": "archive",
+        "width": 1024,
+        "height": 768,
+        "screenshot": "artifacts/blog-staging/archive-1024.png",
+        "actualImages": 5
+      },
+      {
+        "name": "article",
+        "width": 1024,
+        "height": 768,
+        "screenshot": "artifacts/blog-staging/article-1024.png",
+        "actualImages": 5
+      },
+      {
+        "name": "home",
+        "width": 768,
+        "height": 1024,
+        "screenshot": "artifacts/blog-staging/home-768.png",
+        "actualImages": 3
+      },
+      {
+        "name": "archive",
+        "width": 768,
+        "height": 1024,
+        "screenshot": "artifacts/blog-staging/archive-768.png",
+        "actualImages": 5
+      },
+      {
+        "name": "article",
+        "width": 768,
+        "height": 1024,
+        "screenshot": "artifacts/blog-staging/article-768.png",
+        "actualImages": 5
+      },
+      {
+        "name": "home",
+        "width": 390,
+        "height": 844,
+        "screenshot": "artifacts/blog-staging/home-390.png",
+        "actualImages": 3
+      },
+      {
+        "name": "archive",
+        "width": 390,
+        "height": 844,
+        "screenshot": "artifacts/blog-staging/archive-390.png",
+        "actualImages": 5
+      },
+      {
+        "name": "article",
+        "width": 390,
+        "height": 844,
+        "screenshot": "artifacts/blog-staging/article-390.png",
+        "actualImages": 5
+      }
+    ],
+    "regressions": [
+      {
+        "path": "/app",
+        "status": 200
+      },
+      {
+        "path": "/inloggen",
+        "status": 200
+      },
+      {
+        "path": "/oche-live/6fd6090a-111f-4bf4-89ef-1db4ab84a7f3/",
+        "status": 200
+      }
+    ],
+    "errors": [],
+    "passed": true,
+    "releaseId": "43426760881-1"
+  },
+  "stagingHttp": {
+    "passed": true,
+    "phase": "cleaned",
+    "productionWrites": false,
+    "checks": [
+      {
+        "name": "Staging release identity",
+        "passed": true,
+        "release": {
+          "status": "ok",
+          "mode": "supabase",
+          "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+          "releaseId": "43426760881-1",
+          "buildConfigId": "staging-2026-11-12-v19-pin-1",
+          "runtimeConfigId": "staging-2026-11-12-v19-pin-1",
+          "configId": "staging-2026-11-12-v19-pin-1"
+        }
+      },
+      {
+        "name": "Missing credential rejected",
+        "passed": true
+      },
+      {
+        "name": "Read-only capabilities connection test",
+        "passed": true,
+        "siteId": "dartflow",
+        "environment": "staging"
+      },
+      {
+        "name": "SSR/crawler/SEO/media: sh_staging-blog-20261113124051-2246baeb_0",
+        "passed": true,
+        "revision": 1,
+        "width": 1200,
+        "height": 630,
+        "mime": "image/jpeg"
+      },
+      {
+        "name": "SSR/crawler/SEO/media: sh_staging-blog-20261113124051-2246baeb_1",
+        "passed": true,
+        "revision": 1,
+        "width": 1200,
+        "height": 630,
+        "mime": "image/webp"
+      },
+      {
+        "name": "SSR/crawler/SEO/media: sh_staging-blog-20261113124051-2246baeb_2",
+        "passed": true,
+        "revision": 1,
+        "width": 1200,
+        "height": 630,
+        "mime": "image/jpeg"
+      },
+      {
+        "name": "Home renders the three reference publications in publication order",
+        "passed": true,
+        "cards": [
+          "/blog/staging-blog-20261113124051-2246baeb-checkouts-oefenen-darts",
+          "/blog/staging-blog-20261113124051-2246baeb-oche-live-darts-scorebord",
+          "/blog/staging-blog-20261113124051-2246baeb-darttoernooi-organiseren-club"
+        ]
+      },
+      {
+        "name": "SSR/crawler/SEO/media: sh_staging-blog-20261113124051-2246baeb_3",
+        "passed": true,
+        "revision": 1,
+        "width": 1200,
+        "height": 630,
+        "mime": "image/webp"
+      },
+      {
+        "name": "Fourth publication replaces the oldest homepage card",
+        "passed": true,
+        "cards": [
+          "/blog/staging-blog-20261113124051-2246baeb-vierde-artikel",
+          "/blog/staging-blog-20261113124051-2246baeb-checkouts-oefenen-darts",
+          "/blog/staging-blog-20261113124051-2246baeb-oche-live-darts-scorebord"
+        ]
+      },
+      {
+        "name": "Media exact-operation retry reuses the stored asset",
+        "passed": true
+      },
+      {
+        "name": "Draft exact-operation retry reuses the stored revision",
+        "passed": true
+      },
+      {
+        "name": "Changed body with an old operation key is rejected",
+        "passed": true
+      },
+      {
+        "name": "Existing draft requires If-Match",
+        "passed": true
+      },
+      {
+        "name": "Private draft remains hidden and a different revision cannot publish",
+        "passed": true
+      },
+      {
+        "name": "SSR/crawler/SEO/media: sh_staging-blog-20261113124051-2246baeb_3",
+        "passed": true,
+        "revision": 2,
+        "width": 1200,
+        "height": 630,
+        "mime": "image/webp"
+      },
+      {
+        "name": "Title/content update refreshes home without changing the live URL",
+        "passed": true
+      },
+      {
+        "name": "SSR/crawler/SEO/media: sh_staging-blog-20261113124051-2246baeb_3",
+        "passed": true,
+        "revision": 3,
+        "width": 1200,
+        "height": 630,
+        "mime": "image/webp"
+      },
+      {
+        "name": "An explicit slug change permanently redirects directly to the live route",
+        "passed": true
+      },
+      {
+        "name": "Publishing retry returns its durable original result after later revisions",
+        "passed": true
+      },
+      {
+        "name": "Two simultaneous edits accept exactly one expected revision",
+        "passed": true
+      },
+      {
+        "name": "Published PNG, JPEG and WebP assets expose real validated dimensions",
+        "passed": true
+      },
+      {
+        "name": "A falsified image MIME is rejected",
+        "passed": true
+      },
+      {
+        "name": "Media above the advertised byte limit is rejected before decoding",
+        "passed": true
+      },
+      {
+        "name": "An oversized JSON request is rejected before article processing",
+        "passed": true
+      },
+      {
+        "name": "A read-only site credential cannot publish",
+        "passed": true
+      },
+      {
+        "name": "Staging robots and sitemap exclude the test publications",
+        "passed": true
+      },
+      {
+        "name": "Anonymous users cannot open draft previews",
+        "passed": true
+      },
+      {
+        "name": "Latest three server-rendered cards follow the accepted live routes",
+        "passed": true,
+        "cards": [
+          "/blog/staging-blog-20261113124051-2246baeb-vierde-artikel-nieuwe-url",
+          "/blog/staging-blog-20261113124051-2246baeb-checkouts-oefenen-darts",
+          "/blog/staging-blog-20261113124051-2246baeb-oche-live-darts-scorebord"
+        ]
+      },
+      {
+        "name": "Archiving the newest publication restores the previous three home cards",
+        "passed": true,
+        "cards": [
+          "/blog/staging-blog-20261113124051-2246baeb-checkouts-oefenen-darts",
+          "/blog/staging-blog-20261113124051-2246baeb-oche-live-darts-scorebord",
+          "/blog/staging-blog-20261113124051-2246baeb-darttoernooi-organiseren-club"
+        ]
+      },
+      {
+        "name": "All controlled test publications are archived and absent from home",
+        "passed": true
+      }
+    ],
+    "controlledPostsArchived": 4
+  },
+  "unattendedCmsPublication": {
+    "passed": true,
+    "scheduledAt": "2026-11-13T12:49:09.536Z",
+    "publishedAt": "2026-11-13T12:49:21.263Z",
+    "firstPublicRequestAt": "2026-11-13T12:49:33.521Z",
+    "workerDelayMilliseconds": 11727,
+    "publicationActor": null,
+    "publicRequestBeforePublish": false,
+    "manuallyInvokedWorker": false,
+    "cleanupHttpStatus": 404
+  },
+  "credentialLifecycle": {
+    "expired": {
+      "status": 401,
+      "code": "UNAUTHENTICATED",
+      "checkedAt": "2026-11-13T12:48:15.340Z"
+    },
+    "revoked": {
+      "status": 401,
+      "code": "UNAUTHENTICATED",
+      "checkedAt": "2026-11-13T12:48:16.162Z"
+    }
+  },
+  "backupVerification": {
+    "archiveFullyDecoded": true,
+    "credentialsPrinted": false,
+    "databaseConnectionUsed": false,
+    "directory": "/var/backups/dartflow/v20-feed-seasons-staging-20261113T120631710559Z",
+    "environment": "staging",
+    "hashesVerified": 5,
+    "host": "dg-nxttrack-01",
+    "restoreDrillPerformed": false,
+    "status": "passed"
+  },
+  "finalPublicArticle": {
+    "passed": true,
+    "checkedAt": "2026-11-13T12:50:24.174Z",
+    "publicUrl": "https://staging.dartflow.nl/blog/socialhero-integratietest-ef08c3da",
+    "articleStatus": 200,
+    "canonical": "https://staging.dartflow.nl/blog/socialhero-integratietest-ef08c3da",
+    "utmKeptOutOfCanonical": true,
+    "homepageShowsActualCampaignArticle": true
+  },
+  "stagingHealth": [
+    {
+      "origin": "https://staging.dartflow.nl",
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "mode": "supabase",
+        "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+        "releaseId": "43426760881-1",
+        "buildConfigId": "staging-2026-11-12-v19-pin-1",
+        "runtimeConfigId": "staging-2026-11-12-v19-pin-1",
+        "configId": "staging-2026-11-12-v19-pin-1"
+      }
+    },
+    {
+      "origin": "https://socialhero-staging.dgwebservices.nl",
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "service": "SocialHero",
+        "releaseSha": "083b0d80b4231c0dc12e10340cb31e3434786f17",
+        "releaseId": "083b0d80b4231c0dc12e10340cb31e3434786f17-43425449172-1",
+        "storage": {
+          "engine": "SQLite",
+          "durable": true,
+          "isolated": true,
+          "mode": "environment-private",
+          "integrity": "ok"
+        },
+        "adapters": {
+          "research": "not-configured",
+          "writer": "not-configured",
+          "publisher": "not-configured",
+          "events": "website-pixel-v1",
+          "mode": "unconfigured",
+          "live": false
+        },
+        "worker": {
+          "heartbeat": "2026-11-13T12:50:08.682Z",
+          "running": true
+        },
+        "auth": "supabase-otp",
+        "environment": "staging"
+      }
+    }
+  ],
+  "productionBaseline": [
+    {
+      "origin": "https://dartflow.nl",
+      "status": 200,
+      "health": {
+        "status": "ok",
+        "mode": "supabase",
+        "sha": "8246b2945ead34ebeb7ba34c2abe1334b5372e2c",
+        "releaseId": "43408435515-1",
+        "buildConfigId": "production-2026-11-12-v19-pin-1",
+        "runtimeConfigId": "production-2026-11-12-v19-pin-1",
+        "configId": "production-2026-11-12-v19-pin-1"
+      }
+    },
+    {
+      "origin": "https://socialhero.dgwebservices.nl",
+      "status": 200,
+      "health": {
+        "status": "ok",
+        "service": "SocialHero",
+        "releaseSha": "d848d102d632ddde8c444c9deca6746634bf8a7e",
+        "releaseId": "d848d102d632ddde8c444c9deca6746634bf8a7e-43418247127-1",
+        "storage": {
+          "engine": "SQLite",
+          "durable": true,
+          "isolated": true,
+          "mode": "environment-private",
+          "integrity": "ok"
+        },
+        "adapters": {
+          "research": "not-configured",
+          "writer": "not-configured",
+          "publisher": "not-configured",
+          "events": "website-pixel-v1",
+          "mode": "unconfigured",
+          "live": false
+        },
+        "worker": {
+          "heartbeat": "2026-11-13T12:48:43.695Z",
+          "running": true
+        },
+        "auth": "supabase-otp",
+        "environment": "production"
+      }
+    }
+  ],
+  "limitations": [
+    "No actual social provider delivery; provider remains unconfigured.",
+    "No authenticated hosted editor mutation test: editor write flows verified with local development identities.",
+    "No real Google/email login roundtrip or external social platform preview validator in this change.",
+    "No physical device installation test.",
+    "No production migration or deployment in this task.",
+    "Backup archive decoded and hash-verified; no restoration drill."
+  ]
+}

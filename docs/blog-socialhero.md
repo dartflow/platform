@@ -40,4 +40,4 @@ De bestaande campagnegoedkeuring zet de publicatierevisie vast. De worker bewaar
 
 ## Verificatie
 
-Lokale URL: `http://localhost:3000/blog` en `/blog/beheer`. Lokaal worden uitsluitend de bestaande synthetische accounts en ontwikkeldata gebruikt. `tests/blog-content.test.ts`, `tests/blog-backend.test.ts`, `tests/blog-public.test.ts` en `tests/e2e/blog.spec.ts` bewaken inhoud, transacties, media, API, editor, publicatie en SSR. `scripts/qa-blog-public.mjs` vergelijkt de meegeleverde bron op 1440×900, 1024×768, 768×1024 en 390×844. Werkelijke release- en stagingresultaten worden apart bij de oplevering vastgelegd.
+Lokale URL: `http://localhost:3000/blog` en `/blog/beheer`. Lokaal worden uitsluitend de bestaande synthetische accounts en ontwikkeldata gebruikt. `tests/blog-content.test.ts`, `tests/blog-backend.test.ts`, `tests/blog-public.test.ts` en `tests/e2e/blog.spec.ts` bewaken inhoud, transacties, media, API, editor, publicatie en SSR. `scripts/qa-blog-public.mjs` vergelijkt de meegeleverde bron op 1440×1000, 900×1200, 540×960 en 390×844. Werkelijke release- en stagingresultaten worden apart bij de oplevering vastgelegd.
