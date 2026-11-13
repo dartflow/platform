@@ -55,13 +55,14 @@ export async function handleBlogAdminApi(request:NextRequest,parts:string[]):Pro
         ...(social?.assetId?{ogImageAssetId:social.assetId}:{}),noindex:raw.noindex,featured:raw.featured}});
       return json({post:await editorPost(result.article,actor)});
     }
-    if(data.action==='publish')await publishBlogRevision(actor,id,revision,requestId);
-    else if(data.action==='schedule')await scheduleBlogRevision(actor,id,revision,String(data.scheduledAt),requestId);
-    else if(data.action==='unschedule')await unscheduleBlogRevision(actor,id,requestId);
+    let actedRevision:number;
+    if(data.action==='publish')actedRevision=(await publishBlogRevision(actor,id,revision,requestId)).revision;
+    else if(data.action==='schedule')actedRevision=(await scheduleBlogRevision(actor,id,revision,String(data.scheduledAt),requestId)).revision;
+    else if(data.action==='unschedule')actedRevision=(await unscheduleBlogRevision(actor,id,requestId)).revision;
     else if(data.action==='archive'){await archiveBlogArticle(actor,id,requestId);return json({archived:true});}
-    else if(data.action==='restore')await restoreBlogRevision(actor,id,Number(data.restoreRevision),revision,requestId);
+    else if(data.action==='restore')actedRevision=(await restoreBlogRevision(actor,id,Number(data.restoreRevision),revision,requestId)).revision;
     else throw new BlogError('VALIDATION_ERROR','Onbekende blogactie.');
-    return json({post:await editorPost(await getBlogDraft(actor,id),actor)});
+    return json({post:await editorPost(await getBlogDraft(actor,id,actedRevision),actor)});
   }catch(error){
     if(error instanceof BlogError)return json({error:{code:error.code,message:error.message,field:error.field,currentRevision:error.currentRevision}},error.status);
     console.error('Blogbeheer: verwerking mislukt.');return json({error:{code:'INTERNAL_ERROR',message:'De wijziging kon niet worden opgeslagen. Je invoer blijft bewaard; probeer opnieuw.'}},500);

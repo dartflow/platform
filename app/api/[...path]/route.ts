@@ -306,5 +306,6 @@ async function route(request:NextRequest,context:Context) {
 }
 export const GET=route;
 export const POST=route;
+export const PUT=route;
 export const DELETE=route;
 export const PATCH=route;

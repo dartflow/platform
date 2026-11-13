@@ -5,7 +5,7 @@ import pg from 'pg';
 import sharp from 'sharp';
 import {NextRequest} from 'next/server';
 import {database,closeDatabase} from '../lib/db';
-import {blogRuntime,normalizeBlogSlug,validateBlogData,saveBlogDraft,getBlogDraft,getLiveArticle,listLiveArticles,publishBlogRevision,scheduleBlogRevision,processScheduledBlogPublications,processBlogInvalidations,archiveBlogArticle,createBlogToken,authenticateBlogToken,revokeBlogToken,writeBlogDraft,publishBlog,getBlogExternalStatus,listBlogTokens,restoreBlogRevision} from '../lib/blog-store';
+import {blogRuntime,normalizeBlogSlug,validateBlogData,saveBlogDraft,getBlogDraft,getLiveArticle,listLiveArticles,publishBlogRevision,scheduleBlogRevision,unscheduleBlogRevision,processScheduledBlogPublications,processBlogInvalidations,archiveBlogArticle,createBlogToken,authenticateBlogToken,revokeBlogToken,writeBlogDraft,publishBlog,getBlogExternalStatus,listBlogTokens,restoreBlogRevision} from '../lib/blog-store';
 import {storeBlogMedia,readBlogMedia,validateBlogImage} from '../lib/blog-media';
 import {handleBlogApi} from '../lib/blog-api';
 
@@ -75,6 +75,12 @@ test('blog revisions, routes, scheduler, private media and SocialHero credential
    assert.equal(attempts.filter(r=>r.status==='fulfilled').length,1);assert.equal((attempts.find(r=>r.status==='rejected') as PromiseRejectedResult).reason.code,'REVISION_CONFLICT');
    const latest=await getBlogDraft(actor,initial.id),restored=await restoreBlogRevision(actor,initial.id,1,latest.revision,key());assert.equal(restored.article.title,'Eerste');assert.equal(restored.revision,latest.revision+1);
   });
+  await t.test('a replayed save returns the acted immutable revision instead of an unseen latest draft',async()=>{
+   const latest=await getBlogDraft(actor,initial.id);assert.ok(latest.revision>1);
+   const replay=await saveBlogDraft(actor,{data:article('Eerste'),requestId:initialKey});assert.equal(replay.revision,1);assert.equal(replay.article.revision,1);assert.equal(replay.article.title,'Eerste');assert.equal(replay.article.draftRevision,latest.revision);
+   await assert.rejects(publishBlogRevision(actor,initial.id,replay.article.revision,key()),{code:'REVISION_CONFLICT'});
+   assert.equal((await getBlogDraft(actor,initial.id)).revision,latest.revision);
+  });
   await t.test('cache invalidation retries after failure and covers home, archive, sitemap and old aliases',async()=>{
    await assert.rejects(processBlogInvalidations(()=>{throw new Error('temporary cache failure');}),/temporary cache failure/);
    const pending=(await owner.query('select count(*)::int as n from dartflow_private.blog_invalidation where post_id=$1 and processed_at is null',[initial.id])).rows[0].n;assert.ok(pending>0);
@@ -94,6 +100,30 @@ test('blog revisions, routes, scheduler, private media and SocialHero credential
    const results=await Promise.all([processScheduledBlogPublications(),processScheduledBlogPublications()]);assert.equal(results.flat().filter(r=>r.id===scheduled.id).length,1);assert.equal((await getLiveArticle(scheduled.article.slug)).article?.title,'Gepland');
    await archiveBlogArticle(actor,scheduled.id,key());assert.equal((await getLiveArticle(scheduled.article.slug)).article,null);
    assert.equal((await listLiveArticles()).some(p=>p.id===scheduled.id),false);
+  });
+  await t.test('unchanged live revisions cannot be scheduled and legacy due entries cannot starve the worker',async()=>{
+   const live=await saveBlogDraft(actor,{data:article('Oude planning'),requestId:key()});postIds.push(live.id);const published=await publishBlogRevision(actor,live.id,live.revision,key());
+   await assert.rejects(scheduleBlogRevision(actor,live.id,live.revision,new Date(Date.now()+60000).toISOString(),key()),{code:'VALIDATION_ERROR',status:422});
+   await owner.query("update dartflow_private.blog_posts set scheduled_at=clock_timestamp()-interval '1 day',scheduled_revision=live_revision where id=$1",[live.id]);
+   const ready=await saveBlogDraft(actor,{data:article('Volgende planning'),requestId:key()});postIds.push(ready.id);await scheduleBlogRevision(actor,ready.id,ready.revision,new Date(Date.now()+60000).toISOString(),key());await owner.query("update dartflow_private.blog_posts set scheduled_at=clock_timestamp()-interval '1 second' where id=$1",[ready.id]);
+   assert.deepEqual(await processScheduledBlogPublications(1),[]);assert.equal((await getBlogDraft(actor,live.id)).scheduledAt,null);
+   assert.equal((await getBlogDraft(actor,live.id)).publishedAt,published.publishedAt);
+   assert.equal((await processScheduledBlogPublications(1))[0]?.id,ready.id);assert.equal((await getLiveArticle(ready.article.slug)).article?.title,'Volgende planning');
+   await owner.query("update dartflow_private.blog_posts set scheduled_at=clock_timestamp()+interval '1 day',scheduled_revision=live_revision where id=$1",[live.id]);const again=await publishBlogRevision(actor,live.id,live.revision,key());assert.equal(again.scheduledAt,null);assert.equal(again.publishedAt,published.publishedAt);
+  });
+  await t.test('a late cancellation preserves archived state and cannot restore a public article',async()=>{
+   const archived=await saveBlogDraft(actor,{data:article('Gearchiveerde planning'),requestId:key()});postIds.push(archived.id);await publishBlogRevision(actor,archived.id,archived.revision,key());
+   const changed=await saveBlogDraft(actor,{id:archived.id,expectedRevision:archived.revision,data:article('Gewijzigde planning',archived.article.slug),requestId:key()});await scheduleBlogRevision(actor,archived.id,changed.revision,new Date(Date.now()+60000).toISOString(),key());
+   await archiveBlogArticle(actor,archived.id,key());const cancelled=await unscheduleBlogRevision(actor,archived.id,key());assert.equal(cancelled.status,'archived');assert.equal((await getBlogDraft(actor,archived.id)).status,'archived');assert.equal((await getLiveArticle(archived.article.slug)).article,null);
+   await owner.query("update dartflow_private.blog_posts set scheduled_at=clock_timestamp()-interval '1 day',scheduled_revision=draft_revision where id=$1",[archived.id]);await processScheduledBlogPublications();assert.equal((await getBlogDraft(actor,archived.id)).status,'archived');assert.equal((await getBlogDraft(actor,archived.id)).scheduledAt,null);assert.equal((await getLiveArticle(archived.article.slug)).article,null);
+  });
+  await t.test('a scheduling retry after its due time returns the original receipt',async()=>{
+   const pending=await saveBlogDraft(actor,{data:article('Planningherhaling'),requestId:key()});postIds.push(pending.id);const at=new Date(Date.now()+1800).toISOString(),requestId=key(),result=await scheduleBlogRevision(actor,pending.id,pending.revision,at,requestId);
+   await new Promise(done=>setTimeout(done,Math.max(0,Date.parse(at)-Date.now()+30)));
+   assert.deepEqual(await scheduleBlogRevision(actor,pending.id,pending.revision,at,requestId),result);
+   await assert.rejects(scheduleBlogRevision(actor,pending.id,pending.revision,at,key()),{code:'VALIDATION_ERROR',field:'scheduledAt'});
+   assert.equal((await processScheduledBlogPublications()).filter(post=>post.id===pending.id).length,1);assert.equal((await getLiveArticle(pending.article.slug)).article?.title,'Planningherhaling');
+   assert.deepEqual(await scheduleBlogRevision(actor,pending.id,pending.revision,at,requestId),result);
   });
   await t.test('site-scoped credentials, explicit revision publish and durable API operation replay',async()=>{
    const token=await createBlogToken(actor,{name:'Blog fixture'});tokenIds.push(token.id);const credential=await authenticateBlogToken(token.token);
@@ -124,6 +154,14 @@ test('blog revisions, routes, scheduler, private media and SocialHero credential
    assert.equal((await call(`posts/${externalId}/publish`,'POST',{revision:2,extra:'discarded'},key()))?.status,422);
    const mediaForm=new FormData();mediaForm.set('file',new File([new Uint8Array(png)],'fixture.png',{type:'image/png'}));
    const upload=await handleBlogApi(new NextRequest(`${base}/media`,{method:'POST',headers:{Authorization:`Bearer ${token.token}`,'Idempotency-Key':key()},body:mediaForm}),['socialhero','v1','media']);assert.equal(upload?.status,201);assert.equal((await upload!.json()).type,'image/png');
+  });
+  await t.test('a publish-only credential publishes its explicitly selected site revision without read scope',async()=>{
+   const writer=await createBlogToken(actor,{}),publisher=await createBlogToken(actor,{scopes:['publish']});tokenIds.push(writer.id,publisher.id);const writerCredential=await authenticateBlogToken(writer.token),externalId=`sh_${randomUUID()}`;
+   const post=await writeBlogDraft({credential:writerCredential},{externalId,data:article('Publicatierecht'),requestId:key()});postIds.push(post.id);
+   const base=`${blogRuntime().origin}/api/socialhero/v1/posts/${externalId}`,headers={Authorization:`Bearer ${publisher.token}`,'Content-Type':'application/json','Idempotency-Key':key()};
+   const denied=await handleBlogApi(new NextRequest(base,{headers:{Authorization:`Bearer ${publisher.token}`}}),['socialhero','v1','posts',externalId]);assert.equal(denied?.status,403);
+   const publish=()=>handleBlogApi(new NextRequest(base+'/publish',{method:'POST',headers,body:JSON.stringify({revision:post.revision})}),['socialhero','v1','posts',externalId,'publish']);
+   const response=await publish();assert.equal(response?.status,200);const result=await response!.json();assert.equal(result.publishedRevision,post.revision);assert.equal(result.status,'published');assert.deepEqual(await(await publish())!.json(),result);
   });
   await t.test('concurrent operation claims replay one result and rate limiting persists across requests',async()=>{
    const token=await createBlogToken(actor,{});tokenIds.push(token.id);const credential=await authenticateBlogToken(token.token),requestId=key(),externalId=`sh_${randomUUID()}`;

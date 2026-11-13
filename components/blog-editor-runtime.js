@@ -231,7 +231,7 @@ const operationKeys = new Map();
 function postAction(action, fields) {
   const fingerprint=JSON.stringify({action,...fields});
   if(!operationKeys.has(fingerprint))operationKeys.set(fingerprint,crypto.randomUUID());
-  return api('', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action,...fields,requestId:operationKeys.get(fingerprint)})});
+  return api('', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action,...fields,requestId:operationKeys.get(fingerprint)})}).then(result=>{operationKeys.delete(fingerprint);return result;});
 }
 
 function tagValues() {
@@ -285,8 +285,8 @@ function listPosts() {
   if (!matching.length) $('post-list').append(create('p','studio-empty',posts.length ? 'Geen artikelen bij deze zoekopdracht.' : 'Maak je eerste artikel aan.'));
 }
 
-function openPost(post) {
-  if (busy) return;
+function openPost(post, allowBusy = false, preserveHistory = false) {
+  if (busy && !allowBusy) return;
   loadingPost = true;
   current = post || {title:'', excerpt:'', slug:'', type:'blog', locale:'nl-NL', author:'redactie', category:'toernooien', tags:[], status:'draft'};
   hero = {...blankHero,...current.hero};
@@ -306,8 +306,9 @@ function openPost(post) {
   $('seo-title').value = current.seoTitle || '';
   $('seo-description').value = current.seoDescription || '';
   $('noindex').checked = Boolean(current.noindex);
-  editor.commands.setContent(editorialContent(current.content,true) || '', {emitUpdate:false});
-  editor.view.updateState(EditorState.create({doc:editor.state.doc, plugins:editor.state.plugins}));
+  const document=editorialContent(current.content,true)||{type:'doc',content:[{type:'paragraph'}]};
+  if(!preserveHistory||JSON.stringify(editor.getJSON())!==JSON.stringify(document))editor.commands.setContent(document,{emitUpdate:false});
+  if(!preserveHistory)editor.view.updateState(EditorState.create({doc:editor.state.doc,plugins:editor.state.plugins}));
   $('workspace').hidden = false;
   loadingPost = false;
   renderFields();
@@ -397,9 +398,7 @@ function acceptPost(post) {
   const index = posts.findIndex(item => item.id === post.id);
   if (index < 0) posts.unshift(post);
   else posts[index] = post;
-  current = post;
-  slugEdited = Boolean(post.liveSlug || post.slug !== slugify(post.title));
-  dirty = false;
+  openPost(post,true,true);
   savedTime = new Intl.DateTimeFormat('nl-NL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'}).format(new Date());
   $('slug').value = post.slug;
   renderFields();
@@ -606,6 +605,8 @@ function publicationDialog() {
   if (current.scheduledAt) timing.value = dateParts.format(new Date(current.scheduledAt)).replace(' ','T');
   const publish = makeButton('Nu publiceren','button button-primary button-small');
   const schedule = submitButton('Inplannen');
+  schedule.disabled=!dirty&&current.liveRevision===current.revision&&current.status!=='archived';
+  if(schedule.disabled)schedule.title='Sla eerst een nieuw concept op; deze revisie staat al live.';
   publish.addEventListener('click', () => {
     $('dialog').close();
     changePublication('publish');
@@ -625,11 +626,12 @@ function publicationDialog() {
 function changePublication(action, scheduledAt) {
   return execute(async () => {
     const ready = action === 'unschedule' ? current : await savePost();
+    const editingRevision=current.revision;
     const {post} = await postAction(action,{id:ready.id,revision:ready.revision ?? null,...(scheduledAt ? {scheduledAt} : {})});
     if (action === 'unschedule' && dirty) {
       const index = posts.findIndex(item => item.id === post.id);
       posts[index] = post;
-      current = post;
+      current = {...post,revision:editingRevision};
       renderFields();
       renderPublishMeta();
       listPosts();
@@ -774,4 +776,3 @@ async function boot() {
 boot();
 return () => { lifecycle.abort();cancelAnimationFrame(bubbleFrame);editor.destroy();root.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close()); };
 }
-
