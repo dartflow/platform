@@ -2,6 +2,7 @@ import {DomainError} from './domain';
 import {clubPermission} from './club-access';
 import {uuid,type Client} from './platform-store';
 import type {ReservedBoardContext} from './location-types';
+import {seasonEventAccess} from './seasons';
 
 export type PhysicalBoardRow={board_id:string;location_id:string;home_event_id:string;owner_id:string;kind:'home'|'venue';location_name:string;timezone:string;reservation_enabled:boolean;public_screen:boolean;archived_at:Date|null;closed_at:Date|null;close_after_session:boolean;name:string;blocked:boolean};
 export type ActiveReservation={id:string;event_id:string;club_id:string;event_name:string;starts_at:Date;ends_at:Date;max_matches:number;location_id:string};
@@ -13,7 +14,7 @@ export async function reservationOrganizer(client:Client,actor:string,eventId:st
  const row=result.rows[0];
  if(lockClub)await client.query("select id from dartflow_private.platform_entities where id=$1 and kind='club' for share",[row.club_id]);
  const allowed=row.kind==='tournament'?await clubPermission(client,row.club_id,actor,'tournaments.manage'):row.kind==='league'?await clubPermission(client,row.club_id,actor,'competitions.manage'):await clubPermission(client,row.club_id,actor,'tournaments.manage')||await clubPermission(client,row.club_id,actor,'competitions.manage');
- if(!allowed)throw new DomainError('forbidden','Je hebt geen actueel organisatierecht voor deze verenigingsspeeldag.',403);
+ if(!allowed&&!await seasonEventAccess(client,actor,eventId))throw new DomainError('forbidden','Je hebt geen actueel organisatierecht voor deze verenigingsspeeldag.',403);
  return row;
 }
 export async function canOrganizeReservedEvent(client:Client,actor:string,eventId:string):Promise<boolean>{
@@ -92,10 +93,11 @@ export async function playerReservationContext(client:Client,actor:string,boardI
  const reservation=await activeBoardReservation(client,boardId);if(!reservation)return null;
  const registered=Boolean((await client.query("select 1 from dartflow_private.entries where event_id=$1 and user_id=$2 and status='registered'",[reservation.event_id,actor])).rowCount);
  const staff=await canOrganizeReservedEvent(client,actor,reservation.event_id);
- let fixtureId:string|undefined;
+ let fixtureId:string|undefined,seasonId:string|undefined,seasonFixtureId:string|undefined;
  if(registered||staff){
-  const event=await client.query<{state:{fixtures?:{id:string;players:(string|null)[];status:string}[]}}>("select state from dartflow_private.platform_entities where kind in('league','tournament') and state->>'eventId'=$1 order by id limit 1",[reservation.event_id]);
+  const event=await client.query<{id:string;state:{seasonManaged?:boolean;fixtures?:{id:string;players:(string|null)[];status:string}[]}}>("select id,state from dartflow_private.platform_entities where kind in('league','tournament') and state->>'eventId'=$1 order by id limit 1",[reservation.event_id]);
   const next=event.rows[0]?.state.fixtures?.find(f=>f.status==='scheduled'&&f.players[0]===actor&&f.players.every(Boolean));fixtureId=next?.id;
+  if(event.rows[0]?.state.seasonManaged){seasonId=event.rows[0].id;if(fixtureId){const source=(await client.query<{state:{fixtures:{id:string;slots:{id:string}[]}[]}}>('select state from dartflow_private.competition_seasons where id=$1',[seasonId])).rows[0];seasonFixtureId=source?.state.fixtures.find(f=>f.slots.some(slot=>slot.id===fixtureId))?.id;}}
  }
- return {eventId:reservation.event_id,canParticipate:registered||staff,context:{id:reservation.id,label:registered||staff?reservation.event_name:'Gereserveerd voor een speeldag',startsAt:reservation.starts_at.toISOString(),endsAt:reservation.ends_at.toISOString(),overrun:false,canPrepare:Boolean(fixtureId),...(fixtureId?{fixtureId}:{})}};
+ return {eventId:reservation.event_id,canParticipate:registered||staff,context:{id:reservation.id,label:registered||staff?reservation.event_name:'Gereserveerd voor een speeldag',startsAt:reservation.starts_at.toISOString(),endsAt:reservation.ends_at.toISOString(),overrun:false,canPrepare:Boolean(fixtureId),...(fixtureId?{fixtureId}:{}),...(seasonId?{seasonId,seasonFixtureId}:{})}};
 }

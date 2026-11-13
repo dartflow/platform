@@ -48,7 +48,7 @@ test('fixed eight legs supports 4–4 and undo restores the complete match state
   assert.equal(done.status, 'result'); assert.equal(done.game.draw, true); assert.equal(done.winnerId, null); assert.deepEqual(done.game.legs, [4, 4]);
   const restored = applyMatchAction(done, 'a', false, { type: 'undo' });
   assert.deepEqual(restored.game, source.game); assert.equal(restored.status, 'live'); assert.equal(restored.resultRevision, null);
-  assert.throws(() => validateSettings({ legLimit: 8, bestOfSets: 3 }), /Vaste acht/);
+  assert.throws(() => validateSettings({ legLimit: 8, bestOfSets: 3 }), /Vaste zes, acht of tien/);
 });
 test('set transition alternates starter and undo crosses the set boundary', () => {
   const multi = { ...settings, bestOfSets: 3 };

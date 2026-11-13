@@ -75,6 +75,7 @@ export default function ClubBoardScreen({ boardId, installKind = 'board' }: { bo
     let stopped = false;
     let busy = false;
     let request: AbortController | null = null;
+    let lastHeartbeat=0;
     setData(null); setError(''); setNeedsPairing(false); setStale(false);
     const refresh = async () => {
       if (busy || stopped) return;
@@ -94,7 +95,7 @@ export default function ClubBoardScreen({ boardId, installKind = 'board' }: { bo
           }
           throw new Error(typeof body.error === 'string' ? body.error : 'Dit baanscherm is niet beschikbaar.');
         }
-        if (!stopped) {setData(body); setError(''); setStale(document.visibilityState!=='visible'); setNeedsPairing(false);}
+        if (!stopped) {setData(body); setError(''); setStale(document.visibilityState!=='visible'); setNeedsPairing(false);if(body.screen?.paired===true&&document.visibilityState==='visible'&&Date.now()-lastHeartbeat>=15000){lastHeartbeat=Date.now();void fetch(`/api/board-screens/${encodeURIComponent(boardId)}/heartbeat`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).catch(()=>{});}}
       } catch (cause) {
         if (!stopped) {setStale(true); setError(cause instanceof Error && cause.name !== 'AbortError' ? cause.message : 'Verbinding onderbroken.');}
       } finally {clearTimeout(timeout); busy = false;}
@@ -108,6 +109,7 @@ export default function ClubBoardScreen({ boardId, installKind = 'board' }: { bo
     return () => {stopped = true; request?.abort(); clearInterval(timer); window.removeEventListener('online', refresh); window.removeEventListener('offline', offline); document.removeEventListener('visibilitychange', visible);};
   }, [boardId, generation]);
   const boardName = data?.board.name;
+  useEffect(()=>{const surface=document.querySelector<HTMLElement>('.oche-cast-surface');if(surface)surface.dataset.rotation=String(data?.screen?.rotation??90);return()=>{if(surface)delete surface.dataset.rotation;};},[data?.screen?.rotation]);
   useEffect(() => {
     if (!boardName || installKind !== 'board') return;
     const title = `Oche Live · ${boardName}`;
@@ -127,9 +129,9 @@ export default function ClubBoardScreen({ boardId, installKind = 'board' }: { bo
   const cue=useOcheCelebration(data?.snapshot,Boolean(data)&&!stale);
   const overlay=<OcheCelebration cue={cue}/>;
   const install=(data||needsPairing||installKind==='scoreboard')?<InstallDartflow kind={installKind} boardId={boardId} boardName={data?.board.name}/>:null;
-  const options=<details className="oche-options"><summary aria-label="Schermopties" title="Schermopties">•••</summary><div><ScreenWakeLock/></div></details>;
   const offline=stale&&data?<div className="board-screen-offline" role="status">Offline · Laatst ontvangen stand. De actuele baan wordt na herstel opnieuw opgehaald.</div>:null;
   const pairForm=<form className="board-pair-form" onSubmit={event=>void pair(event)}><label htmlFor="screen-pair-code">Koppelcode van de wedstrijdleiding</label><input id="screen-pair-code" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={30} value={pairCode} onChange={event=>setPairCode(event.target.value)} required placeholder="XXXX XXXX XXXX"/><button className="button gold" type="submit" disabled={pairBusy}>{pairBusy?'Koppelen…':'Dit baanscherm koppelen'}</button>{error&&<p className="notice error" role="alert">{error}</p>}</form>;
+  const options=<details className="oche-options"><summary aria-label="Schermopties" title="Schermopties">•••</summary><div><ScreenWakeLock/>{data&&!needsPairing&&!data.screen?.paired&&<details><summary>Dit apparaat registreren</summary>{pairForm}</details>}{data?.screen?.paired&&<small>Apparaat gekoppeld aan {data.board.name}</small>}</div></details>;
   const qr=data?<figure className="oche-qr"><ClubBoardQr boardId={data.board.id} variant="oche"/><figcaption><a href={data.board.playUrl} aria-label="Open deze baan ↗">Open deze baan met je telefoon</a></figcaption></figure>:null;
   return <div className={`club-board-screen${data?.snapshot.match?' club-board-screen-live':''}`}>{offline}{data?.snapshot.match?<>
     <SprintDisplay controls={<>{install}{options}</>} snapshot={data.snapshot} stale={stale} qr={<ClubBoardQr boardId={data.board.id}/>} scanInstruction={scanInstruction} overlay={overlay} activityOverlay={<BoardActivityNotice activity={data.snapshot.boardActivity} display boardId={boardId} offline={stale} onRefresh={refreshScreen}/>}/>

@@ -18,6 +18,7 @@ export function safeNext(value: unknown): string {
     if(extra.length)return '/';
     if((pathname==='/app/settings'||pathname==='/app/profiel')&&query==='pin=reset')return value;
     if(pathname==='/app/statistics'&&/^view=(matches|opponents|tournaments|practice)$/.test(query))return value;
+    if(new RegExp(`^/app/(?:competities|leagues)/${id}$`).test(pathname)&&new RegExp(`^(?:fixture=${id}(?:&tab=(?:overview|stand|program|results|stats|rules|manage))?|tab=(?:overview|stand|program|results|stats|rules|manage)(?:&fixture=${id})?)$`).test(query))return value;
     const invitation=new RegExp(`^/app/(?:lobby|community|clubs|leagues|tournaments|hall)/${id}$`).test(pathname) && /^code=(?:[A-Za-z0-9]{4}|[A-Za-z0-9_-]{24})$/.test(query);
     const studio=/^\/app\/venue-cast\/(?:studio|hall|obs|public)$/.test(pathname) && new RegExp(`^event=${id}$`).test(query);
     const tablet=new RegExp(`^/wedstrijd/${id}$`).test(pathname) && query==='tablet=1';
@@ -25,6 +26,8 @@ export function safeNext(value: unknown): string {
   }
   if (/^\/(?:speler|spelen|evenementen|wedstrijdleiding|clubbeheer|historie)?$/.test(value)) return value;
   if (/^\/w\/[A-Za-z0-9]{4}$/.test(value)) return value;
+  if(['/app/feed/discover','/app/feed/friends','/app/speeldag','/app/baanfavorieten','/app/training-advies','/app/schermbeheer'].includes(value))return value;
+  if(new RegExp(`^/app/(?:competities/${id}|feed/(?:share|result|club-public)/${id})$`).test(value))return value;
   if(/^\/app\/(?:feed(?:\/(?:platform|club\/[a-f0-9-]{36}|league\/[a-f0-9-]{36}|tournament\/[a-f0-9-]{36}))?|locations|reservations)$/.test(value))return value;
   if (/^\/app(?:\/(?:vandaag|spelen|baan|training|vrienden|clubs|kamers|uitdagingen|competities|toernooien|evenementen|wedstrijdleiding|schermen|mail|integraties|profiel|historie))?$/.test(value)) return value;
   if (/^\/app(?:\/(?:play|practice|lobby|events|friends|community|mymatches|settings|dashboard|operations|manage|leagues|tournaments|hall|players|registrations|matches|rankings|statistics|camera|pools|knockout))?$/.test(value)) return value;

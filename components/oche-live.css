@@ -346,6 +346,8 @@
 .oche-cast-surface .board-screen-offline { position: absolute; max-width: calc(100% - 2rem); }
 .oche-cast-surface .pwa-install-dialog { max-height: 90%; }
 .oche-cast-surface .oche-options>div { max-width: 75cqw; }
+.oche-cast-surface[data-rotation="0"]{width:100vw;height:100vh;width:100dvw;height:100dvh;transform:translate(-50%,-50%) rotate(0deg)}
+.oche-cast-surface[data-rotation="270"]{transform:translate(-50%,-50%) rotate(270deg)}
 
 /* Historical values occupy one fixed line, so opting out cannot move the scorecard. */
 .oche-match-display .sprint-player-label{display:grid;gap:.65cqw;min-width:0;align-content:center}

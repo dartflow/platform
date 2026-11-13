@@ -49,14 +49,14 @@ async function lockedManagerBoard(client:PoolClient,actorId:string,boardId:strin
  const current=await board(client,boardId);await manager(client,actorId,current);return current;
 }
 function deviceView(row:Record<string,unknown>):BoardScreenDevice{
- return {id:String(row.id),name:String(row.name),createdAt:new Date(row.created_at as string).toISOString(),expiresAt:new Date(row.expires_at as string).toISOString(),paired:row.paired_at!==null,revoked:row.revoked_at!==null};
+ return {id:String(row.id),name:String(row.name),createdAt:new Date(row.created_at as string).toISOString(),expiresAt:new Date(row.expires_at as string).toISOString(),paired:row.paired_at!==null,revoked:row.revoked_at!==null,lastSeenAt:row.last_seen_at?new Date(row.last_seen_at as string).toISOString():null};
 }
 async function audit(client:PoolClient,actorId:string,row:BoardRow,action:string,deviceId:string):Promise<void>{
  await client.query('insert into dartflow_private.audit_events(actor_id,club_id,event_id,action,detail) values($1,$2,$3,$4,$5)',[actorId,row.club_id,row.event_id,action,JSON.stringify({boardId:row.id,deviceId})]);
 }
 export async function listBoardScreenDevices(actorId:string,boardId:string):Promise<{publicScreen:boolean;devices:BoardScreenDevice[]}>{
  const row=await board(database(),boardId);await manager(database(),actorId,row);
- const result=await database().query('select id,name,created_at,expires_at,paired_at,revoked_at from dartflow_private.board_screen_devices where board_id=$1 order by created_at desc limit 100',[row.id]);
+ const result=await database().query('select id,name,created_at,expires_at,paired_at,revoked_at,last_seen_at from dartflow_private.board_screen_devices where board_id=$1 order by created_at desc limit 100',[row.id]);
  return {publicScreen:row.public_screen,devices:result.rows.map(deviceView)};
 }
 export async function createBoardScreenDevice(actorId:string,boardId:string,name?:unknown):Promise<{device:BoardScreenDevice;pairing:{code:string;expiresAt:string;screenUrl:string}}>{
@@ -123,8 +123,24 @@ const displayStats=(stats:Stats[]):Stats[]=>stats.map(s=>({total:s.total,darts:s
 /** Fixed physical identity, fresh assignment every read, and only the Sprint display allowlist. */
 export async function getBoardScreen(boardId:string,deviceToken?:string):Promise<ClubBoardScreenView>{
  const client=await database().connect();
- try{await client.query('begin isolation level repeatable read read only');const result=await readBoardScreen(client,boardId,deviceToken);await client.query('commit');return result;}
+ try{await client.query('begin isolation level repeatable read read only');const result=await readBoardScreen(client,boardId,deviceToken);let paired=false;
+  if(deviceToken&&/^[A-Za-z0-9_-]{43}$/.test(deviceToken)){const device=(await client.query<{created_by:string}>("select created_by from dartflow_private.board_screen_devices where board_id=$1 and token_hash=$2 and paired_at is not null and revoked_at is null and expires_at>now()",[uuid(boardId),hash(deviceToken)])).rows[0];if(device)try{await manager(client,device.created_by,await board(client,boardId));paired=true;}catch(e){if(!(e instanceof DomainError&&e.status===403))throw e;}}
+  result.screen={paired,rotation:(await client.query<{rotation:0|90|270}>('select rotation from dartflow_private.board_screen_preferences where board_id=$1',[uuid(boardId)])).rows[0]?.rotation??90};await client.query('commit');return result;}
  catch(error){await client.query('rollback');throw error;}finally{client.release();}
+}
+/** A public URL alone cannot claim that a particular paired device is online. */
+export async function heartbeatBoardScreen(boardId:string,token?:string):Promise<{paired:boolean}>{
+ if(!token||!/^[A-Za-z0-9_-]{43}$/.test(token))return{paired:false};
+ return transaction(async client=>{
+  const row=await board(client,boardId),device=(await client.query<{id:string;created_by:string}>(`select id,created_by from dartflow_private.board_screen_devices where board_id=$1 and event_id=$2 and token_hash=$3 and paired_at is not null and revoked_at is null and expires_at>now() for update`,[row.id,row.event_id,hash(token)])).rows[0];
+  if(!device)return{paired:false};
+  try{await manager(client,device.created_by,row);}catch(e){if(e instanceof DomainError&&e.status===403)return{paired:false};throw e;}
+  await client.query("update dartflow_private.board_screen_devices set last_seen_at=clock_timestamp() where id=$1 and (last_seen_at is null or last_seen_at<clock_timestamp()-interval '10 seconds')",[device.id]);return{paired:true};
+ });
+}
+export async function setBoardScreenPreferences(actor:string,boardId:string,input:Record<string,unknown>):Promise<{ok:true}>{
+ if(![0,90,270].includes(input.rotation as number))throw new DomainError('invalid_rotation','Kies 0°, 90° of 270°.');
+ return transaction(async client=>{const row=await lockedManagerBoard(client,actor,boardId);await client.query('insert into dartflow_private.board_screen_preferences(board_id,rotation,updated_by) values($1,$2,$3) on conflict(board_id) do update set rotation=$2,updated_by=$3,updated_at=now()',[row.id,input.rotation,actor]);await audit(client,actor,row,'board-screen.rotation',row.id);return{ok:true};});
 }
 async function readBoardScreen(client:PoolClient,boardId:string,deviceToken?:string):Promise<ClubBoardScreenView>{
  const row=await board(client,boardId);await authorizeScreen(row,deviceToken,client);

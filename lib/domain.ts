@@ -24,7 +24,7 @@ export function checkout(score: number): string | null {
 export function validateSettings(input: Partial<Settings> = {}): Settings {
   if (!input || typeof input !== 'object' || Array.isArray(input)) fail('Ongeldige partijinstellingen.');
   const value: Settings = { startScore: input.startScore ?? 501, bestOfLegs: input.bestOfLegs ?? 3, bestOfSets: input.bestOfSets ?? 1, ...(input.legLimit !== undefined ? { legLimit: input.legLimit } : {}) };
-  if (![301, 501, 701].includes(value.startScore) || ![1, 3, 5, 7, 9].includes(value.bestOfLegs) || ![1, 3, 5].includes(value.bestOfSets) || (value.legLimit !== undefined && (![8, 10].includes(value.legLimit) || value.bestOfSets !== 1))) fail('Kies 301, 501 of 701 en een geldige best-of. Vaste acht of tien legs ondersteunt één set.');
+  if (![301, 501, 701].includes(value.startScore) || ![1, 3, 5, 7, 9].includes(value.bestOfLegs) || ![1, 3, 5].includes(value.bestOfSets) || (value.legLimit !== undefined && (![6, 8, 10].includes(value.legLimit) || value.bestOfSets !== 1))) fail('Kies 301, 501 of 701 en een geldige best-of. Vaste zes, acht of tien legs ondersteunt één set.');
   return value;
 }
 export function newGame(id: string, players: string[], settings: Settings, starter = 0): Game {

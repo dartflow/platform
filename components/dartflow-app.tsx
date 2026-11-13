@@ -9,6 +9,10 @@ import {
   type ReactNode,
 } from "react";
 import PlatformWorkspace from "./platform-workspace";
+import SeasonWorkspace from './season-workspace';
+import {FeedWorkspace} from './feed-workspace';
+import PlayerExperienceWorkspace from './player-experience';
+import type {PlayerExperience} from '@/lib/player-experience-types';
 import ScoreConsole from "./score-console";
 import {InstallDartflow} from "./pwa-install";
 import SprintDisplay from "./sprint-display";
@@ -292,7 +296,7 @@ function latestRevision<T>(previous: T | null, incoming: T): T {
   }
   return incoming;
 }
-function usePolled<T>(url: string | null) {
+function usePolled<T>(url: string | null,pollMs=2000) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState("");
   const [updated, setUpdated] = useState<number>(0);
@@ -348,7 +352,7 @@ function usePolled<T>(url: string | null) {
       wake,
       url?.startsWith("/api/matches/") || url?.startsWith("/api/screen/")
         ? 700
-        : 2000,
+        : pollMs,
     );
     window.addEventListener("online", wake);
     window.addEventListener("offline", wake);
@@ -362,7 +366,7 @@ function usePolled<T>(url: string | null) {
       window.removeEventListener("focus", wake);
       document.removeEventListener("visibilitychange", wake);
     };
-  }, [refresh, url]);
+  }, [refresh, url,pollMs]);
   return {
     data,
     error,
@@ -453,6 +457,7 @@ export default function DartflowApp() {
       ? `/api/overview${clubId ? `?clubId=${encodeURIComponent(clubId)}` : ""}`
       : null,
   );
+  const personal=usePolled<PlayerExperience>(session.data?.user&&path.startsWith('/app/feed')?'/api/player-experience':null,30000);
   if (!path)
     return (
       <div className="app-loading">
@@ -484,6 +489,7 @@ export default function DartflowApp() {
         <p>Je speelomgeving openen…</p>
       </div>
     );
+  if(!session.data?.user&&/^\/app\/feed\/result\/[^/]+\/?$/.test(path))return <div className="public-feed-result"><a href="/app" className="brand"><img src="/assets/dartflow-logo.svg" alt="DartFlow" width={180}/></a><FeedWorkspace path={path}/></div>;
   if (!session.data?.user)
     return (
       <div className="auth-page">
@@ -540,10 +546,14 @@ export default function DartflowApp() {
     { href: "/app", label: "Vandaag", icon: "home" },
     { href: "/app/play", label: "Spelen", icon: "target" },
     { href: "/app/events", label: "Evenementen", icon: "calendar" },
+    { href: "/app/competities", label: "Competities", icon: "club" },
     { href: "/app/friends", label: "Vrienden", icon: "users" },
     { href: "/app/feed", label: "My Feed", icon: "screen" },
     { href: "/app/community", label: "Kamers", icon: "users" },
     { href: "/app/locations", label: "Banen & locaties", icon: "target" },
+    { href: "/app/baanfavorieten", label: "Favoriete banen", icon: "target" },
+    { href: "/app/training-advies", label: "Training op maat", icon: "bolt" },
+    { href: "/app/speeldag", label: "Mijn speeldag", icon: "calendar" },
     { href: "/app/clubs", label: "Verenigingen", icon: "club" },
     { href: "/app/mymatches", label: "Mijn wedstrijden", icon: "history" },
     { href: "/app/statistics", label: "Mijn profiel", icon: "users" },
@@ -555,6 +565,8 @@ export default function DartflowApp() {
     { href: "/app/events", label: "Evenementen", icon: "calendar" },
     { href: "/app/clubs", label: "Clubbeheer", icon: "club" },
     { href: "/app/reservations", label: "Baanreserveringen", icon: "calendar" },
+    { href: "/app/competities", label: "Competities", icon: "club" },
+    { href: "/app/schermbeheer", label: "Schermbeheer", icon: "screen" },
     { href: "/app/venue-cast/studio", label: "Schermstudio", icon: "screen" },
     { href: "/app/mail", label: "Mailbeheer", icon: "users" },
     ...(session.data.canManagePlatform
@@ -759,7 +771,7 @@ export default function DartflowApp() {
             <LegacyEventsPage data={data} refresh={overview.refresh} />
           ) : path === "/historie" ? (
             <LegacyHistoryPage data={scorerOverview} />
-          ) : platformPath === "/app/baan" ? (
+          ) : platformPath.startsWith('/app/feed') ? <FeedWorkspace path={platformPath} userId={user.id} urgentActions={personal.data?.actions??[]}/> : /^\/app\/competities(?:\/|$)/.test(platformPath)?<SeasonWorkspace id={platformPath.split('/')[3]} user={user}/> : /^\/app\/(?:leagues|competitions)\/[^/]+$/.test(platformPath)?<SeasonCompatibility id={platformPath.split('/')[3]} user={user}><PlatformWorkspace path={platformPath} user={user} overview={data} clubId={clubId}/></SeasonCompatibility> : ['/app/speeldag','/app/baanfavorieten','/app/training-advies','/app/schermbeheer'].includes(platformPath)?<PlayerExperienceWorkspace path={platformPath}/> : platformPath === "/app/baan" ? (
             data ? (
               <>
                 <Heading
@@ -799,6 +811,8 @@ export default function DartflowApp() {
               <div className="panel loading-panel">Banen ophalen…</div>
             )
           ) : (
+            <>
+            {platformPath==='/app'&&<PlayerExperienceWorkspace compact/>}
             <PlatformWorkspace
               key={platformPath}
               path={platformPath}
@@ -806,6 +820,7 @@ export default function DartflowApp() {
               overview={data}
               clubId={clubId}
             />
+            </>
           )}
           <footer className="app-footer">
             <span>© {new Date().getFullYear()} DartFlow · DG Webservices</span>
@@ -835,6 +850,14 @@ export default function DartflowApp() {
       </nav>
     </div>
   );
+}
+
+/** Existing league/statistics links keep resolving the same stable competition identity. */
+function SeasonCompatibility({id,user,children}:{id:string;user:Profile;children:ReactNode}){
+ const probe=usePolled<{season?:{id:string}}>(`/api/seasons/${encodeURIComponent(id)}`);
+ if(probe.data?.season?.id)return <SeasonWorkspace id={id} user={user}/>;
+ if(probe.data||probe.error)return children;
+ return <p className="panel">Competitie openen…</p>;
 }
 
 function Heading({
@@ -1544,7 +1567,7 @@ function BoardPage({
                 ? data.club ? "Kies je spelvorm en begin op dit bord met je eigen account. Je hoeft je niet voor een evenement in te schrijven." : "Kies je spelvorm en begin op dit bord. Een ingeplande of gereserveerde baan blijft bij de wedstrijdleiding."
                 : "De wedstrijdleiding koppelt de volgende partij aan deze baan. Deze vaste QR blijft naar dezelfde baan wijzen."}
         </Empty>
-        {data.reservation&&<section className="notice"><h2>{data.reservation.label}</h2><p>{new Date(data.reservation.startsAt).toLocaleString('nl-NL')} – {new Date(data.reservation.endsAt).toLocaleString('nl-NL')}</p>{data.reservation.canPrepare&&data.reservation.fixtureId?<button className="button gold full" disabled={busy} onClick={()=>void boardAction({type:'reservation.fixture.start',reservationId:data.reservation!.id,boardId,fixtureId:data.reservation!.fixtureId})}>Mijn ingeplande partij klaarmaken</button>:<p>Wedstrijdleiding of de eerste ingeroosterde speler roept de volgende partij op.</p>}</section>}
+        {data.reservation&&<section className="notice"><h2>{data.reservation.label}</h2><p>{new Date(data.reservation.startsAt).toLocaleString('nl-NL')} – {new Date(data.reservation.endsAt).toLocaleString('nl-NL')}</p>{data.reservation.seasonId?<a className="button gold full" href={`/app/competities/${data.reservation.seasonId}${data.reservation.seasonFixtureId?`?fixture=${data.reservation.seasonFixtureId}`:''}`}>Open mijn competitieplanning ↗</a>:data.reservation.canPrepare&&data.reservation.fixtureId?<button className="button gold full" disabled={busy} onClick={()=>void boardAction({type:'reservation.fixture.start',reservationId:data.reservation!.id,boardId,fixtureId:data.reservation!.fixtureId})}>Mijn ingeplande partij klaarmaken</button>:<p>Wedstrijdleiding of de eerste ingeroosterde speler roept de volgende partij op.</p>}</section>}
         {!data.board.blocked && data.pendingLobbyId ? (
           <div className="board-start">
             <h2>Een speler wacht aan dit bord</h2>
@@ -2084,6 +2107,7 @@ function MatchPage({
                   Bekijk historie
                   <Icon name="arrow" />
                 </a>
+                <a className="button ghost" href={`/app/feed/share/${match.id}`}>Deel uitslag of speel revanche ↗</a>
               </div>
             ) : match.status === "result" || match.status === "disputed" ? (
               <div className="result-state">

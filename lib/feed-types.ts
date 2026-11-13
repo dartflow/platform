@@ -1,0 +1,10 @@
+import type {Settings} from './types';
+export type FeedKind='platform'|'friends'|'club'|'club-public'|'league'|'tournament';
+export type FeedCategory='post'|'result'|'event'|'update'|'achievement';
+export type FeedChannel={key:string;kind:FeedKind;id:string;name:string;visibility:'public'|'members'|'friends';following:boolean;mode:'all'|'important'|'muted';canPost:boolean;canReact:boolean;canManage:boolean;membersCanPost:boolean;reactions:boolean;maxPinDays:number;href:string};
+export type FeedResult={id:string;revision:number;title:string;players:{name:string}[];score:number[];legs:number[];settings:Settings|null;stats:{average:number|null;highestFinish:number|null;oneEighties:number|null}[];confirmedAt:string;href:string|null;publicAllowed:boolean;canShare:boolean;canRematch:boolean;shareId?:string;sharedByMe?:boolean;audience?:string;allowedChannels?:string[];clubShareAllowed?:boolean};
+export type FeedItem={id:string;channel:string;category:FeedCategory;title:string;body:string;authorName:string;createdAt:string;important:boolean;pinUntil:string|null;likes:number;liked:boolean;replyCount:number;canDelete:boolean;canManage:boolean;reactions:boolean;href:string|null;result?:FeedResult};
+export type FeedReply={id:string;authorName:string;body:string;createdAt:string};
+export type FeedState={channels:FeedChannel[];posts:FeedItem[];pins:FeedItem[];nextCursor:string|null;upcoming:{id:string;name:string;at:string;href:string}[]};
+export type FeedAction={type:string;[key:string]:unknown};
+export type FeedCommand={requestId:string;action:FeedAction};

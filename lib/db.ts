@@ -9,6 +9,9 @@ import {hasConfirmedUsername} from './display-name';
 import {containsPrivatePinField} from './private-pin-fields';
 import {getPlayerPinStatus,playerPinConfigured} from './player-pin';
 import {captureMatchStatistics} from './player-statistics-db';
+import {captureSeasonMatch,assertSeasonMatchCommand,seasonEventAccess} from './seasons';
+import {captureFeedResult} from './feed';
+import {finalResultSql} from './result-visibility';
 import {assertPhysicalBoardEvent,locationHomeEventAccess,locationManager,physicalBoard,playerReservationContext} from './location-access';
 import {recordMatchScoreEvent,readBoardScoreEvents} from './score-events';
 import {acceptedMatchBoardActivity,guardMatchBoardActivity,readSourceBoardActivity,readBoardActivity,publicBoardActivity} from './board-activity';
@@ -48,6 +51,7 @@ async function transaction<T>(run: (client: PoolClient) => Promise<T>): Promise<
   finally { client.release(); }
 }
 export async function eventAccess(client: Pick<PoolClient,'query'>, actorId: string, eventId: string) {
+  const season=await seasonEventAccess(client,actorId,eventId);if(season)return season;
   const physical=await locationHomeEventAccess(client,actorId,eventId);if(physical)return physical;
   const board=await clubBoardEventAccess(client,actorId,eventId);
   if(board){
@@ -117,8 +121,8 @@ export async function getOverview(actorId: string, clubId?: string): Promise<Ove
     where e.club_id=$1 or r.event_id is not null order by b.name,b.id`, [currentClub.id]);
   const boards=[];for(const board of boardRows){try{await eventAccess(database(),actorId,board.eventId);boards.push(board);}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}
   const { rows: participants } = await database().query('select x.id,x.event_id as "eventId",x.user_id as "playerId",p.name,x.status,x.checked_in as "checkedIn" from dartflow_private.entries x join dartflow_private.profile_labels p on p.id=x.user_id join dartflow_private.events e on e.id=x.event_id where e.club_id=$1 order by x.created_at,x.id', [currentClub.id]);
-  const { rows: historyRows } = await database().query('select r.snapshot from dartflow_private.match_results r join dartflow_private.matches m on m.id=r.match_id where m.club_id=$1 and exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$2) order by r.created_at desc', [currentClub.id, actorId]);
-  const { rows: standings } = await database().query('select s.user_id as "playerId",p.name,s.played,s.won,s.drawn,s.points from dartflow_private.standings s join dartflow_private.profile_labels p on p.id=s.user_id join dartflow_private.events e on e.id=s.event_id where e.club_id=$1 order by s.points desc,p.name', [currentClub.id]);
+  const { rows: historyRows } = await database().query(`select r.snapshot from dartflow_private.match_results r join dartflow_private.matches m on m.id=r.match_id where m.club_id=$1 and ${finalResultSql} and exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$2) order by r.created_at desc`, [currentClub.id, actorId]);
+  const { rows: standings } = await database().query("select s.user_id as \"playerId\",p.name,s.played,s.won,s.drawn,s.points from dartflow_private.standings s join dartflow_private.profile_labels p on p.id=s.user_id join dartflow_private.events e on e.id=s.event_id where e.club_id=$1 and not exists(select 1 from dartflow_private.platform_entities managed where managed.state->>'eventId'=e.id::text and managed.state->>'seasonManaged'='true') order by s.points desc,p.name", [currentClub.id]);
   return { profile, clubs, currentClub, events, matches, boards, participants, history: historyRows.map(r => r.snapshot), standings, permissions: { canManage: events.some(e => e.canManage) } };
 }
 export async function publishResult(client: PoolClient, state: MatchState) {
@@ -127,7 +131,7 @@ export async function publishResult(client: PoolClient, state: MatchState) {
   const snapshot: ResultView = { matchId: state.id, players: state.players, legs: view.legs, sets: view.sets, winnerId: state.winnerId, revision: state.resultRevision };
   const result = await client.query('insert into dartflow_private.match_results(match_id,event_id,result_revision,snapshot) values($1,$2,$3,$4) on conflict(match_id) do nothing returning match_id', [state.id, state.eventId, state.resultRevision, JSON.stringify(snapshot)]);
   if (!result.rowCount) return;
-  if((await client.query("select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind='lobby'",[state.id])).rowCount)return;
+  if((await client.query("select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and(e.kind='lobby' or e.state->>'seasonManaged'='true')",[state.id])).rowCount)return;
   // The unique match result is the processing key; standings update in this same transaction.
   for (const player of state.players) {
     const won = state.winnerId === player.id ? 1 : 0, drawn = state.winnerId === null ? 1 : 0;
@@ -148,6 +152,7 @@ export async function executeMatchCommand(actorId: string, command: MatchCommand
     if (!rows.length) throw new DomainError('not_found', 'Deze partij bestaat niet.', 404);
     const source: MatchState = rows[0].state;
     const access = await matchAccess(client, actorId, source);
+    await assertSeasonMatchCommand(client,actorId,source,command.action);
     const activity=source.status==='interrupted'&&command.action.type==='call'?null:await guardMatchBoardActivity(client,source);
     // Commit the release/tombstone before reporting a rejected late score to the caller.
     if(activity&&['released','interrupted'].includes(activity.phase))return {boardActivityExpired:true};
@@ -189,6 +194,8 @@ export async function executeMatchCommand(actorId: string, command: MatchCommand
       if(confirmed.length)await client.query('insert into dartflow_private.match_confirmations(match_id,user_id,result_revision) select $1,unnest($2::uuid[]),$3',[next.id,confirmed,next.resultRevision]);
     }
     await publishResult(client, next);
+    await captureSeasonMatch(client,source,next);
+    await captureFeedResult(client,next);
     await audit(client, actorId, next, command.action.type, { requestId: command.requestId, revision: next.revision, action: command.action }, next.id);
     await enqueueMatchTransition(client,actorId,source,next,command);
     const boardActivity=await readSourceBoardActivity(client,next.id,actorId);
@@ -208,6 +215,7 @@ export async function executeEventCommand(actorId: string, eventId: string, acti
     if(action.type==='register'||action.type==='check-in')await requireScoreboardName(client,assertUuid(action.playerId??actorId));
     const beforeEntries=await client.query<{id:string;user_id:string;status:'registered'|'waitlisted'|'withdrawn'}>('select id,user_id,status from dartflow_private.entries where event_id=$1',[eventId]);
     if (action.type === 'plan') {
+      if((await client.query("select 1 from dartflow_private.competition_seasons where state->>'eventId'=$1",[eventId])).rowCount)throw new DomainError('season_assignment_required','Plan deze officiële partij via de competitie.',409);
       if (!event.canManage) throw new DomainError('forbidden', 'Alleen de wedstrijdleiding kan partijen plannen.', 403);
       if (!Array.isArray(action.playerIds) || action.playerIds.length !== 2 || action.playerIds[0] === action.playerIds[1]) throw new DomainError('invalid_players', 'Kies twee verschillende deelnemers.');
       const { rows: players } = await client.query('select p.id,p.name from dartflow_private.profile_labels p join dartflow_private.entries x on x.user_id=p.id where x.event_id=$1 and p.id=any($2::uuid[]) and x.status=$3', [eventId, action.playerIds.map(assertUuid), 'registered']);
@@ -297,8 +305,8 @@ export async function consumeRateLimit(key: string, limit: number, windowSeconds
 }
 
 export async function checkDatabaseReady(): Promise<{ ready: boolean; schemaVersion: number }> {
-  const { rows } = await database().query("select current_user as role,(select max(version) from dartflow_private.schema_migrations) as version,(select version from dartflow_private.feature_versions where name='v15') as feature_version,(select version from dartflow_private.feature_versions where name='club_boards') as club_boards_version,(select version from dartflow_private.feature_versions where name='short_invitations') as short_invitations_version,(select version from dartflow_private.feature_versions where name='display_names') as display_names_version,(select version from dartflow_private.feature_versions where name='per_player_scoring') as per_player_scoring_version,(select version from dartflow_private.feature_versions where name='board_screen_devices') as board_screen_devices_version,(select version from dartflow_private.feature_versions where name='v17_clubs') as v17_clubs_version,(select version from dartflow_private.feature_versions where name='physical_locations') as physical_locations_version,(select version from dartflow_private.feature_versions where name='v17_community') as v17_community_version,(select version from dartflow_private.feature_versions where name='v17_score_events') as v17_score_events_version,(select version from dartflow_private.feature_versions where name='board_activity') as board_activity_version,(select version from dartflow_private.feature_versions where name='unique_usernames') as unique_usernames_version,(select version from dartflow_private.feature_versions where name='player_pins') as player_pins_version,(select version from dartflow_private.feature_versions where name='player_statistics') as player_statistics_version,(select version from dartflow_private.feature_versions where name='player_profile_identity') as player_profile_identity_version");
-  return { ready: rows[0].role === 'dartflow_app' && rows[0].version === 1 && rows[0].feature_version === 15 && rows[0].club_boards_version === 1 && rows[0].short_invitations_version===1 && rows[0].display_names_version===1 && rows[0].per_player_scoring_version===1 && rows[0].board_screen_devices_version===1&&rows[0].v17_clubs_version===1&&rows[0].physical_locations_version===1&&rows[0].v17_community_version===1&&rows[0].v17_score_events_version===1&&rows[0].board_activity_version===1&&rows[0].unique_usernames_version===1&&rows[0].player_pins_version===1&&rows[0].player_statistics_version===1&&rows[0].player_profile_identity_version===1&&playerPinConfigured(), schemaVersion: rows[0].version ?? 0 };
+  const { rows } = await database().query("select current_user as role,(select max(version) from dartflow_private.schema_migrations) as version,(select version from dartflow_private.feature_versions where name='v15') as feature_version,(select version from dartflow_private.feature_versions where name='club_boards') as club_boards_version,(select version from dartflow_private.feature_versions where name='short_invitations') as short_invitations_version,(select version from dartflow_private.feature_versions where name='display_names') as display_names_version,(select version from dartflow_private.feature_versions where name='per_player_scoring') as per_player_scoring_version,(select version from dartflow_private.feature_versions where name='board_screen_devices') as board_screen_devices_version,(select version from dartflow_private.feature_versions where name='v17_clubs') as v17_clubs_version,(select version from dartflow_private.feature_versions where name='physical_locations') as physical_locations_version,(select version from dartflow_private.feature_versions where name='v17_community') as v17_community_version,(select version from dartflow_private.feature_versions where name='v17_score_events') as v17_score_events_version,(select version from dartflow_private.feature_versions where name='board_activity') as board_activity_version,(select version from dartflow_private.feature_versions where name='unique_usernames') as unique_usernames_version,(select version from dartflow_private.feature_versions where name='player_pins') as player_pins_version,(select version from dartflow_private.feature_versions where name='player_statistics') as player_statistics_version,(select version from dartflow_private.feature_versions where name='player_profile_identity') as player_profile_identity_version,(select version from dartflow_private.feature_versions where name='competition_seasons') as competition_seasons_version,(select version from dartflow_private.feature_versions where name='feed_channels') as feed_channels_version,(select version from dartflow_private.feature_versions where name='player_experience') as player_experience_version");
+  return { ready: rows[0].role === 'dartflow_app' && rows[0].version === 1 && rows[0].feature_version === 15 && rows[0].club_boards_version === 1 && rows[0].short_invitations_version===1 && rows[0].display_names_version===1 && rows[0].per_player_scoring_version===1 && rows[0].board_screen_devices_version===1&&rows[0].v17_clubs_version===1&&rows[0].physical_locations_version===1&&rows[0].v17_community_version===1&&rows[0].v17_score_events_version===1&&rows[0].board_activity_version===1&&rows[0].unique_usernames_version===1&&rows[0].player_pins_version===1&&rows[0].player_statistics_version===1&&rows[0].player_profile_identity_version===1&&rows[0].competition_seasons_version===1&&rows[0].feed_channels_version===1&&rows[0].player_experience_version===1&&playerPinConfigured(), schemaVersion: rows[0].version ?? 0 };
 }
 
 /** A fixed board UUID resolves its actual event, independently of UI club selection. */

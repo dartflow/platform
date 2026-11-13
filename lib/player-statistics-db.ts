@@ -1,5 +1,6 @@
 import type {PoolClient} from 'pg';
 import {database} from './db';
+import {finalResultSql} from './result-visibility';
 import {DomainError} from './domain';
 import type {Game,MatchState,Profile} from './types';
 import type {Fixture} from './platform-types';
@@ -17,7 +18,7 @@ export async function readPlayerStatisticsMatches(client:Client,actor:string):Pr
   from dartflow_private.match_players participant join dartflow_private.matches m on m.id=participant.match_id join dartflow_private.match_results r on r.match_id=m.id
   left join lateral(select l.entity_id,l.fixture_id from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and e.kind in('league','tournament') order by l.entity_id limit 1) link on true
   left join dartflow_private.platform_entities competition on competition.id=link.entity_id
-  where participant.user_id=$1 order by r.created_at desc,m.id desc`,[uuid(actor)]);
+  where participant.user_id=$1 and (${finalResultSql}) order by r.created_at desc,m.id desc`,[uuid(actor)]);
  const current=await profiles(client,[...new Set(rows.flatMap(r=>r.state.players.map(p=>p.id)))]);
  return rows.map(row=>{const fixture=row.competition_state?.fixtures?.find(f=>f.id===row.fixture_id);return{id:row.id,completedAt:stamp(row.completed_at),state:currentPlayerProfiles(row.state,current),profiles:current,...(row.competition_id&&row.competition_kind?{competition:{id:row.competition_id,name:row.competition_name??'Evenement',kind:row.competition_kind,...(fixture?{phase:fixture.phase,round:fixture.round}:{})}}:{})};});
 }

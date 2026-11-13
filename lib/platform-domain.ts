@@ -98,14 +98,16 @@ export function tournamentFixtures(players: string[], format: string, requestedP
   return fixtures;
 }
 export function newTraining(id: string, actor: string, input: Record<string, unknown>): PlatformState {
+  if(input.focus!==undefined&&!['first9','checkout'].includes(String(input.focus)))throw new DomainError('invalid_focus','Kies First 9 of uitgooien.');
   const mode = input.mode === 'doubles' ? 'around' : input.mode === 'challenge' ? '170' : input.mode;
+  if(input.focus==='first9'&&(mode!=='solo'||Number(input.startScore??501)!==501)||input.focus==='checkout'&&mode!=='170')throw new DomainError('invalid_focus','Deze instellingen horen niet bij de gekozen oefening.');
   if (!['solo', 'bot', 'around', '170'].includes(String(mode))) throw new DomainError('invalid_mode', 'Kies solo, Dartbot, doubles of de 170-challenge.');
   const settings = validateSettings({ startScore: Number(input.startScore ?? 501) as 301 | 501 | 701, bestOfLegs: mode === 'bot' ? Number(input.bestOfLegs ?? 3) : 1 });
   const game = newGame(id, [actor, 'Dartbot'], settings);
   if (mode === '170') { game.startScore = 170; game.remaining = [170, 170]; }
   const botAverage = Number(input.botAverage ?? 50);
   if (!Number.isInteger(botAverage) || botAverage < 20 || botAverage > 120) throw new DomainError('invalid_bot', 'Kies een Dartbot-gemiddelde tussen 20 en 120.');
-  return { name: mode === 'bot' ? 'Dartbot' : mode === 'around' ? 'Doubles around the board' : mode === '170' ? '170-challenge' : `Solo ${settings.startScore}`, mode: mode as PlatformState['mode'], completed: false, game, rounds: [], undo: [], botAverage };
+  return { name: input.focus==='first9'?'First 9':mode === 'bot' ? 'Dartbot' : mode === 'around' ? 'Doubles around the board' : mode === '170' ? '170-challenge' : `Solo ${settings.startScore}`, mode: mode as PlatformState['mode'], completed: false, game, rounds: [], undo: [], botAverage,...(input.focus?{focus:input.focus}:{}) };
 }
 function botVisit(game: Game, average: number): Game {
   const left = game.remaining[game.turn];
@@ -146,5 +148,6 @@ export function trainingAction(source: PlatformState, action: Record<string, unk
     while (state.game.status === 'live' && state.game.turn === 1 && guard++ < 2) state.game = botVisit(state.game, state.botAverage ?? 50);
   } else state.game.turn = 0;
   state.completed = state.game.status === 'finished' || (state.mode === '170' && state.game.stats[0].darts >= 9);
+  if(state.focus==='first9'&&state.game.stats[0].darts>=9)state.completed=true;
   return state;
 }

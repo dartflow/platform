@@ -1,3 +1,4 @@
+import {cleanupFeedFixtures} from './helpers/cleanup-v17';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
@@ -193,6 +194,7 @@ test('locations, personal home boards and UTC event reservations have independen
   try{
   await owner.query('rollback');
   await owner.query('begin');
+  await cleanupFeedFixtures(owner,people);
   const locations=(await owner.query('select id from dartflow_private.locations where owner_id=any($1::uuid[])',[people])).rows.map(row=>row.id);
   const physicalEvents=(await owner.query('select home_event_id from dartflow_private.location_boards where location_id=any($1::uuid[])',[locations])).rows.map(row=>row.home_event_id);
   const internalClubs=(await owner.query('select distinct club_id from dartflow_private.events where id=any($1::uuid[])',[physicalEvents])).rows.map(row=>row.club_id);

@@ -1,0 +1,5 @@
+import type {SeasonPlayerFixture} from './seasons-types';
+export type BoardGamePreference={mode:'solo'|'local'|'remote';startScore:301|501|701;bestOfLegs:1|3|5|7|9};
+export type ExperienceBoard={id:string;name:string;locationName:string;favorite:boolean;canManage:boolean;canStart:boolean;occupied:boolean;playUrl:string;screenUrl:string;game:BoardGamePreference;rotation:0|90|270;devices:{id:string;name:string;paired:boolean;revoked:boolean;expiresAt:string;lastSeenAt:string|null;online:boolean}[];activeMatchId:string|null};
+export type PersonalAction={id:string;label:string;href:string;detail?:string};
+export type PlayerExperience={serverNow:number;weeklyGoal:number;fixtures:SeasonPlayerFixture[];actions:PersonalAction[];boards:ExperienceBoard[];resume:{id:string;players:string[];remaining:number[];writer:string;lastVisit:string|null;revision:number;href:string;actionLabel?:string}[];training:{thisWeek:number;sessions:{id:string;focus:'first9'|'checkout';completedAt:string;value:number;href:string}[]}};

@@ -45,7 +45,7 @@ export type EventAction = { type: 'register' | 'withdraw' | 'check-in'; playerId
 export type EventView = { id: string; clubId: string; name: string; date: string; capacity: number; canManage: boolean };
 export type EntryView = { id: string; eventId: string; playerId: string; name: string; status: 'registered' | 'waitlisted' | 'withdrawn'; checkedIn: boolean };
 export type BoardView = { id: string; eventId: string; name: string; blocked: boolean; matchId: string | null };
-export type BoardScreenDevice = {id:string;name:string;createdAt:string;expiresAt:string;paired:boolean;revoked:boolean};
+export type BoardScreenDevice = {id:string;name:string;createdAt:string;expiresAt:string;paired:boolean;revoked:boolean;lastSeenAt?:string|null};
 export type ResultView = { matchId: string; players: Profile[]; legs: number[]; sets: number[]; winnerId: string | null; revision: number };
 export type Overview = {
   profile: Profile; clubs: Club[]; currentClub: Club | null; events: EventView[];

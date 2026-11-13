@@ -19,12 +19,18 @@ import {getCommunityFeed,getCommunityChat} from '@/lib/community';
 import {getLocationOverview} from '@/lib/locations';
 import {requiresDisplayName} from '@/lib/display-name';
 import {invitationAttemptRequired} from '@/lib/invitations';
-import {BOARD_SCREEN_COOKIE,boardScreenCookiePath,getBoardScreen,listBoardScreenDevices,createBoardScreenDevice,revokeBoardScreenDevice,pairBoardScreenDevice} from '@/lib/board-screens';
+import {BOARD_SCREEN_COOKIE,boardScreenCookiePath,getBoardScreen,listBoardScreenDevices,createBoardScreenDevice,revokeBoardScreenDevice,pairBoardScreenDevice,heartbeatBoardScreen,setBoardScreenPreferences} from '@/lib/board-screens';
 import {extendBoardActivity,processBoardActivityBatch,publicBoardActivity} from '@/lib/board-activity';
 import {completePlayerProfile} from '@/lib/profile-setup';
 import {updatePlayerPin} from '@/lib/player-pin';
 import {addLocalLobbyPlayer} from '@/lib/player-pin-lobby';
 import {getPlayerStatistics} from '@/lib/player-statistics-db';
+import {getPlayerExperience,updatePlayerExperience} from '@/lib/player-experience';
+import {getSeasons,getSeason,executeSeasonCommand,exportSeason} from '@/lib/seasons';
+import type {SeasonCommand} from '@/lib/seasons-types';
+import {acceptSeasonPlayerPin} from '@/lib/season-pin';
+import {seasonCalendar} from '@/lib/season-calendar';
+import {getFeedState,getFeedResult,executeFeedAction,getFeedReplies} from '@/lib/feed';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -153,6 +159,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     }
     // A fixed display always uses its independent device credential, never a player session.
     if(method==='GET' && parts.length===2)return json(await getBoardScreen(parts[1],request.cookies.get(BOARD_SCREEN_COOKIE)?.value));
+    if(method==='POST'&&parts.length===3&&parts[2]==='heartbeat')return json(await heartbeatBoardScreen(parts[1],request.cookies.get(BOARD_SCREEN_COOKIE)?.value));
     if(method==='POST'&&parts.length===3&&parts[2]==='continue'){
       const data=await body(request);
       if(!uuid(data.sessionId)||!uuid(data.warningEpoch)||!uuid(data.requestId))throw new DomainError('invalid_command','Ververs de baanstatus en probeer opnieuw.');
@@ -170,7 +177,19 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   }
   if (method==='GET' && parts[0]==='club-boards' && uuid(parts[1]) && parts[2]==='screen' && parts.length===3) return json(await getClubBoardScreen(parts[1]));
   if (method==='GET' && parts[0]==='platform' && parts[1]==='cast' && parts.length===3) return json(await getPlatformCast(parts[2]));
+  if(method==='GET'&&parts[0]==='feed'&&parts[1]==='result'&&parts.length===3)return json(await getFeedResult(await actorId(request),parts[2]));
   const actor=await requireActor(request);
+  if(method==='GET'&&path==='feed'){const q=request.nextUrl.searchParams;return json(await getFeedState(actor.id,{mode:q.get('mode')==='discover'?'discover':'mine',filter:q.get('filter')??'all',channel:q.get('channel')??undefined,cursor:q.get('cursor')??undefined}));}
+  if(method==='POST'&&path==='feed/actions')return json(await executeFeedAction(actor.id,await body(request,16384)));
+  if(method==='GET'&&parts[0]==='feed'&&parts[1]==='replies'&&parts.length===3)return json(await getFeedReplies(actor.id,parts[2],request.nextUrl.searchParams.get('cursor')??undefined));
+  if(method==='GET'&&path==='player-experience')return json(await getPlayerExperience(actor.id));
+  if(method==='POST'&&path==='player-experience')return json(await updatePlayerExperience(actor.id,await body(request)));
+  if(method==='GET'&&path==='seasons')return json(await getSeasons(actor.id));
+  if(method==='POST'&&['seasons','seasons/actions'].includes(path))return json(await executeSeasonCommand(actor.id,await body(request,196608) as SeasonCommand));
+  if(method==='POST'&&path==='seasons/player-pin'){const input=await body(request);const address=(request.headers.get('x-forwarded-for')||'loopback').split(',').at(-1)!.trim();return json(await acceptSeasonPlayerPin(actor.id,input,digest(address)));}
+  if(method==='GET'&&parts[0]==='seasons'&&uuid(parts[1])&&parts.length===2)return json(await getSeason(actor.id,parts[1]));
+  if(method==='GET'&&parts[0]==='seasons'&&uuid(parts[1])&&parts[2]==='calendar.ics'&&parts.length===3){const {season}=await getSeason(actor.id,parts[1]);return new NextResponse(seasonCalendar(season,appConfig().origin),{headers:{'Content-Type':'text/calendar; charset=utf-8','Content-Disposition':'attachment; filename="dartflow-programma.ics"','Cache-Control':'private, no-store'}});}
+  if(method==='GET'&&parts[0]==='seasons'&&uuid(parts[1])&&parts[2]==='export'&&parts.length===3){const result=await exportSeason(actor.id,parts[1]);return new NextResponse(result.csv,{headers:{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="dartflow-seizoen.csv"','Cache-Control':'private, no-store'}});}
   if(method==='GET'&&path==='profile')return json({user:actor.profile});
   if(method==='POST'&&path==='profile/complete')return json(await completePlayerProfile(actor.id,await body(request)));
   if(method==='POST'&&path==='profile/player-pin'){
@@ -197,6 +216,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if(integration)return integration;
   if(method==='GET' && parts[0]==='media' && uuid(parts[1]) && parts.length===2) return json(await mediaConfiguration(actor.id,parts[1]));
   if(method==='GET' && parts[0]==='boards' && uuid(parts[1]) && parts.length===2)return json(await getBoardForActor(actor.id,parts[1]));
+  if(method==='POST'&&parts[0]==='boards'&&uuid(parts[1])&&parts[2]==='screen-preferences'&&parts.length===3)return json(await setBoardScreenPreferences(actor.id,parts[1],await body(request)));
   if(parts[0]==='boards' && uuid(parts[1]) && parts[2]==='screen-devices'){
     if(method==='GET'&&parts.length===3)return json(await listBoardScreenDevices(actor.id,parts[1]));
     if(method==='POST'&&parts.length===3)return json(await createBoardScreenDevice(actor.id,parts[1],(await body(request)).name));
