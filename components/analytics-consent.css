@@ -149,6 +149,10 @@
 .auth-footer {display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 16px;}
 .marketing-page .footer nav {align-items: center;}
 
+@media (max-width: 760px) {
+  .app-footer {margin-bottom: calc(80px + env(safe-area-inset-bottom, 0px));}
+}
+
 @media (max-width: 380px) {
   .dartflow-privacy-panel {
     padding: 16px;
