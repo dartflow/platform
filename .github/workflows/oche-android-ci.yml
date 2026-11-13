@@ -86,6 +86,7 @@ jobs:
           test -c /dev/kvm
           sudo setfacl -m "u:$(id -un):rw" /dev/kvm
       - name: Test native renderers zonder productiegegevens
+        if: matrix.target == 'google_apis'
         uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
         with:
           api-level: 36
@@ -94,6 +95,10 @@ jobs:
           working-directory: android/oche-live
           disable-animations: true
           script: ./gradlew --no-daemon :app:connectedStagingDebugAndroidTest
+      - name: Test Android TV na begrensde service-readiness
+        if: matrix.target == 'android-tv'
+        working-directory: android/oche-live
+        run: bash ci/run_tv_ui.sh
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
