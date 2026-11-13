@@ -1,0 +1,767 @@
+{
+  "date": "2026-11-13",
+  "timezone": "Europe/Amsterdam",
+  "scope": "Promote staging-tested DartFlow Blog and scoped SocialHero connection to production",
+  "passed": true,
+  "dartflow": {
+    "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+    "releaseId": "43455727606-1",
+    "configId": "production-2026-11-12-v19-pin-1",
+    "deployUrl": "https://github.com/dartflow/platform/actions/runs/43455727606",
+    "ciUrl": "https://github.com/dartflow/platform/actions/runs/43425459356"
+  },
+  "socialhero": {
+    "sha": "083b0d80b4231c0dc12e10340cb31e3434786f17",
+    "releaseId": "083b0d80b4231c0dc12e10340cb31e3434786f17-43456288578-1",
+    "configId": "v2",
+    "ciUrl": "https://github.com/socialherodgweb/platform/actions/runs/43455726926",
+    "buildUrl": "https://github.com/socialherodgweb/platform/actions/runs/43456288578",
+    "activateUrl": "https://github.com/socialherodgweb/platform/actions/runs/43456518606",
+    "manifest": {
+      "sha": "083b0d80b4231c0dc12e10340cb31e3434786f17",
+      "run": "43456288578",
+      "attempt": "1",
+      "config": "v2",
+      "artifactDigest": "8d830f8fcb21ac6eb38d0c52c98b9bae04a5fa5f6dfa9e9772fdcd6293734961",
+      "lockfileDigest": "9a3ad98afc080cad7da76ed4a67db4d87876bcfcf60d8eeb21c4499f877dbb42",
+      "databaseCompatibility": "socialhero-sqlite-v2-images",
+      "ci": {
+        "repository": "socialherodgweb/platform",
+        "sha": "083b0d80b4231c0dc12e10340cb31e3434786f17",
+        "environment": "production",
+        "ciRunId": "43455726926",
+        "ciRunAttempt": 1,
+        "ciJobs": [
+          "verify"
+        ]
+      },
+      "smokePassed": true
+    },
+    "nativeBackup": {
+      "directory": "1794585014445-activate-083b0d80b4231c0dc12e10340cb31e3434786f17-43456288578-1",
+      "directoryMode": "0o700",
+      "databaseSha256": "7d507231956422928d8d9a5e77fe167191ddd9268a881eb6b34c6ed1c0bc32be",
+      "integrity": "ok",
+      "healthySha": "083b0d80b4231c0dc12e10340cb31e3434786f17",
+      "recovery": {
+        "previous": "/srv/sites/socialhero-production/releases/d848d102d632ddde8c444c9deca6746634bf8a7e-43418247127-1",
+        "next": "/srv/sites/socialhero-production/releases/083b0d80b4231c0dc12e10340cb31e3434786f17-43456288578-1",
+        "operation": "activate",
+        "runtimeConfig": "v2",
+        "hadDatabase": true,
+        "at": "2026-11-13T15:50:14.506Z"
+      }
+    },
+    "services": {
+      "web": "active",
+      "worker": "active"
+    },
+    "database": {
+      "mode": "0o600",
+      "integrity": "ok"
+    },
+    "connection": {
+      "environment": "production",
+      "workspaceId": "socialhero-production",
+      "projectId": "brand-dartflow-2",
+      "workspaceDataUnchanged": true,
+      "operation": "connection configuration + read-only capabilities only",
+      "connection": {
+        "id": "160e32d7-f8b8-40ac-ba1f-75a15c2d7a2e",
+        "version": 1,
+        "status": "verified",
+        "siteId": "dartflow",
+        "baseUrl": "https://dartflow.nl",
+        "credentialConfigured": true,
+        "defaults": {
+          "locale": "nl-NL",
+          "authorId": "redactie",
+          "categoryId": "toernooien",
+          "heroPreset": "blog-hero",
+          "ogPreset": "share"
+        }
+      },
+      "noContentMutation": true,
+      "noAIRequest": true,
+      "noSocialDelivery": true
+    },
+    "publicChecks": {
+      "checkedAt": "2026-11-13T15:50:41.322Z",
+      "sha": "083b0d80b4231c0dc12e10340cb31e3434786f17",
+      "mode": "read-only public production checks; no account, content mutation, AI or social delivery",
+      "environments": {
+        "production": {
+          "origin": "https://socialhero.dgwebservices.nl",
+          "checks": [
+            {
+              "path": "/api/health",
+              "status": 200,
+              "releaseSha": "083b0d80b4231c0dc12e10340cb31e3434786f17"
+            },
+            {
+              "path": "/api/ready",
+              "status": 200,
+              "releaseSha": "083b0d80b4231c0dc12e10340cb31e3434786f17"
+            },
+            {
+              "path": "/api/state",
+              "status": 401
+            },
+            {
+              "path": "/api/blog/connections",
+              "status": 401
+            },
+            {
+              "path": "/api/admin/config",
+              "status": 401
+            },
+            {
+              "path": "/modules/website-publication.js",
+              "status": 200,
+              "sha256": "b5e39f3b7e030e7ca08225945282c7e9c493a82deec9353bd8a8489c3e3bb8c2"
+            },
+            {
+              "path": "/modules/website-publication.css",
+              "status": 200,
+              "sha256": "f53d9f9f5b57591c1c8025f3a1eb12c0752128e9ac0a70d19cdfc547df3ca1dd"
+            },
+            {
+              "path": "/modules/campaign.js",
+              "status": 200,
+              "sha256": "a8b13dd903c10fca1744351a538ee8471078e73f481d7f2d989a12650c31c02d"
+            },
+            {
+              "path": "/modules/projects.js",
+              "status": 200,
+              "sha256": "5216e81497ac02af90214f4895817a96fc690ca553e9dc2a15f2ebb354166ca0"
+            },
+            {
+              "path": "/modules/admin.js",
+              "status": 200,
+              "sha256": "b4d538e273907f4d868260b5a989c0505460d221614bf61ef24e88a94dcadfa1"
+            }
+          ]
+        },
+        "staging": {
+          "origin": "https://socialhero-staging.dgwebservices.nl",
+          "checks": [
+            {
+              "path": "/api/health",
+              "status": 200,
+              "releaseSha": "083b0d80b4231c0dc12e10340cb31e3434786f17"
+            },
+            {
+              "path": "/api/ready",
+              "status": 200,
+              "releaseSha": "083b0d80b4231c0dc12e10340cb31e3434786f17"
+            },
+            {
+              "path": "/api/state",
+              "status": 401
+            },
+            {
+              "path": "/api/blog/connections",
+              "status": 401
+            },
+            {
+              "path": "/api/admin/config",
+              "status": 401
+            },
+            {
+              "path": "/modules/website-publication.js",
+              "status": 200,
+              "sha256": "b5e39f3b7e030e7ca08225945282c7e9c493a82deec9353bd8a8489c3e3bb8c2"
+            },
+            {
+              "path": "/modules/website-publication.css",
+              "status": 200,
+              "sha256": "f53d9f9f5b57591c1c8025f3a1eb12c0752128e9ac0a70d19cdfc547df3ca1dd"
+            },
+            {
+              "path": "/modules/campaign.js",
+              "status": 200,
+              "sha256": "a8b13dd903c10fca1744351a538ee8471078e73f481d7f2d989a12650c31c02d"
+            },
+            {
+              "path": "/modules/projects.js",
+              "status": 200,
+              "sha256": "5216e81497ac02af90214f4895817a96fc690ca553e9dc2a15f2ebb354166ca0"
+            },
+            {
+              "path": "/modules/admin.js",
+              "status": 200,
+              "sha256": "b4d538e273907f4d868260b5a989c0505460d221614bf61ef24e88a94dcadfa1"
+            }
+          ]
+        }
+      },
+      "passed": true
+    }
+  },
+  "migration": {
+    "file": "supabase/migrations/20261113120254_blog_publication.sql",
+    "sha256": "fe40f0ebf40ceebfb7c3e52e3c9a28150808f26458d39ef7ac9dafe737f55204",
+    "project": "wlrnowuownakqqgjxnbb",
+    "featureVersion": 1,
+    "privateTables": 8,
+    "rlsEnabled": true,
+    "browserRolesHaveSelect": false,
+    "runtimeRole": "dartflow_app",
+    "revisionsReceiptsAuditImmutable": true
+  },
+  "backupVerification": {
+    "archiveFullyDecoded": true,
+    "credentialsPrinted": false,
+    "databaseConnectionUsed": false,
+    "directory": "/var/backups/dartflow/v20-feed-seasons-production-20261113T154411772289Z",
+    "environment": "production",
+    "hashesVerified": 5,
+    "host": "dg-nxttrack-01",
+    "restoreDrillPerformed": false,
+    "status": "passed"
+  },
+  "publicSmoke": {
+    "startedAt": "2026-11-13T15:46:54.876Z",
+    "origin": "https://dartflow.nl",
+    "environment": "production",
+    "expectedSha": "daacf7af967b9db83dafc533efded6d055315e0d",
+    "scope": "Independent public GET requests and anonymous browser; no credentials, authentication, posts, emails or production mutations; non-read-only browser requests blocked",
+    "healthPolls": [
+      {
+        "at": "2026-11-13T15:46:55.076Z",
+        "status": 200,
+        "sha": "8246b2945ead34ebeb7ba34c2abe1334b5372e2c",
+        "releaseId": "43408435515-1"
+      },
+      {
+        "at": "2026-11-13T15:47:10.201Z",
+        "status": 200,
+        "sha": "8246b2945ead34ebeb7ba34c2abe1334b5372e2c",
+        "releaseId": "43408435515-1"
+      },
+      {
+        "at": "2026-11-13T15:47:25.456Z",
+        "status": 200,
+        "sha": "8246b2945ead34ebeb7ba34c2abe1334b5372e2c",
+        "releaseId": "43408435515-1"
+      },
+      {
+        "at": "2026-11-13T15:47:40.574Z",
+        "status": 200,
+        "sha": "8246b2945ead34ebeb7ba34c2abe1334b5372e2c",
+        "releaseId": "43408435515-1"
+      },
+      {
+        "at": "2026-11-13T15:47:55.834Z",
+        "status": 200,
+        "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+        "releaseId": "43455727606-1"
+      }
+    ],
+    "checks": [
+      {
+        "name": "Production health serves requested SHA",
+        "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+        "releaseId": "43455727606-1"
+      },
+      {
+        "name": "Blog SSR has production canonical and correct empty state",
+        "cards": 0
+      },
+      {
+        "name": "Home remains available and omits empty latest-articles section"
+      },
+      {
+        "name": "Existing public route responds",
+        "path": "/inloggen",
+        "status": 200
+      },
+      {
+        "name": "Existing public route responds",
+        "path": "/app",
+        "status": 200
+      },
+      {
+        "name": "Existing public Oche Live route remains available",
+        "path": "/oche-live/276acb23-c754-4fb8-928c-839048650bfd",
+        "status": 200,
+        "evidence": ".local/v20-production-public-smoke.json"
+      },
+      {
+        "name": "Robots uses production sitemap"
+      },
+      {
+        "name": "Sitemap contains production canonicals and no staging or article copies",
+        "locations": [
+          "https://dartflow.nl",
+          "https://dartflow.nl/blog"
+        ]
+      },
+      {
+        "name": "Anonymous Blogbeheer redirects to login",
+        "status": 307,
+        "location": "/inloggen?next=%2Fblog%2Fbeheer"
+      },
+      {
+        "name": "Anonymous private preview is unavailable and non-indexable",
+        "status": 404,
+        "cacheControl": "private, no-store",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "name": "Anonymous protected API rejects request",
+        "path": "/api/blog/admin",
+        "status": 401,
+        "code": "UNAUTHENTICATED"
+      },
+      {
+        "name": "Anonymous protected API rejects request",
+        "path": "/api/blog/posts",
+        "status": 401,
+        "code": "UNAUTHENTICATED"
+      },
+      {
+        "name": "Anonymous protected API rejects request",
+        "path": "/api/socialhero/v1/capabilities",
+        "status": 401,
+        "code": "UNAUTHENTICATED"
+      },
+      {
+        "name": "Staging article is absent from production",
+        "path": "/blog/staging-blog-20261113124051-2246baeb-darttoernooi-organiseren-club",
+        "status": 404
+      },
+      {
+        "name": "Staging article is absent from production",
+        "path": "/blog/staging-blog-20261113124051-2246baeb-oche-live-darts-scorebord",
+        "status": 404
+      },
+      {
+        "name": "Staging article is absent from production",
+        "path": "/blog/staging-blog-20261113124051-2246baeb-checkouts-oefenen-darts",
+        "status": 404
+      },
+      {
+        "name": "Staging article is absent from production",
+        "path": "/blog/staging-blog-20261113124051-2246baeb-vierde-artikel-nieuwe-url",
+        "status": 404
+      },
+      {
+        "name": "Twelve anonymous responsive browser views have no JavaScript errors or horizontal overflow",
+        "count": 12,
+        "widths": [
+          1440,
+          391
+        ]
+      }
+    ],
+    "views": [
+      {
+        "name": "home",
+        "path": "/",
+        "width": 1440,
+        "height": 900,
+        "status": 200,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "title": "DartFlow | Online darten, live scorebord en darttoernooien",
+        "h1": [
+          "Darten, waar je ook speelt."
+        ],
+        "screenshot": "artifacts/blog-production/home-1440.png"
+      },
+      {
+        "name": "blog",
+        "path": "/blog",
+        "width": 1440,
+        "height": 900,
+        "status": 200,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "title": "DartFlow Blog | Dartstips, live scoren en toernooien",
+        "h1": [
+          "DartFlow Blog"
+        ],
+        "screenshot": "artifacts/blog-production/blog-1440.png"
+      },
+      {
+        "name": "blog-search",
+        "path": "/blog?q=read-only-production-audit",
+        "width": 1440,
+        "height": 900,
+        "status": 200,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "title": "DartFlow Blog | Dartstips, live scoren en toernooien",
+        "h1": [
+          "DartFlow Blog"
+        ],
+        "screenshot": "artifacts/blog-production/blog-search-1440.png"
+      },
+      {
+        "name": "login",
+        "path": "/inloggen",
+        "width": 1440,
+        "height": 900,
+        "status": 200,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "title": "DartFlow · Speelomgeving",
+        "h1": [
+          "Jouw volgende partijbegint hier."
+        ],
+        "screenshot": "artifacts/blog-production/login-1440.png"
+      },
+      {
+        "name": "app",
+        "path": "/app",
+        "width": 1440,
+        "height": 900,
+        "status": 200,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "title": "DartFlow · Speelomgeving",
+        "h1": [
+          "Welkom bij DartFlow."
+        ],
+        "screenshot": "artifacts/blog-production/app-1440.png"
+      },
+      {
+        "name": "oche-live",
+        "path": "/oche-live/276acb23-c754-4fb8-928c-839048650bfd",
+        "width": 1440,
+        "height": 900,
+        "status": 200,
+        "documentWidth": 1440,
+        "viewportWidth": 1440,
+        "title": "Oche Live · Baan 1",
+        "h1": [
+          "Baan 1"
+        ],
+        "screenshot": "artifacts/blog-production/oche-live-1440.png"
+      },
+      {
+        "name": "home",
+        "path": "/",
+        "width": 391,
+        "height": 844,
+        "status": 200,
+        "documentWidth": 391,
+        "viewportWidth": 391,
+        "title": "DartFlow | Online darten, live scorebord en darttoernooien",
+        "h1": [
+          "Darten, waar je ook speelt."
+        ],
+        "screenshot": "artifacts/blog-production/home-391.png"
+      },
+      {
+        "name": "blog",
+        "path": "/blog",
+        "width": 391,
+        "height": 844,
+        "status": 200,
+        "documentWidth": 391,
+        "viewportWidth": 391,
+        "title": "DartFlow Blog | Dartstips, live scoren en toernooien",
+        "h1": [
+          "DartFlow Blog"
+        ],
+        "screenshot": "artifacts/blog-production/blog-391.png"
+      },
+      {
+        "name": "blog-search",
+        "path": "/blog?q=read-only-production-audit",
+        "width": 391,
+        "height": 844,
+        "status": 200,
+        "documentWidth": 391,
+        "viewportWidth": 391,
+        "title": "DartFlow Blog | Dartstips, live scoren en toernooien",
+        "h1": [
+          "DartFlow Blog"
+        ],
+        "screenshot": "artifacts/blog-production/blog-search-391.png"
+      },
+      {
+        "name": "login",
+        "path": "/inloggen",
+        "width": 391,
+        "height": 844,
+        "status": 200,
+        "documentWidth": 391,
+        "viewportWidth": 391,
+        "title": "DartFlow · Speelomgeving",
+        "h1": [
+          "Jouw volgende partijbegint hier."
+        ],
+        "screenshot": "artifacts/blog-production/login-391.png"
+      },
+      {
+        "name": "app",
+        "path": "/app",
+        "width": 391,
+        "height": 844,
+        "status": 200,
+        "documentWidth": 391,
+        "viewportWidth": 391,
+        "title": "DartFlow · Speelomgeving",
+        "h1": [
+          "Welkom bij DartFlow."
+        ],
+        "screenshot": "artifacts/blog-production/app-391.png"
+      },
+      {
+        "name": "oche-live",
+        "path": "/oche-live/276acb23-c754-4fb8-928c-839048650bfd",
+        "width": 391,
+        "height": 844,
+        "status": 200,
+        "documentWidth": 391,
+        "viewportWidth": 391,
+        "title": "Oche Live · Baan 1",
+        "h1": [
+          "Baan 1"
+        ],
+        "screenshot": "artifacts/blog-production/oche-live-391.png"
+      }
+    ],
+    "errors": [],
+    "blockedMutationRequests": [],
+    "passed": true,
+    "release": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+      "releaseId": "43455727606-1",
+      "buildConfigId": "production-2026-11-12-v19-pin-1",
+      "runtimeConfigId": "production-2026-11-12-v19-pin-1",
+      "configId": "production-2026-11-12-v19-pin-1"
+    },
+    "finishedAt": "2026-11-13T15:48:35.451Z",
+    "harnessNotes": [
+      "Initial cached browser path was unavailable; recovered using already-installed Chromium 1254, with no installation or build."
+    ],
+    "browserHealth": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+      "releaseId": "43455727606-1",
+      "buildConfigId": "production-2026-11-12-v19-pin-1",
+      "runtimeConfigId": "production-2026-11-12-v19-pin-1",
+      "configId": "production-2026-11-12-v19-pin-1"
+    },
+    "browserVersion": "158.0.8127.18"
+  },
+  "credentialVerification": {
+    "passed": true,
+    "checkedAt": "2026-11-13T15:48:15.170Z",
+    "origin": "https://dartflow.nl",
+    "health": {
+      "status": "ok",
+      "mode": "supabase",
+      "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+      "releaseId": "43455727606-1",
+      "buildConfigId": "production-2026-11-12-v19-pin-1",
+      "runtimeConfigId": "production-2026-11-12-v19-pin-1",
+      "configId": "production-2026-11-12-v19-pin-1"
+    },
+    "ready": {
+      "status": "ready",
+      "database": "ok",
+      "schemaVersion": 1,
+      "auth": "reachable",
+      "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+      "releaseId": "43455727606-1",
+      "buildConfigId": "production-2026-11-12-v19-pin-1",
+      "runtimeConfigId": "production-2026-11-12-v19-pin-1",
+      "configId": "production-2026-11-12-v19-pin-1"
+    },
+    "capabilities": {
+      "contractVersion": "1",
+      "siteId": "dartflow",
+      "environment": "production",
+      "blogPath": "/blog",
+      "contentTypes": [
+        "blog",
+        "article"
+      ],
+      "contentFormats": [
+        "markdown",
+        "tiptap-json"
+      ],
+      "permissions": {
+        "media": true,
+        "drafts": true,
+        "publish": true
+      },
+      "media": {
+        "formats": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "maxBytes": 10000000,
+        "maxPixels": 24000000,
+        "maxWidth": 12000,
+        "maxHeight": 12000
+      },
+      "authors": [
+        {
+          "id": "redactie",
+          "name": "DartFlow redactie"
+        }
+      ],
+      "categories": [
+        {
+          "id": "toernooien",
+          "name": "Toernooien"
+        },
+        {
+          "id": "competities",
+          "name": "Competities"
+        },
+        {
+          "id": "verenigingen",
+          "name": "Verenigingen"
+        },
+        {
+          "id": "oche-live",
+          "name": "Oche Live"
+        },
+        {
+          "id": "training",
+          "name": "Training"
+        },
+        {
+          "id": "nieuws",
+          "name": "Nieuws"
+        },
+        {
+          "id": "tips",
+          "name": "Tips & inspiratie"
+        }
+      ],
+      "locales": [
+        "nl-NL",
+        "en-GB",
+        "en-US"
+      ]
+    },
+    "crossEnvironmentCredentialStatus": 401
+  },
+  "productionBlogCountsAtFinalCheck": {
+    "posts": 0,
+    "media": 0,
+    "pendingInvalidations": 0,
+    "activeSiteCredentials": 1
+  },
+  "credentialHandling": {
+    "plaintextTemporaryFileRemoved": true,
+    "newGithubSecrets": [],
+    "scopes": [
+      "read",
+      "media:write",
+      "drafts:write",
+      "publish"
+    ],
+    "expiresAt": "2027-11-13T15:45:22.144Z"
+  },
+  "health": {
+    "checkedAt": "2026-11-13T15:51:16.388Z",
+    "passed": true,
+    "states": [
+      {
+        "origin": "https://dartflow.nl",
+        "healthStatus": 200,
+        "health": {
+          "status": "ok",
+          "mode": "supabase",
+          "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+          "releaseId": "43455727606-1",
+          "buildConfigId": "production-2026-11-12-v19-pin-1",
+          "runtimeConfigId": "production-2026-11-12-v19-pin-1",
+          "configId": "production-2026-11-12-v19-pin-1"
+        },
+        "readyStatus": 200,
+        "ready": {
+          "status": "ready",
+          "database": "ok",
+          "schemaVersion": 1,
+          "auth": "reachable",
+          "sha": "daacf7af967b9db83dafc533efded6d055315e0d",
+          "releaseId": "43455727606-1",
+          "buildConfigId": "production-2026-11-12-v19-pin-1",
+          "runtimeConfigId": "production-2026-11-12-v19-pin-1",
+          "configId": "production-2026-11-12-v19-pin-1"
+        }
+      },
+      {
+        "origin": "https://socialhero.dgwebservices.nl",
+        "healthStatus": 200,
+        "health": {
+          "status": "ok",
+          "service": "SocialHero",
+          "releaseSha": "083b0d80b4231c0dc12e10340cb31e3434786f17",
+          "releaseId": "083b0d80b4231c0dc12e10340cb31e3434786f17-43456288578-1",
+          "storage": {
+            "engine": "SQLite",
+            "durable": true,
+            "isolated": true,
+            "mode": "environment-private",
+            "integrity": "ok"
+          },
+          "adapters": {
+            "research": "not-configured",
+            "writer": "not-configured",
+            "publisher": "not-configured",
+            "events": "website-pixel-v1",
+            "mode": "unconfigured",
+            "live": false
+          },
+          "worker": {
+            "heartbeat": "2026-11-13T15:51:15.146Z",
+            "running": true
+          },
+          "auth": "supabase-otp",
+          "environment": "production"
+        },
+        "readyStatus": 200,
+        "ready": {
+          "status": "ok",
+          "service": "SocialHero",
+          "releaseSha": "083b0d80b4231c0dc12e10340cb31e3434786f17",
+          "releaseId": "083b0d80b4231c0dc12e10340cb31e3434786f17-43456288578-1",
+          "storage": {
+            "engine": "SQLite",
+            "durable": true,
+            "isolated": true,
+            "mode": "environment-private",
+            "integrity": "ok"
+          },
+          "adapters": {
+            "research": "not-configured",
+            "writer": "not-configured",
+            "publisher": "not-configured",
+            "events": "website-pixel-v1",
+            "mode": "unconfigured",
+            "live": false
+          },
+          "worker": {
+            "heartbeat": "2026-11-13T15:51:15.146Z",
+            "running": true
+          },
+          "auth": "supabase-otp",
+          "environment": "production"
+        }
+      }
+    ]
+  },
+  "contentPublished": false,
+  "aiCallsMade": false,
+  "socialMessagesSent": false,
+  "limitations": [
+    "Production publication writes and real social delivery were not exercised; actual media/draft/scheduled-publication/retry tests ran on staging.",
+    "Production blog has no live articles at verification time.",
+    "Backups were verified; no restoration drill was performed in this rollout."
+  ]
+}

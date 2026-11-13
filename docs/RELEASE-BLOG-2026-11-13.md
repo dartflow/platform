@@ -1,5 +1,7 @@
 # DartFlow Blog · oplevering 13 november 2026
 
+Vervolg: de latere productie-uitrol staat in [het productieverslag](RELEASE-BLOG-PRODUCTION-2026-11-13.md).
+
 De blog en de SocialHero-koppeling zijn geïmplementeerd en via de bestaande DG Webservices-releaseflow op staging geactiveerd. Productie is bij deze opdracht niet gewijzigd. Het uitvoerbare applicatieartefact en de later toegevoegde testdocumentatie hebben afzonderlijke commits.
 
 ## Openen
