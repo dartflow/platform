@@ -65,6 +65,22 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ vars.OCHE_JAVA_VERSION || '17' }}
+      - name: Maak ruimte voor Android TV-userdata
+        if: matrix.target == 'android-tv'
+        run: |
+          set -euo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$ANDROID_HOME" = /usr/local/lib/android/sdk
+          # This Compose app uses prebuilt JNI libraries and does not compile NDK code.
+          # These are disposable tools on this job's fresh GitHub-hosted runner.
+          sudo rm -rf -- /usr/local/lib/android/sdk/ndk /usr/share/dotnet
+          free_bytes="$(df -PB1 /usr/local/lib/android/sdk | awk 'NR == 2 { print $4 }')"
+          if ((free_bytes < 15 * 1024 * 1024 * 1024)); then
+            echo 'Android TV vereist minstens 15 GiB vrije runneropslag voor image, userdata en build.' >&2
+            exit 1
+          fi
+          df -h /usr/local/lib/android/sdk
       - name: Geef de runner toegang tot hardwareversnelling
         run: |
           test -c /dev/kvm
