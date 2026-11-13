@@ -16,7 +16,7 @@ De script-URL en publieke sitecode komen uit de gebruikersopdracht. Er zijn geen
 
 Gerichte regressies staan in `tests/analytics-consent.test.ts`: standaard weigeren, opslag/expiry/fouten, de callbackvolgorde, intrekken bij geblokkeerde opslag, browserprivacy en de schermroutes.
 
-## Uitrol en verificatie · 13 november 2026
+## Eerste consentuitrol · 13 november 2026
 
 De geteste applicatiebron is `5d855fdfc9641f1a7869d6997d2151c356c1f6d8`. [CI 43401457925](https://github.com/dartflow/platform/actions/runs/43401457925) slaagt: typecheck, lint, build, 350 applicatie-/databasetests, 61 browserscenario's en de bestaande prototype- en infrastructuurcontroles.
 
@@ -41,3 +41,20 @@ Per omgeving zijn zeven geïsoleerde Chromium-contexten gebruikt, met desktop 14
 De script-GET's gaan naar de echte SocialHero-server. Alle negen analytics-events per omgeving zijn lokaal in de testbrowser onderschept; geen ervan is doorgestuurd. Er zijn geen accounts ingelogd, wedstrijden gewijzigd of echte bezoekerscijfers aangemaakt. Deze proeven bewijzen de consentkoppeling en clientcode; daadwerkelijke ontvangst in het SocialHero-dashboard en bediening op fysieke apparaten zijn niet getest.
 
 Bewijzen op de development-VPS: `.local/socialhero-ci.log`, `.local/socialhero-{staging,production}-smoke.json`, de bijbehorende mobiele screenshots en `.local/socialhero-final-host-check.json`.
+
+## Privacyvoorkeuren in de footer · 13 november 2026
+
+De actieve applicatiebron is nu `8246b2945ead34ebeb7ba34c2abe1334b5372e2c`. De zwevende heropenknop is verwijderd. De footer bevat een gewone knop op de website, spelersomgeving en aanmeldpagina's. Op mobiel blijft de appfooter bereikbaar boven de onderste navigatie. Openen verleent geen toestemming; sluiten of opslaan brengt de toetsenbordfocus terug naar de footerknop zonder de pagina te verschuiven.
+
+[CI 43406218010](https://github.com/dartflow/platform/actions/runs/43406218010) slaagt met typecheck, lint, build, 350 applicatie-/databasetests, de bestaande prototype-/deployment-/infrastructuurcontroles, vijf gerichte communitybrowserscenario's en alle 61 reguliere browserscenario's.
+
+| Omgeving | Geslaagde native uitrol | Actieve release | Footer- en consentproef afgerond |
+| --- | --- | --- | --- |
+| [Staging](https://staging.dartflow.nl) | [43407821509](https://github.com/dartflow/platform/actions/runs/43407821509) | `43407821509-1` | 11:20:41 CET |
+| [Productie](https://dartflow.nl) | [43408435515](https://github.com/dartflow/platform/actions/runs/43408435515) | `43408435515-1` | 11:24:16 CET |
+
+Per omgeving slagen acht geïsoleerde Chromium-contexten op desktop 1440×900 en mobiel 390×844. De eerdere consentproeven zijn behouden. Aanvullend is gecontroleerd dat de knop werkelijk in een gewone footer staat, dat de zwevende knop ontbreekt en dat expliciet geopende instellingen zichtbaar blijven bij een gesimuleerd bannerfilter, een echte opslagwijziging uit een tweede tabblad en tien seconden zonder bediening. Sluiten herstelt focus en scrollpositie. Focus-/zichtbaarheidsrefresh is expliciet aangeroepen: deze headlessbrowser produceert bij tabwisselen geen native vensterfocus. NordVPN zelf en fysieke apparaten zijn niet getest.
+
+Alle negen analytics-events per omgeving zijn lokaal onderschept; nul events of andere mutaties zijn doorgestuurd. De echte scriptdownloads geven HTTP 200. De eindcontrole om 11:24:36 CET bevestigt op beide omgevingen de juiste bron/configuratie en acht gezonde publieke/loopback health-/readinessroutes, actieve apps/runners/TURN/mailtimers, nul app-/mail-/verlopen-workerfouten en een vrije buildlock. Caddy en Milo zijn ongewijzigd. Migraties en nieuwe secrets zijn niet nodig.
+
+Bewijzen op de development-VPS: `.local/privacy-footer-ci.log`, `.local/privacy-footer-{staging,production}-deploy.log`, `.local/socialhero-footer-{staging,production}-smoke.json`, de bijbehorende mobiele screenshots en `.local/privacy-footer-final-host-check.json`. De eerste stagingpoging liep vast op een ongeschikte nativefocusassertie; dat oorspronkelijke testresultaat is apart bewaard met het achtervoegsel `-focus-fixture-attempt`. De gecorrigeerde fixture maakt deze beperking expliciet en beide uiteindelijke proeven slagen.
