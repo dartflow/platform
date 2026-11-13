@@ -24,7 +24,7 @@ async function homeProjection(client:PoolClient,device:OcheDeviceRow):Promise<Cl
  }
  const ownMatch=(await client.query<{id:string}>(`select m.id from dartflow_private.matches m join dartflow_private.match_players p on p.match_id=m.id and p.user_id=$2 where m.id=$1 and m.state->>'status' not in('abandoned','interrupted')`,[sourceId,device.owner_id])).rows[0];
  if(ownMatch){
-  const view=await getMatch(device.owner_id!,ownMatch.id);boardId=view.boardId;
+  const view=await getMatch(device.owner_id!,ownMatch.id,client);boardId=view.boardId;
   match={id:`home-${device.id}`,revision:view.revision,status:view.status,players:view.players.map((player,index)=>({id:`player-${index+1}`,name:player.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:visits(view.currentLegVisits??[]),currentLegVisits:visits(view.currentLegVisits??[]),currentLegStartScore:view.currentLegStartScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(player=>player.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:{startScore:view.settings.startScore,bestOfLegs:view.settings.bestOfLegs,bestOfSets:view.settings.bestOfSets,...(view.settings.legLimit===undefined?{}:{legLimit:view.settings.legLimit})},writerId:'',stats:view.stats.map(stat=>({total:stat.total,darts:stat.darts,average:stat.average,oneEighties:stat.oneEighties,highestFinish:stat.highestFinish,measurementComplete:stat.measurementComplete})),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
  }else if(source?.kind==='training'&&source.state.game){
   const game=source.state.game as Game;boardId=typeof source.state.boardId==='string'?source.state.boardId:null;

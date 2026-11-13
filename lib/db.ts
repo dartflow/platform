@@ -81,7 +81,8 @@ export async function getProfile(actorId: string): Promise<Profile> {
   if (!rows.length) throw new DomainError('profile_missing', 'Dit account is nog niet toegelaten tot de pilot.', 403);
   return {...rows[0],displayNameConfirmed:hasConfirmedUsername(rows[0]),...await getPlayerPinStatus(actorId)};
 }
-export async function getMatch(actorId:string,matchId:string):Promise<MatchView>{
+export async function getMatch(actorId:string,matchId:string,existingClient?:PoolClient):Promise<MatchView>{
+ if(existingClient)return readMatch(existingClient,actorId,matchId);
  const client=await database().connect();
  try{await client.query('begin isolation level repeatable read read only');const result=await readMatch(client,actorId,matchId);await client.query('commit');return result;}
  catch(error){await client.query('rollback');throw error;}finally{client.release();}

@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import pg from 'pg';
-import {closeDatabase} from '../lib/db';
+import {closeDatabase,database} from '../lib/db';
 import {createBoardScreenDevice,getBoardScreen,pairBoardScreenDevice,revokeBoardScreenDevice} from '../lib/board-screens';
 import {newGame,scoreGame} from '../lib/domain';
 import {authorizeOcheAccess,claimOcheInstallation,cleanupOcheDevices,getOcheInstallationStatus,getOcheManagement,manageOcheDevice,redeemOcheInstallation,refreshOcheSession,selectOcheHomeSession,setOcheLimit,startOcheInstallation} from '../lib/oche-device-store';
@@ -205,6 +205,15 @@ test('persistent Oche device grants enforce scopes, quotas, retries, rotation an
    await assert.rejects(selectOcheHomeSession(outsider,{sourceId:id,requestId:request()}),{status:403});await selectOcheHomeSession(owner,{sourceId:id,requestId:request()});const snapshot=await getOcheDeviceSnapshot(session.accessToken!);
    assert.deepEqual(snapshot.display?.snapshot.match?.remaining,[321,501]);assert.equal(snapshot.display?.board.publicScan,false);assert.equal(snapshot.display?.snapshot.match?.visits[0].score,180);
    const serialized=JSON.stringify(snapshot);for(const secret of [owner,player,club,eventId,id,'private1@example.test','permissions":{"canScore'])assert.equal(serialized.includes(secret),false);
+   // The snapshot must finish using its tenth pool slot, without requesting an
+   // eleventh connection from inside the home match projection.
+   const held:pg.PoolClient[]=[];let pending:ReturnType<typeof getOcheDeviceSnapshot>|undefined,timer:ReturnType<typeof setTimeout>|undefined;
+   try{
+    for(let index=0;index<9;index++)held.push(await database().connect());
+    pending=getOcheDeviceSnapshot(session.accessToken!);
+    const available=await Promise.race([pending,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('Home snapshot attempted to borrow an additional pool connection.')),1900);})]);
+    assert.deepEqual(available.display?.snapshot.match?.remaining,[321,501]);
+   }finally{if(timer)clearTimeout(timer);for(const client of held)client.release();await pending?.catch(()=>undefined);}
    await selectOcheHomeSession(owner,{sourceId:null,requestId:request()});assert.equal((await getOcheDeviceSnapshot(session.accessToken!)).display,null);await revoke(session.deviceId);
   });
   await t.test('boardless home training receives durable score and undo events without replaying an accepted retry',async()=>{
