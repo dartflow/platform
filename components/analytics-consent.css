@@ -1,0 +1,166 @@
+.analytics-consent {
+  position: fixed;
+  z-index: 2000;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  width: min(480px, calc(100% - 32px));
+  width: min(480px, calc(100vw - max(16px, env(safe-area-inset-left, 0px)) - max(16px, env(safe-area-inset-right, 0px))));
+  box-sizing: border-box;
+  color: var(--text, #f2f3f4);
+  font: 400 14px/1.5 var(--font, 'DM Sans', Arial, sans-serif);
+  text-align: left;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+.analytics-consent[data-app='true'] {
+  bottom: calc(77px + env(safe-area-inset-bottom, 0px));
+}
+
+.analytics-consent *,
+.analytics-consent *::before,
+.analytics-consent *::after {
+  box-sizing: border-box;
+}
+
+.analytics-consent-panel {
+  position: relative;
+  pointer-events: auto;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  max-height: 70vh;
+  max-height: 70dvh;
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--muted, #a9afb5) var(--panel, #1a1c1f);
+  border: 1px solid var(--accent-line, #526938);
+  border-radius: 14px;
+  background: var(--panel, #1a1c1f);
+  box-shadow: 0 12px 42px rgb(0 0 0 / 35%);
+}
+
+.analytics-consent-panel h2 {
+  margin: 0;
+  padding-right: 44px;
+  color: var(--text, #f2f3f4);
+  font: 750 28px/1.1 var(--display, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.analytics-consent-panel p {
+  margin: 0;
+  color: var(--muted-strong, #d4d8dc);
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+
+.analytics-consent-panel a {
+  color: var(--accent-text, #b7f62b);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.analytics-consent-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.analytics-consent-choice,
+.analytics-consent-toggle,
+.analytics-consent-close,
+.analytics-consent-panel > button[aria-label] {
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--accent-line, #526938);
+  border-radius: 8px;
+  background: var(--panel2, #232629);
+  color: var(--text, #f2f3f4);
+  font: 700 14px/1.35 var(--font, 'DM Sans', Arial, sans-serif);
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+/* Both choices retain exactly the same dimensions, color and emphasis. */
+.analytics-consent-choice {
+  width: 100%;
+}
+
+.analytics-consent-toggle {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: max-content;
+  max-width: 100%;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 28%);
+}
+
+.analytics-consent-close,
+.analytics-consent-panel > button[aria-label] {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  padding: 8px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.analytics-consent :is(button, a):focus-visible {
+  outline: 3px solid var(--accent, #b7f62b);
+  outline-offset: 3px;
+}
+
+.analytics-consent :is(button):hover {
+  border-color: var(--accent, #b7f62b);
+  background: var(--accent-soft, #242d1b);
+}
+
+.analytics-consent button:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+@media (max-width: 380px) {
+  .analytics-consent-panel {
+    padding: 16px;
+  }
+
+  .analytics-consent-choice {
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 320px) {
+  .analytics-consent-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analytics-consent *,
+  .analytics-consent *::before,
+  .analytics-consent *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

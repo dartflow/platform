@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import "./globals.css";
 import "@/components/pwa-screens.css";
 import "@/components/oche-live.css";
+import "@/components/analytics-consent.css";
+import AnalyticsConsent from "@/components/analytics-consent";
 import { PwaRuntime } from "@/components/pwa-install";
 import LegacyLink from "@/components/legacy-link";
 export const metadata: Metadata = {
@@ -26,14 +27,7 @@ export default function RootLayout({
       <body>
         <LegacyLink />
         <PwaRuntime>{children}</PwaRuntime>
-        {process.env.DARTFLOW_DATA_MODE === "supabase" && (
-          <Script
-            id="socialhero-pixel"
-            async
-            src="https://socialhero.dgwebservices.nl/api/pixel/script?site=sh_HAeYD7iQCpoinCRx1dqn9-QpiDSgAPA2"
-            strategy="afterInteractive"
-          />
-        )}
+        <AnalyticsConsent enabled={process.env.DARTFLOW_DATA_MODE === "supabase"} />
       </body>
     </html>
   );
