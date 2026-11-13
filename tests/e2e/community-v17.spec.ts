@@ -77,3 +77,26 @@ test('legacy event chat remains participant-only while its public Feed channel s
   }
  }finally{await context.close();}
 });
+
+for(const viewport of [{width:390,height:844},{width:360,height:640}])test(`the scoped Feed chat launcher leaves the last reply reachable at ${viewport.width}x${viewport.height}`,async({browser,baseURL})=>{
+ if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Loopback-only Feed geometry fixture.');
+ const context=await browser.newContext({viewport}),scopeId=randomUUID(),postId=randomUUID();let submitted=false;
+ const scope={kind:'club',id:scopeId,name:'Een vereniging met een lange naam',canWrite:true,canModerate:false};
+ const channel={key:`club:${scopeId}`,kind:'club',id:scopeId,name:scope.name,visibility:'members',following:true,mode:'all',canPost:true,canReact:true,canManage:false,membersCanPost:true,reactions:true,maxPinDays:7,href:`/app/clubs/${scopeId}`};
+ const post=(id:string,body:string)=>({id,body,channel:channel.key,category:'post',title:'',authorName:'Fixture player',createdAt:'2026-11-13T12:00:00Z',likes:0,liked:false,replyCount:submitted&&id===postId?1:0,canDelete:false,canManage:false,reactions:true,pinUntil:null,important:false,href:null});
+ const earlier=Array.from({length:3},(_,i)=>post(randomUUID(),`Eerder kanaalbericht ${i+1}`));
+ try{
+  const page=await context.newPage();await login(page,'Michael de Groot','/app/feed');
+  await context.route('**/api/feed?**',route=>route.fulfill({json:{channels:[channel],posts:[...earlier,post(postId,'Laatste bericht met een reactieformulier')],pins:[],nextCursor:null,upcoming:[]}}));
+  await context.route(`**/api/feed/replies/${postId}`,route=>route.fulfill({json:{replies:submitted?[{id:randomUUID(),authorName:'Fixture player',body:'Bereikbaar zonder overlap',createdAt:'2026-11-13T12:00:00Z'}]:[],nextCursor:null}}));
+  await context.route('**/api/feed/actions',route=>{expect(route.request().postDataJSON().action).toMatchObject({type:'reply',itemId:postId,body:'Bereikbaar zonder overlap'});submitted=true;return route.fulfill({json:{ok:true}});});
+  await context.route(`**/api/community/chat/club/${scopeId}`,route=>route.fulfill({json:{scope,messages:[],cursor:0}}));
+  await page.goto(`/app/feed/club/${scopeId}`);
+  const trigger=page.getByRole('button',{name:'◌ Verenigingschat',exact:true});await expect(trigger).toBeVisible();expect(await trigger.evaluate(el=>getComputedStyle(el.parentElement!).position)).toBe('static');
+  const card=page.locator(`#feed-post-${postId}`);await card.getByRole('button',{name:'0 reacties',exact:true}).click();await card.getByLabel('Reactie',{exact:true}).fill('Bereikbaar zonder overlap');const submit=card.getByRole('button',{name:'Reageren',exact:true});
+  const reachable=()=>submit.evaluate(el=>{const r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y),nav=document.querySelector('.bottom-nav')?.getBoundingClientRect(),bottom=Math.min(innerHeight,visualViewport?visualViewport.offsetTop+visualViewport.height:innerHeight,nav?.top??innerHeight);return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=bottom&&Boolean(hit&&(hit===el||el.contains(hit)));});
+  await expect.poll(reachable).toBe(true);await submit.click();await expect(card.getByText('Bereikbaar zonder overlap',{exact:true})).toBeVisible();expect(submitted).toBe(true);
+  await trigger.click();const chat=page.getByRole('dialog',{name:'Verenigingschat',exact:true});await expect(chat).toBeVisible();await chat.getByRole('button',{name:'Chat minimaliseren',exact:true}).click();await expect(chat).toHaveCount(0);
+  await card.getByLabel('Reactie',{exact:true}).fill('Concept na minimaliseren');await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));await expect.poll(reachable).toBe(true);await submit.click({trial:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ }finally{await context.close();}
+});

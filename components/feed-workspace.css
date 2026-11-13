@@ -233,3 +233,17 @@
 .df-feed .df-feed-share-options label { display: grid; gap: 6px; margin-bottom: 12px; font-size: .82rem; }
 .df-feed .df-feed-result-page { min-width: 0; }
 @media(max-width:500px){.df-feed .df-feed-urgent article{grid-template-columns:auto minmax(0,1fr)}.df-feed .df-feed-urgent a{grid-column:2;text-align:left}.df-feed .df-feed-thread form{flex-wrap:wrap}.df-feed .df-feed-thread form input{flex:1;min-width:150px}.df-feed .df-feed-by strong{overflow-wrap:anywhere}}
+
+/* The Feed launcher belongs to its channel, so a minimized chat cannot cover
+   likes, replies or form controls. Only the open chat sheet remains an overlay. */
+.df-feed-channel-chat { display: flex; flex-wrap: wrap; justify-content: flex-end; margin: -8px 0 16px; }
+.df-feed .df-feed-channel-chat .scoped-chat { position: static; inset: auto; z-index: auto; max-width: 100%; }
+.df-feed-channel-chat .scoped-chat-trigger { max-width: 100%; white-space: normal; }
+.df-feed-channel-chat .scoped-chat-sheet { z-index: 58; }
+.df-feed-channel-chat .scoped-chat-sheet textarea { font-size: 16px; }
+.df-feed :is(button, input, textarea, select, a), .df-feed-thread form { scroll-margin-block: 16px; }
+@media (max-width: 760px) {
+  html:has(.df-feed) { scroll-padding-block: calc(80px + env(safe-area-inset-top)) calc(88px + env(safe-area-inset-bottom)); }
+  .df-feed { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .df-feed-channel-chat { justify-content: flex-start; }
+}
