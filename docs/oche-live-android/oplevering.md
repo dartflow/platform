@@ -2,12 +2,12 @@
 
 ## Release en openen
 
-Applicatiebron: `bee3dc43ea01e178c8805ffa7b8e2d4a851ad0c4`. De afzonderlijke CI-correcties `b3462738255c33ab21ad885baf4c7246e583893d` en `2bfa40f75bd11fb44d3b05b08cbb73f2741b95d0` bereiden de tijdelijke GitHub TV-runner voor met voldoende opslag en wachten op de Android-services vóór de tests. De 38 Android-buildinvoerbestanden zijn ongewijzigd.
+Applicatiebron voor de eerste gesigneerde AAB: `b7648e62a5cd03f73e0590327ff93b4da963bc3a`. De afzonderlijke CI-correcties `b3462738255c33ab21ad885baf4c7246e583893d` en `2bfa40f75bd11fb44d3b05b08cbb73f2741b95d0` bereiden de tijdelijke GitHub TV-runner voor met voldoende opslag en wachten op de Android-services vóór de tests. Android-bron, fixtures en Android-workflow zijn tussen de geslaagde `2bfa40f`-run en deze broncommit ongewijzigd.
 
 | Omgeving | Openen | Release | Configuratie |
 | --- | --- | --- | --- |
-| Staging | https://staging.dartflow.nl/oche-live | [43471131093-1](https://github.com/dartflow/platform/actions/runs/43471131093) | staging-2026-11-12-v19-pin-1 |
-| Productie | https://dartflow.nl/oche-live | [43471693074-1](https://github.com/dartflow/platform/actions/runs/43471693074) | production-2026-11-12-v19-pin-1 |
+| Staging | https://staging.dartflow.nl/oche-live | [43533172175-1](https://github.com/dartflow/platform/actions/runs/43533172175) | staging-2026-11-12-v19-pin-1 |
+| Productie | https://dartflow.nl/oche-live | [43533760901-1](https://github.com/dartflow/platform/actions/runs/43533760901) | production-2026-11-12-v19-pin-1 |
 
 Koppelen: `/koppel-scherm`. Beheren en eigen thuissessie kiezen: `/app/schermen`. Lokaal draait de gebouwde applicatie op http://127.0.0.1:3000. De bestaande baanroutes en speel-QR blijven bestaan. De generieke nieuwe schermsessie is alleen-lezen; Doorspelen blijft op de bevoegde telefoon.
 
@@ -56,32 +56,42 @@ SHA-256: `05f22e9c0a4cf227c94da9d48949152a5c151e14c01d4be4ee03910fe36f0f6b`.
 De technische productie-AAB in `artifacts/oche-android/oche-live-production-release-unsigned.aab` is **ongesigneerd** en niet geschikt voor Play-upload.
 SHA-256: `1d2670dc5c5d336807dcf2fda1c4ca62a5764190db7f08e35242fc0a1926a9cf`.
 
-Deze build gebruikt versie 1.0.0, lokale versionCode 1, compile/target SDK 36 en min SDK 26. Er is nog geen Play-versiecode toegewezen of geüpload. Staging gebruikt `nl.dartflow.ochelive.staging`; het voorgestelde productie-ID is `nl.dartflow.ochelive` en moet vóór de eerste upload in Play worden bevestigd.
+Deze eerdere lokale build gebruikt versie 1.0.0, lokale versionCode 1, compile/target SDK 36 en min SDK 26. Hij is niet naar Play geüpload. Staging gebruikt `nl.dartflow.ochelive.staging`; de nieuwe gesigneerde productiebuild hieronder gebruikt `nl.dartflow.ochelive` en versionCode 1009.
+
+## Eerste ondertekende appbundel
+
+[Download `oche-signed-aab` (ZIP)](https://github.com/dartflow/platform/actions/runs/43618459740/artifacts/14123204748). Aanmelden op GitHub met leesrechten voor de repository is vereist. Pak de ZIP uit en upload `app-production-release.aab` in Play Console via **Testen en releasen → Testen → Interne test → Nieuwe release maken**. De download is beschikbaar tot 12 februari 2027; de eigenaar kan het bestand zelf bewaren.
+
+- Versie **1.0.0 (1009)**, package `nl.dartflow.ochelive`, productiebackend `https://dartflow.nl`.
+- AAB: 2.704.145 bytes, SHA-256 `b6ae4521a4ea90aedc00f29810d6a9d258ebb36a6b09f554711a0b7195c5fcb1`.
+- [Workflow 43618459740](https://github.com/dartflow/platform/actions/runs/43618459740): alle vier jobs geslaagd; 15 Play-pipelinetests, lint/bouw/JVM-tests, vier telefoon- en vier TV-instrumentatietests uitgevoerd en geslaagd. De Google-authenticatie- en Play-uploadstappen zijn overgeslagen.
+- Onafhankelijk na download: 15/15 controles geslaagd. GitHub-archiefdigest en AAB-handtekening gecontroleerd; signer komt overeen met het eigen uploadcertificaat. Bundletool valideert package/versie, min SDK 26 en target SDK 36. De bundle bevat `PAGE_ALIGNMENT_16K`; alle native ELF-bestanden van arm64-v8a, armeabi-v7a, x86 en x86_64 zijn op 16KB-uitlijning gecontroleerd.
+- Het openbare [buildbewijs](builds/1.0.0-1009.json) bevat de broncommit, checksums, artifactgegevens en testuitslagen. Er is geen Play-upload of publicatie uitgevoerd.
 
 ## Nog door de eigenaar in te richten voor Google Play
 
-De gebruiker heeft bevestigd dat de Console-app nog niet bestaat. Er is geen Play-track in GitHub geconfigureerd en er is geen upload, review of productiepublicatie uitgevoerd. De beide GitHub Play-omgevingen zijn voorbereid; signing en publiceren staan uit.
+De eigenaar heeft de Console-app aangemaakt en op 14 november 2026 het aanmaken en bewaren van de uploadsleutel en signingsecrets geautoriseerd. De signing-only build is [43618459740](https://github.com/dartflow/platform/actions/runs/43618459740), bron `b7648e6`, geverifieerde versie 1.0.0 (1009). De vier signingsecrets zijn ingericht en de versleutelde herstelkopie is geverifieerd; zie het [runbook](google-play-runbook.md#2-uploadsleutel-en-eerste-aab). Er is nog geen Play-track in GitHub geconfigureerd en er is geen Play-upload, review of productiepublicatie uitgevoerd. Het huidige GitHub-abonnement blijft behouden; upload en promotie gebeuren handmatig in Play Console.
 
 | Naam | Plaats | Status |
 | --- | --- | --- |
 | OCHE_JAVA_VERSION | Repository variable | 17 |
 | OCHE_VERSION_CODE_BASE | Repository variable | 1000 |
 | PLAY_PACKAGE_NAME | Repository variable | nl.dartflow.ochelive |
-| OCHE_SIGNING_ENABLED | Repository variable | false |
+| OCHE_SIGNING_ENABLED | Repository variable | true |
 | OCHE_PLAY_ENABLED | Repository variable | false |
-| ANDROID_UPLOAD_KEYSTORE_BASE64 | Secret in play-internal | Eigen uploadsleutel nog invoeren |
-| ANDROID_UPLOAD_STORE_PASSWORD | Secret in play-internal | Nog invoeren |
-| ANDROID_UPLOAD_KEY_ALIAS | Secret in play-internal | Nog invoeren |
-| ANDROID_UPLOAD_KEY_PASSWORD | Secret in play-internal | Nog invoeren |
-| PLAY_WIF_PROVIDER | Variable per Play-environment | Werkelijke Google-provider nog invoeren |
-| PLAY_SERVICE_ACCOUNT | Variable per Play-environment | Werkelijk serviceaccount nog invoeren |
-| PLAY_INTERNAL_TRACKS | Repository variable | Werkelijke track-ID’s na eerste upload |
-| PLAY_PRODUCTION_TRACKS | Repository variable | Werkelijke track-ID’s na eerste upload |
+| ANDROID_UPLOAD_KEYSTORE_BASE64 | Secret in play-internal | Ingericht; waarde blijft geheim |
+| ANDROID_UPLOAD_STORE_PASSWORD | Secret in play-internal | Ingericht; waarde blijft geheim |
+| ANDROID_UPLOAD_KEY_ALIAS | Secret in play-internal | Ingericht |
+| ANDROID_UPLOAD_KEY_PASSWORD | Secret in play-internal | Ingericht; waarde blijft geheim |
+| PLAY_WIF_PROVIDER | Variable per Play-environment | Alleen bij optionele latere API-automatisering |
+| PLAY_SERVICE_ACCOUNT | Variable per Play-environment | Alleen bij optionele latere API-automatisering |
+| PLAY_INTERNAL_TRACKS | Repository variable | Alleen bij optionele latere API-automatisering |
+| PLAY_PRODUCTION_TRACKS | Repository variable | Alleen bij optionele latere API-automatisering |
 | PLAY_APP_SIGNING_SHA256 | Repository variable en publieke certificaatconfig | Werkelijk Play App Signing-certificaat nodig |
 
-Maak de Console-app en uploadsleutel, vul de vier signingsecrets in en bouw met `signed_bundle=true` eerst een gesigneerde AAB zonder API-upload. Upload die voor het eerst handmatig, activeer Play App Signing, configureer het echte certificaat in `config/android-app-links.json` en deploy die publieke configuratie. Richt daarna WIF, apprechten en de echte tracks in. Activeer publiceren pas na verificatie. De pipeline promoveert dezelfde intern geteste versionCode, zonder herbouw.
+Upload de geverifieerde gesigneerde AAB voor het eerst handmatig en activeer Play App Signing. Configureer daarna het echte **Play-appsigningcertificaat** in `config/android-app-links.json` en deploy die publieke configuratie. De nieuwe uploadcertificaatfingerprint vervangt dit certificaat niet. Google-authenticatie en automatische uploads blijven uit; een eventuele latere automatisering is een afzonderlijke stap.
 
-`/.well-known/assetlinks.json` geeft bewust HTTP 200 met `[]` tot een echt certificaat beschikbaar is. Er is geen debugcertificaat als productieverificatie gepubliceerd. De huidige private GitHub-repository ondersteunt volgens de API nog geen beschermde tag-rulesets op het huidige abonnement; automatische productiepromotie weigert een onbeschermde `oche-v*`-tag. Het runbook beschrijft de benodigde bescherming.
+`/.well-known/assetlinks.json` geeft bewust HTTP 200 met `[]` tot een echt certificaat beschikbaar is. Er is geen debug- of uploadcertificaat als Play-appverificatie gepubliceerd. De huidige private GitHub-repository ondersteunt volgens de API geen beschermde tag-rulesets op het huidige abonnement; automatische productiepromotie weigert een onbeschermde `oche-v*`-tag. De gekozen handmatige Console-route heeft die bescherming niet nodig.
 
 Echte telefoon/TV, afstandsbediening, grote systeemletters, ambient, herstart na stroomuitval, een Play-update met behoud van koppeling en Play App Links test de eigenaar later, zoals afgesproken. De debug-APK is een stagingtest; de uiteindelijke Play-build heeft eigen signing.
 
