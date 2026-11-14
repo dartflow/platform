@@ -75,6 +75,36 @@ test('blog revisions, routes, scheduler, private media and SocialHero credential
    assert.equal(attempts.filter(r=>r.status==='fulfilled').length,1);assert.equal((attempts.find(r=>r.status==='rejected') as PromiseRejectedResult).reason.code,'REVISION_CONFLICT');
    const latest=await getBlogDraft(actor,initial.id),restored=await restoreBlogRevision(actor,initial.id,1,latest.revision,key());assert.equal(restored.article.title,'Eerste');assert.equal(restored.revision,latest.revision+1);
   });
+  await t.test('an editor waiting on another committed revision receives a conflict instead of a missing article',async()=>{
+   const current=await getBlogDraft(actor,initial.id),requestId=key();
+   const blockerPid=Number((await owner.query('select pg_backend_pid() as pid')).rows[0].pid);
+   let pending:Promise<{error?:unknown}>|undefined;
+   await owner.query('begin');
+   try{
+    await owner.query('select id from dartflow_private.blog_posts where id=$1 for update',[initial.id]);
+    pending=saveBlogDraft(actor,{id:initial.id,expectedRevision:current.revision,data:article('Wachtende editor',current.slug),requestId}).then(()=>({}),error=>({error}));
+    let waiting=false;
+    const deadline=Date.now()+5000;
+    while(Date.now()<deadline){
+     waiting=(await owner.query("select exists(select 1 from pg_stat_activity where application_name='dartflow' and wait_event_type='Lock' and query like '%blog_posts%' and $1::int=any(pg_blocking_pids(pid))) as waiting",[blockerPid])).rows[0].waiting;
+     if(waiting)break;
+     await new Promise(resolve=>setTimeout(resolve,10));
+    }
+    assert.equal(waiting,true,'the second editor reached the locked article before the first editor commits');
+    await owner.query('insert into dartflow_private.blog_revisions(post_id,revision,data,created_by) select post_id,$2,data,$3 from dartflow_private.blog_revisions where post_id=$1 and revision=$4',[initial.id,current.revision+1,actor,current.revision]);
+    await owner.query('update dartflow_private.blog_posts set draft_revision=$2 where id=$1',[initial.id,current.revision+1]);
+    await owner.query('commit');
+    const outcome=await pending;
+    assert.equal((outcome.error as {code?:string}|undefined)?.code,'REVISION_CONFLICT');
+    assert.equal((outcome.error as {currentRevision?:number}).currentRevision,current.revision+1);
+    assert.equal((await getBlogDraft(actor,initial.id)).revision,current.revision+1);
+    assert.equal(Number((await owner.query('select count(*) from dartflow_private.blog_revisions where post_id=$1 and revision>$2',[initial.id,current.revision])).rows[0].count),1);
+    assert.equal((await owner.query('select 1 from dartflow_private.blog_receipts where key=$1',[requestId])).rowCount,0);
+   }finally{
+    await owner.query('rollback');
+    await pending;
+   }
+  });
   await t.test('a replayed save returns the acted immutable revision instead of an unseen latest draft',async()=>{
    const latest=await getBlogDraft(actor,initial.id);assert.ok(latest.revision>1);
    const replay=await saveBlogDraft(actor,{data:article('Eerste'),requestId:initialKey});assert.equal(replay.revision,1);assert.equal(replay.article.revision,1);assert.equal(replay.article.title,'Eerste');assert.equal(replay.article.draftRevision,latest.revision);
