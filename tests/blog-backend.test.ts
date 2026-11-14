@@ -86,7 +86,8 @@ test('blog revisions, routes, scheduler, private media and SocialHero credential
     let waiting=false;
     const deadline=Date.now()+5000;
     while(Date.now()<deadline){
-     waiting=(await owner.query("select exists(select 1 from pg_stat_activity where application_name='dartflow' and wait_event_type='Lock' and query like '%blog_posts%' and $1::int=any(pg_blocking_pids(pid))) as waiting",[blockerPid])).rows[0].waiting;
+     // pg_locks is live; pg_stat_activity can retain its first snapshot for this transaction.
+     waiting=(await owner.query('select exists(select 1 from pg_locks where not granted and $1::int=any(pg_blocking_pids(pid))) as waiting',[blockerPid])).rows[0].waiting;
      if(waiting)break;
      await new Promise(resolve=>setTimeout(resolve,10));
     }
