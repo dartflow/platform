@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {actorId,isLocalRequest} from './auth';
+import {nativePlayerPrincipal} from './native-player-context';
 import {appConfig} from './config';
 import {consumeRateLimit} from './db';
 import {DomainError} from './domain';
@@ -11,7 +12,7 @@ import type {OcheClaim,OchePlatform,OcheSession} from './oche-device-types';
 const pendingCookie='dartflow-oche-installation',accessCookie='dartflow-oche-access',refreshCookie='dartflow-oche-refresh';
 const cookiePath='/api/oche/v1';
 function json(value:unknown,status=200,headers:Record<string,string>={}){return NextResponse.json(value,{status,headers:{'Cache-Control':'private, no-store','Pragma':'no-cache','Vary':'Cookie, Authorization','X-Content-Type-Options':'nosniff',...headers}});}
-function csrf(request:NextRequest){if(request.headers.get('origin')!==appConfig().origin||request.headers.get('sec-fetch-site')==='cross-site')throw new DomainError('origin','Ververs de pagina en probeer opnieuw.',403);}
+function csrf(request:NextRequest){if(nativePlayerPrincipal(request))return;if(request.headers.get('origin')!==appConfig().origin||request.headers.get('sec-fetch-site')==='cross-site')throw new DomainError('origin','Ververs de pagina en probeer opnieuw.',403);}
 async function body(request:NextRequest):Promise<Record<string,unknown>>{
  if(!request.headers.get('content-type')?.startsWith('application/json'))throw new DomainError('content_type','Gebruik JSON voor deze aanvraag.',415);
  const reader=request.body?.getReader();if(!reader)throw new DomainError('invalid_json','Invoer ontbreekt.');let size=0;const chunks:Uint8Array[]=[];

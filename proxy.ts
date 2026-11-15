@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function proxy(request:NextRequest) {
   let response=NextResponse.next({request});
   response.headers.set('Cache-Control','private, no-store');
+  // Native PKCE owns its verifier/session. Browser cookies must not interfere with the code relay.
+  if(['/auth/callback','/auth/native/callback'].includes(request.nextUrl.pathname)&&request.nextUrl.searchParams.has('native_client'))return response;
   if (process.env.DARTFLOW_DATA_MODE !== 'supabase') return response;
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL; const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return response;
@@ -22,4 +24,4 @@ export async function proxy(request:NextRequest) {
 }
 // Display pages and their board-scoped device API never refresh a player session.
 // Their separate read-only capability is validated by the display endpoint.
-export const config={matcher:['/((?!_next/static|_next/image|assets|favicon.ico|sw\\.js|speler/manifest\\.webmanifest|scorebord|api/health|api/screen|api/club-boards|api/board-screens|api/oche/v1/(?:capabilities|start|status|redeem|refresh|snapshot|events|logout)|baanscherm|oche-live|\\.well-known/assetlinks\\.json).*)']};
+export const config={matcher:['/((?!_next/static|_next/image|assets|favicon.ico|sw\\.js|speler/manifest\\.webmanifest|scorebord|api/health|api/screen|api/club-boards|api/board-screens|api/player/v1|api/oche/v1/(?:capabilities|start|status|redeem|refresh|snapshot|events|logout)|baanscherm|oche-live|\\.well-known/assetlinks\\.json).*)']};

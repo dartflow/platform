@@ -1,0 +1,83 @@
+name: DartFlow Speler Android CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['android/player/**', '.github/workflows/player-android-ci.yml', 'lib/native-player*', 'lib/auth.ts', 'app/api/**', 'app/auth/**']
+  pull_request:
+    branches: [main]
+    paths: ['android/player/**', '.github/workflows/player-android-ci.yml', 'lib/native-player*', 'lib/auth.ts', 'app/api/**', 'app/auth/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dartflow-player-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Spelersapp · lint, unit tests en builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: android/player
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android-platform
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Controleer omgevingsscheiding, bouw en test
+        run: ./gradlew --no-daemon --max-workers=2 :app:lintDevelopmentDebug :app:testDevelopmentDebugUnitTest :app:assembleDevelopmentDebug :app:lintStagingDebug :app:testStagingDebugUnitTest :app:assembleStagingDebug :app:lintProductionDebug :app:testProductionDebugUnitTest :app:bundleProductionRelease
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: dartflow-player-build-${{ github.sha }}
+          path: |
+            android/player/app/build/outputs/apk/development/debug/*.apk
+            android/player/app/build/outputs/apk/staging/debug/*.apk
+            android/player/app/build/outputs/bundle/productionRelease/*.aab
+            android/player/app/build/reports/tests/
+            android/player/app/build/reports/lint-results-*.html
+          retention-days: 30
+          if-no-files-found: error
+
+  ui:
+    name: Spelersapp · native telefoonproeven
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Geef tijdelijke emulator hardwareversnelling
+        run: |
+          test -c /dev/kvm
+          sudo setfacl -m "u:$(id -un):rw" /dev/kvm
+      - name: Test echte Compose-schermen met uitsluitend lokale fixtures
+        uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          working-directory: android/player
+          disable-animations: true
+          script: ./gradlew --no-daemon --max-workers=2 :app:connectedDevelopmentDebugAndroidTest
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: dartflow-player-ui-${{ github.sha }}
+          path: android/player/app/build/reports/androidTests/
+          retention-days: 14
+          if-no-files-found: ignore

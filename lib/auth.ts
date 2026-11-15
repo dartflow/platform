@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import type { NextRequest } from 'next/server';
 import { appConfig, safeNext } from './config';
 import { ensureAuthProfile } from './accounts';
+import { nativePlayerPrincipal } from './native-player-context';
 
 export const LOCAL_USERS = [
   {id:'00000000-0000-4000-8000-000000000001',name:'Danny Goldenbelt',role:'organizer'},
@@ -47,6 +48,8 @@ export async function supabaseServer() {
 }
 
 export async function actorId(request?:NextRequest):Promise<string|null> {
+  const native=request?nativePlayerPrincipal(request):null;
+  if(native)return native.id;
   const config = appConfig();
   if (config.mode === 'local') {
     if (request && !isLocalRequest(request)) return null;
