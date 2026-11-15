@@ -58,11 +58,15 @@ object PlayerLinks {
         val path = (uri.fragment?.takeIf { fragment -> listOf("baan-phone/", "match/", "lobby/", "training/").any(fragment::startsWith) }?.let { "/$it" } ?: uri.path).trimEnd('/')
         val parts = path.split('/').filter(String::isNotEmpty).let { if (it.firstOrNull() == "app") it.drop(1) else it }
         val id = parts.getOrNull(1)?.takeIf { it.length in 1..128 && it.all { c -> c.isLetterOrDigit() || c in "-_" } }
+        val invitation = query(uri)["code"]?.let { code ->
+            require(Regex("[A-Za-z0-9]{4}|[A-Za-z0-9_-]{24}").matches(code))
+            if (code.length == 4) code.uppercase() else code
+        }
         when (parts.firstOrNull()) {
             "w" -> id?.takeIf { it.length in listOf(4, 24) }?.let { PlayerDestination(PlayerScreen.PLAY, invitationCode = if (it.length == 4) it.uppercase() else it) }
             "wedstrijd", "match" -> id?.let { PlayerDestination(PlayerScreen.MATCH, it) }
             "baan", "baan-phone" -> id?.let { PlayerDestination(PlayerScreen.BOARD, it) }
-            "lobby" -> id?.let { PlayerDestination(PlayerScreen.LOBBY, it) }
+            "lobby" -> id?.let { PlayerDestination(PlayerScreen.LOBBY, it, invitation) }
             "training" -> PlayerDestination(PlayerScreen.TRAINING, id)
             "seasons" -> PlayerDestination(if (id != null) PlayerScreen.SEASON else PlayerScreen.SEASONS, id)
             "feed" -> PlayerDestination(PlayerScreen.FEED)

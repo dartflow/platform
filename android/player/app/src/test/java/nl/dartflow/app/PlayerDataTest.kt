@@ -94,6 +94,14 @@ class PlayerDataTest {
         assertEquals("paircode:ABCD1234", PlayerLinks.destination("https://dartflow.nl/koppel-scherm#code=ABCD1234", "https://dartflow.nl")?.id)
         assertNull(PlayerLinks.destination("//evil.example/baan/lane-1", "https://dartflow.nl"))
     }
+    @Test fun existingLobbyLinksKeepTheirInvitationAcrossNativeLogin() {
+        val legacy = "aBCdef0123456789-_ABcdef"
+        val link = PlayerLinks.destination("https://dartflow.nl/app/lobby/lobby-1?code=$legacy", "https://dartflow.nl")
+        assertEquals("lobby-1", link?.id)
+        assertEquals(legacy, link?.invitationCode)
+        assertEquals("K7M2", PlayerLinks.destination("/app/lobby/lobby-1?code=k7m2", "https://dartflow.nl")?.invitationCode)
+        assertNull(PlayerLinks.destination("/app/lobby/lobby-1?code=invalid", "https://dartflow.nl"))
+    }
     @Test fun statisticsFiltersAndPaginationAreAllowlisted() {
         assertEquals("?startScore=301&offset=25", PlayerViewModel.statisticsQuery("startScore=301&offset=25"))
         assertEquals("", PlayerViewModel.statisticsQuery("startScore=999&offset=-1&token=never-allowed"))
