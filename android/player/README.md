@@ -2,6 +2,8 @@
 
 Een zelfstandige Kotlin/Jetpack Compose-app met ingebouwde spelersschermen. De app gebruikt dezelfde DartFlow-accounts, wedstrijd-ID's, score-engine, baanrechten en definitieve statistieken als de website en Oche Live. De Android-client bepaalt nooit zelf wie mag scoren of welke score definitief is.
 
+Zie de [oplevering met installatiebestanden en testresultaten](../../docs/player-android/oplevering.md) voor de gecontroleerde versie 0.1.0 (1).
+
 ## Identiteit en builds
 
 | Variant | applicationId | Backend | Gebruik |
