@@ -19,8 +19,11 @@ De eigenaar heeft de Cloud-bootstrap uitgevoerd en de twee publieke outputs
 bevestigd. Serviceaccount, pool en provider bestaan; de GitHub-variabelen zijn
 ingesteld. De eigenaar bevestigt de appgebonden Play-rechten, het geslaagde
 subjectherstel en de eerste AAB-upload. De echte WIF-/Play-toegangsproef is
-geslaagd en `PLAYER_PLAY_ENABLED=true`. Google bevestigt versiecode **2** als
-`completed` op de interne track; de productietrack is nog leeg.
+geslaagd en `PLAYER_PLAY_ENABLED=true`. De eerdere API-controle bevestigde versiecode **2** als
+`completed` op de interne én productietrack. De eigenaar heeft die eerste
+productierelease ter beoordeling ingediend; goedkeuring en openbare beschikbaarheid
+zijn niet bevestigd. De nieuwe **0.1.2 (3)**-release is ondertekend beschikbaar op
+GitHub en beide backends zijn uitgerold; de afzonderlijke Play-uitkomst staat hieronder.
 
 1. Projectkeuze en inschakelen van **Google Play Android Developer API** zijn door de eigenaar bevestigd.
 2. Maak een afzonderlijk serviceaccount voor de spelersapp. Maak geen downloadbare JSON-sleutel.
@@ -147,9 +150,9 @@ gecontroleerd op 18 november 2026.
 
 ## Eerste appbestand en eerste publicatie
 
-De eerste handmatige upload is afgerond. De API bevestigt de interne track op versiecode **2**, status **completed**; de productietrack is leeg. De eerste productiepublicatie en de open Store-/App-contentverklaringen volgen in Console. De onderstaande instructies blijven de eenmalige procedure beschrijven.
+De eerste handmatige upload en de eenmalige productie-indiening in Console zijn afgerond. De eigenaar bevestigt dat wijzigingen ter beoordeling zijn ingediend. De [API-controle](https://github.com/dartflow/platform/actions/runs/44328517736) bevestigt versiecode **2**, status **completed**, op productie. Dat is een trackstatus en geen bewijs van Google-goedkeuring of een openbare Store-vermelding. De onderstaande instructies bewaren de eenmalige procedure voor een nieuwe app.
 
-De huidige [ondertekende release 0.1.1 (2)](https://github.com/dartflow/platform/releases/tag/android-player-0.1.1-2) hoort bij `nl.dartflow.app` en exacte bron `20db906c3c646caba2d9a6e09f0429b20e865564`. Gebruik `app-production-release.aab`, SHA-256 `dc7e549f49ec4eeeeb8b18316a533058af83b053dc4837c342b6a8c010193c84` (26.312.672 bytes). [Bestands- en testbewijs](oplevering.md) en het [Play-invulblad](play-console-0.1.1.md) horen bij deze versie.
+De ingediende [ondertekende release 0.1.1 (2)](https://github.com/dartflow/platform/releases/tag/android-player-0.1.1-2) hoort bij `nl.dartflow.app` en exacte bron `20db906c3c646caba2d9a6e09f0429b20e865564`. Haar `app-production-release.aab` heeft SHA-256 `dc7e549f49ec4eeeeb8b18316a533058af83b053dc4837c342b6a8c010193c84` (26.312.672 bytes). [Bestands- en testbewijs](oplevering.md) en het [Play-invulblad](play-console-0.1.1.md) horen bij deze versie. Deze bestanden blijven bevroren; de update 0.1.2 heeft een eigen tag en hogere versiecode.
 
 Maak de spelersapp in Play Console en upload het **ondertekende productionRelease-
 AAB van `nl.dartflow.app`** eerst eenmaal handmatig. Een aangemaakte lege app is
@@ -162,6 +165,45 @@ reviewerstoegang en eventuele toegang tot productie af. De bestaande publisherhe
 vereist ook voor de eerste productiepublicatie een handmatige Console-release.
 Daarna kan hij een gecontroleerde interne versie naar productie promoveren.
 Een API-commit is geen bewijs dat Google de app al heeft goedgekeurd of beschikbaar gesteld.
+
+### Ondertekende update · 0.1.2 (3)
+
+De compactere spelersinterface hoort bij mainbron
+`6694643c74c39699d5e9e0a14de023054eaf71a8` ([PR #10](https://github.com/dartflow/platform/pull/10),
+[PR #11](https://github.com/dartflow/platform/pull/11) en [PR #12](https://github.com/dartflow/platform/pull/12)),
+versionName **0.1.2** en versionCode **3**. De gepubliceerde tag is
+[`android-player-0.1.2-3`](https://github.com/dartflow/platform/releases/tag/android-player-0.1.2-3).
+De exacte [web-CI](https://github.com/dartflow/platform/actions/runs/44375702239)
+en beide jobs in de [native CI](https://github.com/dartflow/platform/actions/runs/44375702068)
+zijn geslaagd: 102 JVM-uitvoeringen en 18 native UI-proeven, zonder fouten of
+overgeslagen tests. De gecontroleerde CI-artifacts zijn ondertekend en bevroren.
+De AAB heeft SHA-256 `6c8ba503326a493b4db75bba162e0ade79de4dc4b28f3472ed43278782e7b1be`
+en is 26.293.611 bytes groot.
+
+Dezelfde applicatiebron draait gezond op
+[staging](https://github.com/dartflow/platform/actions/runs/44377944190)
+(release `44377944190-1`, config `staging-2026-11-18-play-safety-1`) en
+[productie](https://github.com/dartflow/platform/actions/runs/44378566429)
+(release `44378566429-1`, config `production-2026-11-18-play-safety-1`). De publieke
+preflight voor beide backends, Auth, App Links en juridische pagina's is geslaagd.
+De [interne Play-upload 44380265441](https://github.com/dartflow/platform/actions/runs/44380265441)
+is geslaagd: de API-edit is gecommit voor versiecode 3 op `internal` en bevestigt
+de exacte AAB-hash. De [productiepromotie 44380533558](https://github.com/dartflow/platform/actions/runs/44380533558)
+is eveneens geslaagd: de API heeft de edit voor versiecode 3 op `production`
+gecommit. De [geslaagde afzonderlijke trackcontrole 44380730912](https://github.com/dartflow/platform/actions/runs/44380730912)
+bevestigt op **18 november 2026 om 19:28:06 UTC** dat zowel `internal` als `production`
+versiecode **3** met status **`completed`** bevatten. Openbare beschikbaarheid en
+Google-goedkeuring zijn niet aangetoond.
+Volledige [bestands- en testresultaten](oplevering.md) en het
+[samengevoegde uitrolbewijs](../evidence/player-compact-ui-2026-11-18.json) horen bij
+deze applicatiebron. Een latere documentatiecommit vervangt die bron niet.
+
+Als bij een volgende release wijzigingen door Google worden beoordeeld en de API
+`CHANGES_ALREADY_IN_REVIEW` teruggeeft, stopt de helper, ook als de nieuwe actie alleen de
+interne track bijwerkt. Behoud de lopende beoordeling en herhaal pas na afronding;
+wijzig `ERROR_IF_IN_REVIEW` niet en laat die queryparameter niet weg. Zonder deze
+keuze is het API-standaardgedrag het annuleren en opnieuw indienen van de lopende
+review. [Officiële commitsemantiek](https://developers.google.com/android-publisher/api-ref/rest/v3/edits/commit)
 
 ## Controles en toekomstige releases
 
@@ -221,13 +263,16 @@ moet op staging en productie actief zijn.
 1. Kies eerst `check-access` om de ingestelde Play-rechten en bestaande tracks
    te controleren. Er wordt geen AAB geüpload of trackrelease gewijzigd.
 2. Gebruik `upload-internal` met de bronrelease en de verplichte
-   `bundle_sha256`. Voor deze versie is de brontag `android-player-0.1.1-2`,
+   `bundle_sha256`. Voor de 0.1.2 (3)-release is de brontag `android-player-0.1.2-3`,
    met assets `app-production-release.aab` en `release-receipt.json`.
+   Gebruik bundelhash `6c8ba503326a493b4db75bba162e0ade79de4dc4b28f3472ed43278782e7b1be`
+   uit het bevroren receipt en versiecode `3`.
    De workflow controleert het receipt en de AAB voordat hij het bestaande
    spelerspakket op de gekozen interne track bijwerkt.
 3. Kies na een gecontroleerde interne release `promote-production` om diezelfde
-   versie te promoveren. De eerste productiepublicatie blijft een Console-stap;
-   de helper vereist een eerder volledig gepubliceerde productierelease.
+   versie te promoveren. De eerste productiepublicatie blijft voor een nieuwe app
+   een Console-stap. De helper vereist op de productietrack een bestaande release
+   met API-status `completed`; die controle bewijst geen openbare Store-beschikbaarheid.
 
 Gebruik waar aangeboden eerst `validate_only` om de beoogde wijziging zonder
 commit te valideren. Daarbij kan de AAB in de tijdelijke edit worden geüpload,
