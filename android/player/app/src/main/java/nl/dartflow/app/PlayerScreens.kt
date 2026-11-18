@@ -12,6 +12,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -112,27 +114,32 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         modifier = Modifier.fillMaxSize(), containerColor = PlayerInk,
         topBar = {
             Column(Modifier.statusBarsPadding().fillMaxWidth().background(PlayerInk)) {
-                Row(Modifier.fillMaxWidth().height(62.dp).padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.width(130.dp).height(38.dp), contentScale = ContentScale.Fit)
+                Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.width(112.dp).height(32.dp), contentScale = ContentScale.Fit)
                     Spacer(Modifier.weight(1f))
                     TextButton(onClick = { actions.navigate(PlayerScreen.NOTIFICATIONS, null) }) { Text("Meldingen", fontSize = 12.sp) }
-                    Avatar(profile?.displayName?.ifBlank { profile.name } ?: "DartFlow", Modifier.clickable { actions.navigate(PlayerScreen.PROFILE, null) }.size(38.dp))
+                    Box(Modifier.size(48.dp).clickable { actions.navigate(PlayerScreen.PROFILE, null) }, contentAlignment = Alignment.Center) {
+                        Avatar(profile?.displayName?.ifBlank { profile.name } ?: "DartFlow", Modifier.size(32.dp))
+                    }
                 }
                 HorizontalDivider(color = PlayerBorder)
             }
         },
         bottomBar = {
-            NavigationBar(containerColor = PlayerInk, tonalElevation = 0.dp) {
-                listOf(Triple(PlayerScreen.HOME, "⌂", "Vandaag"), Triple(PlayerScreen.PLAY, "◎", "Spelen"), Triple(PlayerScreen.EVENTS, "▣", "Evenementen"), Triple(PlayerScreen.FRIENDS, "♧", "Vrienden")).forEach { (route, glyph, label) ->
-                    NavigationBarItem(selected = state.screen == route, onClick = { actions.navigate(route, null) }, icon = { Text(glyph, fontSize = 23.sp) }, label = { Text(label, fontSize = 10.sp) }, colors = NavigationBarItemDefaults.colors(indicatorColor = PlayerPanel, selectedIconColor = PlayerLime, selectedTextColor = PlayerLime))
+            Column(Modifier.background(PlayerInk).navigationBarsPadding()) {
+                HorizontalDivider(color = PlayerBorder)
+                Row(Modifier.fillMaxWidth().selectableGroup()) {
+                    listOf(Triple(PlayerScreen.HOME, "⌂", "Vandaag"), Triple(PlayerScreen.PLAY, "◎", "Spelen"), Triple(PlayerScreen.EVENTS, "▣", "Evenementen"), Triple(PlayerScreen.FRIENDS, "♧", "Vrienden")).forEach { (route, glyph, label) ->
+                        PlayerNavigationItem(label, glyph, state.screen == route, Modifier.weight(1f)) { actions.navigate(route, null) }
+                    }
+                    PlayerNavigationItem("Meer", "☰", more, Modifier.weight(1f)) { more = true }
                 }
-                NavigationBarItem(selected = more, onClick = { more = true }, icon = { Text("☰", fontSize = 23.sp) }, label = { Text("Meer", fontSize = 10.sp) }, colors = NavigationBarItemDefaults.colors(indicatorColor = PlayerPanel))
             }
         }
     ) { inset ->
         Box(Modifier.fillMaxSize().padding(inset)) {
             PlayerRings(Modifier.fillMaxSize())
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (!state.online) Notice("Geen verbinding. De laatst ontvangen gegevens blijven zichtbaar.", true)
                 state.error?.takeIf { it.isNotBlank() }?.let { Notice(it, true, actions.retry) }
                 state.notice?.takeIf { it.isNotBlank() }?.let { Notice(it, false, actions.dismiss) }
@@ -173,16 +180,28 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     }
 }
 
+@Composable private fun PlayerNavigationItem(label: String, glyph: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val color = if (selected) PlayerLime else PlayerMuted
+    Column(modifier.selectable(selected = selected, role = Role.Tab, onClick = onClick)
+        .heightIn(min = 56.dp).padding(horizontal = 2.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Box(Modifier.width(38.dp).heightIn(min = 25.dp).background(if (selected) PlayerPanel else Color.Transparent, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+            Text(glyph, color = color, fontSize = 20.sp, lineHeight = 23.sp)
+        }
+        Text(label, color = color, fontFamily = PlayerSans, fontSize = 10.sp, lineHeight = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+    }
+}
+
 @Composable internal fun Heading(title: String, eyebrow: String? = null, description: String? = null) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         eyebrow?.let { Text(it.uppercase(Locale.ROOT), color = PlayerLime, fontSize = 10.sp, letterSpacing = 2.sp) }
-        Text(title, style = MaterialTheme.typography.headlineLarge)
+        Text(title, color = PlayerLime, style = MaterialTheme.typography.headlineLarge)
         description?.let { Text(it, color = PlayerMuted, style = MaterialTheme.typography.bodyMedium) }
     }
 }
 @Composable internal fun PlayerCard(title: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth().border(1.dp, PlayerBorder, RoundedCornerShape(18.dp)).background(PlayerPanel.copy(alpha = .92f), RoundedCornerShape(18.dp)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        title?.let { Text(it, style = MaterialTheme.typography.titleLarge) }; content()
+    Column(Modifier.fillMaxWidth().border(1.dp, PlayerBorder, RoundedCornerShape(14.dp)).background(PlayerPanel.copy(alpha = .92f), RoundedCornerShape(14.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        title?.let { Text(it, color = PlayerText, style = MaterialTheme.typography.titleLarge) }; content()
     }
 }
 @Composable internal fun Action(label: String, enabled: Boolean = true, primary: Boolean = true, modifier: Modifier = Modifier, onClick: () -> Unit) {
@@ -204,7 +223,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     OutlinedTextField(value = value, onValueChange = { changed(it.take(max)) }, label = { Text(label) }, enabled = enabled, modifier = Modifier.fillMaxWidth(), singleLine = !multiline, minLines = if (multiline) 3 else 1, maxLines = if (multiline) 6 else 1,
         visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = keyboard, autoCorrectEnabled = !secret && keyboard == KeyboardType.Text), isError = error != null,
-        supportingText = error?.let { { Text(it) } }, shape = RoundedCornerShape(12.dp))
+        supportingText = error?.let { { Text(it) } }, textStyle = MaterialTheme.typography.bodyMedium, shape = RoundedCornerShape(12.dp))
 }
 @Composable internal fun Choice(label: String, selected: String, options: List<Pair<String, String>>, changed: (String) -> Unit, enabled: Boolean = true) {
     var open by remember { mutableStateOf(false) }
@@ -233,9 +252,8 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     var reviewEmail by remember { mutableStateOf("") }
     var reviewPassword by remember { mutableStateOf("") }
     ClearSecretsOnBackground { code = ""; reviewPassword = "" }
-    Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Spacer(Modifier.height(32.dp))
-        Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.width(190.dp).height(60.dp), contentScale = ContentScale.Fit)
+    Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.width(152.dp).height(42.dp), contentScale = ContentScale.Fit)
         Heading("Klaar voor jouw volgende leg?", "DARTFLOW SPELER", "Speel, ontmoet andere darters en volg iedere worp. Je baan of uitnodiging blijft klaarstaan na het inloggen.")
         if (state.loading || state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         state.error?.let { Notice(it, true) }
@@ -278,7 +296,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     var display by remember(profile.id) { mutableStateOf(profile.displayName.ifBlank { profile.name }.takeIf(::validPlayerName) ?: "") }
     var pin by remember { mutableStateOf("") }; var repeat by remember { mutableStateOf("") }
     ClearSecretsOnBackground { pin = ""; repeat = "" }
-    Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+    Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Heading("Dit ben jij op het scorebord", "REGISTRATIE AFRONDEN", "Bevestig je naam en kies een unieke gebruikersnaam. Een naam uit Google is een voorstel dat je kunt aanpassen.")
         Field("Gebruikersnaam", username, { username = it }, !busy, error = if (username.isNotBlank() && !validPlayerUsername(username)) "Kies een geldige, unieke gebruikersnaam." else null, max = 81)
         Field("Naam op het scorebord", display, { display = it }, !busy, error = if (display.isNotEmpty() && !validPlayerName(display)) "Vul een geldige naam in." else null, max = 80)
