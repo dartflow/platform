@@ -185,7 +185,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     Column(modifier.selectable(selected = selected, role = Role.Tab, onClick = onClick)
         .heightIn(min = 56.dp).padding(horizontal = 2.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Box(Modifier.size(width = 38.dp, height = 25.dp).background(if (selected) PlayerPanel else Color.Transparent, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+        Box(Modifier.width(38.dp).heightIn(min = 25.dp).background(if (selected) PlayerPanel else Color.Transparent, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
             Text(glyph, color = color, fontSize = 20.sp, lineHeight = 23.sp)
         }
         Text(label, color = color, fontFamily = PlayerSans, fontSize = 10.sp, lineHeight = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
