@@ -153,4 +153,18 @@ class PlayerUiTest {
         compose.runOnIdle { assertTrue(cancelled) }
     }
 
+    @Test fun blockedMediaShowsStoppedStateAndRemovesCameraControls() {
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate)
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        val call = PlayerVideoCall(context, PlayerApi("https://dartflow.nl"), "synthetic-match", scope)
+        call.open = true
+        call.handleSignalingFailure(PlayerApiFailure(403, "blocked", "Access denied"))
+        compose.setContent { DartFlowPlayerTheme { PlayerMediaRoom(call) } }
+        compose.onNodeWithText("De beeldverbinding is gestopt omdat de toegang is gewijzigd of geblokkeerd. Camera en microfoon zijn uit. Je kunt blijven scoren.").assertIsDisplayed()
+        compose.onNodeWithText("Camera wisselen").assertDoesNotExist()
+        compose.onNodeWithText("Microfoon uit").assertDoesNotExist()
+        compose.onNodeWithText("Beeldverbinding starten").assertIsEnabled()
+        compose.runOnIdle { call.close(); scope.coroutineContext[kotlinx.coroutines.Job]?.cancel() }
+    }
+
 }

@@ -52,14 +52,18 @@ De gecontroleerde bron is in een afzonderlijke remote bouwmap `/srv/dartflow-pla
 
 | Controle | Resultaat |
 | --- | --- |
-| Development JVM | 31 tests, 0 fouten, 0 overgeslagen |
-| Staging JVM | 31 tests, 0 fouten, 0 overgeslagen |
-| Production JVM | 31 tests, 0 fouten, 0 overgeslagen |
+| Development JVM | 34 tests, 0 fouten, 0 overgeslagen |
+| Staging JVM | 34 tests, 0 fouten, 0 overgeslagen |
+| Production JVM | 34 tests, 0 fouten, 0 overgeslagen |
 | Lint drie debugflavors | Geslaagd; per flavor 0 fatal/errors en 27 niet-blokkerende dependency-, icoon- en stijlwaarschuwingen |
-| Development APK en AndroidTest APK | Gebouwd; 13 Composeproeven gecompileerd |
+| Development APK en AndroidTest APK | Gebouwd; 14 Composeproeven gecompileerd |
 | Production release/R8/AAB | Gebouwd; definitieve controle na scanner-autofocusaanpassing geslaagd in 2m13s |
 | Werkelijk gemergd manifest | INTERNET, ACCESS_NETWORK_STATE, CAMERA, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS en AndroidX signature-only receiverrecht; geen AD_ID, POST_NOTIFICATIONS of ML Kit-metadata |
 | Production runtime dependencyboom | Geen GMS, ML Kit, Firebase, datatransport, Ads, Billing of Crashlytics; lokale ZXing 3.5.3 en WebRTC 144.7559.15 aanwezig |
 | Composeproeven uitvoeren | Niet uitgevoerd op deze VPS: emulator, system images en `/dev/kvm` ontbreken |
 
-Het voorlopige **ongetekende** artifact meet 26.297.053 bytes; SHA-256 `a19f13c17c8b05a56fcff36434bb6c4ef018f80ec0c0895c81e45668682464b1`. Dit is bouwbewijs en geen Play-uploadbestand. De definitieve signingstap kan een andere bestandshash opleveren.
+Het voorlopige **ongetekende** artifact meet 26.297.053 bytes; SHA-256 `a19f13c17c8b05a56fcff36434bb6c4ef018f80ec0c0895c81e45668682464b1`. Dit is bouwbewijs en geen Play-uploadbestand. Dit eerdere artifact is door de aanvullende media-intrekkingsfix vervangen. Gebruik uitsluitend de definitieve ondertekende release uit het opleverdocument.
+
+### Media-intrekking vóór de definitieve release
+
+Een definitieve weigering van signaaltoegang (401/403/404/410) sluit nu een reeds bestaande peerverbinding, camera en microfoon. Tijdelijke server-/netwerkfouten blijven herstelbaar. Generatiecontroles voorkomen dat een laat antwoord een nieuwe verbinding beïnvloedt. Drie gerichte JVM-proeven oefenen de werkelijke stoproute; een extra Composeproef controleert het verdwijnen van de camerabediening. De nieuwe JVM-telling is 34 per flavor, 102 totaal.

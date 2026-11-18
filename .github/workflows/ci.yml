@@ -57,7 +57,10 @@ jobs:
       - run: npm test
       - run: npm run test:prototype
       - name: Verify Play release transitions without credentials
-        run: python3 -B android/oche-live/ci/test_play_release.py
+        run: |
+          python3 -B android/oche-live/ci/test_play_release.py
+          python3 -B android/player/ci/test_check_release_readiness.py
+          python3 -B android/player/ci/test_verify_receipt.py
       - run: npm run test:deploy
       - name: Verify privileged bootstrap contracts without host mutations
         run: |

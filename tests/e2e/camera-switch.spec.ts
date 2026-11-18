@@ -114,3 +114,67 @@ test('camera switching changes actual remote frames without replacing audio, pee
     await Promise.allSettled([first.close(),second.close()]);
   }
 });
+
+test('revoked media access stops both peers and tracks without stopping scoring; transient failures retain the call',async({browser,baseURL})=>{
+  test.setTimeout(120000);
+  if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Media access fixture requires the local application.');
+  const first=await browser.newContext({viewport:{width:390,height:844}}),second=await browser.newContext();
+  let ownedMatchId:string|undefined,blockedPlayerId:string|undefined;
+  try{
+    if(!(await(await first.request.get('/api/session')).json()).local)throw Error('Local fixture authentication is required.');
+    await syntheticCameras(first,'rgb(230,20,20)');await syntheticCameras(second,'rgb(20,230,20)');
+    const a=await first.newPage(),b=await second.newPage();await login(a,'Michael de Groot');await login(b,'Raymond van Dijk');
+    const lobby=await command(first,{type:'lobby.create',name:`Media access fixture ${randomUUID().slice(0,8)}`,setup:'remote',startScore:301,bestOfLegs:1});
+    await command(second,{type:'lobby.join',id:lobby.id,code:lobby.code});await command(first,{type:'lobby.ready',id:lobby.id});await command(second,{type:'lobby.ready',id:lobby.id});
+    const started=await command(first,{type:'lobby.start',id:lobby.id}),matchId=started.matchId as string;ownedMatchId=matchId;
+    await matchAction(first,matchId,{type:'accept'});await matchAction(second,matchId,{type:'accept'});const initial=await matchAction(first,matchId,{type:'start'});
+    for(const page of[a,b]){await page.goto(`/wedstrijd/${matchId}`);await openMatchDetails(page);}
+
+    let mediaStatus:number|null=null;
+    await a.route(`**/api/media/${matchId}`,route=>mediaStatus===null?route.continue():route.fulfill({status:mediaStatus,contentType:'text/plain',body:'Media access unavailable'}));
+    // Even an error page without JSON must retain its HTTP status and release preview devices.
+    for(const status of[401,404,410]){
+      mediaStatus=status;await a.getByRole('button',{name:'Camera en microfoon testen',exact:true}).click();
+      await expect(a.getByRole('button',{name:'Camera wisselen',exact:true})).toBeEnabled();
+      await a.getByRole('button',{name:'Beeldverbinding starten',exact:true}).click();
+      await expect(a.getByRole('status').filter({hasText:status===401?'Je sessie is verlopen.':'Deze beeldverbinding is niet meer beschikbaar.'})).toBeVisible();
+      expect(await a.evaluate(()=>window.cameraProbe.tracks.every(track=>track.readyState==='ended'))).toBe(true);
+      expect(await a.getByLabel('Je eigen camerabeeld',{exact:true}).evaluate((video:HTMLVideoElement)=>video.srcObject===null)).toBe(true);
+      expect(await a.evaluate(()=>window.cameraProbe.connections.length)).toBe(0);
+    }
+    mediaStatus=null;
+    for(const page of[a,b]){await page.getByRole('button',{name:'Camera en microfoon testen',exact:true}).click();await expect(page.getByRole('button',{name:'Camera wisselen',exact:true})).toBeEnabled();await page.getByRole('button',{name:'Beeldverbinding starten',exact:true}).click();}
+    for(const page of[a,b])await expect(page.getByText('Beeld en geluid verbonden.',{exact:true})).toBeVisible({timeout:20000});
+    await expect.poll(async()=>{const rgb=await pixel(b);return rgb[0]>180&&rgb[1]<70&&rgb[2]<70;}).toBe(true);
+
+    const originalTracks=await a.evaluate(()=>window.cameraProbe.tracks.filter(track=>track.readyState==='live').map(track=>track.id));
+    const failures=[500,429],statuses:number[]=[],polls=[0,0];
+    for(const [index,page] of[a,b].entries())await page.route(`**/api/platform/matches/${matchId}/signals?after=*`,async route=>{
+      polls[index]++;
+      if(index===0&&failures.length){const status=failures.shift()!;statuses.push(status);return route.fulfill({status,json:{error:'Temporary synthetic signal failure'}});}
+      const response=await route.fetch();if(index===0)statuses.push(response.status());await route.fulfill({response});
+    });
+    await expect.poll(()=>statuses).toEqual(expect.arrayContaining([500,429,200]));
+    expect(await a.evaluate(()=>window.cameraProbe.tracks.filter(track=>track.readyState==='live').map(track=>track.id))).toEqual(originalTracks);
+    expect(await a.evaluate(()=>window.cameraProbe.connections.at(-1)?.connectionState)).toBe('connected');
+    await expect.poll(async()=>{const rgb=await pixel(b);return rgb[0]>180&&rgb[1]<70&&rgb[2]<70;}).toBe(true);
+
+    blockedPlayerId=initial.players[1].id;await command(first,{type:'friend.block',userId:blockedPlayerId});
+    for(const page of[a,b]){
+      await expect(page.getByRole('status').filter({hasText:'Je hebt geen toegang meer tot deze beeldverbinding.'})).toBeVisible();
+      expect(await page.evaluate(()=>window.cameraProbe.connections.every(connection=>connection.connectionState==='closed')&&window.cameraProbe.tracks.every(track=>track.readyState==='ended'))).toBe(true);
+      for(const label of['Je eigen camerabeeld','Gedeeld beeld van de andere speler'])expect(await page.getByLabel(label,{exact:true}).evaluate((video:HTMLVideoElement)=>video.srcObject===null)).toBe(true);
+      await expect(page.getByRole('button',{name:'Camera wisselen',exact:true})).toHaveCount(0);
+    }
+    const stoppedPolls=[...polls];await a.waitForTimeout(2200);expect(polls).toEqual(stoppedPolls);
+    const before:MatchView=await(await first.request.get(`/api/matches/${matchId}`)).json();expect(before.revision).toBe(initial.revision);expect(before.remaining).toEqual([301,301]);
+    const scored=await matchAction(first,matchId,{type:'score',score:100});expect(scored.remaining[0]).toBe(201);
+    await expect(b.locator('.remaining').first()).toHaveText('201');
+    await command(first,{type:'friend.unblock',userId:blockedPlayerId});blockedPlayerId=undefined;
+    await finishFixture(first,second,matchId);ownedMatchId=undefined;
+  }finally{
+    if(blockedPlayerId)await command(first,{type:'friend.unblock',userId:blockedPlayerId}).catch(()=>console.warn('Media fixture block cleanup did not complete.'));
+    if(ownedMatchId)await finishFixture(first,second,ownedMatchId).catch(()=>console.warn('Media fixture match cleanup did not complete.'));
+    await Promise.allSettled([first.close(),second.close()]);
+  }
+});

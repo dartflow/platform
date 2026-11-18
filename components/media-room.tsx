@@ -5,10 +5,13 @@ import {CameraRecoveryError,nextCamera,replaceCamera,type CameraTarget} from '@/
 
 type Configuration={actorId:string;peerId:string;isInitiator:boolean;relayConfigured:boolean;iceServers:RTCIceServer[]};
 type Signal={id:number;actorId:string;type:string;payload:{callId?:string;sdp?:RTCSessionDescriptionInit;candidate?:RTCIceCandidateInit};createdAt:string};
+class MediaRequestError extends Error {
+  constructor(readonly status:number,message:string){super(message);this.name='MediaRequestError';}
+}
 async function request<T>(url:string,body?:unknown):Promise<T> {
   const response=await fetch(url,{cache:'no-store',...(body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})});
-  const data=await response.json();
-  if (!response.ok) throw new Error(data.error || 'Verbinding tijdelijk niet beschikbaar.');
+  const data=await response.json().catch(()=>({}));
+  if (!response.ok) throw new MediaRequestError(response.status,data.error || 'Verbinding tijdelijk niet beschikbaar.');
   return data;
 }
 
@@ -32,6 +35,25 @@ export function MediaRoom({matchId}:{matchId:string}) {
     stream.current?.getTracks().forEach(track=>track.stop());
     peer.current=null;stream.current=null;
   },[matchId]);
+
+  function releaseMedia(message:string) {
+    generation.current++;cameraOperation.current++;cameraBusy.current=false;connecting.current=false;
+    cameraAbort.current?.abort();cameraAbort.current=null;
+    running.current=false;if(poll.current)clearTimeout(poll.current);poll.current=null;
+    const connection=peer.current;peer.current=null;
+    if(connection){connection.ontrack=null;connection.onicecandidate=null;connection.onconnectionstatechange=null;connection.close();}
+    stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;
+    if(localVideo.current)localVideo.current.srcObject=null;
+    if(remoteVideo.current){(remoteVideo.current.srcObject as MediaStream|null)?.getTracks().forEach(track=>track.stop());remoteVideo.current.srcObject=null;}
+    config.current=null;pendingIce.current=[];cursor.current=0;callId.current='';
+    setActive(false);setPreview(false);setOpening(false);setSwitching(false);setRecovery(null);setCameraNotice('');setError('');setStatus(message);
+  }
+  function stopForAccessLoss(cause:unknown,version:number,connection?:RTCPeerConnection):boolean {
+    if(!(cause instanceof MediaRequestError)||![401,403,404,410].includes(cause.status))return false;
+    // An answer from an older call must never stop a replacement connection.
+    if(generation.current===version&&(!connection||peer.current===connection))releaseMedia(cause.status===401?'Je sessie is verlopen. Camera en microfoon zijn gestopt. Log opnieuw in; je score blijft bewaard.':cause.status===403?'Je hebt geen toegang meer tot deze beeldverbinding. Camera en microfoon zijn gestopt; je score blijft bewaard.':'Deze beeldverbinding is niet meer beschikbaar. Camera en microfoon zijn gestopt; je score blijft bewaard.');
+    return true;
+  }
 
   async function discoverCameras(media:MediaStream) {
     try {const devices=await navigator.mediaDevices.enumerateDevices();if(stream.current===media){setCameras(devices.filter(device=>device.kind==='videoinput'));setSelectedCamera(media.getVideoTracks()[0]?.getSettings().deviceId||'');}}catch{/* Facing-mode switching remains available when enumeration is restricted. */}
@@ -59,8 +81,8 @@ export function MediaRoom({matchId}:{matchId:string}) {
     }finally{if(cameraOperation.current===operation){cameraAbort.current=null;cameraBusy.current=false;setSwitching(false);}}
   }
 
-  async function signal(type:string,payload:Record<string,unknown>) {
-    if(!config.current)return;
+  async function signal(type:string,payload:Record<string,unknown>,version=generation.current) {
+    if(!config.current||generation.current!==version)return;
     await request(`/api/platform/matches/${matchId}/signals`,{requestId:crypto.randomUUID(),targetId:config.current.peerId,type,payload:{...payload,callId:callId.current}});
   }
   async function startPreview() {
@@ -80,22 +102,27 @@ export function MediaRoom({matchId}:{matchId:string}) {
       throw new Error('Geen toegang tot camera of microfoon. Controleer je browserrechten en probeer opnieuw.');
     }finally{if(generation.current===version)setOpening(false);}
   }
-  async function acceptSignals(connection:RTCPeerConnection,initial:boolean) {
+  async function acceptSignals(connection:RTCPeerConnection,initial:boolean,version:number) {
+    const isCurrent=()=>generation.current===version&&running.current&&peer.current===connection;
     const data=await request<{signals:Signal[];cursor:number}>(`/api/platform/matches/${matchId}/signals?after=${cursor.current}`);
+    if(!isCurrent())return;
     cursor.current=data.cursor;
     for(const item of data.signals){
+      if(!isCurrent())return;
       if(item.actorId===config.current?.actorId || Date.parse(item.createdAt)<Date.now()-5*60*1000)continue;
       if(item.type==='offer' && !config.current?.isInitiator && item.payload.sdp && item.payload.callId){
         if(connection.signalingState!=='stable')continue;
         callId.current=item.payload.callId;
         await connection.setRemoteDescription(item.payload.sdp);
-        for(const candidate of pendingIce.current)await connection.addIceCandidate(candidate);
+        if(!isCurrent())return;
+        for(const candidate of pendingIce.current){await connection.addIceCandidate(candidate);if(!isCurrent())return;}
         pendingIce.current=[];
-        const answer=await connection.createAnswer();await connection.setLocalDescription(answer);
-        await signal('answer',{sdp:{type:answer.type,sdp:answer.sdp}});
+        const answer=await connection.createAnswer();if(!isCurrent())return;await connection.setLocalDescription(answer);if(!isCurrent())return;
+        await signal('answer',{sdp:{type:answer.type,sdp:answer.sdp}},version);
       }else if(item.payload.callId===callId.current && item.type==='answer' && item.payload.sdp && connection.signalingState==='have-local-offer'){
         await connection.setRemoteDescription(item.payload.sdp);
-        for(const candidate of pendingIce.current)await connection.addIceCandidate(candidate);
+        if(!isCurrent())return;
+        for(const candidate of pendingIce.current){await connection.addIceCandidate(candidate);if(!isCurrent())return;}
         pendingIce.current=[];
       }else if(item.payload.callId===callId.current && item.type==='ice' && item.payload.candidate){
         if(connection.remoteDescription)await connection.addIceCandidate(item.payload.candidate);
@@ -104,48 +131,48 @@ export function MediaRoom({matchId}:{matchId:string}) {
         setStatus('De andere speler heeft de beeldverbinding verlaten. Je kunt opnieuw verbinden.');
       }
     }
-    if(initial && config.current?.isInitiator){
+    if(isCurrent() && initial && config.current?.isInitiator){
       callId.current=crypto.randomUUID();
-      const offer=await connection.createOffer();await connection.setLocalDescription(offer);
-      await signal('offer',{sdp:{type:offer.type,sdp:offer.sdp}});
+      const offer=await connection.createOffer();if(!isCurrent())return;await connection.setLocalDescription(offer);if(!isCurrent())return;
+      await signal('offer',{sdp:{type:offer.type,sdp:offer.sdp}},version);
     }
   }
   async function connect() {
     if(cameraBusy.current||connecting.current)return;
-    connecting.current=true;setOpening(true);const version=generation.current;
+    connecting.current=true;setOpening(true);const version=++generation.current;
+    running.current=false;if(poll.current)clearTimeout(poll.current);poll.current=null;
+    const previous=peer.current;peer.current=null;if(previous){previous.ontrack=null;previous.onicecandidate=null;previous.onconnectionstatechange=null;previous.close();}
     setError('');
     try {
       const media=await startPreview();
-      config.current=await request<Configuration>(`/api/media/${matchId}`);
+      const configuration=await request<Configuration>(`/api/media/${matchId}`);
       if(generation.current!==version)throw new DOMException('Media operation cancelled','AbortError');
-      peer.current?.close();
-      const connection=new RTCPeerConnection({iceServers:config.current.iceServers});peer.current=connection;
+      config.current=configuration;
+      const connection=new RTCPeerConnection({iceServers:configuration.iceServers});peer.current=connection;
+      const isCurrent=()=>generation.current===version&&running.current&&peer.current===connection;
       cursor.current=0;pendingIce.current=[];callId.current='';running.current=true;
       for(const track of media.getTracks())connection.addTrack(track,media);
-      connection.ontrack=event=>{if(remoteVideo.current)remoteVideo.current.srcObject=event.streams[0] || new MediaStream([event.track]);};
-      connection.onicecandidate=event=>{if(event.candidate)void signal('ice',{candidate:event.candidate.toJSON()}).catch(()=>setStatus('Netwerk onderbroken. Verbind opnieuw; de score blijft bewaard.'));};
+      connection.ontrack=event=>{if(isCurrent()&&remoteVideo.current)remoteVideo.current.srcObject=event.streams[0] || new MediaStream([event.track]);};
+      connection.onicecandidate=event=>{if(isCurrent()&&event.candidate)void signal('ice',{candidate:event.candidate.toJSON()},version).catch(cause=>{if(!stopForAccessLoss(cause,version,connection)&&isCurrent())setStatus('Netwerk onderbroken. Verbind opnieuw; de score blijft bewaard.');});};
       connection.onconnectionstatechange=()=>{
+        if(!isCurrent())return;
         const state=connection.connectionState;
         setStatus(state==='connected'?'Beeld en geluid verbonden.':['failed','disconnected'].includes(state)?'Beeldverbinding onderbroken. Verbind opnieuw; de score blijft bewaard.':'Wachten op de andere speler…');
       };
       setActive(true);setStatus(config.current.relayConfigured?'Verbinding opzetten; de andere speler moet ook verbinden.':'Directe verbinding opzetten. Een relayserver is nog niet geconfigureerd.');
-      await acceptSignals(connection,true);
+      await acceptSignals(connection,true,version);
+      if(!isCurrent())return;
       const synchronize=async()=>{
-        if(!running.current || peer.current!==connection)return;
-        try{await acceptSignals(connection,false);}catch{setStatus('Signaalverbinding onderbroken. Er wordt opnieuw gesynchroniseerd.');}
-        if(running.current)poll.current=setTimeout(synchronize,1000);
+        if(!isCurrent())return;
+        try{await acceptSignals(connection,false,version);}catch(cause){if(!stopForAccessLoss(cause,version,connection)&&isCurrent())setStatus('Signaalverbinding onderbroken. Er wordt opnieuw gesynchroniseerd.');}
+        if(isCurrent())poll.current=setTimeout(synchronize,1000);
       };
       poll.current=setTimeout(synchronize,500);
-    }catch(cause){if(generation.current===version)setError(cause instanceof Error?cause.message:'Verbinding niet beschikbaar.');}finally{connecting.current=false;if(generation.current===version)setOpening(false);}
+    }catch(cause){if(!stopForAccessLoss(cause,version)&&generation.current===version)setError(cause instanceof Error?cause.message:'Verbinding niet beschikbaar.');}finally{if(generation.current===version){connecting.current=false;setOpening(false);}}
   }
   async function stop() {
-    generation.current++;cameraOperation.current++;cameraBusy.current=false;setSwitching(false);setOpening(false);setRecovery(null);setCameraNotice('');
-    cameraAbort.current?.abort();cameraAbort.current=null;
     const leaving=active?signal('leave',{}).catch(()=>undefined):Promise.resolve();
-    running.current=false;if(poll.current)clearTimeout(poll.current);
-    peer.current?.close();peer.current=null;stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;
-    if(localVideo.current)localVideo.current.srcObject=null;if(remoteVideo.current)remoteVideo.current.srcObject=null;
-    setActive(false);setPreview(false);setStatus('Camera en microfoon zijn gestopt.');
+    releaseMedia('Camera en microfoon zijn gestopt.');
     await leaving;
   }
   function toggle(kind:'audio'|'video') {

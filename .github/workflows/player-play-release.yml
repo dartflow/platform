@@ -1,0 +1,132 @@
+name: DartFlow Speler Google Play
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Eerste publicatie en juridische bevestigingen gebeuren eenmalig in Play Console
+        required: true
+        type: choice
+        options: [check-access, upload-internal, promote-production]
+      source_sha:
+        description: Volledige main-SHA met geslaagde web- en spelersapp-CI
+        required: true
+        type: string
+      release_tag:
+        description: Bestaande getekende GitHub-release, bijvoorbeeld android-player-0.1.1-2
+        required: true
+        type: string
+      bundle_sha256:
+        description: SHA-256 van exact de getekende AAB uit de oplevering
+        required: true
+        type: string
+      version_code:
+        description: Android versionCode van diezelfde bundel
+        required: true
+        type: string
+        default: '2'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: dartflow-player-google-play
+  cancel-in-progress: false
+jobs:
+  release:
+    name: Verifieer en verwerk spelersrelease
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: player-play-production
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      BUNDLE_SHA256: ${{ inputs.bundle_sha256 }}
+      VERSION_CODE: ${{ inputs.version_code }}
+      RELEASE_ACTION: ${{ inputs.action }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .nvmrc
+      - name: Verifieer main, exacte CI en het bestaande release-artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = dartflow/platform
+          test "$GITHUB_REF" = refs/heads/main
+          [[ "$SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$BUNDLE_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          [[ "$RELEASE_TAG" =~ ^android-player-[0-9]+\.[0-9]+\.[0-9]+-[1-9][0-9]*$ ]]
+          [[ "$VERSION_CODE" =~ ^[1-9][0-9]{0,9}$ ]]
+          [[ "$RELEASE_ACTION" == check-access || "$RELEASE_ACTION" == upload-internal || "$RELEASE_ACTION" == promote-production ]]
+          node --input-type=module <<'JS'
+          import {verifyRelease} from './ops/release-gate.mjs';
+          await verifyRelease({repository:'dartflow/platform',integrationBranch:'main',sha:process.env.SOURCE_SHA,githubToken:process.env.GH_TOKEN,requiredChecks:[{workflow:'ci.yml',jobs:['Verify'],events:['push']},{workflow:'player-android-ci.yml',jobs:['Spelersapp · lint, unit tests en builds','Spelersapp · native telefoonproeven'],events:['push','workflow_dispatch']}]});
+          JS
+          gh release view "$RELEASE_TAG" --repo dartflow/platform --json targetCommitish,isDraft > "$RUNNER_TEMP/player-release.json"
+          python3 - <<'PY'
+          import json,os
+          value=json.load(open(os.environ['RUNNER_TEMP']+'/player-release.json'))
+          assert value['targetCommitish']==os.environ['SOURCE_SHA'] and value['isDraft'] is False,'Release must use the exact tested source commit.'
+          PY
+          mkdir -m 700 player-release
+          gh release download "$RELEASE_TAG" --repo dartflow/platform --dir player-release --pattern app-production-release.aab --pattern release-receipt.json
+          cd player-release
+          python3 ../android/player/ci/verify_receipt.py --source-sha "$SOURCE_SHA" --sha256 "$BUNDLE_SHA256" --version-code "$VERSION_CODE" --tag "$RELEASE_TAG"
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verifieer handtekening en afzonderlijk spelers-uploadcertificaat
+        shell: bash
+        run: |
+          set -euo pipefail
+          LC_ALL=C jarsigner -verify player-release/app-production-release.aab > "$RUNNER_TEMP/player-signature.log"
+          grep -q 'jar verified' "$RUNNER_TEMP/player-signature.log"
+          fingerprint="$(keytool -printcert -jarfile player-release/app-production-release.aab -rfc | openssl x509 -noout -fingerprint -sha256)"
+          test "${fingerprint#*=}" = '97:C8:A2:78:FF:67:14:BD:E4:F1:BC:B5:4E:BA:15:12:28:D4:2E:83:8F:11:D4:3B:CF:6E:71:C7:DE:08:A0:09'
+      - name: Verifieer beide backends, privacy en Play App Links
+        env:
+          PLAY_FINGERPRINT: ${{ vars.PLAY_APP_SIGNING_SHA256 }}
+        run: python3 android/player/ci/check_release_readiness.py --sha "$SOURCE_SHA" --fingerprint "$PLAY_FINGERPRINT"
+      - name: Controleer eenmalige Google-koppeling
+        env:
+          ENABLED: ${{ vars.PLAYER_PLAY_ENABLED }}
+          PROVIDER: ${{ vars.PLAY_WIF_PROVIDER }}
+          ACCOUNT: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+        run: |
+          test "$ENABLED" = true || { echo 'Richt eerst de eenmalige Google Play-toegang in volgens docs/player-android/github-play.md.' >&2; exit 1; }
+          test -n "$PROVIDER"
+          test -n "$ACCOUNT"
+      - name: Tijdelijke Google-autorisatie via GitHub OIDC
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ vars.PLAY_WIF_PROVIDER }}
+          service_account: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Controleer toegang of werk de vaste spelersapptrack bij
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          helper=android/oche-live/ci/play_release.py
+          if [[ "$RELEASE_ACTION" == check-access ]]; then
+            python3 "$helper" list-tracks --package nl.dartflow.app
+          elif [[ "$RELEASE_ACTION" == upload-internal ]]; then
+            python3 "$helper" upload-internal --package nl.dartflow.app --bundle player-release/app-production-release.aab --version-code "$VERSION_CODE" --tracks internal --release-name "DartFlow $VERSION_CODE"
+          else
+            python3 "$helper" promote --package nl.dartflow.app --version-code "$VERSION_CODE" --tracks production --source-tracks internal --action start --fraction 1 --sha256 "$BUNDLE_SHA256"
+          fi
+      - name: Leg de uitgevoerde actie vast
+        run: |
+          printf 'Package: nl.dartflow.app\nAction: %s\nSource: %s\nBundle SHA-256: %s\nVersionCode: %s\n' "$RELEASE_ACTION" "$SOURCE_SHA" "$BUNDLE_SHA256" "$VERSION_CODE" >> "$GITHUB_STEP_SUMMARY"
