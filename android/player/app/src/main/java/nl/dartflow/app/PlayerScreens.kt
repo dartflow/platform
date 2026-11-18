@@ -371,8 +371,8 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         Action("Pincode instellen", primary = false) { actions.navigate(PlayerScreen.PROFILE, null) }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Action("Jouw statistieken", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.STATISTICS, null) }
-        Action("Wedstrijdhistorie", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.HISTORY, null) }
+        Action("Statistieken", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.STATISTICS, null) }
+        Action("Historie", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.HISTORY, null) }
     }
 }
 @Composable private fun FixtureCard(f: JSONObject, actions: PlayerActions, busy: Boolean) {
