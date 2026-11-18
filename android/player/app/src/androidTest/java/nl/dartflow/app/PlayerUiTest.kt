@@ -1,13 +1,23 @@
 package nl.dartflow.app
 
+import android.content.Context
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
+import androidx.test.platform.app.InstrumentationRegistry
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Rule
@@ -18,6 +28,73 @@ class PlayerUiTest {
     @get:Rule val compose = createComposeRule()
     private fun profile(pin: Boolean = true, confirmed: Boolean = true) = PlayerProfile("p1", "Danny", "danny", "Danny", pin, pin && confirmed, confirmed)
     private fun signedIn(p: PlayerProfile = profile()) = PlayerUiState(loading = false, session = PlayerSession(p.id, "fixture@example.test", Long.MAX_VALUE, true), profile = p)
+
+    /** Check rendered glyphs, rather than a theme token which Text might not inherit. */
+    private fun assertReadableText(text: String, background: Color) {
+        val pixels = compose.onNodeWithText(text, useUnmergedTree = true).assertIsDisplayed().captureToImage().toPixelMap()
+        val backgroundLuminance = background.luminance()
+        var readablePixels = 0
+        for (y in 0 until pixels.height) for (x in 0 until pixels.width) {
+            val luminance = pixels[x, y].luminance()
+            val contrast = (maxOf(luminance, backgroundLuminance) + .05f) / (minOf(luminance, backgroundLuminance) + .05f)
+            if (contrast >= 4.5f) readablePixels++
+        }
+        assertTrue("$text must render visible, high-contrast glyphs on its dark background", readablePixels > pixels.width * pixels.height * .02f)
+    }
+
+    /** Export only these synthetic, offline fixtures for release-time visual inspection. */
+    private fun saveFixtureScreenshot(filename: String) {
+        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        InstrumentationRegistry.getInstrumentation().targetContext.openFileOutput(filename, Context.MODE_PRIVATE).use { output ->
+            assertTrue("Could not save synthetic UI screenshot $filename", bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+        }
+    }
+
+    @Test fun loginHeadingsRenderReadableColorsOnDarkBackgrounds() {
+        compose.setContent { DartFlowPlayerTheme { PlayerApp(PlayerUiState(loading = false), PlayerActions()) } }
+        assertReadableText("Klaar voor jouw volgende leg?", PlayerInk)
+        assertReadableText("Welkom bij DartFlow", PlayerPanel)
+    }
+
+    @Test fun loginGoogleActionFitsSmallPhoneWithoutScrolling() {
+        compose.setContent { DartFlowPlayerTheme { Box(Modifier.size(360.dp, 640.dp).testTag("compact-fixture")) {
+            PlayerApp(PlayerUiState(loading = false), PlayerActions())
+        } } }
+        val viewport = compose.onNodeWithTag("compact-fixture").getUnclippedBoundsInRoot()
+        val google = compose.onNodeWithText("Doorgaan met Google").assertIsDisplayed().assertIsEnabled().getUnclippedBoundsInRoot()
+        assertTrue("Google sign-in must be fully visible at first open on a 360×640 phone", google.bottom <= viewport.bottom && google.top >= viewport.top)
+        compose.onNodeWithText("Doorgaan met Google").assertHeightIsAtLeast(48.dp)
+        saveFixtureScreenshot("compact-login.png")
+    }
+
+    @Test fun allNavigationLabelsFitOneLineOnNarrowPhone() {
+        compose.setContent { DartFlowPlayerTheme { Box(Modifier.size(360.dp, 640.dp)) {
+            PlayerApp(signedIn().copy(screen = PlayerScreen.EVENTS), PlayerActions())
+        } } }
+        listOf("Vandaag", "Spelen", "Evenementen", "Vrienden", "Meer").forEach { label ->
+            val layouts = mutableListOf<TextLayoutResult>()
+            compose.onNodeWithText(label, useUnmergedTree = true).assertIsDisplayed()
+                .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            assertEquals("$label must expose one native text layout", 1, layouts.size)
+            assertEquals("$label must not wrap in bottom navigation", 1, layouts.single().lineCount)
+            assertFalse("$label must remain complete rather than ellipsized or clipped", layouts.single().hasVisualOverflow)
+        }
+        saveFixtureScreenshot("compact-events.png")
+    }
+
+    @Test fun screenPairingFieldsFitAboveNavigationOnSmallPhone() {
+        compose.setContent { DartFlowPlayerTheme { Box(Modifier.size(360.dp, 640.dp)) {
+            PlayerApp(signedIn().copy(screen = PlayerScreen.SCREENS), PlayerActions())
+        } } }
+        compose.onNodeWithText("Koppelcode").assertIsDisplayed()
+        compose.onNodeWithText("Schermnaam").assertIsDisplayed()
+        val name = compose.onNodeWithText("Schermnaam").getUnclippedBoundsInRoot()
+        val navigation = compose.onNodeWithText("Vandaag", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue("Screen-name entry must initially be visible above bottom navigation", name.bottom < navigation.top)
+        assertReadableText("Oche Live-schermen", PlayerInk)
+        assertReadableText("Scherm koppelen", PlayerPanel)
+        saveFixtureScreenshot("compact-screens.png")
+    }
 
     @Test fun loginUsesNativeEmailCodeAndGoogleControls() {
         var email: String? = null; var google = false
