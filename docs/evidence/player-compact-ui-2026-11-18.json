@@ -1,0 +1,373 @@
+{
+  "checkedAt": "2026-11-18T19:28:06Z",
+  "status": "signed_deployed_and_play_tracks_verified",
+  "applicationSourceSha": "6694643c74c39699d5e9e0a14de023054eaf71a8",
+  "sourceBinding": "The signed Android bundle and both deployed backends use this exact tested application SHA. A later documentation commit may differ and does not replace the application source.",
+  "pullRequests": [
+    "https://github.com/dartflow/platform/pull/10",
+    "https://github.com/dartflow/platform/pull/11",
+    "https://github.com/dartflow/platform/pull/12"
+  ],
+  "changes": {
+    "rootSurfaceDefaultContentColor": true,
+    "pageHeadingSp": {
+      "before": 36,
+      "after": 28
+    },
+    "cardHeadingSp": {
+      "before": 21,
+      "after": 18
+    },
+    "navigationHeightDp": {
+      "before": 80,
+      "afterMinimum": 56
+    },
+    "fullNavigationLabelsAtStandardScaleOn360Dp": true,
+    "loginButtonMinimumHeightDp": 48,
+    "lightAndroidStatusBarIcons": true,
+    "productionOuterPaddingDp": {
+      "minimum": 16,
+      "maximum": 20
+    },
+    "newDatabaseMigrationsRequired": false,
+    "newSecretsRequired": false,
+    "pageHeadingColor": {
+      "token": "PlayerLime",
+      "hex": "#B5F52B"
+    },
+    "cardTitleColor": {
+      "token": "PlayerText",
+      "hex": "#F2F5EF"
+    }
+  },
+  "webCi": {
+    "run": 44375702239,
+    "url": "https://github.com/dartflow/platform/actions/runs/44375702239",
+    "sourceSha": "6694643c74c39699d5e9e0a14de023054eaf71a8",
+    "conclusion": "success",
+    "applicationTests": {
+      "tests": 471,
+      "passed": 471,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0
+    },
+    "prototypeTests": {
+      "tests": 46,
+      "passed": 46,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0
+    },
+    "focusedFeedChatBrowserTests": {
+      "passed": 5,
+      "duration": "28.5s"
+    },
+    "fullBrowserTests": {
+      "passed": 72,
+      "duration": "7.2m"
+    },
+    "pythonTests": {
+      "playReleaseTransitions": 15,
+      "publicPlayerReleaseChecks": 6,
+      "playerReceiptChecks": 4,
+      "nativeDeployer": 64,
+      "privilegedBootstrapAndHostContracts": 69,
+      "authRedirectProbe": 8,
+      "total": 166
+    },
+    "typecheck": true,
+    "lint": true,
+    "build": true,
+    "packaging": true,
+    "artifactUpload": true,
+    "testDatabaseCleanup": true,
+    "failureDiagnosticsStep": "Skipped because CI passed; this is not a skipped test."
+  },
+  "android": {
+    "package": "nl.dartflow.app",
+    "versionName": "0.1.2",
+    "versionCode": 3,
+    "sourceCommit": "6694643c74c39699d5e9e0a14de023054eaf71a8",
+    "githubRelease": "https://github.com/dartflow/platform/releases/tag/android-player-0.1.2-3",
+    "releaseTag": "android-player-0.1.2-3",
+    "artifacts": [
+      {
+        "file": "app-production-release.aab",
+        "bytes": 26293611,
+        "sha256": "6c8ba503326a493b4db75bba162e0ade79de4dc4b28f3472ed43278782e7b1be",
+        "url": "https://github.com/dartflow/platform/releases/download/android-player-0.1.2-3/app-production-release.aab",
+        "githubAssetDigestVerified": true,
+        "localFileReadOnly": true
+      },
+      {
+        "file": "app-production-release.apk",
+        "bytes": 49605460,
+        "sha256": "25d36f4a0fadba87bc1d7eed7a6975c35b105a152fafe90af9da9ee27b587b75",
+        "url": "https://github.com/dartflow/platform/releases/download/android-player-0.1.2-3/app-production-release.apk",
+        "githubAssetDigestVerified": true,
+        "localFileReadOnly": true
+      },
+      {
+        "file": "release-evidence.json",
+        "bytes": 7747,
+        "sha256": "446e85d8ed0f1f839eb14d837d821b8abe95bd9434cfcec7f6f5b457639cf083",
+        "url": "https://github.com/dartflow/platform/releases/download/android-player-0.1.2-3/release-evidence.json",
+        "githubAssetDigestVerified": true,
+        "localFileReadOnly": true
+      },
+      {
+        "file": "release-receipt.json",
+        "bytes": 667,
+        "sha256": "301b1d325d3c276aef2a572a96a7de1415e91c89fc8e412a3a7df16301112fa0",
+        "url": "https://github.com/dartflow/platform/releases/download/android-player-0.1.2-3/release-receipt.json",
+        "githubAssetDigestVerified": true,
+        "localFileReadOnly": true
+      }
+    ],
+    "uploadCertificateSha256": "97:C8:A2:78:FF:67:14:BD:E4:F1:BC:B5:4E:BA:15:12:28:D4:2E:83:8F:11:D4:3B:CF:6E:71:C7:DE:08:A0:09",
+    "playAppSigningCertificateSha256": "DE:54:EB:62:ED:D3:10:AA:F9:39:0F:47:6D:AF:73:E2:94:13:75:CE:EE:BE:DC:0B:89:D8:8D:E2:D4:EC:3E:F1",
+    "ciRun": 44375702068,
+    "ciUrl": "https://github.com/dartflow/platform/actions/runs/44375702068",
+    "conclusion": "success",
+    "unitTests": {
+      "Development": {
+        "tests": 34,
+        "failures": 0,
+        "skipped": 0,
+        "reportSha256": "f31e0b0907ef9bd4bbe5c02bd08a138f9293fe57fb0588d31bee87c186318f1e"
+      },
+      "Staging": {
+        "tests": 34,
+        "failures": 0,
+        "skipped": 0,
+        "reportSha256": "0e06c3c39c117e4ddcc224855707207cb1a3dc4b542e99da52107d0c3c48dbba"
+      },
+      "Production": {
+        "tests": 34,
+        "failures": 0,
+        "skipped": 0,
+        "reportSha256": "2173776959ca1795f641c687cfa98d0efd8eeba94583d451b83e827c050d178a"
+      }
+    },
+    "jvmExecutions": 102,
+    "instrumentation": {
+      "executed": true,
+      "tests": 18,
+      "failures": 0,
+      "skipped": 0,
+      "reportSha256": "d3dda9df5171b4c8b65d72981cae2d1e0085c11a35ec52afc8d8b17f7108fa8d",
+      "device": "Android API36 google_apis x86_64 emulator configured by the successful CI workflow",
+      "ciRun": "https://github.com/dartflow/platform/actions/runs/44375702068"
+    },
+    "lintAllThreeFlavorsPassed": true,
+    "minSdk": 26,
+    "targetSdk": 36,
+    "compileSdk": 36,
+    "aabSignatureVerified": true,
+    "apkSignatureVerified": true,
+    "bundleValidation": true,
+    "bundleNativeAlignment": "PAGE_ALIGNMENT_16K",
+    "apkZipalign16KB": true,
+    "all64BitElf16KB": true,
+    "legacy32BitElf16KBClaimed": false,
+    "runtimeDependencies": {
+      "presence": {
+        "gms": false,
+        "mlkit": false,
+        "firebase": false,
+        "datatransport": false,
+        "ads": false,
+        "billing": false,
+        "crashlytics": false,
+        "zxing": true,
+        "webrtc": true
+      },
+      "reportSha256": "f180f86b8783cb2f2d337d7103aa31079815bae290aa7ef811ddf85cfc0f75c6",
+      "configHashes": {
+        "app/build.gradle.kts": "7d2a42f81eae1f3605184365892064a15155a58031aca39ae47ec01084c1be16",
+        "build.gradle.kts": "b7e8343ad7c348e87a1dbdcb0736e92416771bdb70490acd5f543249beba8a70",
+        "gradle.properties": "7ee0d485ede378e898479d2d2ffdbe53e50c79e046da284d828e578a6aa59e41",
+        "settings.gradle.kts": "024ad50f5a6bda4548a5f6483acb1c96cfaed41191f09f944ecb05de44e1f211",
+        "version.properties": "1dfc433099625ed4a47f03c074786ef482e6736121ef95a2d5bff34adbd808d7",
+        "gradle/wrapper/gradle-wrapper.properties": "3b6b8df392b92f86332d907707f3d952a32c8d6e1fedabafe2b5ec3d933a78c4"
+      },
+      "scope": "Observed controlled worker-local dependency-resolution check without source compilation; all six Gradle inputs verified identical to this final CI source"
+    },
+    "githubCiArtifacts": [
+      {
+        "id": 14460284257,
+        "name": "dartflow-player-build-6694643c74c39699d5e9e0a14de023054eaf71a8",
+        "archiveSha256": "b6af6eef87652cb5c901dcfdd2732f71418d9dafedce997454c307f5a60d8ede",
+        "archiveBytes": 95989187,
+        "sourceCommit": "6694643c74c39699d5e9e0a14de023054eaf71a8",
+        "extractedFilesVerified": 33
+      },
+      {
+        "id": 14462631260,
+        "name": "dartflow-player-ui-6694643c74c39699d5e9e0a14de023054eaf71a8",
+        "archiveSha256": "88927320ed957321b64f21ea59f0cfc577daa951a3a10aaa49f91ff28d30d016",
+        "archiveBytes": 195566,
+        "sourceCommit": "6694643c74c39699d5e9e0a14de023054eaf71a8",
+        "extractedFilesVerified": 9
+      }
+    ],
+    "apkOrigin": "Universal APK generated from this exact signed CI AAB, without source compilation",
+    "signingScope": "Existing player upload key; signed successful GitHub CI bundle locally, no Android source build on target VPS.",
+    "physicalDevicesTested": false,
+    "receiptPlayUploadField": "The frozen receipt records playUpload=false at signing time; later Play actions are recorded separately below."
+  },
+  "visualInspection": {
+    "scope": "Diagnostic CI PNG exports only; not uncropped visual acceptance evidence.",
+    "ciEmulator": {
+      "widthPx": 320,
+      "heightPx": 640,
+      "densityDpi": 160
+    },
+    "compactComposeFixture": {
+      "widthDp": 360,
+      "heightDp": 640
+    },
+    "pngExports": [
+      {
+        "file": "compact-events.png",
+        "widthPx": 360,
+        "heightPx": 640,
+        "sha256": "b5b54e6589f84283ec862472867829882fff50e1db48d8d0072ef2904cd3c0a6"
+      },
+      {
+        "file": "compact-login.png",
+        "widthPx": 360,
+        "heightPx": 640,
+        "sha256": "7ef5fb05c6fff90e28e5d1bcbb18023672143940149672f49a4cee8420b893bc"
+      },
+      {
+        "file": "compact-screens.png",
+        "widthPx": 360,
+        "heightPx": 640,
+        "sha256": "00f414ed9d751604c1f4e9f5ec46d61fd93637a63af83021dee7670d432c37c1"
+      }
+    ],
+    "limitation": "PixelCopy exports to 360-pixel-wide PNGs from a 320-pixel-wide emulator surface may scale or clip the outer margins. These PNGs do not establish uncropped edges or production padding.",
+    "productionOuterPaddingDp": {
+      "minimum": 16,
+      "maximum": 20
+    },
+    "usedAsUncroppedLayoutProof": false,
+    "publishedAsReleasePreview": false,
+    "physicalDeviceValidation": false
+  },
+  "deployments": [
+    {
+      "environment": "staging",
+      "origin": "https://staging.dartflow.nl",
+      "run": 44377944190,
+      "url": "https://github.com/dartflow/platform/actions/runs/44377944190",
+      "conclusion": "success",
+      "sourceSha": "6694643c74c39699d5e9e0a14de023054eaf71a8",
+      "releaseId": "44377944190-1",
+      "configId": "staging-2026-11-18-play-safety-1",
+      "buildConfigId": "staging-2026-11-18-play-safety-1",
+      "runtimeConfigId": "staging-2026-11-18-play-safety-1",
+      "health": "ok",
+      "mode": "supabase",
+      "ready": "ready",
+      "database": "ok",
+      "auth": "reachable",
+      "capabilitiesEnvironment": "staging",
+      "capabilitiesLocal": false
+    },
+    {
+      "environment": "production",
+      "origin": "https://dartflow.nl",
+      "run": 44378566429,
+      "url": "https://github.com/dartflow/platform/actions/runs/44378566429",
+      "conclusion": "success",
+      "sourceSha": "6694643c74c39699d5e9e0a14de023054eaf71a8",
+      "releaseId": "44378566429-1",
+      "configId": "production-2026-11-18-play-safety-1",
+      "buildConfigId": "production-2026-11-18-play-safety-1",
+      "runtimeConfigId": "production-2026-11-18-play-safety-1",
+      "health": "ok",
+      "mode": "supabase",
+      "ready": "ready",
+      "database": "ok",
+      "auth": "reachable",
+      "capabilitiesEnvironment": "production",
+      "capabilitiesLocal": false
+    }
+  ],
+  "publicPreflight": {
+    "sourceSha": "6694643c74c39699d5e9e0a14de023054eaf71a8",
+    "command": "python3 android/player/ci/check_release_readiness.py --sha 6694643c74c39699d5e9e0a14de023054eaf71a8 --fingerprint DE:54:EB:62:ED:D3:10:AA:F9:39:0F:47:6D:AF:73:E2:94:13:75:CE:EE:BE:DC:0B:89:D8:8D:E2:D4:EC:3E:F1",
+    "exitCode": 0,
+    "productionAndStagingReady": true,
+    "appLinks": true,
+    "legalPages": true,
+    "readOnly": true
+  },
+  "play": {
+    "package": "nl.dartflow.app",
+    "versionCode": 3,
+    "expectedBundleSha256": "6c8ba503326a493b4db75bba162e0ade79de4dc4b28f3472ed43278782e7b1be",
+    "internalUpload": {
+      "run": 44380265441,
+      "url": "https://github.com/dartflow/platform/actions/runs/44380265441",
+      "conclusion": "success",
+      "apiOutcome": "Edit gecommit bij Google Play. VersionCode 3, tracks internal.",
+      "exactSignedBundleHashVerified": true,
+      "trackReadback": {
+        "status": "completed",
+        "versionCodes": [
+          "3"
+        ]
+      },
+      "status": "completed"
+    },
+    "productionPromotion": {
+      "run": 44380533558,
+      "url": "https://github.com/dartflow/platform/actions/runs/44380533558",
+      "status": "completed",
+      "conclusion": "success",
+      "trackReadback": {
+        "status": "completed",
+        "versionCodes": [
+          "3"
+        ]
+      },
+      "apiOutcome": "Edit gecommit bij Google Play. VersionCode 3, tracks production.",
+      "commitAcceptedAt": "2026-11-18T19:27:04Z"
+    },
+    "readOnlyTrackVerification": {
+      "status": "completed",
+      "run": 44380730912,
+      "url": "https://github.com/dartflow/platform/actions/runs/44380730912",
+      "conclusion": "success",
+      "checkedAt": "2026-11-18T19:28:06Z",
+      "tracks": {
+        "internal": [
+          {
+            "status": "completed",
+            "versionCodes": [
+              "3"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "status": "completed",
+            "versionCodes": [
+              "3"
+            ]
+          }
+        ]
+      },
+      "readOnly": true
+    },
+    "reviewProtection": "ERROR_IF_IN_REVIEW retained; no silent cancellation or bypass.",
+    "googleApprovalVerified": false,
+    "publicAvailabilityVerified": false
+  }
+}
