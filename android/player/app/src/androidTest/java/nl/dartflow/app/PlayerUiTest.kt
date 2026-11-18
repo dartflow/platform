@@ -2,6 +2,8 @@ package nl.dartflow.app
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -97,6 +99,58 @@ class PlayerUiTest {
         assertTrue("Score keys retain a usable height during warning", keypad.bottom - keypad.top >= 40.dp)
         compose.onNodeWithTag("score-key-6").performClick()
         compose.onNodeWithTag("confirm-score").assertIsDisplayed().assertIsEnabled()
+    }
+
+    @Test fun communityRequiresExplicitRulesAndAgeConfirmation() {
+        var submitted: JSONObject? = null
+        compose.setContent { DartFlowPlayerTheme { androidx.compose.foundation.layout.Column {
+            CommunityConsent(signedIn().copy(safety = JSONObject("{\"requiresAcceptance\":true,\"rulesVersion\":\"2026-11-18\"}")), PlayerActions(command = { path, body -> assertEquals("/safety/consent", path); submitted = body }))
+        } } }
+        compose.onNodeWithTag("accept-community").assertIsNotEnabled()
+        compose.onNodeWithTag("community-age").performClick()
+        compose.onNodeWithTag("accept-community").assertIsNotEnabled()
+        compose.onNodeWithTag("community-accept").performClick()
+        compose.onNodeWithTag("accept-community").assertIsEnabled().performClick()
+        compose.runOnIdle { assertTrue(submitted!!.getBoolean("accepted")); assertTrue(submitted!!.getBoolean("ageConfirmed")); assertEquals("2026-11-18", submitted!!.getString("version")) }
+    }
+
+    @Test fun blockRequiresConfirmationAndKeepsOwnIdentity() {
+        var submitted: JSONObject? = null
+        compose.setContent { DartFlowPlayerTheme { PlayerSafetyControls(signedIn(), PlayerActions(command = { path, body -> assertEquals("/safety/block", path); submitted = body }), "p2", "Fixture opponent") } }
+        compose.onNodeWithText("Speler blokkeren").performClick()
+        compose.runOnIdle { assertNull(submitted) }
+        compose.onNodeWithText("Blokkeren", useUnmergedTree = true).performClick()
+        compose.runOnIdle { assertEquals("p2", submitted!!.getString("userId")); assertTrue(submitted!!.getBoolean("blocked")) }
+    }
+
+    @Test fun reportRequiresExplanationAndExplicitSubmit() {
+        var submitted: JSONObject? = null
+        compose.setContent { DartFlowPlayerTheme { PlayerReportDialog(signedIn(), PlayerReportTarget("post", "post-1", "Bericht", "platform", "platform-1"), PlayerActions(command = { path, body -> assertEquals("/safety/report", path); submitted = body }), {}) } }
+        compose.onNodeWithText("Melding versturen").assertIsNotEnabled()
+        compose.onNodeWithText("Toelichting").performTextInput("Deze persoon bedreigt mij.")
+        compose.onNodeWithText("Melding versturen").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals("post-1", submitted!!.getString("targetId")); assertEquals("harassment", submitted!!.getString("category")) }
+    }
+
+    @Test fun deletionRequiresExactConfirmationAndDoesNotLogoutBeforeAcceptance() {
+        var submitted: JSONObject? = null
+        compose.setContent { DartFlowPlayerTheme { androidx.compose.foundation.layout.Column(Modifier.verticalScroll(rememberScrollState())) { AccountDeletionCard(signedIn(), PlayerActions(command = { path, body -> assertEquals("/account/deletion", path); submitted = body })) } } }
+        compose.onNodeWithText("Account verwijderen aanvragen").performScrollTo().performClick()
+        compose.onNodeWithText("Verwijderverzoek bevestigen").assertIsNotEnabled()
+        compose.onNodeWithText("Typ VERWIJDEREN om te bevestigen").performTextInput("verwijderen")
+        compose.onNodeWithText("Verwijderverzoek bevestigen").assertIsNotEnabled()
+        compose.onNodeWithText("Typ VERWIJDEREN om te bevestigen").performTextClearance()
+        compose.onNodeWithText("Typ VERWIJDEREN om te bevestigen").performTextInput("VERWIJDEREN")
+        compose.onNodeWithText("Verwijderverzoek bevestigen").performClick()
+        compose.runOnIdle { assertEquals("VERWIJDEREN", submitted!!.getString("confirmation")) }
+    }
+
+    @Test fun deniedCameraStillOffersManualLinkEntry() {
+        var cancelled = false
+        compose.setContent { DartFlowPlayerTheme { androidx.compose.foundation.layout.Column { ScannerPermissionPanel("Camera niet toegestaan.", {}, { cancelled = true }) } } }
+        compose.onNodeWithText("Camera niet toegestaan.").assertIsDisplayed()
+        compose.onNodeWithText("Link of code invoeren").performClick()
+        compose.runOnIdle { assertTrue(cancelled) }
     }
 
 }

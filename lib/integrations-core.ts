@@ -7,7 +7,7 @@ import { clubPermission } from './club-access';
 
 export type IntegrationEnvironment='development'|'staging'|'production';
 export type MailMode='log'|'test'|'live';
-export type CredentialKind='resend-api'|'resend-webhook';
+export type CredentialKind='resend-api'|'resend-webhook'|'play-review-password';
 export type Envelope={keyVersion:number;nonce:string;ciphertext:string;tag:string};
 export const PROJECTS={staging:'dsnqnvbckkqpzadblshu',production:'wlrnowuownakqqgjxnbb'} as const;
 export function integrationRuntime() {

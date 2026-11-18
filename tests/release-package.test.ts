@@ -20,6 +20,8 @@ async function fixture(config:Record<string,string>={}) {
   await writeFile(join(root,'package-lock.json'),JSON.stringify({lockfileVersion:3,packages:{}}));
   await writeFile(join(root,'.gitignore'),'.next/\nartifacts/\n');
   await mkdir(join(root,'scripts'));
+  await symlink(resolve('node_modules'),join(root,'node_modules'),'dir');
+  await writeFile(join(root,'scripts/account-removal-worker.ts'),'console.log("Synthetic privacy worker");\n');
   await writeFile(join(root,'scripts/prepare-standalone.mjs'),await readFile(resolve('scripts/prepare-standalone.mjs')));
   prepare(root,config);
   return root;
@@ -51,7 +53,7 @@ test('standalone package includes assets, strips nested private files and record
     assert.ok(!JSON.stringify(manifest).includes(publicConfig.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY));
     const archive=join(root,'artifacts/dartflow-local-uncommitted-local.tgz');
     const entries=spawnSync('tar',['-tzf',archive],{encoding:'utf8'}); assert.equal(entries.status,0,entries.stderr);
-    for(const path of ['./server.js','./public/logo.svg','./.next/static/client.js','./release-manifest.json']) assert.ok(entries.stdout.split('\n').includes(path),`Missing ${path}`);
+    for(const path of ['./server.js','./account-removal-worker.mjs','./public/logo.svg','./.next/static/client.js','./release-manifest.json']) assert.ok(entries.stdout.split('\n').includes(path),`Missing ${path}`);
     assert.doesNotMatch(entries.stdout,/(?:^|\/)\.env|(?:^|\/)\.local(?:\/|$)|(?:^|\/)\.git(?:\/|$)/m);
     const firstHash=manifest.buildConfigSha256;
     const changedConfig={...publicConfig,NEXT_PUBLIC_SUPABASE_URL:'https://different-staging.supabase.co'};

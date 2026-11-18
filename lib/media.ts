@@ -2,10 +2,13 @@ import {createHmac} from 'node:crypto';
 import {DomainError} from './domain';
 import {signalAccess} from './platform';
 import {transaction} from './platform-store';
+import {appConfig} from './config';
 
 export function turnCredentials(actorId:string,matchId:string,secret:string,urls:string[],now=Date.now()) {
   const expiresAt=Math.floor(now/1000)+600;
-  const username=`${expiresAt}:${actorId}:${matchId}`;
+  // Bind the grant without sending account or match IDs to the relay in clear text.
+  const opaque=createHmac('sha256',secret).update(`dartflow-turn:${expiresAt}:${actorId}:${matchId}`).digest('base64url');
+  const username=`${expiresAt}:${opaque}`;
   return {urls,username,credential:createHmac('sha1',secret).update(username).digest('base64'),expiresAt};
 }
 
@@ -20,6 +23,7 @@ export async function mediaConfiguration(actorId:string,matchId:string) {
     await client.query(`insert into dartflow_private.platform_signals(match_id,sender_id,kind,payload) values($1,$2,'preflight','{"purpose":"turn-credential"}')`,[matchId,actorId]);
     const secret=process.env.DARTFLOW_TURN_SECRET;
     const urls=(process.env.DARTFLOW_TURN_URLS || '').split(',').filter(Boolean);
+    if(appConfig().mode==='supabase'&&urls.some(url=>!/^turns:[A-Za-z0-9.\[\]:-]+\?transport=tcp$/.test(url)))throw new DomainError('media_transport','De beveiligde videorelay is tijdelijk niet beschikbaar.',503);
     const iceServers=secret && urls.length ? [turnCredentials(actorId,matchId,secret,urls)] : [];
     return {actorId,peerId:players.find(id=>id!==actorId)!,isInitiator:states[0].first_player===actorId,relayConfigured:iceServers.length>0,iceServers};
   });

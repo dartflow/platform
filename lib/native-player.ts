@@ -9,14 +9,16 @@ import {appConfig} from './config';
 import {consumeRateLimit} from './db';
 import {DomainError} from './domain';
 import {withNativePlayerPrincipal} from './native-player-context';
+import {assertAccountActive} from './account-removal';
+import {signInPlayReviewer} from './play-review';
 
 const id='[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
-const reads=[/^(?:session|profile|overview|platform|player-statistics|player-experience|locations|feed|seasons)$/,
+const reads=[/^(?:session|profile|overview|platform|player-statistics|player-experience|locations|feed|seasons|safety|account\/deletion)$/,
  new RegExp(`^matches/${id}(?:/invitation)?$`,'i'),new RegExp(`^boards/${id}$`,'i'),new RegExp(`^media/${id}$`,'i'),
  new RegExp(`^platform/matches/${id}/(?:chat|signals)$`,'i'),new RegExp(`^platform/rooms/${id}/messages$`,'i'),
  new RegExp(`^seasons/${id}$`,'i'),new RegExp(`^feed/(?:result|replies)/${id}$`,'i'),/^community\/feed$/,
  new RegExp(`^community/chat/(?:club|league|tournament|match)/${id}$`,'i'),/^oche\/v1\/(?:context|devices)$/];
-const writes=[/^(?:profile\/(?:complete|player-pin)|player-pin\/lobby-add|player-experience|platform\/actions|board-activity\/continue|feed\/actions|seasons|seasons\/actions|seasons\/player-pin)$/,
+const writes=[/^(?:profile\/(?:complete|player-pin)|player-pin\/lobby-add|player-experience|platform\/actions|board-activity\/continue|feed\/actions|seasons|seasons\/actions|seasons\/player-pin|account\/deletion|safety\/(?:consent|report|block))$/,
  new RegExp(`^matches/${id}/actions$`,'i'),new RegExp(`^events/${id}/actions$`,'i'),new RegExp(`^boards/${id}/screen-preferences$`,'i'),new RegExp(`^platform/matches/${id}/(?:chat|signals|replay)$`,'i'),/^oche\/v1\/(?:claim|home-session)$/,new RegExp(`^oche/v1/devices/${id}$`,'i')];
 export function nativePlayerRouteAllowed(path:string,method:string):boolean{
  if(!path||path.length>200||path.includes('%')||path.includes('\\')||path.includes('..'))return false;
@@ -59,11 +61,12 @@ export function nativePlayerBearer(request:NextRequest):string{
 }
 async function authenticatedPlayer(request:NextRequest){
  const token=nativePlayerBearer(request);
- if(appConfig().mode==='local'){const actor=verifyLocalNativePlayerSession(token,request);if(!actor)throw new DomainError('unauthorized','Log opnieuw in om verder te gaan.',401);return {request,id:actor,claims:null};}
+ if(appConfig().mode==='local'){const actor=verifyLocalNativePlayerSession(token,request);if(!actor)throw new DomainError('unauthorized','Log opnieuw in om verder te gaan.',401);await assertAccountActive(actor);return {request,id:actor,claims:null};}
  const auth=publicAuth();const client=createClient(auth.url!,auth.publishableKey!,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},global:{fetch:(input,init)=>fetch(input,{...init,cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)})}});
  // Auth checks the current account, and getClaims verifies signature/expiry. Neither trusts user_metadata for rights.
  const {data,error}=await client.auth.getUser(token);if(error||!data.user||data.user.is_anonymous)throw new DomainError('unauthorized','Log opnieuw in om verder te gaan.',401);
  const {data:verified,error:claimError}=await client.auth.getClaims(token);if(claimError||verified?.claims.sub!==data.user.id)throw new DomainError('unauthorized','Log opnieuw in om verder te gaan.',401);
+ await assertAccountActive(data.user.id);
  await ensureAuthProfile(data.user);
  return {request,id:data.user.id,claims:verified.claims as unknown as Record<string,unknown>};
 }
@@ -83,6 +86,10 @@ export async function handleNativePlayerApi(request:NextRequest,parts:string[],d
   if(config.mode==='local'&&!localNativeRequest(request))throw new DomainError('local_only','Lokale gegevens zijn alleen op loopback beschikbaar.',403);
   if(config.secure&&new URL(request.url).protocol!=='https:'&&request.headers.get('x-forwarded-proto')!=='https')throw new DomainError('https_required','Gebruik HTTPS.',400);
   if(path==='capabilities'&&method==='GET')return json(nativePlayerCapabilities());
+  if(path==='auth/review'&&method==='POST'){
+   if(request.headers.has('origin')||request.headers.get('sec-fetch-site')==='cross-site')throw new DomainError('origin','Open de beoordelaarstoegang vanuit de DartFlow-app.',403);
+   return json(await signInPlayReviewer(request,await readLocalBody(request)));
+  }
   if(path==='auth/local'&&method==='POST'){
    if(request.headers.has('origin')||request.headers.get('sec-fetch-site')==='cross-site')throw new DomainError('origin','Gebruik de lokale app voor deze aanvraag.',403);
    if(config.mode!=='local')throw new DomainError('not_found','Niet gevonden.',404);

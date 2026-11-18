@@ -2,7 +2,7 @@
 
 Een zelfstandige Kotlin/Jetpack Compose-app met ingebouwde spelersschermen. De app gebruikt dezelfde DartFlow-accounts, wedstrijd-ID's, score-engine, baanrechten en definitieve statistieken als de website en Oche Live. De Android-client bepaalt nooit zelf wie mag scoren of welke score definitief is.
 
-Zie de [oplevering met installatiebestanden en testresultaten](../../docs/player-android/oplevering.md) voor de gecontroleerde versie 0.1.0 (1).
+Zie de [oplevering met installatiebestanden en testresultaten](../../docs/player-android/oplevering.md) voor de eerste gecontroleerde versie 0.1.0 (1). De wijzigingen voor 0.1.1 (2) en de daarbij te controleren native veiligheidsflows staan in [Play-gereedheid](../../docs/player-android/play-readiness-native.md).
 
 ## Identiteit en builds
 
@@ -23,7 +23,10 @@ De drie identiteiten en Oche Live kunnen naast elkaar worden geïnstalleerd. Dev
 - Wedstrijdkaart, scorekaart, uitslagbevestiging, servergestuurde inactiviteit en Doorspelen. Bij een onduidelijke verzenduitkomst wordt dezelfde aanvraagidentiteit herhaald.
 - Vrienden, uitnodigingen, spelerskamers en wedstrijdchat; communityfeed; toernooi- en competitieoverzichten met de beschikbare inschrijf-, check-in- en wedstrijdacties.
 - Profielstatistieken, tegenstanders, oefensessies en wedstrijdhistorie; Oche Live-apparaatbeheer en koppelen van een scherm.
-- Native QR-scanner via Google Play services en WebRTC-camera/microfoon met camera wisselen. Een videopreview sluiten bewaart de verbinding tijdens het scoren; de verbinding stopt bij de expliciete stopactie, een andere partij of wanneer de app naar de achtergrond gaat.
+- Lokale QR-scanner met Camera2 en ZXing; camerabeelden en scanresultaten worden niet aan een scannerprovider aangeboden of opgeslagen. Er is geen Google Play services-/ML Kit-scanner meer aanwezig.
+- WebRTC-camera/microfoon met camera wisselen. Een videopreview sluiten bewaart de verbinding tijdens het scoren; de verbinding stopt bij de expliciete stopactie, een andere partij of wanneer de app naar de achtergrond gaat.
+- Communityregels en 13+-bevestiging vóór het plaatsen van berichten; gebruikers, posts, reacties en chatberichten melden; blokkeren en deblokkeren met bevestiging.
+- Accountverwijdering aanvragen na recente eigen verificatie; na serveracceptatie worden de lokale sessie, wachtrij en media onmiddellijk gewist/gestopt. Beoordelaarstoegang gebruikt uitsluitend een afzonderlijk server-side ingericht account.
 
 De app gebruikt ingebouwde schermen. Google-accountselectie opent in een beveiligde browsertab; het privacybeleid en gedeelde openbare links gebruiken de daarvoor bestemde Android-acties. Meldingen worden in de app opgehaald. Er is in deze versie geen FCM-pushdienst of achtergrondvideo toegevoegd.
 

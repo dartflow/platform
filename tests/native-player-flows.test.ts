@@ -22,6 +22,7 @@ test('native player real API flows keep lobby, flattened score DTO, authoritativ
  const origin=process.env.DARTFLOW_APP_ORIGIN!,prefix=`Native player flow ${randomUUID()}`;
  const tokens=new Map<string,string>(),entities:string[]=[],commandIds:string[]=[],limits=new Map<string,{key:string;resetAt:string;consumed:number}>();
  const beforeProfiles=(await admin.query('select * from dartflow_private.profiles where id=any($1::uuid[]) order by id',[[first,second]])).rows;
+ const insertedSafety:{id:string;version:string}[]=[];
  assert.equal(beforeProfiles.length,2,'The standard local development accounts must exist.');
  const call=async<T>(actor:string|null,path:string,method='GET',input?:unknown,status=200):Promise<T>=>{
   const url=new URL(`/api/player/v1/${path}`,origin),parts=url.pathname.slice('/api/'.length).split('/');
@@ -49,6 +50,8 @@ test('native player real API flows keep lobby, flattened score DTO, authoritativ
   for(const id of [first,second]){
    const login=await call<{accessToken:string;expiresAt:string}>(null,'auth/local','POST',{userId:id});assert.ok(Date.parse(login.expiresAt)>Date.now());tokens.set(id,login.accessToken);
    const session=await call<{user:Profile;local:boolean;requiresProfileCompletion:boolean}>(id,'session');assert.equal(session.user.id,id);assert.equal(session.local,true);assert.equal(session.user.onboardingComplete,true);
+   const safety=await call<{rulesVersion:string;requiresAcceptance:boolean}>(id,'safety');
+   if(safety.requiresAcceptance){await call(id,'safety/consent','POST',{version:safety.rulesVersion,accepted:true,ageConfirmed:true});insertedSafety.push({id,version:safety.rulesVersion});}
   }
   const baselineFirst=await stats(first),baselineSecond=await stats(second);
   let completed=0;
@@ -123,6 +126,7 @@ test('native player real API flows keep lobby, flattened score DTO, authoritativ
    await admin.query('delete from dartflow_private.platform_members where entity_id=any($1::uuid[])',[ownEntities]);await admin.query('delete from dartflow_private.platform_entities where id=any($1::uuid[])',[ownEntities]);
    for(const table of ['standings','entries','boards','event_staff'])await admin.query(`delete from dartflow_private.${table} where event_id=any($1::uuid[])`,[events]);await admin.query('delete from dartflow_private.events where id=any($1::uuid[])',[events]);await admin.query('delete from dartflow_private.club_memberships where club_id=any($1::uuid[])',[clubs]);await admin.query('delete from dartflow_private.clubs where id=any($1::uuid[])',[clubs]);
    for(const limit of limits.values()){await admin.query('update dartflow_private.auth_limits set count=greatest(0,count-$2) where key=$1 and reset_at=$3',[limit.key,limit.consumed,limit.resetAt]);await admin.query('delete from dartflow_private.auth_limits where key=$1 and reset_at=$2 and count=0',[limit.key,limit.resetAt]);}
+   for(const accepted of insertedSafety)await admin.query('delete from dartflow_private.player_safety_acceptances where user_id=$1 and version=$2',[accepted.id,accepted.version]);
    assert.deepEqual((await admin.query('select * from dartflow_private.profiles where id=any($1::uuid[]) order by id',[[first,second]])).rows,beforeProfiles,'Existing fixture profiles and account identities remain unchanged.');
    await admin.query('commit');
   }catch(error){await admin.query('rollback');throw error;}finally{await admin.end();await closeDatabase();}

@@ -145,7 +145,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         if (generation != identityGeneration || !hasSession()) return
         val platform = api.call("/platform")
         if (generation != identityGeneration || !hasSession()) return
-        state.update { it.copy(overview = overview, platform = platform, profile = platform.optJSONObject("profile")?.let(PlayerProfile::parse) ?: it.profile) }
+        val safety = api.call("/safety")
+        if (generation != identityGeneration || !hasSession()) return
+        state.update { it.copy(overview = overview, platform = platform, safety = safety, profile = platform.optJSONObject("profile")?.let(PlayerProfile::parse) ?: it.profile) }
     }
     private suspend fun loadCurrent() {
         if (!hasSession()) return
@@ -160,7 +162,12 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 val devices = api.call("/oche/v1/devices")
                 JSONObject(experience.toString()).put("context", context).put("oche", context).put("devices", devices.optJSONArray("devices"))
             }
-            PlayerScreen.PROFILE -> api.call("/profile")
+            PlayerScreen.PROFILE -> {
+                val profile = api.call("/profile")
+                val deletion = api.call("/account/deletion")
+                if (generation == identityGeneration && hasSession()) state.update { it.copy(accountDeletion = deletion) }
+                profile
+            }
             PlayerScreen.STATISTICS, PlayerScreen.HISTORY -> api.call("/player-statistics" + statisticsQuery(id))
             PlayerScreen.BOARD -> id?.let { api.call("/boards/${PlayerLinks.encode(it)}") } ?: JSONObject()
             PlayerScreen.MATCH -> id?.let {
@@ -215,6 +222,23 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val result = api.authCall(auth, "/verify", JSONObject().put("email", email).put("token", code).put("type", "email"))
         check(generation == identityGeneration) { "Je account is gewijzigd. Vraag een nieuwe inlogcode aan." }
         saveAuthSession(result); signedIn()
+    }
+    /** Password login is restricted server-side to the separately provisioned review account. */
+    fun reviewLogin(email: String, password: String) = launchTask {
+        require(email.trim().length in 3..254 && password.length in 1..256) { "Vul de verstrekte beoordelingsgegevens in." }
+        if (!ready) initialize()
+        val generation = identityGeneration
+        val result = api.call("/auth/review", JSONObject().put("email", email.trim()).put("password", password), anonymous = true)
+        check(generation == identityGeneration) { "Je account is gewijzigd. Probeer opnieuw." }
+        val expiresAt = when (val value = result.opt("expiresAt")) {
+            is Number -> value.toLong()
+            is String -> runCatching { Instant.parse(value).toEpochMilli() }.getOrDefault(0)
+            else -> 0
+        }
+        saveAuthSession(JSONObject().put("access_token", result.optString("accessToken"))
+            .put("refresh_token", result.optString("refreshToken"))
+            .put("expires_at", if (expiresAt > 10_000_000_000L) expiresAt / 1000 else expiresAt))
+        signedIn()
     }
     fun startGoogle() = launchTask {
         if (!ready) initialize()
@@ -383,6 +407,14 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
     private suspend fun afterCommand(path: String, input: JSONObject, result: JSONObject, generation: Int) {
         if (generation != identityGeneration || !hasSession()) return
+        if (path == "/account/deletion") {
+            check(result.optBoolean("ok") && result.optString("status") in listOf("pending", "processing", "completed")) { "Het verwijderverzoek kon niet worden bevestigd. Probeer opnieuw." }
+            // Acceptance invalidates access server-side. Erase tokens, queued actions, profile,
+            // current match and return destination locally before any further authenticated call.
+            clearSession()
+            state.update { it.copy(notice = "Je verzoek om je account en gegevens te verwijderen is ontvangen. Je bent uitgelogd. Hulp of vragen: info@dartflow.nl.") }
+            return
+        }
         if (path.startsWith("/profile")) loadIdentity()
         if (generation != identityGeneration || !hasSession()) return
         loadCommon()
@@ -396,9 +428,20 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             id != null && action in listOf("lobby.create", "board.start", "lobby.join") -> state.update { it.copy(screen = PlayerScreen.LOBBY, activeId = id) }
             id != null && action == "invitation.resolve" -> state.update { it.copy(screen = if (result.optString("kind") == "lobby") PlayerScreen.LOBBY else PlayerScreen.EVENT, activeId = id) }
         }
-        loadCurrent()
+        try { loadCurrent() }
+        catch (failure: PlayerApiFailure) {
+            if (path == "/safety/block" && failure.status in listOf(403, 404)) {
+                state.update { it.copy(screen = PlayerScreen.FRIENDS, activeId = null, resource = JSONObject(), loading = false) }
+            } else throw failure
+        }
         if (generation != identityGeneration || !hasSession()) return
-        state.update { it.copy(notice = "Opgeslagen.", error = null, online = true) }
+        val notice = when (path) {
+            "/safety/report" -> "Je melding is ontvangen. DartFlow beoordeelt deze. Bij direct gevaar bel je 112."
+            "/safety/block" -> if (input.optBoolean("blocked")) "Speler geblokkeerd. Nieuwe rechtstreekse interacties worden tegengehouden." else "Blokkade opgeheven."
+            "/safety/consent" -> "Communityregels opgeslagen. Je kunt nu een bericht plaatsen."
+            else -> "Opgeslagen."
+        }
+        state.update { it.copy(notice = notice, error = null, online = true) }
     }
     private fun launchTask(showBusy: Boolean = true, task: suspend () -> Unit) {
         viewModelScope.launch {
@@ -457,7 +500,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
  * Never queue a new score while the previous outcome is uncertain. No optimistic score mutation. */
 class NativePlayerCommand private constructor(val path: String, val body: JSONObject) {
     val requestId: String get() = body.getString("requestId")
-    val sensitive: Boolean get() = path.startsWith("/profile") || path.contains("player-pin") || containsSecret(body)
+    val sensitive: Boolean get() = path.startsWith("/profile") || path.startsWith("/account") || path == "/safety/report" || path.contains("player-pin") || containsSecret(body)
     override fun toString() = "NativePlayerCommand(path=$path, requestId=$requestId, body=[redacted])"
     fun forStorage(userId: String, origin: String): JSONObject {
         check(!sensitive)

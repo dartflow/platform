@@ -1,0 +1,42 @@
+{
+  "environment": "production",
+  "checkedAt": "2026-11-18T13:13:40.385Z",
+  "databaseLogin": true,
+  "workerRoleRestricted": true,
+  "noMemberships": true,
+  "queueReadAndProcessingOnly": true,
+  "privateTablesDenied": true,
+  "functionSearchPathFixed": true,
+  "cleanupOnlyWorker": true,
+  "readOnly": true,
+  "jobsProcessed": 0,
+  "authCalls": 0,
+  "environmentPermissions": "root:0600",
+  "credentialsPrinted": false,
+  "scope": "Actual isolated worker credentials; BEGIN READ ONLY; catalog checks and denied SELECT LIMIT 0 on profiles, player_pin_verifiers and play_review_accounts. No row content read, jobs claimed or services started.",
+  "queuePrivileges": {
+    "select": true,
+    "processingColumnUpdate": true,
+    "insert": false,
+    "delete": false,
+    "actorIdUpdate": false,
+    "schemaCreate": false
+  },
+  "roleAttributes": {
+    "superuser": false,
+    "createRole": false,
+    "createDatabase": false,
+    "inherit": false,
+    "bypassRLS": false
+  },
+  "function": {
+    "name": "dartflow_private.erase_account_job(uuid,uuid)",
+    "securityDefiner": true,
+    "searchPath": "pg_catalog, dartflow_private, pg_temp",
+    "workerExecute": true,
+    "appExecute": false
+  },
+  "fixedReferenceValidated": true,
+  "appOriginValidated": true,
+  "databaseScopeValidated": true
+}

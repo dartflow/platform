@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { DomainError } from './domain';
+import {COMMUNITY_RULES_VERSION,createSafetyReport,readPlayerSafety,requireCommunityRules} from './player-safety';
 import {saveScoreboardName} from './profile-name';
 import { enqueueDomainMail } from './integrations-mail';
 import {clubAction} from './club-domain';
@@ -13,6 +14,13 @@ async function notify(client: PoolClient, requestId: string, templateId: string,
 }
 export async function socialAction(client: PoolClient, actor: string, command: PlatformCommand): Promise<PlatformResponse | null> {
   const a = command.action, type = a.type;
+  if(type==='safety.state')return {ok:true,...await readPlayerSafety(client,actor)};
+  if(type==='safety.accept'){
+    if(a.version!==COMMUNITY_RULES_VERSION)throw new DomainError('rules_changed','De communityregels zijn gewijzigd. Lees de actuele versie.',409);
+    if(a.accepted!==true||a.ageConfirmed!==true)throw new DomainError('rules_confirmation_required','Bevestig dat je minimaal 13 jaar bent en akkoord gaat met de voorwaarden en communityregels.');
+    await client.query('insert into dartflow_private.player_safety_acceptances(user_id,version,age_confirmed) values($1,$2,true) on conflict(user_id,version) do nothing',[actor,COMMUNITY_RULES_VERSION]);
+    return {ok:true,...await readPlayerSafety(client,actor)};
+  }
   if(type==='profile.update'){
     if(a.showPublicStatistics!==undefined&&typeof a.showPublicStatistics!=='boolean')throw new DomainError('invalid_preferences','Gebruik een geldige keuze voor openbare statistieken.');
     await saveScoreboardName(client,actor,a.username??a.name,a.displayName);
@@ -43,20 +51,32 @@ export async function socialAction(client: PoolClient, actor: string, command: P
   if(type==='report.resolve') {
     const report=await client.query('select * from dartflow_private.platform_reports where id=$1 for update',[uuid(a.reportId)]);
     if(!report.rows.length)throw new DomainError('not_found','Deze melding bestaat niet.',404);
-    const item=report.rows[0],platform=(await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')",[actor])).rowCount;
+    const item=report.rows[0];if(item.target_id===actor)throw new DomainError('forbidden','Je kunt een melding over jezelf niet beoordelen.',403);
+    const platform=(await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')",[actor])).rowCount;
     if(!platform) {if(!item.room_id)throw new DomainError('forbidden','Alleen bevoegd platformbeheer kan deze melding behandelen.',403);await requireAccess(client,await entity(client,item.room_id),actor,true);}
     if(item.status==='resolved')throw new DomainError('report_resolved','Deze melding is al behandeld.',409);
-    const reason=text(a.reason,2000);await client.query("update dartflow_private.platform_reports set status='resolved',decision=$2,reviewed_by=$3 where id=$1",[item.id,reason,actor]);
+    const reason=text(a.reason,2000),operation=String(a.operation??'no-action');
+    if(!['no-action','warn','remove-content'].includes(operation))throw new DomainError('invalid_moderation','Kies een geldige moderatieactie.');
+    if(operation==='remove-content'){
+      if(!item.content_id||!['post','reply','message','room-message'].includes(item.target_type))throw new DomainError('invalid_moderation','Deze melding heeft geen verwijderbare berichtinhoud.');
+      if(item.target_type==='post'){
+        await client.query('update dartflow_private.feed_items set deleted=true where id=$1',[item.content_id]);
+        await client.query('update dartflow_private.community_posts set deleted=true where id=$1',[item.content_id]);
+      }else if(item.target_type==='reply'){
+        await client.query('delete from dartflow_private.feed_replies where id=$1',[item.content_id]);
+        await client.query('update dartflow_private.community_posts set deleted=true where id=$1',[item.content_id]);
+      }else if(item.target_type==='message')await client.query('update dartflow_private.community_messages set deleted=true,sequence=default where id=$1 and not deleted',[item.content_id]);
+      else await client.query('update dartflow_private.platform_messages set deleted=true where id=$1',[item.content_id]);
+    }
+    await client.query("update dartflow_private.platform_reports set status='resolved',decision=$2,reviewed_by=$3 where id=$1",[item.id,`${operation}: ${reason}`,actor]);
+    if(item.reporter_id!==actor)await notify(client,command.requestId,'moderation-notice',item.reporter_id,{roomName:'DartFlow',reason,status:'Melding beoordeeld'});
     if(item.target_id)await notify(client,command.requestId,'moderation-notice',item.target_id,{roomName:item.room_id?(await entity(client,item.room_id)).state.name:'DartFlow',reason,status:'Beoordeeld'});return {ok:true};
   }
   if (type === 'report.create') {
-    const target = a.userId ? uuid(a.userId) : null;
-    if (a.roomId) await requireAccess(client, await entity(client, a.roomId), actor);
-    const id = randomUUID();
-    await client.query('insert into dartflow_private.platform_reports(id,reporter_id,target_id,room_id,reason) values($1,$2,$3,$4,$5)', [id, actor, target, a.roomId ? uuid(a.roomId) : null, text(a.reason, 2000)]);
-    const reviewers=a.roomId?await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='active' and role in ('owner','admin','moderator')",[a.roomId]):await client.query("select user_id from dartflow_private.platform_roles where role in ('owner','admin')");
-    const reporter=(await client.query('select name from dartflow_private.profile_labels where id=$1',[actor])).rows[0]?.name||'Speler';
-    for(const reviewer of reviewers.rows)if(reviewer.user_id!==actor&&reviewer.user_id!==target)await notify(client,command.requestId,'moderation-report',reviewer.user_id,{roomName:a.roomId?(await entity(client,a.roomId)).state.name:'DartFlow',actorName:reporter,reason:text(a.reason,2000)});
+    const report=await createSafetyReport(client,actor,a),{id,target,reason}=report;
+    // Reports go to current platform reviewers; reporter identity is never sent to the reported player.
+    const reviewers=await client.query("select user_id from dartflow_private.platform_roles where role in ('owner','admin')");
+    for(const reviewer of reviewers.rows)if(reviewer.user_id!==actor&&reviewer.user_id!==target.userId)await notify(client,command.requestId,'moderation-report',reviewer.user_id,{roomName:'DartFlow',actorName:'Speler',reason});
     return { ok: true, id };
   }
   if(type.startsWith('club.'))return clubAction(client,actor,command);
@@ -126,6 +146,7 @@ export async function socialAction(client: PoolClient, actor: string, command: P
       if(['ban','mute','remove','unban','unmute'].includes(op))await notify(client,command.requestId,'moderation-notice',user,{roomName:row.state.name,reason:typeof a.reason==='string'?text(a.reason,1000):op,status:op},row.club_id,row.id);
     }
   } else if (type === 'room.message') {
+    await requireCommunityRules(client,actor);
     const self = await requireAccess(client, row, actor);
     if (row.state.closed || new Date(String(self?.attributes.mutedUntil ?? '')).getTime() > Date.now()) throw new DomainError('muted', 'Je kunt nu geen bericht plaatsen.', 403);
     const slow = Number(row.state.slowMode ?? 0);

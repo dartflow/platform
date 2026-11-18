@@ -46,6 +46,8 @@ data class PlayerUiState(
     val match: PlayerMatch? = null, val board: JSONObject? = null, val error: String? = null, val notice: String? = null,
     val pendingEmail: String? = null, val localUsers: List<PlayerProfile> = emptyList(), val googleUrl: String? = null,
     val online: Boolean = true, val hasPendingCommand: Boolean = false, val capabilities: JSONObject = JSONObject(),
+    val safety: JSONObject = JSONObject(),
+    val accountDeletion: JSONObject = JSONObject(),
 )
 
 fun JSONArray?.objects(): List<JSONObject> = if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }

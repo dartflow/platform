@@ -34,6 +34,10 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
     const limit=await consumeRateLimit(`community:actor:${actor}`,80,60);
     if(!limit.allowed)throw Object.assign(new DomainError('rate_limited',`Te veel berichten. Wacht ${limit.retryAfter} seconden.`,429),{retryAfter:limit.retryAfter});
   }
+  if(command.action.type==='report.create'){
+    const limit=await consumeRateLimit(`safety-report-attempt:${actor}`,30,3600);
+    if(!limit.allowed)throw Object.assign(new DomainError('rate_limited','Te veel meldpogingen. Probeer het later opnieuw of mail info@dartflow.nl.',429),{retryAfter:limit.retryAfter});
+  }
   // These counters must commit even when a guessed code fails and its command rolls back.
   if(invitationAttemptRequired(command.action))for(const [key,max] of [[`invite:actor:${actor}`,10],['invite:global',120]] as const){
     const limit=await consumeRateLimit(key,max,60);
@@ -243,10 +247,10 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
   for(const item of competitions){item.state.boards=allBoards.rows.filter(b=>b.eventId===item.state.eventId);const playerIds=item.members.filter(m=>m.status==='active'&&m.attributes.registered===true).map(m=>m.id);item.state.standings=standings((item.state.fixtures??[]).filter(f=>f.phase!=='knockout'),playerIds).map(s=>({...s,playerId:s.id,name:item.members.find(m=>m.id===s.id)?.name??'Speler'}));}
   const canManageRegistrations=Boolean((await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')",[actor])).rowCount);
   const {rows:registrations}=await client.query('select r.user_id as "userId",p.name,r.status,r.reason from dartflow_private.platform_registrations r join dartflow_private.profile_labels p on p.id=r.user_id where $2::boolean or r.user_id=$1 order by r.created_at,r.user_id',[actor,canManageRegistrations]);
-  const {rows:reports}=await client.query(`select r.id,r.reporter_id as "reporterId",p.name as "reporterName",r.target_id as "targetId",r.room_id as "roomId",coalesce(e.state->>'name','DartFlow') as "roomName",r.reason,r.status,r.decision,
-    ($2::boolean or exists(select 1 from dartflow_private.platform_members m where m.entity_id=r.room_id and m.user_id=$1 and m.status='active' and m.role in ('owner','admin','moderator'))) as "canManage"
+  const {rows:reports}=await client.query(`select r.id,r.reporter_id as "reporterId",p.name as "reporterName",r.target_id as "targetId",r.room_id as "roomId",coalesce(e.state->>'name','DartFlow') as "roomName",r.reason,r.status,r.decision,r.category,r.target_type as "targetType",r.content_id as "contentId",r.scope_kind as "scopeKind",r.scope_id as "scopeId",
+    (($2::boolean and r.target_id is distinct from $1) or (r.target_id is distinct from $1 and exists(select 1 from dartflow_private.platform_members m where m.entity_id=r.room_id and m.user_id=$1 and m.status='active' and m.role in ('owner','admin','moderator')))) as "canManage"
     from dartflow_private.platform_reports r join dartflow_private.profile_labels p on p.id=r.reporter_id left join dartflow_private.platform_entities e on e.id=r.room_id
-    where r.reporter_id=$1 or $2::boolean or exists(select 1 from dartflow_private.platform_members m where m.entity_id=r.room_id and m.user_id=$1 and m.status='active' and m.role in ('owner','admin','moderator') and (e.club_id is null or exists(select 1 from dartflow_private.club_memberships c where c.club_id=e.club_id and c.user_id=$1) or (e.kind in ('league','tournament') and e.state->>'eligibility' in ('all','code')))) order by r.created_at desc limit 100`,[actor,canManageRegistrations]);
+    where r.reporter_id=$1 or (r.target_id is distinct from $1 and ($2::boolean or exists(select 1 from dartflow_private.platform_members m where m.entity_id=r.room_id and m.user_id=$1 and m.status='active' and m.role in ('owner','admin','moderator') and (e.club_id is null or exists(select 1 from dartflow_private.club_memberships c where c.club_id=e.club_id and c.user_id=$1) or (e.kind in ('league','tournament') and e.state->>'eligibility' in ('all','code')))))) order by r.created_at desc limit 100`,[actor,canManageRegistrations]);
   const {rows:ownMatchRows}=await client.query<{state:MatchState;can_manage:boolean;offline_supported:boolean}>(`select m.state,
     (c.role='organizer' and exists(select 1 from dartflow_private.event_staff s where s.event_id=m.event_id and s.user_id=$1)) as can_manage,
     exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and e.kind='tournament') as offline_supported

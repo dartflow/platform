@@ -55,6 +55,7 @@ class PlayerActions(
     val navigate: (PlayerScreen, String?) -> Unit = { _, _ -> },
     val refresh: () -> Unit = {}, val requestOtp: (String) -> Unit = {}, val verifyOtp: (String) -> Unit = {},
     val google: () -> Unit = {}, val localLogin: (String) -> Unit = {}, val logout: () -> Unit = {},
+    val reviewLogin: (String, String) -> Unit = { _, _ -> },
     val completeProfile: (String, String, String, String) -> Unit = { _, _, _, _ -> },
     val changePin: (String, String, String) -> Unit = { _, _, _ -> },
     val command: (String, JSONObject) -> Unit = { _, _ -> }, val platformAction: (JSONObject) -> Unit = {},
@@ -101,7 +102,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
             scoreKey = "${match.id}:${match.revision}", onSubmit = actions.score,
             onBack = { fullScore = false }, onRetry = actions.retry, pending = state.hasPendingCommand,
             activity = match.raw.obj("boardActivity"), onExtend = { extendActivity(match.raw.obj("boardActivity"), actions) },
-            options = { MatchOptions(match, actions) }, media = if (match.raw.text("scoringMode") == "per-player") { { media(match.id) } } else null)
+            options = { state.notice?.let { Notice(it, retry = actions.dismiss) }; MatchOptions(match, actions, state) }, media = if (match.raw.text("scoringMode") == "per-player") { { media(match.id) } } else null)
         return
     }
     if (state.screen == PlayerScreen.TRAINING && state.activeId != null && (entityFor(state, "trainings").obj("state").has("game") || entityFor(state, "trainings").obj("state").text("mode") == "around")) {
@@ -228,13 +229,17 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
 @Composable private fun LoginScreen(state: PlayerUiState, actions: PlayerActions) {
     var email by rememberSaveable { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
-    ClearSecretsOnBackground { code = "" }
+    var review by remember { mutableStateOf(false) }
+    var reviewEmail by remember { mutableStateOf("") }
+    var reviewPassword by remember { mutableStateOf("") }
+    ClearSecretsOnBackground { code = ""; reviewPassword = "" }
     Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Spacer(Modifier.height(32.dp))
         Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.width(190.dp).height(60.dp), contentScale = ContentScale.Fit)
         Heading("Klaar voor jouw volgende leg?", "DARTFLOW SPELER", "Speel, ontmoet andere darters en volg iedere worp. Je baan of uitnodiging blijft klaarstaan na het inloggen.")
         if (state.loading || state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         state.error?.let { Notice(it, true) }
+        state.notice?.let { Notice(it) }
         if (state.pendingEmail != null) {
             PlayerCard("Je inlogcode") {
                 Text("Vul de code uit de e-mail aan ${state.pendingEmail} in. Gebruik de volledige code.", color = PlayerMuted)
@@ -254,8 +259,17 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
             Text("Alleen beschikbaar in de lokale ontwikkelomgeving.", color = PlayerMuted)
             state.localUsers.forEach { user -> Action(user.name, !state.busy, false, Modifier.fillMaxWidth()) { actions.localLogin(user.id) } }
         }
-        val context = LocalContext.current
-        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, "${BuildConfig.API_ORIGIN}/privacy".toUri())) }) { Text("Privacybeleid") }
+        if (!review) TextButton(onClick = { review = true }) { Text("Toegang voor appbeoordeling") }
+        else PlayerCard("Toegang voor appbeoordeling") {
+            Text("Uitsluitend voor het afzonderlijk verstrekte beoordelingsaccount. Normale spelers gebruiken een e-mailcode of Google.", color = PlayerMuted)
+            Field("Beoordelingsaccount · e-mailadres", reviewEmail, { reviewEmail = it }, !state.busy, keyboard = KeyboardType.Email)
+            Field("Wachtwoord beoordelingsaccount", reviewPassword, { reviewPassword = it }, !state.busy, secret = true, keyboard = KeyboardType.Password, max = 256)
+            Action("Inloggen voor appbeoordeling", !state.busy && reviewEmail.contains('@') && reviewPassword.isNotBlank(), modifier = Modifier.fillMaxWidth()) { actions.reviewLogin(reviewEmail.trim(), reviewPassword); reviewPassword = "" }
+            TextButton(onClick = { review = false; reviewPassword = "" }) { Text("Terug naar gewone aanmelding") }
+        }
+        SafetyLink("Privacybeleid", "/privacy")
+        SafetyLink("Account en gegevens verwijderen", "/account-verwijderen")
+        SafetyLink("Communityregels", "/communityregels")
     }
 }
 
@@ -494,10 +508,10 @@ private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JS
     PlayerCard("Wedstrijdcijfers") { match.players.forEachIndexed { i, p -> val s = match.raw.rows("stats").getOrNull(i) ?: JSONObject(); Text(p.displayName.ifBlank { p.name }, fontWeight = FontWeight.Bold); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Stat("AVG", if (s.optInt("darts") > 0) number(3.0 * s.optInt("total") / s.optInt("darts")) else "—"); Stat("Hoogste finish", s.text("highestFinish", "0")); Stat("180's", s.text("oneEighties", "0")) } } }
     if (match.raw.text("scoringMode") == "per-player") PlayerMediaPanel(match.id, media)
     Action("Wedstrijdchat", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.CHAT, "match:${match.id}") }
-    PlayerCard("Wedstrijdopties") { MatchOptions(match, actions) }
+    PlayerCard("Wedstrijdopties") { MatchOptions(match, actions, state) }
 }
 @Composable fun PlayerMediaPanel(matchId: String, media: @Composable (String) -> Unit) { PlayerCard("Camera en geluid") { media(matchId) } }
-@Composable private fun MatchOptions(match: PlayerMatch, actions: PlayerActions) {
+@Composable private fun MatchOptions(match: PlayerMatch, actions: PlayerActions, state: PlayerUiState) {
     var reason by remember(match.id) { mutableStateOf("") }
     val p = match.permissions
     if (p.optBoolean("canTakeOver")) Action("Schrijver overnemen", primary = false) { actions.matchAction("take-over", JSONObject()) }
@@ -508,6 +522,7 @@ private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JS
     val correction = match.raw.obj("correction")
     if (p.optBoolean("canAnswerCorrection")) { Text("Correctieverzoek: ${correction.text("reason")}", color = PlayerMuted); Action("Correctie goedkeuren", primary = false) { actions.matchAction("approve-correction", json("correctionId" to correction.text("id"))) }; Action("Correctie afwijzen", primary = false) { actions.matchAction("reject-correction", json("correctionId" to correction.text("id"))) } }
     if (p.optBoolean("canCancelCorrection")) Action("Correctieverzoek intrekken", primary = false) { actions.matchAction("cancel-correction", json("correctionId" to correction.text("id"))) }
+    match.players.filter { it.id != state.profile?.id }.forEach { player -> PlayerSafetyControls(state, actions, player.id, player.displayName.ifBlank { player.name }, blocked = state.platform.rows("blocked").any { it.text("id") == player.id }) }
 }
 
 /** Mirror scorecard: each side uses its own visit ordinal, never the other player's global sequence. */
@@ -612,7 +627,10 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
 @Composable private fun FriendsScreen(state: PlayerUiState, actions: PlayerActions) {
     var search by rememberSaveable { mutableStateOf("") }
     Heading("Samen is beter", "VRIENDEN", "Vind spelers, beheer uitnodigingen en overleg in de chat.")
-    PlayerCard("Speler zoeken") { Field("Naam of gebruikersnaam", search, { search = it }); val candidates = state.platform.rows("players").filter { it.text("id") != state.profile?.id && search.isNotBlank() && (name(it) + it.text("username")).contains(search, true) }; candidates.take(20).forEach { p -> Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(name(p)); Text("@${p.text("username", p.text("name"))}", color = PlayerMuted, fontSize = 12.sp) }; TextButton(onClick = { actions.platformAction(json("type" to "friend.request", "userId" to p.text("id"))) }, enabled = !state.busy) { Text("Toevoegen") } } }; if (search.isNotBlank() && candidates.isEmpty()) Text("Geen spelers gevonden.", color = PlayerMuted) }
+    PlayerCard("Speler zoeken") { Field("Naam of gebruikersnaam", search, { search = it }); val candidates = state.platform.rows("players").filter { it.text("id") != state.profile?.id && search.isNotBlank() && (name(it) + it.text("username")).contains(search, true) }; candidates.take(20).forEach { p ->
+        Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(name(p)); Text("@${p.text("username", p.text("name"))}", color = PlayerMuted, fontSize = 12.sp) }; TextButton(onClick = { actions.platformAction(json("type" to "friend.request", "userId" to p.text("id"))) }, enabled = !state.busy) { Text("Toevoegen") } }
+        PlayerSafetyControls(state, actions, p.text("id"), name(p))
+    }; if (search.isNotBlank() && candidates.isEmpty()) Text("Geen spelers gevonden.", color = PlayerMuted) }
     val friends = state.platform.rows("friends")
     friends.sortedByDescending { it.text("status") == "incoming" }.forEach { friend -> PlayerCard {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) { Avatar(name(friend), Modifier.size(46.dp)); Column(Modifier.weight(1f)) { Text(name(friend), fontWeight = FontWeight.Bold); Text(when(friend.text("status")) { "incoming" -> "Wil jouw vriend worden"; "outgoing" -> "Verzoek verzonden"; else -> if (friend.optBoolean("favorite")) "★ Favoriet" else "Vriend" }, color = PlayerMuted, fontSize = 12.sp) } }
@@ -622,6 +640,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { Action("Spelerskamers", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.FRIENDS, "rooms") }; Action("Uitdagen", !state.busy, modifier = Modifier.weight(1f)) { actions.platformAction(json("type" to "lobby.create", "name" to "Vriendschappelijke partij", "opponentId" to id, "setup" to "remote", "startScore" to 501, "bestOfLegs" to 3)) } }
             TextButton(onClick = { actions.platformAction(json("type" to "friend.favorite", "userId" to id, "favorite" to !friend.optBoolean("favorite"))) }, enabled = !state.busy) { Text(if (friend.optBoolean("favorite")) "Favoriet verwijderen" else "Als favoriet bewaren") }
         }
+        PlayerSafetyControls(state, actions, id, name(friend))
     } }
     if (friends.isEmpty() && !state.loading) Text("Nog geen vrienden of openstaande verzoeken. Zoek hierboven een speler.", color = PlayerMuted)
     state.platform.rows("rooms").forEach { room -> PlayerCard(room.text("name")) {
@@ -629,7 +648,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
         if (room.rows("members").none { it.text("id") == state.profile?.id && it.text("status") == "active" }) Action("Kamer openen", !state.busy, false) { entityCommand(actions, room, json("type" to "room.join", "id" to room.text("id"))) }
         else Action("Open kamerchat", primary = false) { actions.navigate(PlayerScreen.CHAT, "room:${room.text("id")}") }
     } }
-    state.platform.rows("blocked").forEach { p -> PlayerCard { Text("Geblokkeerd: ${name(p)}"); Action("Blokkade opheffen", !state.busy, false) { actions.platformAction(json("type" to "friend.unblock", "userId" to p.text("id"))) } } }
+    state.platform.rows("blocked").forEach { p -> PlayerCard { Text("Geblokkeerd: ${name(p)}"); PlayerSafetyControls(state, actions, p.text("id"), name(p), blocked = true) } }
 }
 
 @Composable private fun FeedScreen(state: PlayerUiState, actions: PlayerActions) {
@@ -640,11 +659,12 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     var compose by remember { mutableStateOf("") }; var selected by rememberSaveable { mutableStateOf("") }
     val scope = scopes.find { "${it.text("kind")}:${it.text("id")}" == selected } ?: scopes.firstOrNull()
     Heading(if (parentId != null) "Reacties" else "Jouw dartcommunity", "FEED", "Berichten uit jouw verenigingen, evenementen en het platform.")
+    CommunityConsent(state, actions)
     if (parentId != null) Action("Terug naar de feed", primary = false) { actions.navigate(PlayerScreen.FEED, null) }
     if (scope != null) PlayerCard("Deel iets met je spelers") {
         Choice("Plaatsen in", "${scope.text("kind")}:${scope.text("id")}", scopes.map { "${it.text("kind")}:${it.text("id")}" to it.text("name") }, { selected = it })
-        Field("Jouw bericht", compose, { compose = it }, !state.busy && scope.optBoolean("canWrite"), max = 4000, multiline = true)
-        Action("Bericht plaatsen", compose.isNotBlank() && !state.busy && scope.optBoolean("canWrite"), modifier = Modifier.fillMaxWidth()) { if (parentId != null) actions.platformAction(json("type" to "community.reply", "postId" to parentId, "body" to compose)) else actions.platformAction(json("type" to "community.post", "scopeKind" to scope.text("kind"), "scopeId" to scope.text("id"), "body" to compose)); compose = "" }
+        Field("Jouw bericht", compose, { compose = it }, !state.busy && scope.optBoolean("canWrite") && canUseCommunity(state.safety), max = 4000, multiline = true)
+        Action("Bericht plaatsen", compose.isNotBlank() && !state.busy && scope.optBoolean("canWrite") && canUseCommunity(state.safety), modifier = Modifier.fillMaxWidth()) { if (parentId != null) actions.platformAction(json("type" to "community.reply", "postId" to parentId, "body" to compose)) else actions.platformAction(json("type" to "community.post", "scopeKind" to scope.text("kind"), "scopeId" to scope.text("id"), "body" to compose)); compose = "" }
     }
     page.rows("posts").forEach { post -> PlayerCard {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { Avatar(post.text("authorName"), Modifier.size(40.dp)); Column { Text(post.text("authorName"), fontWeight = FontWeight.Bold); Text("${post.text("scopeName")} · ${shortDate(post.text("createdAt"))}", color = PlayerMuted, fontSize = 11.sp) } }
@@ -654,6 +674,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
             TextButton(onClick = { actions.navigate(PlayerScreen.FEED, "kind=${PlayerLinks.encode(post.text("scopeKind"))}&id=${PlayerLinks.encode(post.text("scopeId"))}&parentId=${PlayerLinks.encode(post.text("id"))}") }) { Text("${post.optInt("replyCount")} reacties") }
             if (post.optBoolean("canDelete")) TextButton(onClick = { actions.platformAction(json("type" to "community.delete", "postId" to post.text("id"))) }, enabled = !state.busy) { Text("Verwijderen") }
         }
+        PlayerSafetyControls(state, actions, post.text("authorId"), post.text("authorName", "Speler"), PlayerReportTarget(if (post.text("parentId").isNotBlank()) "reply" else "post", post.text("id"), if (post.text("parentId").isNotBlank()) "Reactie" else "Bericht", post.text("scopeKind"), post.text("scopeId")))
     } }
     if (page.rows("posts").isEmpty() && !state.loading) Text("Nog geen berichten. Begin een gesprek in jouw community.", color = PlayerMuted)
     page.text("nextCursor").takeIf { it.isNotBlank() }?.let { cursor -> Action("Eerdere berichten", primary = false) { actions.navigate(PlayerScreen.FEED, state.activeId.orEmpty().substringBefore("&cursor=").let { if (it.isBlank()) "cursor=${PlayerLinks.encode(cursor)}" else "$it&cursor=${PlayerLinks.encode(cursor)}" }) } }
@@ -664,16 +685,18 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     val data = state.resource; val key = state.activeId ?: ""; val kind = key.substringBefore(':'); val id = key.substringAfter(':', "")
     var draft by rememberSaveable(key) { mutableStateOf("") }
     Heading(data.obj("scope").text("name", if (kind == "match") "Wedstrijdchat" else "Chat"), "SAMEN SPELEN")
+    CommunityConsent(state, actions)
     val messages = data.rows("messages")
     val canWrite = if (kind == "room") state.platform.rows("rooms").find { it.text("id") == id }?.rows("members")?.any { it.text("id") == state.profile?.id && it.text("status") == "active" } == true else if (kind == "match") state.match?.id == id && state.match.players.any { it.id == state.profile?.id } || state.overview.rows("matches").any { it.text("id") == id && it.rows("players").any { p -> p.text("id") == state.profile?.id } } else data.obj("scope").optBoolean("canWrite")
     messages.forEach { message -> PlayerCard {
         Row(Modifier.fillMaxWidth()) { Text(message.text("authorName"), Modifier.weight(1f), fontWeight = FontWeight.Bold); Text(shortDate(message.text("createdAt")), fontSize = 10.sp, color = PlayerMuted) }
         Text(if (message.optBoolean("deleted")) "Bericht verwijderd." else message.text("body"))
+        PlayerSafetyControls(state, actions, message.text("authorId"), message.text("authorName", "Speler"), PlayerReportTarget(if (kind == "room") "room-message" else "message", message.text("id"), "Chatbericht", kind, id))
     } }
     if (messages.isEmpty() && !state.loading) Text("Nog geen berichten. Overleg hier over jullie volgende partij.", color = PlayerMuted)
     PlayerCard("Jouw bericht") {
-        Field("Bericht", draft, { draft = it }, !state.busy && canWrite, max = 2000, multiline = true)
-        Action("Versturen", draft.isNotBlank() && !state.busy && canWrite, modifier = Modifier.fillMaxWidth()) {
+        Field("Bericht", draft, { draft = it }, !state.busy && canWrite && canUseCommunity(state.safety), max = 2000, multiline = true)
+        Action("Versturen", draft.isNotBlank() && !state.busy && canWrite && canUseCommunity(state.safety), modifier = Modifier.fillMaxWidth()) {
             when (kind) {
                 "match" -> actions.command("/platform/matches/$id/chat", json("body" to draft))
                 "room" -> actions.platformAction(json("type" to "room.message", "id" to id, "body" to draft))
@@ -822,8 +845,11 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
         Action("Privacykeuzes opslaan", !state.busy, false) { actions.platformAction(json("type" to "preferences.update", "discoverable" to discoverable, "allowRequests" to allowRequests)) }
         val context = LocalContext.current
         TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, "${BuildConfig.API_ORIGIN}/privacy".toUri())) }) { Text("Privacybeleid lezen") }
+        SafetyLink("Communityregels en melden", "/communityregels")
+        Text("Privacy- en veiligheidsvragen: info@dartflow.nl", color = PlayerMuted, fontSize = 12.sp)
     }
     PlayerCard("Jouw account") { Text(state.session?.email ?: ""); Text("DartFlow ${BuildConfig.VERSION_NAME}", color = PlayerMuted, fontSize = 12.sp); Action("Uitloggen", !state.busy, false, Modifier.fillMaxWidth(), actions.logout) }
+    AccountDeletionCard(state, actions)
 }
 
 @Composable private fun NotificationsScreen(state: PlayerUiState, actions: PlayerActions) {

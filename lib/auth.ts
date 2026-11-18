@@ -7,6 +7,7 @@ import type { NextRequest } from 'next/server';
 import { appConfig, safeNext } from './config';
 import { ensureAuthProfile } from './accounts';
 import { nativePlayerPrincipal } from './native-player-context';
+import {assertAccountActive} from './account-removal';
 
 export const LOCAL_USERS = [
   {id:'00000000-0000-4000-8000-000000000001',name:'Danny Goldenbelt',role:'organizer'},
@@ -49,7 +50,7 @@ export async function supabaseServer() {
 
 export async function actorId(request?:NextRequest):Promise<string|null> {
   const native=request?nativePlayerPrincipal(request):null;
-  if(native)return native.id;
+  if(native){await assertAccountActive(native.id);return native.id;}
   const config = appConfig();
   if (config.mode === 'local') {
     if (request && !isLocalRequest(request)) return null;
@@ -62,6 +63,7 @@ export async function actorId(request?:NextRequest):Promise<string|null> {
     try {
       const data = JSON.parse(Buffer.from(value,'base64url').toString());
       if (data.exp < Date.now() || !LOCAL_USERS.some(u=>u.id === data.id)) return null;
+      await assertAccountActive(data.id);
       return data.id;
     } catch { return null; }
   }
@@ -71,6 +73,7 @@ export async function actorId(request?:NextRequest):Promise<string|null> {
   // Ask Auth for the current user in addition to verifying the JWT signature.
   const {data,error:userError} = await client.auth.getUser();
   if (userError || !data.user) return null;
+  await assertAccountActive(data.user.id);
   await ensureAuthProfile(data.user);
   return data.user.id;
 }

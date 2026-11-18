@@ -18,6 +18,7 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
   const run = (actor: string, action: PlatformCommand['action'], expectedRevision?: number, requestId = randomUUID()) => executePlatformCommand(actor, { requestId, action, ...(expectedRevision === undefined ? {} : { expectedRevision }) });
   try {
     for (const [i, id] of people.entries()) await owner.query('insert into dartflow_private.profiles(id,name) values($1,$2)', [id, `Platform fixture ${i}`]);
+    for(const id of people)await owner.query("insert into dartflow_private.player_safety_acceptances(user_id,version,age_confirmed) values($1,'2026-11-18',true)",[id]);
     await owner.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'owner')", [admin]);
     const club = (await run(admin, { type: 'club.create', name: 'Platform fixture club', capacity: 8 })).id!;
     const second = (await run(outsider, { type: 'club.create', name: 'Platform fixture second', capacity: 8 })).id!;

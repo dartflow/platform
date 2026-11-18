@@ -10,6 +10,7 @@ import {blocked,entity,member,save,transaction,uuid,view,type EntityRow} from '.
 import {requireScoreboardName} from './profile-name';
 import {limitPlayerPinAttempts,playerPinVerifier,verifyPlayerPin,recordPlayerPinOutcome} from './player-pin';
 import type {PlatformResponse} from './platform-types';
+import {assertAccountActive} from './account-removal';
 
 const genericFailure=()=>new DomainError('player_pin_invalid','Gebruikersnaam of spelerspincode klopt niet.',403);
 const receiptFingerprint=(lobbyId:string,usernameKey:string)=>createHmac('sha256','dartflow-pin-lobby-receipt-v1').update(`${lobbyId}:${usernameKey}`).digest('hex');
@@ -39,6 +40,7 @@ async function assertLocalLobby(client:PoolClient,actor:string,row:EntityRow,opt
 /** PIN grants one match-scoped participant role; it never creates or changes an Auth session. */
 export async function addLocalLobbyPlayer(actor:string,input:{requestId?:unknown;lobbyId?:unknown;expectedRevision?:unknown;username?:unknown;pin?:unknown},ipKey?:string):Promise<PlatformResponse>{
  const actorId=uuid(actor),requestId=uuid(input.requestId),lobbyId=uuid(input.lobbyId);
+ await assertAccountActive(actorId);
  // One authoritative key also covers contextual Unicode casing differences between Node and PostgreSQL.
  const usernameKey=(await database().query<{key:string}>('select dartflow_private.username_key($1) as key',[typeof input.username==='string'?input.username:''])).rows[0].key;
  const fingerprint=receiptFingerprint(lobbyId,usernameKey);
@@ -55,7 +57,7 @@ export async function addLocalLobbyPlayer(actor:string,input:{requestId?:unknown
  });
  if(replay)return replay;
  await limitPlayerPinAttempts(actorId,usernameKey,'link',ipKey);
- const {rows}=validUsername(input.username)?await database().query<{id:string}>(`select id from dartflow_private.profiles where display_name_confirmed and dartflow_private.username_key(name)=$1`,[usernameKey]):{rows:[]};
+ const {rows}=validUsername(input.username)?await database().query<{id:string}>(`select id from dartflow_private.profiles where display_name_confirmed and deletion_requested_at is null and deleted_at is null and dartflow_private.username_key(name)=$1`,[usernameKey]):{rows:[]};
  const target=rows.length===1?rows[0].id:null,verifier=target?await playerPinVerifier(target):null;
  const verified=await verifyPlayerPin(input.pin,verifier);
  if(!verified||!target||!verifier){await recordPlayerPinOutcome(actorId,'rejected','link',target??undefined);throw genericFailure();}
@@ -68,6 +70,9 @@ export async function addLocalLobbyPlayer(actor:string,input:{requestId?:unknown
   if(input.expectedRevision!==undefined&&input.expectedRevision!==row.revision)throw new DomainError('revision_conflict','De lobby is gewijzigd. Vernieuw en probeer opnieuw.',409);
   if(target===actorId)throw new DomainError('same_player','Je kunt jouw eigen account niet op beide spelersplekken zetten.',409);
   await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`player-pin:${target}`]);
+  const activeTarget=await client.query('select id from dartflow_private.profiles where id=$1 and deletion_requested_at is null and deleted_at is null for update',[target]);
+  if(!activeTarget.rowCount)throw genericFailure();
+  await assertAccountActive(actorId,client);
   const current=await playerPinVerifier(target,client);
   if(!current||current.version!==verifier.version||current.verifier!==verifier.verifier)throw genericFailure();
   if(await blocked(client,actorId,target)||(await member(client,row.id,target))?.status==='banned')throw genericFailure();

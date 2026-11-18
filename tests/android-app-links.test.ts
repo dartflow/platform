@@ -24,3 +24,10 @@ test('pairing resumes only through an allowlisted account route, without codes i
   assert.equal(analyticsAllowedOnPath('/oche-live'),false);
   assert.equal(analyticsAllowedOnPath('/app/schermen'),false);
 });
+test('the actual signed player APK verifies only its own production or staging package',()=>{
+  const production=androidAppLinks('production').find(entry=>entry.target.package_name==='nl.dartflow.app');
+  const staging=androidAppLinks('staging').find(entry=>entry.target.package_name==='nl.dartflow.app.staging');
+  assert.ok(production);assert.ok(staging);
+  assert.ok(!androidAppLinks('production').some(entry=>entry.target.package_name.endsWith('.staging')));
+  assert.equal(production.target.sha256_cert_fingerprints[0],'97:C8:A2:78:FF:67:14:BD:E4:F1:BC:B5:4E:BA:15:12:28:D4:2E:83:8F:11:D4:3B:CF:6E:71:C7:DE:08:A0:09');
+});

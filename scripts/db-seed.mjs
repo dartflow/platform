@@ -18,6 +18,8 @@ try {
  if(local) {
   await client.query("update dartflow_private.profiles set email='fixture-'||id::text||'@example.invalid',email_verified=true where id=any($1::uuid[])",[[ids.organizer,ids.player1,ids.player2,ids.outsider]]);
   await client.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'owner') on conflict(user_id) do nothing",[ids.organizer]);
+  // Synthetic development accounts explicitly accept the current rules for existing UI regression fixtures.
+  await client.query("insert into dartflow_private.player_safety_acceptances(user_id,version,age_confirmed) select unnest($1::uuid[]),'2026-11-18',true on conflict do nothing",[[ids.organizer,ids.player1,ids.player2,ids.outsider]]);
  }
  for(const [id,name] of [[ids.club1,'Duindorp SV'],[ids.club2,'Dartclub West']]) await client.query('insert into dartflow_private.clubs(id,name) values($1,$2) on conflict(id) do nothing',[id,name]);
  for(const [club,user,role] of [[ids.club1,ids.organizer,'organizer'],[ids.club1,ids.player1,'player'],[ids.club1,ids.player2,'player'],[ids.club2,ids.outsider,'player']]) await client.query('insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,$3) on conflict do nothing',[club,user,role]);
