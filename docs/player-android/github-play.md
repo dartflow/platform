@@ -17,10 +17,10 @@ De eigenaar heeft het project via een Console-screenshot bevestigd:
 
 De eigenaar heeft de Cloud-bootstrap uitgevoerd en de twee publieke outputs
 bevestigd. Serviceaccount, pool en provider bestaan; de GitHub-variabelen zijn
-ingesteld. De eigenaar bevestigt ook de appgebonden Play-rechten. De provider
-vraagt nog het hieronder beschreven eenmalige subjectherstel. Houd
-`PLAYER_PLAY_ENABLED=false` totdat dit herstel en de eerste handmatige
-AAB-upload zijn gecontroleerd.
+ingesteld. De eigenaar bevestigt de appgebonden Play-rechten, het geslaagde
+subjectherstel en de eerste AAB-upload. De echte WIF-/Play-toegangsproef is
+geslaagd en `PLAYER_PLAY_ENABLED=true`. Google bevestigt versiecode **2** als
+`completed` op de interne track; de productietrack is nog leeg.
 
 1. Projectkeuze en inschakelen van **Google Play Android Developer API** zijn door de eigenaar bevestigd.
 2. Maak een afzonderlijk serviceaccount voor de spelersapp. Maak geen downloadbare JSON-sleutel.
@@ -39,13 +39,12 @@ AAB-upload zijn gecontroleerd.
 
 | Variabele | Instelling |
 | --- | --- |
-| `PLAYER_PLAY_ENABLED` | Eerst `false`; pas `true` nadat Cloud, Play-rechten en eerste handmatige upload gereed zijn. |
-| `PLAY_WIF_PROVIDER` | Door de eigenaar bevestigd en ingesteld: `projects/955883910359/locations/global/workloadIdentityPools/dartflow-player-play/providers/github-main`. Het subjectherstel hieronder is nog nodig. |
+| `PLAYER_PLAY_ENABLED` | Actueel **`true`**: Cloud, Play-rechten, eerste handmatige upload en echte API-toegangsproef zijn afgerond. Voor een nieuwe inrichting eerst `false`. |
+| `PLAY_WIF_PROVIDER` | Door de eigenaar bevestigd en ingesteld: `projects/955883910359/locations/global/workloadIdentityPools/dartflow-player-play/providers/github-main`. Het subjectherstel hieronder is door de eigenaar als geslaagd bevestigd. |
 | `PLAY_SERVICE_ACCOUNT` | Door de eigenaar bevestigd en ingesteld: `dartflow-player-play@dartflow.iam.gserviceaccount.com`. |
 | `PLAY_APP_SIGNING_SHA256` | Het vastgelegde publieke Play App Signing-certificaat voor `nl.dartflow.app`: `DE:54:EB:62:ED:D3:10:AA:F9:39:0F:47:6D:AF:73:E2:94:13:75:CE:EE:BE:DC:0B:89:D8:8D:E2:D4:EC:3E:F1`. |
 
-De eigenaar bevestigt de uitvoering van de bootstrap. Een echte WIF-uitwisseling
-en Play-API-toegang zijn hiermee nog niet getest.
+De eigenaar bevestigt de uitvoering van de bootstrap. De latere [echte toegangsproef](https://github.com/dartflow/platform/actions/runs/44326068767) bevestigt de WIF-uitwisseling en Android Publisher API-toegang. De [idempotente interne controle](https://github.com/dartflow/platform/actions/runs/44326658372) bevestigt bovendien dat Google exact de ondertekende AAB-hash bezit, zonder nieuwe upload of trackwijziging.
 Controleer vóór herhaling **project-ID dartflow**, **projectnummer 955883910359**
 en de trustregels. Het script blijft algemeen bruikbaar met expliciet `--project`;
 deze documentatie legt de door de eigenaar bevestigde projectidentiteit vast.
@@ -120,9 +119,11 @@ activeert geen API's. Afwijkende inrichting stopt vóór wijziging. Bij de juist
 nieuwe condition is herhalen een read-only no-op. Daarna wordt opnieuw gelezen
 en gecontroleerd dat alle andere providervelden gelijk zijn gebleven.
 
-Deze repair is voorbereid en offline getest; er is door deze taak geen echte
-Cloud-wijziging uitgevoerd. De gewone bootstrap accepteert vanaf nu uitsluitend
-de immutable condition en overschrijft de oude provider niet automatisch.
+De eigenaar heeft de uitvoering van deze gerichte repair met de melding
+‘gecontroleerd hersteld’ bevestigd. De worker heeft geen eigen Google Cloud-
+beheersessie gebruikt; de echte WIF-/Play-toegangsproef is daarna geslaagd.
+De gewone bootstrap accepteert uitsluitend de immutable condition en
+overschrijft de oude provider niet automatisch.
 
 Na uitvoering verschijnen alleen de publieke `PLAY_WIF_PROVIDER` en
 `PLAY_SERVICE_ACCOUNT` plus de handmatige Play-instructie. Geef deze gebruiker in
@@ -145,6 +146,10 @@ en [serviceaccount-IAM-CLI](https://docs.cloud.google.com/sdk/gcloud/reference/i
 gecontroleerd op 18 november 2026.
 
 ## Eerste appbestand en eerste publicatie
+
+De eerste handmatige upload is afgerond. De API bevestigt de interne track op versiecode **2**, status **completed**; de productietrack is leeg. De eerste productiepublicatie en de open Store-/App-contentverklaringen volgen in Console. De onderstaande instructies blijven de eenmalige procedure beschrijven.
+
+De huidige [ondertekende release 0.1.1 (2)](https://github.com/dartflow/platform/releases/tag/android-player-0.1.1-2) hoort bij `nl.dartflow.app` en exacte bron `20db906c3c646caba2d9a6e09f0429b20e865564`. Gebruik `app-production-release.aab`, SHA-256 `dc7e549f49ec4eeeeb8b18316a533058af83b053dc4837c342b6a8c010193c84` (26.312.672 bytes). [Bestands- en testbewijs](oplevering.md) en het [Play-invulblad](play-console-0.1.1.md) horen bij deze versie.
 
 Maak de spelersapp in Play Console en upload het **ondertekende productionRelease-
 AAB van `nl.dartflow.app`** eerst eenmaal handmatig. Een aangemaakte lege app is

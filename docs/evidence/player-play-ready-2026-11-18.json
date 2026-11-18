@@ -1,0 +1,297 @@
+{
+  "checkedAt": "2026-11-18T14:41:40.305667+00:00",
+  "status": "deployed_and_verified",
+  "applicationSourceSha": "20db906c3c646caba2d9a6e09f0429b20e865564",
+  "webCi": {
+    "run": 44318757805,
+    "url": "https://github.com/dartflow/platform/actions/runs/44318757805",
+    "conclusion": "success",
+    "backendTests": 469,
+    "prototypeTests": 46,
+    "fullBrowserTests": 72,
+    "focusedBrowserTests": 5,
+    "typecheck": true,
+    "lint": true,
+    "build": true
+  },
+  "android": {
+    "schemaVersion": 1,
+    "package": "nl.dartflow.app",
+    "versionName": "0.1.1",
+    "versionCode": 2,
+    "sourceCommit": "20db906c3c646caba2d9a6e09f0429b20e865564",
+    "uploadCertificateSha256": "97:C8:A2:78:FF:67:14:BD:E4:F1:BC:B5:4E:BA:15:12:28:D4:2E:83:8F:11:D4:3B:CF:6E:71:C7:DE:08:A0:09",
+    "artifacts": [
+      {
+        "file": "app-production-release.aab",
+        "bytes": 26312672,
+        "sha256": "dc7e549f49ec4eeeeb8b18316a533058af83b053dc4837c342b6a8c010193c84"
+      },
+      {
+        "file": "app-production-release.apk",
+        "bytes": 49621844,
+        "sha256": "f3519dfc7f2b1e8f53f1da64f33afad32e2663e4233f7f2fcab80d97170a2113"
+      }
+    ],
+    "playUpload": false,
+    "githubRelease": "https://github.com/dartflow/platform/releases/tag/android-player-0.1.1-2",
+    "ciRun": 44318798401,
+    "ciUrl": "https://github.com/dartflow/platform/actions/runs/44318798401",
+    "conclusion": "success",
+    "jvmExecutions": 102,
+    "nativeEmulatorTests": 14,
+    "failures": 0,
+    "skipped": 0,
+    "lintWarningsPerFlavor": 28,
+    "lintErrorsPerFlavor": 0,
+    "aabSignatureVerified": true,
+    "apkSignatureVerified": true,
+    "bundleValidation": true,
+    "all64BitElf16KB": true,
+    "apkZipalign16KB": true,
+    "releaseEvidenceSha256": "a28de020ed9ffecfe6f62272f3dcb727e75c5fef65ee6db815240401c84758ff",
+    "receiptSha256": "595a18c13fc6d473bd8baccfca271629d2d06926cb22947051df13f966f925a8",
+    "physicalDevicesTested": false
+  },
+  "database": {
+    "migrationFile": "supabase/migrations/20261118141517_scrub_deleted_identity_by_profile_id.sql",
+    "migrationFileSha256": "f655cf965ffa50516a2d224627d0214d159afb3ec30566938cf019c9c57db53d",
+    "sourceCommit": "134050600a91b545699931b4d399ba44a4e23e8f",
+    "pullRequest": "https://github.com/dartflow/platform/pull/8",
+    "localPrivacyTests": 12,
+    "independentReview": "passed",
+    "followupCi": {
+      "run": 44323420136,
+      "url": "https://github.com/dartflow/platform/actions/runs/44323420136",
+      "event": "workflow_dispatch",
+      "sourceCommit": "134050600a91b545699931b4d399ba44a4e23e8f",
+      "status": "completed",
+      "conclusion": "success",
+      "backendTests": 471,
+      "prototypeTests": 46,
+      "focusedBrowserTests": 5,
+      "fullBrowserTests": 72,
+      "pythonChecks": 166,
+      "typecheck": true,
+      "lint": true,
+      "build": true,
+      "packaging": true,
+      "artifactUpload": true
+    },
+    "migrationHistoryMapping": [
+      {
+        "repositoryFile": "supabase/migrations/20261118124054_player_community_safety.sql",
+        "name": "player_community_safety",
+        "stagingAppliedVersion": "20261118130054",
+        "productionAppliedVersion": "20261118130831"
+      },
+      {
+        "repositoryFile": "supabase/migrations/20261118124107_account_deletion_jobs.sql",
+        "name": "account_deletion_jobs",
+        "stagingAppliedVersion": "20261118130056",
+        "productionAppliedVersion": "20261118130833"
+      },
+      {
+        "repositoryFile": "supabase/migrations/20261118124334_play_review_access.sql",
+        "name": "play_review_access",
+        "stagingAppliedVersion": "20261118130057",
+        "productionAppliedVersion": "20261118130835"
+      },
+      {
+        "repositoryFile": "supabase/migrations/20261118130850_scrub_deleted_score_event_names.sql",
+        "name": "scrub_deleted_score_event_names",
+        "stagingAppliedVersion": "20261118130933",
+        "productionAppliedVersion": "20261118130934"
+      },
+      {
+        "repositoryFile": "supabase/migrations/20261118141517_scrub_deleted_identity_by_profile_id.sql",
+        "name": "scrub_deleted_identity_by_profile_id",
+        "stagingAppliedVersion": "20261118142015",
+        "productionAppliedVersion": "20261118142438"
+      }
+    ],
+    "migrationHistoryNote": "Hosted MCP migration versions use the actual application timestamp per project. Repository ordering and the normal application schema replay use the committed SQL files; no hosted migration history was rewritten.",
+    "securityAdvisors": {
+      "checkedBeforeAndAfter": true,
+      "sameBothEnvironments": true,
+      "newFindings": 0,
+      "unchanged": [
+        {
+          "name": "rls_enabled_no_policy",
+          "level": "INFO",
+          "object": "dartflow_private.owner_bootstrap",
+          "assessment": "Intentional private deny-by-default bootstrap table; no public policy added.",
+          "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+        },
+        {
+          "name": "auth_leaked_password_protection",
+          "level": "WARN",
+          "assessment": "Existing project setting remains disabled; no configuration or subscription change made. Review credentials are generated random passwords.",
+          "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+        }
+      ]
+    }
+  },
+  "environments": {
+    "staging": {
+      "origin": "https://staging.dartflow.nl",
+      "applicationSourceSha": "20db906c3c646caba2d9a6e09f0429b20e865564",
+      "deployRun": 44321131573,
+      "deployUrl": "https://github.com/dartflow/platform/actions/runs/44321131573",
+      "releaseId": "44321131573-1",
+      "configId": "staging-2026-11-18-play-safety-1",
+      "deployment": "success",
+      "reviewSmoke": {
+        "primaryLogin": true,
+        "companionLogin": true,
+        "profilesBound": true,
+        "privateBoardAccess": true,
+        "safetyContract": true,
+        "deletionRead": true,
+        "genericWrongPassword": true,
+        "browserOriginRejected": true
+      },
+      "identityMigrationProbe": {
+        "actorScrubbed": true,
+        "opponentPreserved": true,
+        "substringPreserved": true,
+        "titlePreserved": true,
+        "migrationVersion3": true,
+        "runtimeExecuteDenied": true,
+        "workerExecuteAllowed": true
+      },
+      "deletionSmoke": {
+        "syntheticAccountOnly": true,
+        "invalidConfirmationRejected": true,
+        "immediateAccessRevoked": true,
+        "queueCompleted": true,
+        "appPersonalDataErased": true,
+        "authHardDeleted": true,
+        "oldTokenRejected": true
+      },
+      "privacyWorkerResult": "success",
+      "privacyTimer": "enabled_and_active"
+    },
+    "production": {
+      "origin": "https://dartflow.nl",
+      "applicationSourceSha": "20db906c3c646caba2d9a6e09f0429b20e865564",
+      "deployRun": 44323381759,
+      "deployUrl": "https://github.com/dartflow/platform/actions/runs/44323381759",
+      "releaseId": "44323381759-1",
+      "configId": "production-2026-11-18-play-safety-1",
+      "deployment": "success",
+      "reviewSmoke": {
+        "primaryLogin": true,
+        "companionLogin": true,
+        "profilesBound": true,
+        "privateBoardAccess": true,
+        "safetyContract": true,
+        "deletionRead": true,
+        "genericWrongPassword": true,
+        "browserOriginRejected": true
+      },
+      "identityMigrationProbe": {
+        "actorScrubbed": true,
+        "opponentPreserved": true,
+        "substringPreserved": true,
+        "titlePreserved": true,
+        "migrationVersion3": true,
+        "runtimeExecuteDenied": true,
+        "workerExecuteAllowed": true
+      },
+      "deletionSmoke": "not_performed_on_production",
+      "privacyWorkerResult": "success",
+      "privacyTimer": "enabled_and_active"
+    }
+  },
+  "publicPreflight": {
+    "bothHealthAndReadinessExactSha": true,
+    "nativeAuthContracts": true,
+    "productionAppLinksPlayCertificate": true,
+    "legalPagesWithoutLogin": true,
+    "contact": "info@dartflow.nl",
+    "readOnly": true
+  },
+  "callbackAllowlistProbe": {
+    "staging": true,
+    "production": true,
+    "scope": "Synthetic invalid-token Supabase redirect preserves the exact environment-specific native client/state. No session, email or real Google login."
+  },
+  "operations": {
+    "dynamicUserWorkers": true,
+    "rootOnlyWorkerEnvironment": true,
+    "workerRoleProbeFiles": [
+      "docs/evidence/player-play-privacy-worker-role-staging-2026-11-18.json",
+      "docs/evidence/player-play-privacy-worker-role-production-2026-11-18.json"
+    ],
+    "ephemeralProvisioningPrivateKeyRemoved": true,
+    "servicesActive": [
+      "dartflow-staging.service",
+      "dartflow-production.service",
+      "dartflow-privacy-staging.timer",
+      "dartflow-privacy-production.timer",
+      "caddy.service"
+    ],
+    "availableMemoryMiBAtPostflight": 4602,
+    "credentialsPrinted": false
+  },
+  "googlePlay": {
+    "cloudProjectId": "dartflow",
+    "cloudProjectNumber": "955883910359",
+    "apiEnabledOwnerConfirmed": true,
+    "bootstrapOwnerConfirmed": true,
+    "appScopedServiceAccountRightsOwnerConfirmed": true,
+    "serviceAccount": "dartflow-player-play@dartflow.iam.gserviceaccount.com",
+    "providerSubjectRepair": "owner_confirmed_complete",
+    "realWifExchangeTested": true,
+    "firstManualAabUploaded": true,
+    "playerPlayEnabled": true,
+    "apiUploadPerformed": false,
+    "firstManualAabOwnerConfirmed": true,
+    "productionPublished": false,
+    "productionSubmittedForReview": false,
+    "accessCheck": {
+      "run": 44326068767,
+      "url": "https://github.com/dartflow/platform/actions/runs/44326068767",
+      "action": "check-access",
+      "conclusion": "success",
+      "googleOidc": "success",
+      "publisherApi": "success",
+      "apiUploadPerformed": false,
+      "trackMutationPerformed": false
+    },
+    "observedTracks": {
+      "alpha": [],
+      "beta": [],
+      "internal": [
+        {
+          "status": "completed",
+          "versionCodes": [
+            "2"
+          ]
+        }
+      ],
+      "production": []
+    },
+    "exactBundleVerification": {
+      "run": 44326658372,
+      "url": "https://github.com/dartflow/platform/actions/runs/44326658372",
+      "action": "upload-internal",
+      "conclusion": "success",
+      "existingBundleSha256": "dc7e549f49ec4eeeeb8b18316a533058af83b053dc4837c342b6a8c010193c84",
+      "versionCode": 2,
+      "idempotentNoOp": true,
+      "apiUploadPerformed": false,
+      "trackMutationPerformed": false,
+      "editCommitted": false,
+      "temporaryEditDiscarded": true
+    },
+    "receiptStateNote": "The frozen receipt playUpload=false records the signing-tool outcome before the owner upload; current Play state is recorded by the later API probes here. Frozen AAB/receipt bytes were not rewritten."
+  },
+  "remainingChecks": [
+    "Owner completes the remaining Play Console app-content/Store declarations, countries and account/test-gate checks. Open Dashboard task names have been requested.",
+    "Initial production release is completed in Play Console under the existing release-helper contract; production currently has no release.",
+    "Private production reviewcredentials are retrieved through the owner panel and entered only into private Play Console access fields.",
+    "Physical native App Links, OTP/Google, camera and two-device video remain owner device tests."
+  ]
+}

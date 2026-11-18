@@ -175,3 +175,9 @@ De regressie bevat twee spelers met weergavenaam `Ann`, een `Anna`-label en
 `Annual club event`; alleen de identiteit van het bevestigde profiel verandert.
 Dezelfde test bevestigt verwijdering van gekoppelde mailkopieën en behoud van
 een ongerelateerde melding, de andere afzender en de idempotentiemarkers.
+
+## Geverifieerde uitrol op 18 november 2026
+
+Staging en productie gebruiken applicatiebron `20db906c3c646caba2d9a6e09f0429b20e865564`, met de aanvullende SQL-migratie uit bron `134050600a91b545699931b4d399ba44a4e23e8f` en `account_deletion=3`. Beide geïsoleerde workers starten succesvol en beide timers zijn ingeschakeld. De extra synthetische stagingproef bevestigt de directe toegangsblokkade, verwerking van de queue, applicatieopschoning, hard-delete in Supabase Auth en afwijzing van het oude token. Er is geen productieaccount voor een verwijderproef aangemaakt of verwijderd. De eerdere read-only rollenproef, lokale testadapter en werkelijke stagingverwijdering zijn afzonderlijke controles; zie het [volledige uitrolbewijs](../evidence/player-play-ready-2026-11-18.json).
+
+De Supabase-beveiligingsadviezen zijn vóór en na de migratie gelijk. De [policyloze private bootstrap-tabel](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) houdt haar bedoelde toegang die standaard alles weigert. De bestaande [controle op gelekte wachtwoorden](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) staat uit; die Auth-instelling is niet gewijzigd. Het uitrolbewijs bewaart beide bevindingen afzonderlijk van de geslaagde migratie- en verwijderproeven.
