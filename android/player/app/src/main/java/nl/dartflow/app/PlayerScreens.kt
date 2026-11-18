@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.*
@@ -370,9 +371,27 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         Text("Met je spelerspincode kan je tegenstander jou toevoegen aan een lokale partij.", color = PlayerMuted)
         Action("Pincode instellen", primary = false) { actions.navigate(PlayerScreen.PROFILE, null) }
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Action("Statistieken", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.STATISTICS, null) }
-        Action("Historie", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.HISTORY, null) }
+    HomeProgressShortcuts(actions)
+}
+@Composable private fun HomeProgressShortcuts(actions: PlayerActions) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        // Give large system text the full row instead of shrinking or clipping a label.
+        if (maxWidth < 300.dp || LocalDensity.current.fontScale > 1.3f) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                HomeProgressShortcut("Statistieken", "home-statistics", Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.STATISTICS, null) }
+                HomeProgressShortcut("Historie", "home-history", Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.HISTORY, null) }
+            }
+        } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            HomeProgressShortcut("Statistieken", "home-statistics", Modifier.weight(1f)) { actions.navigate(PlayerScreen.STATISTICS, null) }
+            HomeProgressShortcut("Historie", "home-history", Modifier.weight(1f)) { actions.navigate(PlayerScreen.HISTORY, null) }
+        }
+    }
+}
+@Composable private fun HomeProgressShortcut(label: String, tag: String, modifier: Modifier, onClick: () -> Unit) {
+    OutlinedButton(onClick, modifier.heightIn(min = 48.dp).testTag(tag), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
+        // A full, integer-constrained text box avoids rounding a wrap-content glyph
+        // advance down to fewer pixels than the paragraph actually needs.
+        Text(label, Modifier.fillMaxWidth().heightIn(min = 20.dp), textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
     }
 }
 @Composable private fun FixtureCard(f: JSONObject, actions: PlayerActions, busy: Boolean) {
