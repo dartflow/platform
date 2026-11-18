@@ -7,7 +7,19 @@ Google-controle, accountverificatie en verplichte Play-formulieren blijven eigen
 
 ## Eenmalig in Google Cloud en Play Console
 
-1. Maak of kies een Google Cloud-project. Schakel de **Google Play Android Developer API** in.
+De eigenaar heeft het project via een Console-screenshot bevestigd:
+
+| Publieke projectidentiteit | Bevestigde waarde |
+| --- | --- |
+| Projectnaam | **DartFlow** |
+| Project-ID | **`dartflow`** |
+| Projectnummer | **`955883910359`** |
+
+De eigenaar bevestigt dat de **Google Play Android Developer API is ingeschakeld**
+en dat **Cloud Shell openstaat**. De volgende stap is het onderstaande script
+in Cloud Shell uitvoeren. Serviceaccount, pool en provider zijn nog niet aangemaakt.
+
+1. Projectkeuze en inschakelen van **Google Play Android Developer API** zijn door de eigenaar bevestigd.
 2. Maak een afzonderlijk serviceaccount voor de spelersapp. Maak geen downloadbare JSON-sleutel.
 3. Richt Workload Identity Federation voor GitHub Actions in. Beperk de trust tot
    repository-ID `1453713803`, eigenaar-ID `355255545`, ref `refs/heads/main`,
@@ -25,16 +37,70 @@ Google-controle, accountverificatie en verplichte Play-formulieren blijven eigen
 | Variabele | Instelling |
 | --- | --- |
 | `PLAYER_PLAY_ENABLED` | Eerst `false`; pas `true` nadat Cloud, Play-rechten en eerste handmatige upload gereed zijn. |
-| `PLAY_WIF_PROVIDER` | Resourcepad van de nieuw ingerichte GitHub WIF-provider. |
-| `PLAY_SERVICE_ACCOUNT` | E-mailadres van het afzonderlijke spelersapp-serviceaccount. |
+| `PLAY_WIF_PROVIDER` | **Voorgenomen, nog niet aangemaakt:** `projects/955883910359/locations/global/workloadIdentityPools/dartflow-player-play/providers/github-main`. Pas na geslaagde inrichting instellen. |
+| `PLAY_SERVICE_ACCOUNT` | **Voorgenomen, nog niet aangemaakt:** `dartflow-player-play@dartflow.iam.gserviceaccount.com`. Pas na geslaagde inrichting instellen. |
 | `PLAY_APP_SIGNING_SHA256` | Het vastgelegde publieke Play App Signing-certificaat voor `nl.dartflow.app`: `DE:54:EB:62:ED:D3:10:AA:F9:39:0F:47:6D:AF:73:E2:94:13:75:CE:EE:BE:DC:0B:89:D8:8D:E2:D4:EC:3E:F1`. |
 
-De eigenaar levert eerst de gekozen Google Cloud-project-ID aan. Daarna kan de
-projectgebonden Cloud Shell-inrichtingsopdracht worden voorbereid. Controleer
-vóór uitvoeren de project-ID en de getoonde trustregels; die opdracht bestaat
-nog niet zolang het project niet is gekozen.
+De bootstrap hieronder is voorbereid, maar nog niet op Google Cloud uitgevoerd.
+Controleer vóór toepassen **project-ID dartflow**, **projectnummer 955883910359**
+en de trustregels. Het script blijft algemeen bruikbaar met expliciet `--project`;
+deze documentatie legt de door de eigenaar bevestigde projectidentiteit vast.
 Een Google Cloud-project hoeft volgens Google niet meer apart aan het Play-
 ontwikkelaarsaccount gekoppeld te worden om de Developer API te gebruiken.
+
+### Cloud Shell-bootstrap — eerst alleen controleren
+
+Gebruik de gereviewde repositoryversie en selecteer in de eigen Cloud Shell
+bewust hetzelfde project als de expliciete `--project`-waarde. Zonder `--apply`
+toont het script uitsluitend een lokaal plan en benadert het Google niet:
+
+```sh
+bash ops/player-play-cloud-setup.sh --project dartflow
+```
+
+Pas na controle van dat plan dezelfde opdracht met `--apply` uitvoeren.
+De eigenaar moet hiervoor al de toepasselijke API-, serviceaccount-, pool- en
+serviceaccount-IAM-beheerrechten hebben. Het script kent deze niet toe en wijzigt
+geen facturatie. Als Google een ontbrekende voorwaarde of organisatiebeperking
+meldt, stopt het; de eigenaar beoordeelt die afzonderlijk.
+
+De bootstrap activeert alleen Android Publisher, IAM, IAM Credentials, STS en
+Resource Manager en maakt de afzonderlijke resources `dartflow-player-play`
+(serviceaccount en pool) en `github-main` (provider). De serviceaccount krijgt
+**geen Cloud-projectrollen en geen sleutel**. Alleen de repositorygebonden
+principalSet in de eigen pool krijgt `roles/iam.workloadIdentityUser` op deze
+serviceaccount. Bestaande afwijkende resources, extra providers, keys,
+impersonatiebindings of directe Cloud-projectrollen voor de serviceaccount
+blokkeren hergebruik. Een onderbroken of ongewijzigde inrichting kan met dezelfde
+opdracht worden herhaald; er worden geen conflicterende resources overschreven.
+
+De exacte trust vereist repository-ID `1453713803`, eigenaar-ID `355255545`,
+`ref=refs/heads/main`, `event_name=workflow_dispatch`,
+`workflow_ref=dartflow/platform/.github/workflows/player-play-release.yml@refs/heads/main`,
+`environment=player-play-production` en
+`sub=repo:dartflow/platform:environment:player-play-production`.
+De huidige job is **geen herbruikbare workflow**; daarom wordt `workflow_ref`
+gecontroleerd. `job_workflow_ref` is daarvoor niet het juiste claim. Aangepaste
+GitHub-subjecttemplates passen niet bij deze exacte subjectcontrole en worden
+niet stilzwijgend toegestaan. [GitHub OIDC-claims](https://docs.github.com/en/actions/reference/security/oidc)
+
+Na uitvoering verschijnen alleen de publieke `PLAY_WIF_PROVIDER` en
+`PLAY_SERVICE_ACCOUNT` plus de handmatige Play-instructie. Geef deze gebruiker in
+**Play Console → Gebruikers en rechten → App-rechten** uitsluitend toegang tot
+**nl.dartflow.app** met **App-gegevens bekijken (alleen-lezen)**,
+**Apps vrijgeven aan testtracks** en **Releasen naar productie, apparaten uitsluiten
+en app-ondertekening van Play gebruiken**. Laat overige app-rechten en alle
+accountrechten uit; de productiereleaserol bevat volgens Google ook enkele
+onvermijdelijk gebundelde rechten. [Exacte Play-rechten](https://support.google.com/googleplay/android-developer/answer/9844686?hl=nl)
+
+Syntax en vijf fake-gcloud-regressies zijn lokaal gecontroleerd met
+`bash -n ops/player-play-cloud-setup.sh` en
+`python3 -B tests/player-play-cloud-setup-test.py`. Daarbij is geen echte
+Cloud-aanroep, WIF-tokenuitwisseling, API-toegang of Play-publicatie getest.
+Voor het providercommando en de beperkte binding zijn de actuele
+[OIDC-CLI](https://docs.cloud.google.com/sdk/gcloud/reference/iam/workload-identity-pools/providers/create-oidc)
+en [serviceaccount-IAM-CLI](https://docs.cloud.google.com/sdk/gcloud/reference/iam/service-accounts/add-iam-policy-binding)
+gecontroleerd op 18 november 2026.
 
 ## Eerste appbestand en eerste publicatie
 

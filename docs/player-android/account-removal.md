@@ -56,6 +56,62 @@ plant een retry. De blokkade blijft actief, ook voor een JWT dat cryptografisch
 nog geldig is. Fouten worden zonder persoonsgegevens of providerpayload gelogd.
 Een failed timer en jobs met herhaalde pogingen vragen operationele opvolging.
 
+### Leesbare code voor de afzonderlijke service-identiteit
+
+De webrelease blijft root-owned en alleen leesbaar voor de eigen appgroep. De
+privacyworker krijgt geen lidmaatschap van die groep en geen toegang tot de
+web-runtimeconfiguratie. De beoordeelde hosthelper
+`infra/privacy-worker-release.py` wordt afzonderlijk root-owned geïnstalleerd als
+`/usr/local/libexec/dartflow-privacy-release.py`; installatie gebeurt niet door
+de helper zelf. Vooraf bestaan `/var/lib/dg-privacy-code` en de twee submappen
+`staging` en `production` als root-owned `0755`-directories.
+
+Vóór iedere run voert systemd uitsluitend deze codevoorbereiding als root uit:
+
+```ini
+ExecStartPre=+/usr/bin/env -i /usr/bin/python3 -I /usr/local/libexec/dartflow-privacy-release.py staging
+ExecStart=/opt/node-v24.18.0-linux-x64/bin/node /var/lib/dg-privacy-code/staging/current/account-removal-worker.mjs
+ReadWritePaths=/var/lib/dg-privacy-code/staging
+```
+
+De productie-unit gebruikt overal `production`. `DynamicUser=yes`, de bestaande
+root-only `EnvironmentFile` en `ProtectSystem=strict` blijven behouden. Alleen de
+omgevingseigen codemap is schrijfbaar gemount voor de rootvoorbereiding. De
+worker heeft daar door root-owned `0755`/`0644` geen schrijfrecht. De juist
+ingerichte bovenliggende codemap heeft geen mkdir/chmod nodig en kan in de
+unitnamespace alleen-lezen blijven. `env -i` verwijdert de workercredentials uit
+de omgeving van het root-helperproces.
+
+De helper leest uitsluitend `account-removal-worker.mjs` en `node_modules` uit
+de vaste, actuele immutable release onder `/srv/sites/dartflow-<omgeving>/releases/`.
+Hij voert geen applicatiecode uit en leest geen `.runtime.env`, `.release.env`,
+webserver, `.next` of credentials. Bronbestanden zijn root-owned, niet schrijfbaar
+voor groep/anderen en geen hardlinks of bijzondere bestanden. Relatieve
+dependency-symlinks mogen uitsluitend binnen dezelfde `node_modules` eindigen;
+environmentbestanden in de dependencies worden geweigerd. De kopie heeft een
+limiet van 50.000 entries, 512 MiB totaal, 64 MiB per bestand en 40 niveaus.
+
+Een volledige generatie verschijnt eerst na een geslaagde kopie onder
+`/var/lib/dg-privacy-code/<omgeving>/<sha12>-<run>-<attempt>`. Alleen daarna wordt
+`current` atomisch omgezet. Bij kopie- of publicatiefouten blijft de vorige
+verwijzing staan en start de worker niet met een gedeeltelijke release. Een
+veranderde actieve webrelease tijdens voorbereiding laat de run veilig stoppen.
+Bij hergebruik worden bronidentiteit, inventaris, hashes en rechten gecontroleerd;
+dezelfde immutable generatie wordt niet opnieuw gekopieerd. Een gegenereerd
+manifest bevat alleen codepaden, maten, inode-identiteit en hashes.
+
+Lokale controle zonder hostmutaties:
+
+```sh
+python3 -B tests/privacy-worker-release-test.py
+node --check ops/provision-play-review.mjs
+```
+
+De unittekst in de provisioner gebruikt deze indeling ook bij een volgende
+hostinrichting. Een helper-/unitupdate vraagt geen nieuwe applicatiebuild en
+verandert de actieve applicatie-SHA niet. Activeer de timer pas nadat het
+bijbehorende workerartifact live staat en de eenmalige rechtencontrole slaagt.
+
 ## Wat wordt gewist en wat blijft?
 
 Contactvelden, PIN-verifier, sociale relaties, persoonlijke voorkeuren,
