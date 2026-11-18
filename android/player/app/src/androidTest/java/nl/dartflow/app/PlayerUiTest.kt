@@ -58,6 +58,20 @@ class PlayerUiTest {
         }
     }
 
+    private fun assertCompleteHomeShortcut(label: String, tag: String) {
+        compose.onNodeWithTag(tag).assertIsDisplayed().assertIsEnabled().assertHeightIsAtLeast(48.dp)
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText(label, useUnmergedTree = true).assertIsDisplayed()
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        assertEquals("$label exposes exactly one native text layout", 1, layouts.size)
+        val layout = layouts.single()
+        val measured = "size=${layout.size}, paragraph=${layout.multiParagraph.width}x${layout.multiParagraph.height}, " +
+            "didOverflowWidth=${layout.didOverflowWidth}, didOverflowHeight=${layout.didOverflowHeight}, lines=${layout.lineCount}, " +
+            "lineLeft=${layout.getLineLeft(0)}, lineRight=${layout.getLineRight(0)}, lineBottom=${layout.getLineBottom(0)}"
+        assertEquals("$label must fit one line: $measured", 1, layout.lineCount)
+        assertFalse("$label must remain complete: $measured", layout.hasVisualOverflow)
+    }
+
     /** Check rendered glyphs, rather than a theme token which Text might not inherit. */
     private fun assertReadableText(text: String, background: Color) {
         val pixels = compose.onNodeWithText(text, useUnmergedTree = true).assertIsDisplayed().captureToImage().toPixelMap()
@@ -159,18 +173,39 @@ class PlayerUiTest {
         compose.onNodeWithTag("home-feed-post-$homePostId").assertIsDisplayed()
         compose.onNodeWithText(homePostBody).assertIsDisplayed()
         compose.onNodeWithText("Noor Testspeler").assertIsDisplayed()
-        listOf("Statistieken", "Historie").forEach { label ->
-            val layouts = mutableListOf<TextLayoutResult>()
-            compose.onNodeWithText(label, useUnmergedTree = true).assertIsDisplayed()
-                .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-            assertEquals("$label must fit one line on the home screen", 1, layouts.single().lineCount)
-            assertFalse("$label must remain complete", layouts.single().hasVisualOverflow)
-        }
+        // Keep visual evidence even if a strict text-layout assertion below finds a regression.
         saveFixtureScreenshot("compact-home-feed.png")
+        assertCompleteHomeShortcut("Statistieken", "home-statistics")
+        assertCompleteHomeShortcut("Historie", "home-history")
         compose.onNodeWithTag("home-scan-button").performClick()
         compose.runOnIdle { assertTrue(scanned) }
         compose.onNodeWithTag("home-play-button").performClick()
         compose.runOnIdle { assertEquals(PlayerScreen.PLAY to null, destination) }
+    }
+
+    @Test fun homeProgressShortcutsStayCompleteAndUsableWithLargeSystemText() {
+        var destination: PlayerScreen? = null
+        compose.setContent {
+            Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) {
+                val density = LocalDensity.current.density
+                CompositionLocalProvider(LocalDensity provides Density(density, 1.6f)) {
+                    DartFlowPlayerTheme {
+                        PlayerApp(homeState(homeFeed(withPost = false)), PlayerActions(navigate = { screen, _ -> destination = screen }))
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("home-statistics").performScrollTo()
+        assertCompleteHomeShortcut("Statistieken", "home-statistics")
+        compose.onNodeWithTag("home-statistics").performClick()
+        compose.runOnIdle { assertEquals(PlayerScreen.STATISTICS, destination) }
+        compose.onNodeWithTag("home-history").performScrollTo()
+        assertCompleteHomeShortcut("Historie", "home-history")
+        compose.onNodeWithTag("home-history").performClick()
+        compose.runOnIdle { assertEquals(PlayerScreen.HISTORY, destination) }
+        val statistics = compose.onNodeWithTag("home-statistics").getUnclippedBoundsInRoot()
+        val history = compose.onNodeWithTag("home-history").getUnclippedBoundsInRoot()
+        assertTrue("Large system text puts the shortcuts on separate full-width rows", statistics.bottom <= history.top)
     }
 
     @Test fun homePostRepliesOpenExistingScopedCommunityRoute() {
