@@ -46,18 +46,20 @@ drop trigger if exists prevent_profile_resurrection on dartflow_private.profiles
 create trigger prevent_profile_resurrection before update on dartflow_private.profiles for each row execute function dartflow_private.guard_deleted_profile();
 revoke all on function dartflow_private.guard_deleted_profile() from public;
 
--- Recursively remove identity labels from denormalized match/result/receipt JSON.
--- IDs stay stable to preserve bracket/result integrity; their profile is a tombstone.
+-- Scrub identity fields only when their stable profile ID identifies the actor.
+-- Names are not identifiers: another player may have the same display name,
+-- and a label can be part of an unrelated title. Never rewrite scalar strings.
+-- Keep the labels argument for compatibility with already installed erasers.
 create or replace function dartflow_private.scrub_deleted_identity(value jsonb,labels text[],actor text) returns jsonb
 language plpgsql immutable set search_path=pg_catalog,dartflow_private as $$
-declare result jsonb;item record;label text;s text;own_identity boolean;
+declare result jsonb;item record;own_identity boolean;identity_prefix text;identity_owner text;
 begin
  if value is null then return null;end if;
  if jsonb_typeof(value)='object' then
   result='{}'::jsonb;
   own_identity=(value->>'id'=actor or value->>'userId'=actor or value->>'playerId'=actor or value->>'profileId'=actor);
   for item in select key,val from jsonb_each(value) e(key,val) loop
-   if own_identity and item.key in('name','displayName','display_name','username','full_name') then
+   if own_identity and item.key in('name','displayName','display_name','username','full_name','playerName') then
     result=result||jsonb_build_object(item.key,'Verwijderde speler');
    elsif own_identity and item.key in('email','avatar','avatarUrl','avatar_url','picture','phone') then
     result=result||jsonb_build_object(item.key,null);
@@ -65,15 +67,20 @@ begin
     result=result||jsonb_build_object(item.key,dartflow_private.scrub_deleted_identity(item.val,labels,actor));
    end if;
   end loop;
+  -- A shared row can carry several named roles. A role ID authorizes only
+  -- that role's label; actorId must never authorize rewriting an opponent.
+  foreach identity_prefix in array array['actor','author','sender','recipient','target','reporter','writer','player','opponent'] loop
+   identity_owner=value->>(identity_prefix||'Id');
+   if identity_owner=actor then
+    if value ? (identity_prefix||'Name') then result=jsonb_set(result,array[identity_prefix||'Name'],to_jsonb('Verwijderde speler'::text));end if;
+    if value ? (identity_prefix||'Email') then result=jsonb_set(result,array[identity_prefix||'Email'],'null'::jsonb);end if;
+    if value ? (identity_prefix||'Avatar') then result=jsonb_set(result,array[identity_prefix||'Avatar'],'null'::jsonb);end if;
+    if value ? (identity_prefix||'AvatarUrl') then result=jsonb_set(result,array[identity_prefix||'AvatarUrl'],'null'::jsonb);end if;
+   end if;
+  end loop;
   return result;
  elsif jsonb_typeof(value)='array' then
   select coalesce(jsonb_agg(dartflow_private.scrub_deleted_identity(v,labels,actor) order by ord),'[]'::jsonb) into result from jsonb_array_elements(value) with ordinality e(v,ord);return result;
- elsif jsonb_typeof(value)='string' then
-  s=value#>>'{}';
-  foreach label in array labels loop
-   if label is not null and length(label)>=3 then s=replace(s,label,'Verwijderde speler');end if;
-  end loop;
-  return to_jsonb(s);
  end if;
  return value;
 end $$;
@@ -84,7 +91,7 @@ revoke all on function dartflow_private.scrub_deleted_identity(jsonb,text[],text
 -- The app has NO EXECUTE privilege and no direct cleanup/admin database credential.
 create or replace function dartflow_private.erase_account_job(job_id uuid,claim uuid) returns void
 language plpgsql security definer set search_path=pg_catalog,dartflow_private,pg_temp as $$
-declare job dartflow_private.account_deletion_jobs%rowtype;p dartflow_private.profiles%rowtype;col record;labels text[];a uuid;
+declare job dartflow_private.account_deletion_jobs%rowtype;p dartflow_private.profiles%rowtype;col record;labels text[];a uuid;mail_ids uuid[];
 begin
  select * into job from dartflow_private.account_deletion_jobs where id=job_id for update;
  if not found or job.status<>'pending' or claim is null or job.lease_token is null or job.lease_until is null or job.lease_token is distinct from claim or job.lease_until<=clock_timestamp() then
@@ -94,6 +101,35 @@ begin
  select * into p from dartflow_private.profiles where id=a for update;
  if not found or p.deletion_requested_at is null then raise exception 'Missing confirmed tombstone' using errcode='42501';end if;
  labels=array[p.email,p.name,p.display_name];
+
+ -- Rendered notification bodies have no participant IDs. Remove whole stored
+ -- copies through their stable source relations, never by matching names. Keep
+ -- mail_events' non-content idempotency markers to prevent a retry recreating a
+ -- delivery. Capture request/invite relations before those personal rows go.
+ select coalesce(array_agg(o.id),'{}'::uuid[]) into mail_ids
+ from dartflow_private.mail_outbox o where
+ o.recipient_id=a or o.recipient_key='user:'||a::text or o.recipient_key='preview:'||a::text
+ or (p.email is not null and o.recipient=p.email)
+ or exists(select 1 from dartflow_private.match_players mp where mp.match_id=o.entity_id and mp.user_id=a)
+ or exists(select 1 from dartflow_private.club_join_requests r where r.user_id=a and o.event_id='club-request:'||r.id::text||':reviewers')
+ or exists(select 1 from dartflow_private.club_invites i where (i.user_id=a or i.invited_by=a) and o.event_id='club-invite:'||i.id::text)
+ or exists(select 1 from dartflow_private.platform_entities e cross join lateral jsonb_array_elements(case when jsonb_typeof(e.state->'fixtures')='array' then e.state->'fixtures' else '[]'::jsonb end) f(fixture)
+   where e.id=o.entity_id and f.fixture->>'id'=o.snapshot#>>'{reminder,fixtureId}' and f.fixture->'players' @> jsonb_build_array(a::text));
+ delete from dartflow_private.mail_provider_events ev where ev.job_id=any(mail_ids);
+ delete from dartflow_private.mail_outbox where id=any(mail_ids);
+
+ -- Reply-to is explicitly verified against profile email when configured. It
+ -- has no profile ID in policy/snapshot JSON, so compare only that exact address
+ -- in its known contact fields. Never infer an owner from a person's name.
+ if p.email is not null then
+  update dartflow_private.mail_policies set settings=jsonb_set(settings,'{replyTo}','null'::jsonb),revision=revision+1,updated_at=clock_timestamp() where lower(settings->>'replyTo')=lower(p.email);
+  update dartflow_private.mail_outbox set snapshot=jsonb_set(snapshot,'{replyTo}','null'::jsonb) where lower(snapshot->>'replyTo')=lower(p.email);
+  update dartflow_private.mail_outbox set snapshot=jsonb_set(snapshot,'{from}','null'::jsonb) where lower(snapshot#>>'{from,address}')=lower(p.email);
+  update dartflow_private.integration_settings set settings=jsonb_set(settings,'{replyTo}','null'::jsonb),revision=revision+1,updated_at=clock_timestamp() where provider='resend' and lower(settings->>'replyTo')=lower(p.email);
+  update dartflow_private.integration_settings set settings=jsonb_set(jsonb_set(settings,'{from}','null'::jsonb),'{mode}',to_jsonb('log'::text)),revision=revision+1,updated_at=clock_timestamp() where provider='resend' and lower(settings#>>'{from,address}')=lower(p.email);
+  update dartflow_private.integration_settings s set settings=jsonb_set(s.settings,'{testRecipients}',coalesce((select jsonb_agg(v order by ordinal) from jsonb_array_elements(case when jsonb_typeof(s.settings->'testRecipients')='array' then s.settings->'testRecipients' else '[]'::jsonb end) with ordinality x(v,ordinal) where lower(v#>>'{}')<>lower(p.email)),'[]'::jsonb)),revision=revision+1,updated_at=clock_timestamp()
+   where provider='resend' and exists(select 1 from jsonb_array_elements(case when jsonb_typeof(s.settings->'testRecipients')='array' then s.settings->'testRecipients' else '[]'::jsonb end) x(v) where lower(v#>>'{}')=lower(p.email));
+ end if;
 
  -- Detach physical assignments. Official progress is retained and interrupted.
  update dartflow_private.matches m set board_id=null,revision=revision+1,updated_at=clock_timestamp(),
@@ -162,8 +198,6 @@ begin
  delete from dartflow_private.oche_device_receipts where principal=a::text;
  delete from dartflow_private.oche_home_selections where owner_id=a;
  update dartflow_private.blog_tokens set revoked_at=coalesce(revoked_at,clock_timestamp()) where created_by=a;
- delete from dartflow_private.mail_provider_events ev where ev.job_id in(select id from dartflow_private.mail_outbox where recipient_id=a or recipient_key='user:'||a::text or (p.email is not null and recipient=p.email));
- delete from dartflow_private.mail_outbox where recipient_id=a or recipient_key='user:'||a::text or (p.email is not null and recipient=p.email);
  delete from dartflow_private.mail_events where recipient_key='user:'||a::text or recipient_key=p.email;
  delete from dartflow_private.mail_suppressions where recipient_key='user:'||a::text or recipient_key=p.email;
  update dartflow_private.owner_bootstrap set email='removed-'||a::text||'@invalid.dartflow.nl' where consumed_by=a or email=p.email;
@@ -176,8 +210,9 @@ begin
  -- Training animation caches belong to the owner's discarded private session.
  delete from dartflow_private.board_score_events e where exists(select 1 from dartflow_private.platform_entities pe where pe.id=e.source_id and pe.owner_id=a and pe.kind='training');
 
- -- Scrub denormalized labels in all private JSON records, including results,
- -- invitations, audits, fixtures, caches and outbox messages addressed to others.
+ -- Scrub stable-ID identity objects in all private JSON records, including
+ -- results, invitations, audits, fixtures and cached command responses. Shared
+ -- strings and other players are deliberately not inferred from a display name.
  for col in select c.table_name,c.column_name from information_schema.columns c join information_schema.tables t on t.table_schema=c.table_schema and t.table_name=c.table_name where c.table_schema='dartflow_private' and c.data_type='jsonb' and t.table_type='BASE TABLE' and c.table_name<>'club_join_requests' loop
   execute format('update dartflow_private.%I set %I=dartflow_private.scrub_deleted_identity(%I,$1,$2) where position($2 in %I::text)>0 or($3 is not null and position($3 in %I::text)>0)',col.table_name,col.column_name,col.column_name,col.column_name,col.column_name) using labels,a::text,p.email;
  end loop;
@@ -189,5 +224,5 @@ begin
 end $$;
 revoke all on function dartflow_private.erase_account_job(uuid,uuid) from public,dartflow_app;
 grant execute on function dartflow_private.erase_account_job(uuid,uuid) to dartflow_privacy_worker;
-insert into dartflow_private.feature_versions(name,version) values('account_deletion',2) on conflict(name) do update set version=excluded.version;
+insert into dartflow_private.feature_versions(name,version) values('account_deletion',3) on conflict(name) do update set version=excluded.version;
 commit;
