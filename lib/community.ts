@@ -1,5 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {DomainError} from './domain';
+import {requireCommunityRules} from './player-safety';
 import {clubIsActiveMember,clubPermission} from './club-access';
 import {blocked,entity,member,requireAccess,text,transaction,uuid,type Client} from './platform-store';
 import type {PlatformCommand,PlatformResponse} from './platform-types';
@@ -96,6 +97,7 @@ export async function revalidateCommunityCommand(client:Client,actor:string,comm
 }
 export async function communityAction(client:Client,actor:string,command:PlatformCommand):Promise<PlatformResponse|null>{
  const a=command.action;if(!a.type.startsWith('community.'))return null;
+ if(['community.post','community.reply','community.message'].includes(a.type))await requireCommunityRules(client,actor);
  // A cursor may only advance in the order transactions commit within this scope.
  // The shared scope lock stays held through the command receipt and COMMIT.
  let writeScope:{kind:CommunityKind;id:string};

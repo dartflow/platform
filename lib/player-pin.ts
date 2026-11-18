@@ -46,7 +46,7 @@ async function derive(pin:string,row:Pick<PinRow,'salt'|'pepper_version'|'memory
  return new Promise((resolve,reject)=>argon2('argon2id',{message:pin,nonce:Buffer.from(row.salt,'base64'),secret:secret(row.pepper_version).value,memory:row.memory,passes:row.passes,parallelism:row.parallelism,tagLength:32},(error,key)=>error?reject(new DomainError('player_pin_unavailable','Spelerspincode is tijdelijk niet beschikbaar.',503)):resolve(key)));
 }
 async function readVerifier(client:Query,user:string,lock=false):Promise<PinRow|null>{
- const {rows}=await client.query<PinRow>(`select user_id,version,pepper_version,salt,verifier,memory,passes,parallelism from dartflow_private.player_pin_verifiers where user_id=$1${lock?' for update':''}`,[uuid(user)]);return rows[0]??null;
+ const {rows}=await client.query<PinRow>(`select user_id,version,pepper_version,salt,verifier,memory,passes,parallelism from dartflow_private.player_pin_verifiers where user_id=$1 and exists(select 1 from dartflow_private.profiles p where p.id=user_id and p.deletion_requested_at is null and p.deleted_at is null)${lock?' for update':''}`,[uuid(user)]);return rows[0]??null;
 }
 /** Security metadata only. Never pass submitted usernames, PINs, hashes or request bodies. */
 export async function recordPlayerPinOutcome(actor:string,outcome:'rejected'|'cooldown',scope:string,targetId?:string):Promise<void>{
@@ -107,6 +107,8 @@ export async function preparePlayerPinUpdate(actor:string,input:{requestId:unkno
 export async function savePreparedPlayerPin(client:PoolClient,actor:string,prepared:PreparedPlayerPin):Promise<void>{
  if(prepared.actor!==uuid(actor))throw new DomainError('forbidden','Deze spelerspincode hoort bij een ander account.',403);
  await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`player-pin:${actor}`]);
+ const active=await client.query('select id from dartflow_private.profiles where id=$1 and deletion_requested_at is null and deleted_at is null for update',[actor]);
+ if(!active.rowCount)throw new DomainError('account_deleted','Dit account wordt verwijderd of is verwijderd.',403);
  const prior=await client.query<{fingerprint:string}>('select fingerprint from dartflow_private.player_pin_receipts where actor_id=$1 and request_id=$2 and kind=$3',[actor,prepared.requestId,'update']);
  if(prior.rows.length){if(prior.rows[0].fingerprint!==prepared.fingerprint)throw new DomainError('request_reused','Deze aanvraag is al voor andere gegevens gebruikt.',409);return;}
  if(prepared.replayed)throw new DomainError('player_pin_retry','Controleer je profiel en probeer opnieuw.',409);

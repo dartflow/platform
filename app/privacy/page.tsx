@@ -4,7 +4,7 @@ import styles from './privacy.module.css';
 
 export const dynamic = 'force-dynamic';
 const canonical = 'https://dartflow.nl/privacy';
-const contact = 'info@dgwebservices.nl';
+const contact = 'info@dartflow.nl';
 const sections = [
   ['aanbieder', 'Wie zijn wij?'], ['gegevens', 'Gegevens en doeleinden'],
   ['zichtbaarheid', 'Profielen en scoreborden'], ['camera', 'Camera en microfoon'],
@@ -36,8 +36,8 @@ export default function Privacy() {
       <header className={styles.intro}>
         <p className={styles.eyebrow}>DartFlow · DG Webservices</p>
         <h1>Privacybeleid<span>.</span></h1>
-        <p className={styles.lead}>Jouw gegevens, jouw keuzes. Dit beleid geldt voor de DartFlow-website, het spelers- en beheerdersplatform, de webapps en de Android-app DartFlow Oche Live.</p>
-        <p className={styles.updated}>Laatst bijgewerkt: <time dateTime="2026-11-14">14 november 2026</time></p>
+        <p className={styles.lead}>Jouw gegevens, jouw keuzes. Dit beleid geldt voor de DartFlow-website, het spelers- en beheerdersplatform, de webapps, de native DartFlow-spelersapp en de Android-app DartFlow Oche Live.</p>
+        <p className={styles.updated}>Laatst bijgewerkt: <time dateTime="2026-11-18">18 november 2026</time></p>
       </header>
       <aside className={styles.summary} aria-labelledby="privacy-samenvatting">
         <h2 id="privacy-samenvatting">Goed om te weten</h2>
@@ -57,7 +57,7 @@ export default function Privacy() {
             <ul>
               <li><strong>Account en profiel.</strong> E-mailadres, account-ID, gebruikersnaam, weergavenaam, een eventuele profielfoto en je instellingen. Bij Google-login ontvangen we de gegevens die Google voor die aanmelding verstrekt, zoals je naam, e-mailadres en profielfoto. We gebruiken deze om je te herkennen, toegang te geven en je profiel te tonen.</li>
               <li><strong>Spelen en organiseren.</strong> Deelnemers, inschrijvingen, clubs en rollen, locaties, banen, reserveringen, worpen, uitslagen, trainingen en statistieken. Deze zijn nodig voor het uitvoeren van wedstrijden, baanbeheer, toernooien, competitie en jouw gespeelde historie.</li>
-              <li><strong>Contact en community.</strong> Berichten, vriendschapsverzoeken, reacties, gedeelde resultaten en eventuele meldingen die je indient. We gebruiken die voor de gekozen communicatie en voor moderatie en ondersteuning.</li>
+              <li><strong>Contact en community.</strong> Berichten, vriendschapsverzoeken, reacties, gedeelde resultaten, blokkades, geaccepteerde regelversies en eventuele meldingen die je indient. We gebruiken die voor de gekozen communicatie en voor moderatie en ondersteuning.</li>
               <li><strong>E-mail.</strong> Je e-mailadres, de inhoud van een verzonden bericht en aflever- of foutmeldingen. Dit maakt inloggen met een e-mailcode, uitnodigingen, serviceberichten en gekozen meldingen mogelijk.</li>
               <li><strong>Apparaten en beveiliging.</strong> Installatie- en sessiegegevens, netwerkgegevens zoals je IP-adres, aanvraagmomenten en gegevens over fouten, koppelingen en beheeracties. Hiermee leveren en beveiligen we de dienst en begrenzen we misbruik.</li>
               <li><strong>Websiteanalyse.</strong> Alleen na toestemming kunnen bezochte pagina’s, klikken, herkomst en technische browser- of apparaatgegevens via SocialHero worden gemeten. Zie ook onderdeel 6.</li>
@@ -69,12 +69,14 @@ export default function Privacy() {
           <section id="zichtbaarheid">
             <h2>3. Wat kunnen anderen zien?</h2>
             <p>Je gebruikersnaam, weergavenaam, eventuele avatar en relevante wedstrijdgegevens kunnen zichtbaar zijn voor medespelers en bevoegde organisatoren. Op een openbaar baanscherm kunnen aanwezigen en bezoekers van de openbare schermlink de toegestane spelersnamen, live stand, scorekaart en live wedstrijdcijfers zien. Deel daarom alleen informatie die bij die zichtbaarheid past.</p>
+            <p>DartFlow is bedoeld voor spelers vanaf 13 jaar. Voor communityberichten bevestig je dat je minimaal 13 jaar bent en akkoord gaat met de <a href="/communityregels">communityregels</a> en <a href="/voorwaarden">voorwaarden</a>. Hiervoor slaan we de regelversie en het acceptatiemoment op, geen geboortedatum. Meldingen en blokkades zijn veiligheidsfuncties; de identiteit van een melder wordt niet automatisch aan de gemelde speler verstrekt.</p>
             <p>De zichtbaarheid van historische profielcijfers op openbare Oche Live-schermen is een afzonderlijke profielvoorkeur en staat standaard uit. Andere zichtbaarheids- en berichtvoorkeuren beheer je bij je profielinstellingen. Wat je zelf in een openbare community of via een openbare resultaatlink deelt, is zichtbaar voor het daarbij aangegeven publiek.</p>
             <p>Wedstrijdgemiddelden, statistieken en ranglijsten worden uit geregistreerde scores en uitslagen berekend. We gebruiken deze berekeningen niet om uitsluitend geautomatiseerde besluiten met juridische of vergelijkbaar ingrijpende gevolgen over jou te nemen.</p>
           </section>
           <section id="camera">
             <h2>4. Camera en microfoon bij online spelen</h2>
-            <p>Als je een videogesprek gebruikt, vraagt de browser toegang tot camera en microfoon. Je bepaalt zelf of je deze inschakelt en kunt ze weer uitschakelen. Beeld en geluid gaan via de verbinding met je tegenstander; waar nodig helpt een relayserver de verbinding tot stand te brengen. Daarbij worden ook technische verbindingsgegevens verwerkt.</p>
+            <p>Als je een videogesprek gebruikt, vraagt de browser of de native spelersapp toegang tot camera en microfoon. Je bepaalt zelf of je deze inschakelt en kunt ze weer uitschakelen. Beeld en geluid gaan via de verbinding met je tegenstander; waar nodig helpt een relayserver de verbinding tot stand te brengen. Daarbij worden ook technische verbindingsgegevens verwerkt.</p>
+            <p>De native spelersapp kan een vaste baan-QR scannen. Camerabeelden en het herkennen van de QR-code worden op het apparaat verwerkt met Camera2 en ZXing. De app verstuurt de herkende baanlink wanneer je die opent; de camerabeelden worden niet voor de scan naar DartFlow verstuurd. De scanner gebruikt geen Google ML Kit- of analytics-SDK. De app leest niet je adresboek, fotobibliotheek of GPS-locatie. Een door jou bevestigde check-in koppelt je deelname wel aan een fysieke baan en het betreffende moment.</p>
             <p>DartFlow biedt in deze functie geen opname van beeld of geluid. Technische signaleringsgegevens kunnen wel worden opgeslagen om de verbinding te laten werken. De afzonderlijke Oche Live-schermapp vraagt geen toegang tot je camera, microfoon, contacten of GPS-locatie.</p>
           </section>
           <section id="oche-live">
@@ -122,6 +124,7 @@ export default function Privacy() {
           <section id="gegevens-verwijderen">
             <h2>10. Jouw rechten en gegevens laten verwijderen</h2>
             <p>Je kunt vragen om inzage, correctie, verwijdering, beperking of overdracht van jouw persoonsgegevens, voor zover de AVG dat recht in jouw situatie geeft. Je kunt bezwaar maken tegen verwerking op basis van een gerechtvaardigd belang en toestemming voor optionele verwerking intrekken.</p>
+            <p>Via <a href="/account-verwijderen">Account verwijderen</a> kun je de stappen voor een account- of gegevensverwijderingsverzoek vinden. De native spelersapp biedt deze route ook vanuit je profiel. Uitloggen of een scherm ontkoppelen is geen accountverwijdering.</p>
             <p>Stuur je verzoek naar <a href={`mailto:${contact}?subject=Privacyverzoek%20DartFlow`}>{contact}</a>, bij voorkeur vanaf het e-mailadres van je account. Vermeld dat het om DartFlow gaat en of je inzage, correctie of verwijdering van je account en gegevens wilt. We kunnen aanvullende informatie vragen om je identiteit veilig te controleren. Stuur geen wachtwoord, pincode, aanmeldcode of kopie van je identiteitsbewijs mee zonder dat daar een passende reden en veilige werkwijze voor is afgesproken.</p>
             <p>We reageren in beginsel binnen één maand. Als een verzoek complex is of er meerdere verzoeken zijn, kan de wettelijke termijn worden verlengd; daarover informeren we je binnen de eerste maand. Gegevens die we vanwege een wettelijke verplichting of een andere geldige uitzondering moeten behouden, worden niet zonder meer gewist. We leggen dan uit wat blijft en waarom.</p>
             <p>Profielgegevens en zichtbaarheid kun je waar beschikbaar zelf aanpassen via <a href="/app/profiel">je profiel</a>. Analytics wijzig je via Privacyvoorkeuren. Heb je een klacht over de verwerking van jouw persoonsgegevens, dan kun je contact met ons opnemen en een klacht indienen bij de <a href="https://www.autoriteitpersoonsgegevens.nl/" rel="noopener noreferrer">Autoriteit Persoonsgegevens</a>.</p>
@@ -136,7 +139,7 @@ export default function Privacy() {
     </main>
     <footer className={styles.footer}>
       <span>DartFlow · DG Webservices</span>
-      <nav aria-label="Footernavigatie"><a href="/">Homepage</a><a href="/oche-live">Oche Live</a><a href="/privacy" aria-current="page">Privacybeleid</a>{analyticsAvailable && <button type="button" className="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>}</nav>
+      <nav aria-label="Footernavigatie"><a href="/">Homepage</a><a href="/oche-live">Oche Live</a><a href="/privacy" aria-current="page">Privacybeleid</a><a href="/communityregels">Communityregels</a><a href="/voorwaarden">Voorwaarden</a><a href="/account-verwijderen">Account verwijderen</a>{analyticsAvailable && <button type="button" className="dartflow-privacy-link" data-open-dartflow-privacy>Privacyvoorkeuren</button>}</nav>
     </footer>
   </div>;
 }

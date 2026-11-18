@@ -17,6 +17,7 @@ import ScreenDeviceManager from "./screen-device-manager";
 import IntegrationsPanel from "./integrations-panel";
 import BlogWorkspace from "./blog-workspace";
 import { MailPreferences } from "./mail-policy-panel";
+import {CommunityRulesGate,SafetyActions} from './player-safety';
 import {FeedSpace,ScopedChat} from './community-space';
 import {ClubWorkspace} from './club-ui';
 import LocationWorkspace from './location-workspace';
@@ -1912,6 +1913,7 @@ function Rooms({
                           ? "Bericht verwijderd door een moderator."
                           : text(m.body)}
                       </p>
+                      {!m.deleted && m.authorId !== data.profile.id && <SafetyActions targetType="room-message" targetId={text(m.id)} userId={text(m.authorId)} scopeKind="room" scopeId={entity.id} />}
                       {manager && !m.deleted && (
                         <button
                           className="text-button"
@@ -1938,7 +1940,7 @@ function Rooms({
                 )}
                 <div ref={bottom} />
               </div>
-              <form
+              <CommunityRulesGate><form
                 className="workspace-message-form"
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -1968,7 +1970,7 @@ function Rooms({
                 >
                   Verstuur
                 </button>
-              </form>
+              </form></CommunityRulesGate>
             </section>
             <aside className="panel">
               <h2>Deelnemers</h2>
@@ -3915,6 +3917,7 @@ function Registry({
                       <Label value={r.status} />
                     </div>
                     <p>{text(r.reason)}</p>
+                    <p className="muted-copy">Categorie: {text(r.category, 'other')} · Type: {text(r.targetType, 'user')} · Referentie: {text(r.contentId, 'onbekend')}</p>
                     {Boolean(r.decision) && (
                       <p className="muted-copy">
                         Beslissing: {text(r.decision)}
@@ -3930,9 +3933,11 @@ function Registry({
                             type: "report.resolve",
                             reportId: r.id,
                             reason: text(f.get("reason")),
+                            operation: text(f.get("operation")),
                           });
                         }}
                       >
+                        <Field label="Actie" name="operation"><option value="no-action">Geen verwijdering, beoordeling vastleggen</option><option value="remove-content">Gemelde inhoud verwijderen</option><option value="warn">Waarschuwing vastleggen</option></Field>
                         <Field label="Beoordeling" name="reason" required />
                       </Form>
                     )}

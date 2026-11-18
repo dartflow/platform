@@ -39,6 +39,9 @@ import {seasonCalendar} from '@/lib/season-calendar';
 import {getFeedState,getFeedResult,executeFeedAction,getFeedReplies} from '@/lib/feed';
 import {handleNativePlayerApi} from '@/lib/native-player';
 import {nativePlayerPrincipal} from '@/lib/native-player-context';
+import {getAccountDeletionStatus,requestAccountDeletion} from '@/lib/account-removal';
+import {getPlayerSafety,acceptPlayerSafety} from '@/lib/player-safety';
+import {handlePlayReviewManagement} from '@/lib/play-review';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -232,6 +235,24 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     if(!uuid(data.sessionId)||!uuid(data.warningEpoch)||!uuid(data.requestId))throw new DomainError('invalid_command','Ververs de baanstatus en probeer opnieuw.');
     return json({activity:await extendBoardActivity(actor.id,{sessionId:data.sessionId,warningEpoch:data.warningEpoch,requestId:data.requestId})});
   }
+  if(path==='account/deletion'){
+    if(method==='GET')return json(await getAccountDeletionStatus(actor.id));
+    if(method==='POST'){
+      const native=nativePlayerPrincipal(request);
+      const claims=native?.claims??(appConfig().mode==='supabase'?(await(await supabaseServer()).auth.getClaims()).data?.claims:null);
+      const recentAuth=appConfig().mode==='local'||hasRecentVerifiedAuthentication(actor.id,claims);
+      return json(await requestAccountDeletion(actor.id,await body(request),{recentAuth}));
+    }
+  }
+  if(method==='GET'&&path==='safety')return json(await getPlayerSafety(actor.id));
+  if(method==='POST'&&path==='safety/consent')return json(await acceptPlayerSafety(actor.id,await body(request)));
+  if(method==='POST'&&(path==='safety/report'||path==='safety/block')){
+    const data=await body(request);if(!uuid(data.requestId))throw new DomainError('invalid_command','Ververs en probeer opnieuw.');
+    if(path==='safety/block'&&(typeof data.blocked!=='boolean'||!uuid(data.userId)))throw new DomainError('invalid_command','Kies een speler en een geldige blokkeeractie.');
+    const action=path==='safety/report'?{...data,type:'report.create'}:{type:data.blocked===false?'friend.unblock':'friend.block',userId:data.userId};
+    return json(await executePlatformCommand(actor.id,{requestId:data.requestId,action}));
+  }
+  const reviewManagement=await handlePlayReviewManagement(request,actor.id,path);if(reviewManagement)return reviewManagement;
   const integration=await handleIntegrations(request,actor.id,parts);
   if(integration)return integration;
   if(method==='GET' && parts[0]==='media' && uuid(parts[1]) && parts.length===2) return json(await mediaConfiguration(actor.id,parts[1]));

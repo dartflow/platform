@@ -11,6 +11,7 @@ test('feed audiences, follows, reactions, server shares and rematches use curren
  try{
   await admin.query('begin');
   for(const[i,id]of people.entries())await admin.query('insert into dartflow_private.profiles(id,name,display_name,display_name_confirmed) values($1,$2,$3,true)',[id,`feed-${i}-${suffix}`,`Feed ${i} ${suffix}`]);
+  for(const id of people)await admin.query("insert into dartflow_private.player_safety_acceptances(user_id,version,age_confirmed) values($1,'2026-11-18',true)",[id]);
   await admin.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[club,'Feed club '+suffix]);await admin.query("insert into dartflow_private.platform_entities(id,kind,owner_id,visibility,state) values($1,'club',$2,'public',$3)",[club,people[0],JSON.stringify({name:'Feed club '+suffix,lifecycle:'active'})]);
   for(const[i,id]of people.slice(0,3).entries()){await admin.query('insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,$3)',[club,id,i===0?'organizer':'player']);await admin.query("insert into dartflow_private.platform_members(entity_id,user_id,role,status,attributes) values($1,$2,$3,'active','{}')",[club,id,i===0?'owner':'member']);}
   await admin.query('insert into dartflow_private.events(id,club_id,name,date,capacity) values($1,$2,$3,current_date,64)',[event,club,'Feed event '+suffix]);

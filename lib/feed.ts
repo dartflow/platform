@@ -6,6 +6,7 @@ import {clubIsActiveMember,clubPermission} from './club-access';
 import {blocked,canonical,createEntity,addMember,entity,hash,member,requireAccess,text,transaction,uuid,type Client} from './platform-store';
 import {requireScoreboardName} from './profile-name';
 import {containsPrivatePinField} from './private-pin-fields';
+import {requireCommunityRules,type ReportTarget} from './player-safety';
 import type {MatchState} from './types';
 import type {FeedAction,FeedCategory,FeedChannel,FeedCommand,FeedItem,FeedKind,FeedReply,FeedResult,FeedState} from './feed-types';
 
@@ -154,7 +155,7 @@ export async function getFeedState(actorId:string,options:{mode?:string;filter?:
   for(const row of rows.slice(0,100)){scanned++;last={id:row.id,createdAt:row.cursor_at};const ch=visible.find(c=>c.key===row.channel)!;if(row.legacy_community&&!communityAllowed.has(ch.key)||ch.mode==='important'&&!row.important||!allowedCategory(filter,row.category))continue;let result:FeedResult|undefined;
    if(row.source_kind==='match'||row.source_kind==='encounter')try{result=(await source(client,actor,row.source_id,ch.visibility==='public')).result;if(row.channel==='friends'&&!result.publicAllowed&&row.author_id!==actor)continue;}catch(e){if(e instanceof DomainError&&[403,404].includes(e.status))continue;throw e;}
    if(row.source_kind==='event')try{const e=await entity(client,row.source_id);if(['draft','canceled'].includes(String(e.state.status??'')))continue;}catch{continue;}
-   items.push({id:row.id,channel:row.channel,category:row.category,title:row.title,body:row.body,authorName:row.author_name,createdAt:row.cursor_at,important:row.important,pinUntil:row.pin_until&&new Date(row.pin_until).getTime()>Date.now()?stamp(row.pin_until):null,likes:row.likes,liked:row.liked,replyCount:row.reply_count,canDelete:row.author_id===actor||ch.canManage,canManage:ch.canManage,reactions:ch.reactions,href:result?`/app/feed/result/${row.source_id}`:row.source_kind==='event'?ch.href:null,...(result?{result}:{})});if(items.length===20)break;
+   items.push({id:row.id,channel:row.channel,category:row.category,title:row.title,body:row.body,authorName:row.author_name,authorId:row.author_id,createdAt:row.cursor_at,important:row.important,pinUntil:row.pin_until&&new Date(row.pin_until).getTime()>Date.now()?stamp(row.pin_until):null,likes:row.likes,liked:row.liked,replyCount:row.reply_count,canDelete:row.author_id===actor||ch.canManage,canManage:ch.canManage,reactions:ch.reactions,href:result?`/app/feed/result/${row.source_id}`:row.source_kind==='event'?ch.href:null,...(result?{result}:{})});if(items.length===20)break;
   }
   const pins=cursor?[]:items.filter(r=>r.pinUntil&&Date.parse(r.pinUntil)>Date.now()).slice(0,2),upcoming=(await client.query(`select id,state->>'name' name,state->>'date' as "at",kind from dartflow_private.platform_entities where kind in('league','tournament') and (state->>'date')~'^\\d{4}-\\d{2}-\\d{2}' and state->>'date'>=to_char(current_date,'YYYY-MM-DD') and id=any($1::uuid[]) order by state->>'date',id limit 5`,[all.filter(c=>['league','tournament'].includes(c.kind)&&c.following&&c.mode!=='muted').map(c=>c.id)])).rows.map(r=>({id:r.id,name:r.name,at:r.at,href:`/app/${r.kind==='league'?'leagues':'hall'}/${r.id}`}));
   return{channels:all,posts:items.filter(r=>!pins.includes(r)),pins,nextCursor:last&&(scanned<rows.length||rows.length===101)?encode(last):null,upcoming};
@@ -170,13 +171,14 @@ async function readItem(client:Client,actor:string,idValue:unknown){
  if(item.channel!==candidate.channel)throw new DomainError('revision_conflict','Dit bericht is gewijzigd. Open het opnieuw.',409);
  if(item.legacy_community){await communityScope(client,actor,ch.kind as 'platform'|'club'|'league'|'tournament',ch.id,true);const legacy=(await client.query('select deleted from dartflow_private.community_posts where id=$1',[item.id])).rows[0];if(!legacy||legacy.deleted)throw new DomainError('not_found','Dit bericht is niet beschikbaar.',404);await synchronizeCommunity(client,[ch.key],item.id);}if(await blocked(client,actor,item.author_id))throw new DomainError('not_found','Dit bericht is niet beschikbaar.',404);if(item.channel==='friends'&&item.author_id!==actor&&!(await client.query("select 1 from dartflow_private.platform_relationships where source_id=$1 and target_id=$2 and kind='friend'",[actor,item.author_id])).rowCount)throw new DomainError('forbidden','Dit bericht is alleen voor huidige vrienden.',403);if(['match','encounter'].includes(item.source_kind))await source(client,actor,item.source_id);return{item,ch};
 }
-export async function getFeedReplies(actorId:string,itemId:string,cursor?:string):Promise<{replies:FeedReply[];nextCursor:string|null}>{const actor=uuid(actorId),page=decodeFeedCursor(cursor);return transaction(async client=>{await readItem(client,actor,itemId);const rows=(await client.query(`select r.id,p.name as "authorName",r.body,to_char(r.created_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt" from dartflow_private.feed_replies r join dartflow_private.profile_labels p on p.id=r.author_id where r.item_id=$1 and($3::timestamptz is null or(r.created_at,r.id)<($3::timestamptz,$4::uuid)) and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$2 and b.target_id=r.author_id) or(b.target_id=$2 and b.source_id=r.author_id))) order by r.created_at desc,r.id desc limit 21`,[uuid(itemId),actor,page?.at??null,page?.id??null])).rows.map(r=>({...r,createdAt:String(r.createdAt)}));return{replies:rows.slice(0,20).reverse(),nextCursor:rows.length>20?encode(rows[19]):null};});}
+export async function getFeedReplies(actorId:string,itemId:string,cursor?:string):Promise<{replies:FeedReply[];nextCursor:string|null}>{const actor=uuid(actorId),page=decodeFeedCursor(cursor);return transaction(async client=>{await readItem(client,actor,itemId);const rows=(await client.query(`select r.id,r.author_id as "authorId",p.name as "authorName",r.body,to_char(r.created_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt" from dartflow_private.feed_replies r join dartflow_private.profile_labels p on p.id=r.author_id where r.item_id=$1 and($3::timestamptz is null or(r.created_at,r.id)<($3::timestamptz,$4::uuid)) and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$2 and b.target_id=r.author_id) or(b.target_id=$2 and b.source_id=r.author_id))) order by r.created_at desc,r.id desc limit 21`,[uuid(itemId),actor,page?.at??null,page?.id??null])).rows.map(r=>({...r,createdAt:String(r.createdAt)}));return{replies:rows.slice(0,20).reverse(),nextCursor:rows.length>20?encode(rows[19]):null};});}
 async function revalidate(client:Client,actor:string,action:FeedAction){if(action.channel){const scope=await channel(client,actor,String(action.channel));if(['compose','share'].includes(action.type)&&!scope.canPost)throw new DomainError('forbidden','Je kunt in dit kanaal geen bericht plaatsen.',403);}if(action.itemId)await readItem(client,actor,action.itemId);if(action.sourceId)await source(client,actor,String(action.sourceId));if(action.shareId){const row=(await client.query('select created_by from dartflow_private.feed_shares where id=$1',[uuid(action.shareId)])).rows[0];if(!row||row.created_by!==actor)throw unavailable();}}
 export async function executeFeedAction(actorId:string,input:unknown):Promise<Record<string,unknown>>{
  const actor=uuid(actorId),command=input as FeedCommand;if(!command||typeof command!=='object'||!command.action||typeof command.action.type!=='string')throw new DomainError('invalid_command','Ongeldige feedactie.');uuid(command.requestId);if(JSON.stringify(command).length>9000)throw new DomainError('invalid_command','Deze feedactie is te groot.');
  if(containsPrivatePinField(command))throw new DomainError('private_field','Gebruik de beveiligde spelerspincodeflow.',400);
  const limit=await consumeRateLimit(`feed:actor:${actor}`,60,60);if(!limit.allowed)throw Object.assign(new DomainError('rate_limited','Te veel feedacties. Probeer het over een minuut opnieuw.',429),{retryAfter:limit.retryAfter});
  return transaction(async client=>{await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`feed-command:${actor}`]);const action=command.action,fingerprint=hash(canonical(action)),receipt=(await client.query('select fingerprint,response from dartflow_private.feed_receipts where actor_id=$1 and request_id=$2',[actor,command.requestId])).rows[0];if(receipt){if(receipt.fingerprint!==fingerprint)throw new DomainError('request_reused','Dit aanvraag-ID hoort bij een andere actie.',409);await revalidate(client,actor,action);return receipt.response;}
+  if(['compose','reply','share'].includes(action.type))await requireCommunityRules(client,actor);
   let response:Record<string,unknown>={ok:true};
   if(['follow','mode','policy','compose','share'].includes(action.type)){
    const ch=action.channel?await channel(client,actor,String(action.channel)):null;
@@ -209,4 +211,28 @@ export async function executeFeedAction(actorId:string,input:unknown):Promise<Re
   }else throw new DomainError('invalid_action','Deze feedactie bestaat niet.');
   await client.query('insert into dartflow_private.feed_receipts(actor_id,request_id,fingerprint,response) values($1,$2,$3,$4)',[actor,command.requestId,fingerprint,JSON.stringify(response)]);return response;
  });
+}
+
+/** Reporting resolves the current readable item and real author before storing a reference. */
+export async function resolveFeedReportTarget(client:Client,actor:string,id:string,kind:'post'|'reply'):Promise<ReportTarget>{
+ let author:string,itemId=id;
+ if(kind==='reply'){
+  const reply=(await client.query('select item_id,author_id from dartflow_private.feed_replies where id=$1',[id])).rows[0];
+  if(reply){itemId=reply.item_id;author=reply.author_id;}
+  else{
+   const legacy=(await client.query('select author_id,parent_id,scope_kind,scope_id,deleted from dartflow_private.community_posts where id=$1',[id])).rows[0];
+   if(!legacy||!legacy.parent_id||legacy.deleted)throw new DomainError('not_found','Deze reactie is niet beschikbaar.',404);
+   await communityScope(client,actor,legacy.scope_kind,legacy.scope_id,true);
+   return {targetId:id,targetType:kind,userId:legacy.author_id,roomId:legacy.scope_kind==='platform'?null:legacy.scope_id,scopeKind:legacy.scope_kind,scopeId:legacy.scope_id};
+  }
+ }else author='';
+ const raw=(await client.query('select author_id from dartflow_private.feed_items where id=$1',[itemId])).rows[0];
+ if(!raw){
+  const legacy=(await client.query('select author_id,parent_id,scope_kind,scope_id,deleted from dartflow_private.community_posts where id=$1',[itemId])).rows[0];
+  if(!legacy||legacy.parent_id||legacy.deleted)throw new DomainError('not_found','Dit bericht is niet beschikbaar.',404);
+  await communityScope(client,actor,legacy.scope_kind,legacy.scope_id,true);
+  return {targetId:id,targetType:kind,userId:author||legacy.author_id,roomId:legacy.scope_kind==='platform'?null:legacy.scope_id,scopeKind:legacy.scope_kind,scopeId:legacy.scope_id};
+ }
+ const{item,ch}=await readItem(client,actor,itemId);
+ return {targetId:id,targetType:kind,userId:author||item.author_id,roomId:['club','league','tournament'].includes(ch.kind)?ch.id:null,scopeKind:ch.kind,scopeId:ch.id};
 }

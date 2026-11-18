@@ -8,6 +8,7 @@ import {executePlatformCommand,getPlatformStatistics} from '../lib/platform';
 import {ensureBoardActivity,extendBoardActivity,readBoardActivity,readSourceBoardActivity,releaseBoardActivity,boardDeviceCanExtend} from '../lib/board-activity';
 import {boardLease} from '../lib/platform-locks';
 import type {MatchState} from '../lib/types';
+import {acceptPlayerSafety,COMMUNITY_RULES_VERSION} from '../lib/player-safety';
 try{process.loadEnvFile('.env.local');}catch{/* CI injects local URLs. */}
 const loopback=(value:string|undefined)=>{try{return !!value&&['localhost','127.0.0.1','[::1]'].includes(new URL(value).hostname);}catch{return false;}};
 const configured=process.env.DARTFLOW_DATA_MODE==='local'&&loopback(process.env.DARTFLOW_DATABASE_ADMIN_URL)&&loopback(process.env.DARTFLOW_DATABASE_URL);
@@ -32,6 +33,7 @@ test('physical inactivity transactions preserve deadlines, shared extensions and
  const force=async(sessionId:string)=>transaction(client=>releaseBoardActivity(client,{sessionId,reason:'forced',actorId:manager}));
  try{
   for(const [i,id]of people.entries())await admin.query('insert into dartflow_private.profiles(id,name,display_name_confirmed) values($1,$2,true)',[id,`Activity${i}-${suffix}`]);
+  for(const id of people)await acceptPlayerSafety(id,{version:COMMUNITY_RULES_VERSION,accepted:true,ageConfirmed:true});
   await admin.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[club,`Activity ${suffix}`]);
   for(const id of people)await admin.query('insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,$3)',[club,id,id===manager?'organizer':'player']);
   await admin.query('insert into dartflow_private.events(id,club_id,name,date,capacity) values($1,$2,$3,current_date,64)',[event,club,'Activity transactions']);

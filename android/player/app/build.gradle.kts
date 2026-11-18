@@ -15,7 +15,7 @@ android {
         applicationId = "nl.dartflow.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = providers.gradleProperty("playerVersionCode").orElse("1").get().toInt()
+        versionCode = providers.gradleProperty("playerVersionCode").orElse("2").get().toInt()
         versionName = providers.gradleProperty("playerVersionName").orElse(releaseVersion.getProperty("versionName")).get()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -90,7 +90,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.browser:browser:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation("com.google.zxing:core:3.5.3")
     implementation("io.github.webrtc-sdk:android:144.7559.15")
     debugImplementation("androidx.compose.ui:ui-tooling")
