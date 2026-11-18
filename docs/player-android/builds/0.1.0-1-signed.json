@@ -1,0 +1,289 @@
+{
+  "sourceSha": "092c8c1e1cca403fbc29ab0679f7efcfc7bb915a",
+  "androidTree": "98b0ed77f997f742a43875b14e6731cc81c145e9",
+  "checkedAt": "2026-11-18T01:57:03.229014+00:00",
+  "passed": true,
+  "checks": {
+    "buildSucceeded": true,
+    "sourceCommitMatches": true,
+    "androidSourceMatches": true,
+    "artifactHashesMatch": true,
+    "bundletoolChecksum": true,
+    "bundleValidation": true,
+    "bundleSignature": true,
+    "bundleExpectedUploadSigner": true,
+    "apkExpectedSigner": true,
+    "apkZipAlignment16KB": true,
+    "apkProductionIdentity": true,
+    "apkTargetSdk36": true,
+    "apkNotDebuggable": true,
+    "bundleProductionIdentity": true,
+    "releaseNotDebuggable": true,
+    "releaseBackupDisabled": true,
+    "releaseCleartextDisabled": true,
+    "productionLinksIsolated": true,
+    "callbackIsolated": true,
+    "bundle16KB": true,
+    "uniqueBundleEntries": true,
+    "native64Bit16KB": true,
+    "r8CodeOptimizedAndShrunk": true,
+    "productionUnitTestsPassed": true,
+    "productionLintPassed": true,
+    "signingRecoveryBackupVerified": true
+  },
+  "manifest": {
+    "package": "nl.dartflow.app",
+    "versionName": "0.1.0",
+    "versionCode": "1",
+    "minSdk": "26",
+    "targetSdk": "36"
+  },
+  "uploadCertificateSha256": "97:C8:A2:78:FF:67:14:BD:E4:F1:BC:B5:4E:BA:15:12:28:D4:2E:83:8F:11:D4:3B:CF:6E:71:C7:DE:08:A0:09",
+  "nativeAlignment": "PAGE_ALIGNMENT_16K",
+  "nativeLibraries": [
+    {
+      "path": "base/lib/arm64-v8a/libandroidx.graphics.path.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    },
+    {
+      "path": "base/lib/arm64-v8a/libjingle_peerconnection_so.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    },
+    {
+      "path": "base/lib/armeabi-v7a/libandroidx.graphics.path.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    },
+    {
+      "path": "base/lib/armeabi-v7a/libjingle_peerconnection_so.so",
+      "loadSegments": [
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        },
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        },
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        }
+      ],
+      "compatible16KB": false
+    },
+    {
+      "path": "base/lib/x86/libandroidx.graphics.path.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    },
+    {
+      "path": "base/lib/x86/libjingle_peerconnection_so.so",
+      "loadSegments": [
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        },
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        },
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        }
+      ],
+      "compatible16KB": false
+    },
+    {
+      "path": "base/lib/x86_64/libandroidx.graphics.path.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    },
+    {
+      "path": "base/lib/x86_64/libjingle_peerconnection_so.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    }
+  ],
+  "release": "https://github.com/dartflow/platform/releases/tag/android-2026-11-18",
+  "pullRequest": "https://github.com/dartflow/platform/pull/1",
+  "pullRequestMerged": true,
+  "checksPassed": 26,
+  "checksTotal": 26,
+  "buildStartedAt": "2026-11-18T01:55:50.615752+00:00",
+  "buildCompletedAt": "2026-11-18T01:56:56.454758+00:00",
+  "jdkMajorVersion": 17,
+  "buildTasks": [
+    ":app:lintProductionRelease",
+    ":app:testProductionReleaseUnitTest",
+    ":app:assembleProductionRelease",
+    ":app:bundleProductionRelease"
+  ],
+  "signing": {
+    "configured": true,
+    "alias": "player-upload",
+    "storeType": "PKCS12",
+    "algorithm": "RSA-3072",
+    "purpose": "Dedicated player upload certificate; a future Play app-signing certificate is separate.",
+    "privateMaterialOutsideRepository": true,
+    "recoveryBackup": {
+      "verified": true,
+      "rootOnly": true,
+      "jdk17ReadVerified": true,
+      "certificateMatches": true
+    },
+    "githubSecretsConfigured": false,
+    "playAppSigningConfigured": false
+  },
+  "nativeAbis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "native16KBScope": {
+    "abis": [
+      "arm64-v8a",
+      "x86_64"
+    ],
+    "all64BitElfLoadSegmentsCompatible": true,
+    "apkZipAlignmentVerified": true,
+    "bundlePageAlignment": "PAGE_ALIGNMENT_16K",
+    "legacy32BitAbis": [
+      "armeabi-v7a",
+      "x86"
+    ],
+    "legacy32BitWebRtcElfLoadAlignmentBytes": 4096,
+    "legacy32BitWebRtcBaselineRetained": true,
+    "allPackagedLibrariesElf16KBCompatible": false,
+    "note": "Native ELF 16KB verification applies to arm64-v8a and x86_64; APK ZIP alignment is also checked. The packaged armeabi-v7a and x86 WebRTC libraries retain their existing 4KB ELF load-segment alignment."
+  },
+  "unitTests": [
+    {
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "class": "nl.dartflow.app.PlayerAuthorizationRaceTest",
+      "variant": "testProductionReleaseUnitTest"
+    },
+    {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "class": "nl.dartflow.app.PlayerDataTest",
+      "variant": "testProductionReleaseUnitTest"
+    }
+  ],
+  "unitTestsPassed": 24,
+  "lint": {
+    "variant": "productionRelease",
+    "passed": true,
+    "errors": 0,
+    "warnings": 27
+  },
+  "artifacts": [
+    {
+      "kind": "production-signed-apk",
+      "file": "dartflow-player-0.1.0-1-production.apk",
+      "bytes": 49796143,
+      "sha256": "4c6ce8b29214b2d5cc1f63167517c7b27bcfa809f42e84a3140e0921ecf47888",
+      "download": "https://github.com/dartflow/platform/releases/download/android-2026-11-18/dartflow-player-0.1.0-1-production.apk"
+    },
+    {
+      "kind": "production-signed-aab",
+      "file": "dartflow-player-0.1.0-1-production.aab",
+      "bytes": 26544628,
+      "sha256": "25924610c74ab42a9add44b7a8ce54b1f2131928c1fadba91d39f37b681187eb",
+      "download": "https://github.com/dartflow/platform/releases/download/android-2026-11-18/dartflow-player-0.1.0-1-production.aab"
+    }
+  ],
+  "physicalDevicesTested": false,
+  "realProviderLoginTested": false,
+  "playUploaded": false,
+  "playPublicationInScope": false,
+  "hostedDeploymentEvidence": "../oplevering.md",
+  "historicalUnsignedBuildReport": "0.1.0-1.json"
+}

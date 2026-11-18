@@ -1,13 +1,12 @@
 # Oche Live · signing en Google Play
 
-> Status op 14 november 2026: de eigenaar heeft de [Play Console-app](https://play.google.com/console/u/4/developers/7830267822410523847/app/4975854324306249998/app-dashboard) aangemaakt. De uploadsleutel en signingsecrets zijn ingericht; de eerste signing-only build [43618459740](https://github.com/dartflow/platform/actions/runs/43618459740) is geslaagd. De ondertekende **1.0.0 (1009)** is onafhankelijk geverifieerd en [klaar voor handmatige upload](https://github.com/dartflow/platform/actions/runs/43618459740/artifacts/14123204748); het [buildbewijs](builds/1.0.0-1009.json) bevat checksums en uitslagen. Er is nog geen Play-versie geüpload en geen Play-appsigningcertificaat bekend. De AAB gebruikt `nl.dartflow.ochelive`; de beschikbaarheid en definitieve koppeling aan de Console-app worden bij de eerste upload bevestigd. Staging gebruikt `nl.dartflow.ochelive.staging`.
+> Status op 18 november 2026: de ondertekende **1.0.1 (1014)** is lokaal gebouwd vanaf `main`-SHA `092c8c1e1cca403fbc29ab0679f7efcfc7bb915a` en staat in de [Android-release](https://github.com/dartflow/platform/releases/tag/android-2026-11-18). Release-lint, **12/12 productie-unit-tests** en **17/17 onafhankelijke controles** zijn geslaagd. De bronboom is identiek aan de groen geteste PR-commit; het [buildbewijs](builds/1.0.1-1014.json) bevat de lokale herkomst en checksums.
 >
-> De GitHub-omgevingen `play-internal` (branch `main`) en `play-production` (branch `main`, tags `oche-v*`) bestaan. Repositoryvariabelen: `OCHE_JAVA_VERSION=17`, `OCHE_VERSION_CODE_BASE=1000`, `PLAY_PACKAGE_NAME=nl.dartflow.ochelive`, `OCHE_SIGNING_ENABLED=true`, `OCHE_PLAY_ENABLED=false`. De vier `ANDROID_UPLOAD_*`-secrets staan uitsluitend in `play-internal`. Google-authenticatie en tracks zijn nog niet ingericht. Controleer werkelijke track-ID's pas na de eerste handmatige upload.
+> De aangeleverde Play Console-beelden tonen **1.0.0 (1009)** onder Productie. Het [eerste buildbewijs van 14 november](builds/1.0.0-1009.json) blijft historisch bewaard. Voor de nieuwe update zijn op verzoek van de eigenaar geen Play-upload, Play-publicatie of Publisher-accountinstellingen uitgevoerd.
 >
-> De eigenaar kiest voor behoud van het huidige GitHub-abonnement. De actieve route is daarom **handmatig een gesigneerde AAB bouwen en in Play Console uploaden/promoveren**. Dit vereist geen beschermde tags of Publisher API. De optionele automatische productiepromotie blijft geblokkeerd zolang de vereiste tagbescherming ontbreekt; de repository blijft privé.
+> De GitHub-omgevingen `play-internal` (branch `main`) en `play-production` (branch `main`, tags `oche-v*`) bestaan. Repositoryvariabelen: `OCHE_JAVA_VERSION=17`, `OCHE_VERSION_CODE_BASE=1000`, `PLAY_PACKAGE_NAME=nl.dartflow.ochelive`, `OCHE_SIGNING_ENABLED=true`, `OCHE_PLAY_ENABLED=false`. De vier `ANDROID_UPLOAD_*`-secrets staan uitsluitend in `play-internal`. Google-authenticatie, track-ID’s en het echte Play-appsigningcertificaat zijn nog niet in GitHub geconfigureerd.
 >
-> De projectmodule heeft `production`- en `staging`-flavors. De voorbeelden hieronder zijn aangepast aan de werkelijke productietaken en bestandsnamen.
-
+> De huidige oplevering omvat lokale signing en distributie via de private GitHub-release. Het bestaande abonnement blijft behouden. De optionele Publisher API-/tagroute vereist aanvullende inrichting en tagbescherming. Staging gebruikt `nl.dartflow.ochelive.staging`.
 
 Dit draaiboek geldt voor de eerste Android-app, **DartFlow Oche Live**. Het bestaande DartFlow-account en de webversie behouden hun eigen deployment. De Android-pipeline maakt één ondertekende Android App Bundle (AAB) voor de gekozen Android-doelapparaten.
 
@@ -16,6 +15,7 @@ Dit draaiboek geldt voor de eerste Android-app, **DartFlow Oche Live**. Het best
 | Moment | GitHub en Google Play |
 |---|---|
 | Pull request | Bouw, lint en test op een GitHub-hosted runner. |
+| Lokale release na geslaagde CI | Controleer de volledige bronboom tegen de geteste commit, signeer met de bestaande uploadsleutel en verifieer de AAB. Versie 1.0.1 (1014) is zo opgeleverd via GitHub. |
 | Handmatige workflow op `main`, `signed_bundle=true` | Bouw, test en signeer; download `oche-signed-aab` en upload handmatig in Play Console. Deze actie gebruikt geen Google-authenticatie en publiceert niets. |
 | Geslaagde push op `main`, alleen met `OCHE_PLAY_ENABLED=true` | Optionele automatische upload naar ingestelde interne tracks. Dit staat momenteel uit. |
 | Eerste publieke release | Kies de intern geteste AAB in Play Console en rond productiepublicatie af. Google behandelt review en eventuele productievereisten. |
@@ -25,6 +25,8 @@ Dit draaiboek geldt voor de eerste Android-app, **DartFlow Oche Live**. Het best
 Een geslaagde API-submit betekent dat Google de wijziging heeft ontvangen. Google bepaalt de review en beschikbaarheid. Op een apparaat regelt de Play Store-instelling of de update automatisch wordt geïnstalleerd. [Publicatie beheren](https://support.google.com/googleplay/android-developer/answer/9859654) · [Updates voor gebruikers](https://support.google.com/googleplay/android-developer/answer/9859350)
 
 ## 1. Play Console eenmalig voorbereiden
+
+De app en versie 1009 bestaan al in Play Console. Dit onderdeel blijft een naslag voor de eenmalige inrichting; deze oplevering voert geen Console- of Publisher-inrichting uit.
 
 1. Ga naar [Google Play Console](https://play.google.com/console/) en selecteer het geverifieerde account van de uitgever. Als je een organisatieaccount voor DG Webservices gebruikt, vraagt Google doorgaans om een D-U-N-S-nummer en organisatieverificatie.
 2. Kies **Alle apps → App maken**. Gebruik **DartFlow Oche Live**, standaardtaal **Nederlands (Nederland)** en **App**. Kies het publicatie- en distributiemodel in de Console. Stel in Gradle de definitieve `applicationId` vast vóór de eerste upload. Bijvoorbeeld `nl.dartflow.ochelive`, mits dit de gekozen en beschikbare pakketnaam is. De latere DartFlow-hoofdapp krijgt een eigen ID en listing.
@@ -168,7 +170,7 @@ Als het Google Cloud-beleid of de GitHub-inrichting WIF onmogelijk maakt en serv
 
 ## 4. GitHub Actions inrichten
 
-De workflows zijn aangesloten op de Android-module en GitHub-hosted runners. De Play-app, uploadsleutel en signingsecrets zijn ingericht. Voor de huidige route volstaan een signing-only workflow en handmatige Console-upload. Google-authenticatie en API-tracks zijn alleen nodig voor optionele latere automatisering; daarvoor gelden de bestandsnamen uit deze tabel ook in de Workload Identity-voorwaarden.
+De workflows zijn aangesloten op de Android-module en GitHub-hosted runners. De Play-app, uploadsleutel en signingsecrets zijn ingericht. Signing kan lokaal na geslaagde CI of via de signing-only workflow. Google-authenticatie en API-tracks zijn alleen nodig voor optionele latere automatisering; daarvoor gelden de bestandsnamen uit deze tabel ook in de Workload Identity-voorwaarden.
 
 | Bestand uit de overdracht | Pad in de repo |
 |---|---|
@@ -254,7 +256,7 @@ Gebruik voor deze eerste controle een tijdelijke diagnostische stap in een vertr
 
 ## 5. Optioneel later: automatische releases bedienen
 
-Dit onderdeel beschrijft de niet-geactiveerde API-/tagroute. De huidige route bouwt met `signed_bundle=true`; upload, testrelease en promotie worden in Play Console uitgevoerd, met behoud van het huidige GitHub-abonnement.
+Dit onderdeel beschrijft de niet-geactiveerde API-/tagroute. Signing kan lokaal of met `signed_bundle=true`; eventuele Play-upload, testrelease en promotie gebeuren handmatig in Play Console. De oplevering van 18 november stopt bij de geverifieerde GitHub-release.
 
 ### Dagelijks ontwikkelen
 
@@ -292,12 +294,12 @@ git fetch origin main --tags &&
 
 [GitHub concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency) · [Play Edits](https://developers.google.com/android-publisher/edits/) · [Edits committen](https://developers.google.com/android-publisher/api-ref/rest/v3/edits/commit) · [Releasestatus opvragen](https://developers.google.com/android-publisher/api-ref/rest/v3/applications.tracks.releases/list)
 
-## Eerste AAB bouwen zonder Play-upload
+## Ondertekende AAB bouwen zonder Play-upload
 
-Vul de vier Android-signingsecrets uitsluitend in de GitHub-omgeving `play-internal` in. Zet daarna `OCHE_SIGNING_ENABLED=true`, houd `OCHE_PLAY_ENABLED=false` en start **Oche Live Android CI** op `main` met `signed_bundle=true`. De job test de bron, bouwt een gesigneerde production-AAB en bewaart `oche-signed-aab`. Deze handmatige actie uploadt niet naar Play. Upload die AAB zelf voor de eerste registratie en activeer Play App Signing.
+De vier Android-signingsecrets staan in `play-internal`; `OCHE_SIGNING_ENABLED=true` en `OCHE_PLAY_ENABLED=false`. Gebruik de lokale signingroute uit stap 2 na geslaagde CI, of start **Oche Live Android CI** op `main` met `signed_bundle=true`. De workflow test, signeert en bewaart `oche-signed-aab` zonder Play-upload. Versie 1.0.1 (1014) is lokaal gebouwd op exact de geteste bronboom en onafhankelijk geverifieerd; de versiecode komt van main-run 14 (`1000 + 14`).
 
 Neem vervolgens de echte SHA-256 van **Play App Signing** over in `config/android-app-links.json` onder `production` en in de repositoryvariabele `PLAY_APP_SIGNING_SHA256`. Gebruik voor staging uitsluitend het certificaat waarmee de staging-app werkelijk is gesigneerd. De publieke endpoint `/.well-known/assetlinks.json` geeft tot deze configuratie bewust `[]`; er staat geen verzonnen certificaat in. Deploy de certificaatconfiguratie via de bestaande webreleaseflow en controleer de App Links op een via Play geïnstalleerde build.
 
-Behoud voor de huidige route `OCHE_PLAY_ENABLED=false` en voer upload en promotie handmatig in Play Console uit. Alleen bij een afzonderlijk gekozen latere automatisering worden `PLAY_INTERNAL_TRACKS`, `PLAY_PRODUCTION_TRACKS`, `PLAY_WIF_PROVIDER` en `PLAY_SERVICE_ACCOUNT` ingericht en wordt publiceren geactiveerd na verificatie. De optionele API-route controleert eerst de publieke v1-backend en de matching package/certificaataankondiging; productiepromotie vereist ook tagbescherming en hergebruikt de intern geteste AAB.
+Behoud `OCHE_PLAY_ENABLED=false`. Play-upload en -publicatie van 1.0.1 (1014) vallen op verzoek van de eigenaar buiten deze oplevering. Alleen bij een latere uitbreiding worden `PLAY_INTERNAL_TRACKS`, `PLAY_PRODUCTION_TRACKS`, `PLAY_WIF_PROVIDER` en `PLAY_SERVICE_ACCOUNT` ingericht. De optionele API-route controleert de publieke v1-backend en de matching package/certificaataankondiging; productiepromotie vereist tagbescherming en hergebruikt de intern geteste AAB.
 
 De CI maakt voor PR's zonder secrets een staging-debug-APK en een **ongesigneerde** production-AAB. Die laatste is alleen een bouwcontrole en kan niet als Play-release worden gebruikt. De debug-APK gebruikt een debugcertificaat, de stagingidentiteit en de stagingbackend.

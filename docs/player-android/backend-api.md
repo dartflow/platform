@@ -2,6 +2,8 @@
 
 De Kotlin-app gebruikt `/api/player/v1` op de gekozen DartFlow-omgeving. Dit is een begrensde adapter om de bestaande spelers-API: dezelfde domeinfuncties, transacties, bevoegdheden, profiel-ID's, revisies en idempotente commandoreceipts blijven leidend. Er is geen tweede wedstrijdopslag en geen HTTP-doorstuurproxy. De web-API blijft cookie-authenticatie en haar bestaande Origin-controle gebruiken.
 
+> **Uitrolstatus · 18 november 2026:** staging draait maincommit `092c8c1e1cca403fbc29ab0679f7efcfc7bb915a` na de geslaagde [stagingworkflow 44221218169](https://github.com/dartflow/platform/actions/runs/44221218169); 23/23 rookproeven zijn geslaagd. Productiepromotie: geslaagd via [workflow 44221637689](https://github.com/dartflow/platform/actions/runs/44221637689), release `44221637689-1`, dezelfde bron-SHA en 23/23 geslaagde rookproeven. De workflow- en endpointcontroles worden vastgelegd in [het uitrolbewijs](../evidence/native-player-deployed-2026-11-18.json). Echte OTP-/Google-aanmelding en fysieke toestelproeven zijn nog niet uitgevoerd.
+
 ## Omgevingen en configuratie
 
 | Omgeving | Canonieke server | applicationId en callbackscheme |
@@ -14,7 +16,7 @@ Er zijn geen nieuwe migraties of hosted secrets voor deze adapter. De server geb
 
 Development geeft `auth.url=null`, `auth.publishableKey=null` en vier lokale testaccounts. `POST /api/player/v1/auth/local` met `{"userId":"<fixture-ID>"}` levert een lokaal ondertekend `accessToken` met `expiresAt` acht uur later. De lokale server bewaart hiervoor automatisch één private sleutel in `.local/native-player-session.key` buiten Git. Dit werkt alleen bij expliciete lokale modus, loopback-origin, loopback-host en uitsluitend loopback forwarding-adressen. Dezelfde token werkt nooit op staging of productie. Dit vervangt geen echte OTP- of Google-test.
 
-Deze routes moeten eerst met de normale webrelease worden uitgerold voordat een app tegen een hosted omgeving kan werken. Deze implementatie heeft uitsluitend lokale ontwikkeldata gebruikt.
+De native adapter wordt met de normale webrelease uitgerold; de actuele status per omgeving staat hierboven. De oorspronkelijke implementatiecontrole gebruikte uitsluitend lokale ontwikkeldata. Provider- en toestelacceptatie blijven afzonderlijke controles.
 
 ## Authenticatie en terugkeer
 
@@ -93,6 +95,6 @@ Niet beschikbaar zijn workerjobs, integratiegeheimen, blogbeheer, algemene expor
 
 `tests/native-player-flows.test.ts` gebruikt daarnaast de echte Next-GET/POST-handlers, native façade, loopbackdatabase, score-engine en statistiekprojecties zonder domein- of API-stubs. De lokale accounts Michael de Groot en Raymond van Dijk voltooien lokale, remote en hybride lobby's, bevestigen deelname en voeren beurten in volgens hun actuele schrijfrechten. De test controleert de afgevlakte `MatchView` die de app leest, twee gelijktijdige identieke inzendingen, verouderde revisies, weigering van de verkeerde schrijver en één definitieve uitslag in beide profielen en hun onderlinge historie. Solo 501 in vijftien pijlen levert 100,20 AVG uitsluitend bij oefenen. Alleen de externe aanmeldroundtrip wordt vervangen door de bestaande lokale fixturelogin. Eigen UUID-resources en eigen limietverbruik worden opgeruimd; bestaande profielrijen moeten vóór en na identiek blijven.
 
-Uitgevoerd: native authregressies 8/8; flowregressies 5/5 inclusief vier deeltests; samen met bestaande auth-, recente-auth- en Oche-API-tests 20/20. TypeScript typecheck en gerichte ESLint slagen. Nog uit te voeren na de normale hosted release: echte Google PKCE en OTP met beide Supabase-projecten, callbackallowlist en de systeembrowser-/App Links-terugkeer op een fysiek toestel. Er is voor deze backendwijziging geen hosted account, database of providerinstelling gewijzigd.
+Uitgevoerd: native authregressies 8/8; flowregressies 5/5 inclusief vier deeltests; samen met bestaande auth-, recente-auth- en Oche-API-tests 20/20. TypeScript typecheck en gerichte ESLint slagen. Echte Google PKCE en OTP met beide Supabase-projecten, de callbackallowlist en de systeembrowser-/App Links-terugkeer op een fysiek toestel blijven afzonderlijk open. De lokale regressies en rookproeven bewijzen deze provider- en apparaatwerking niet. Voor de oorspronkelijke fixturecontroles is geen hosted account, database of providerinstelling gewijzigd; de actuele applicatie-uitrol staat hierboven en in het uitrolbewijs.
 
 Bronnen: [Supabase PKCE](https://supabase.com/docs/guides/auth/sessions/pkce-flow), [Supabase getUser](https://supabase.com/docs/reference/javascript/auth-getuser), [Supabase redirect-URL's](https://supabase.com/docs/guides/auth/redirect-urls).

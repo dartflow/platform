@@ -1,0 +1,261 @@
+{
+  "sourceSha": "092c8c1e1cca403fbc29ab0679f7efcfc7bb915a",
+  "status": "passed",
+  "verifiedAt": "2026-11-18T02:16:19.990788+00:00",
+  "ci": {
+    "checkedAt": "2026-11-18T02:09:40.178062+00:00",
+    "sourceSha": "092c8c1e1cca403fbc29ab0679f7efcfc7bb915a",
+    "ciRun": 44219478910,
+    "ciUrl": "https://github.com/dartflow/platform/actions/runs/44219478910",
+    "event": "push",
+    "branch": "main",
+    "requiredJob": "Verify",
+    "status": "passed"
+  },
+  "environments": {
+    "staging": {
+      "releaseId": "44221218169-1",
+      "workflowRun": 44221218169,
+      "workflowUrl": "https://github.com/dartflow/platform/actions/runs/44221218169",
+      "workflowCompletedAt": "2026-11-18T02:12:46Z",
+      "configId": "staging-2026-11-12-v19-pin-1",
+      "hostHealthLoopbackAndHttps": "passed",
+      "appJournalErrorsSinceActivation": 0,
+      "mailJournalErrorsSinceActivation": 0,
+      "origin": "https://staging.dartflow.nl",
+      "smokeCheckedAt": "2026-11-18T02:12:57.367981+00:00",
+      "smokePassed": 23,
+      "smokeTotal": 23,
+      "smokeChecks": [
+        {
+          "check": "/api/health HTTP200",
+          "passed": true
+        },
+        {
+          "check": "health source/release/config identity",
+          "passed": true
+        },
+        {
+          "check": "health readiness",
+          "passed": true
+        },
+        {
+          "check": "/api/ready HTTP200",
+          "passed": true
+        },
+        {
+          "check": "ready source/release/config identity",
+          "passed": true
+        },
+        {
+          "check": "ready readiness",
+          "passed": true
+        },
+        {
+          "check": "/api/player/v1/capabilities HTTP200",
+          "passed": true
+        },
+        {
+          "check": "capabilities version/origin/environment",
+          "passed": true
+        },
+        {
+          "check": "capabilities exclude local fixture identities",
+          "passed": true
+        },
+        {
+          "check": "capabilities project/callback/client separation",
+          "passed": true
+        },
+        {
+          "check": "capabilities expose only publishable auth key",
+          "passed": true
+        },
+        {
+          "check": "capabilities auth/cache boundaries",
+          "passed": true
+        },
+        {
+          "check": "missing bearer",
+          "passed": true
+        },
+        {
+          "check": "cookie cannot authenticate native API",
+          "passed": true
+        },
+        {
+          "check": "mutation cannot bypass bearer",
+          "passed": true
+        },
+        {
+          "check": "browser Origin rejected",
+          "passed": true
+        },
+        {
+          "check": "cross-site native request rejected",
+          "passed": true
+        },
+        {
+          "check": "unknown native route rejected",
+          "passed": true
+        },
+        {
+          "check": "hosted fixture login disabled",
+          "passed": true
+        },
+        {
+          "check": "display credential route unavailable to player",
+          "passed": true
+        },
+        {
+          "check": "fixed native callback with synthetic state",
+          "passed": true
+        },
+        {
+          "check": "cross-environment native callback rejected",
+          "passed": true
+        },
+        {
+          "check": "invalid native callback state rejected",
+          "passed": true
+        }
+      ],
+      "applicationDatabaseBackup": {
+        "indexVerified": true,
+        "archiveSha256": "939ba6dcd7d7fabefb8fda13b78ccc1416d8aa6c2798bbe60df22828c2d11e20",
+        "scope": "Application database; excludes Supabase Auth and provider configuration; not a restore test."
+      }
+    },
+    "production": {
+      "releaseId": "44221637689-1",
+      "workflowRun": 44221637689,
+      "workflowUrl": "https://github.com/dartflow/platform/actions/runs/44221637689",
+      "workflowCompletedAt": "2026-11-18T02:16:11Z",
+      "configId": "production-2026-11-12-v19-pin-1",
+      "hostHealthLoopbackAndHttps": "passed",
+      "appJournalErrorsSinceActivation": 0,
+      "mailJournalErrorsSinceActivation": 0,
+      "origin": "https://dartflow.nl",
+      "smokeCheckedAt": "2026-11-18T02:16:18.649859+00:00",
+      "smokePassed": 23,
+      "smokeTotal": 23,
+      "smokeChecks": [
+        {
+          "check": "/api/health HTTP200",
+          "passed": true
+        },
+        {
+          "check": "health source/release/config identity",
+          "passed": true
+        },
+        {
+          "check": "health readiness",
+          "passed": true
+        },
+        {
+          "check": "/api/ready HTTP200",
+          "passed": true
+        },
+        {
+          "check": "ready source/release/config identity",
+          "passed": true
+        },
+        {
+          "check": "ready readiness",
+          "passed": true
+        },
+        {
+          "check": "/api/player/v1/capabilities HTTP200",
+          "passed": true
+        },
+        {
+          "check": "capabilities version/origin/environment",
+          "passed": true
+        },
+        {
+          "check": "capabilities exclude local fixture identities",
+          "passed": true
+        },
+        {
+          "check": "capabilities project/callback/client separation",
+          "passed": true
+        },
+        {
+          "check": "capabilities expose only publishable auth key",
+          "passed": true
+        },
+        {
+          "check": "capabilities auth/cache boundaries",
+          "passed": true
+        },
+        {
+          "check": "missing bearer",
+          "passed": true
+        },
+        {
+          "check": "cookie cannot authenticate native API",
+          "passed": true
+        },
+        {
+          "check": "mutation cannot bypass bearer",
+          "passed": true
+        },
+        {
+          "check": "browser Origin rejected",
+          "passed": true
+        },
+        {
+          "check": "cross-site native request rejected",
+          "passed": true
+        },
+        {
+          "check": "unknown native route rejected",
+          "passed": true
+        },
+        {
+          "check": "hosted fixture login disabled",
+          "passed": true
+        },
+        {
+          "check": "display credential route unavailable to player",
+          "passed": true
+        },
+        {
+          "check": "fixed native callback with synthetic state",
+          "passed": true
+        },
+        {
+          "check": "cross-environment native callback rejected",
+          "passed": true
+        },
+        {
+          "check": "invalid native callback state rejected",
+          "passed": true
+        }
+      ],
+      "applicationDatabaseBackup": {
+        "indexVerified": true,
+        "archiveSha256": "6b1bbdb3273ae28f5195e5047788c140938add350d57d65a2e0760f65db5f60d",
+        "scope": "Application database; excludes Supabase Auth and provider configuration; not a restore test."
+      }
+    }
+  },
+  "postflight": {
+    "status": "passed",
+    "checkedAt": "2026-11-18T02:16:19.990788+00:00",
+    "applicationServicesRunnersAndTurnHealthy": true,
+    "caddyUnchanged": true,
+    "miloUnchanged": true,
+    "sharedBuildLockFree": true
+  },
+  "schemaMigrationsPerformed": false,
+  "authConfigurationChangesPerformed": false,
+  "effectiveNativeCallbacksAccepted": {
+    "staging": true,
+    "production": true
+  },
+  "callbackProbeScope": "Synthetic invalid-token redirect acceptance; no session or account created.",
+  "realOtpGoogleOrDeviceLoginPerformed": false,
+  "androidReleaseUrl": "https://github.com/dartflow/platform/releases/tag/android-2026-11-18",
+  "googlePlayUploadPerformed": false
+}
