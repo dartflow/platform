@@ -1,6 +1,7 @@
 package nl.dartflow.app
 
 import android.app.Application
+import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import java.net.URI
@@ -27,6 +28,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val refreshLock = Mutex()
     private val commandLock = Mutex()
     private val snapshots = PlayerSnapshotGate()
+    private val homeReads = PlayerHomeReads()
+    private val homePolls = PlayerHomePolls()
     private var loop: Job? = null
     private var foreground = false
     private var ready = false
@@ -53,17 +56,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     fun resume() {
         foreground = true
         if (loop?.isActive == true) return
+        homePolls.reset()
         loop = viewModelScope.launch {
             while (foreground) {
                 val ticket = snapshots.capture()
                 try {
-                    if (!ready) initialize() else if (hasSession() && !state.value.busy) {
+                    if (!ready) initialize() else if (hasSession() && !state.value.busy && homePolls.due(state.value.screen, SystemClock.elapsedRealtime())) {
                         if (state.value.profile == null || state.value.screen in listOf(PlayerScreen.HOME, PlayerScreen.NOTIFICATIONS, PlayerScreen.PROFILE) && identityPoll++ % 3 == 0) {
                             loadIdentity(); loadCommon()
                         }
                         loadCurrent()
                     }
-                    state.update { it.copy(online = true, loading = false) }
                     delay(state.value.capabilities.optLong("pollAfterMs", 2000).coerceIn(1500, 15_000))
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (failure: Exception) {
@@ -92,7 +95,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             loadCurrent()
         }
         ready = true
-        state.update { it.copy(loading = false) }
+        state.update { it.copy(online = true, loading = false) }
     }
     private fun hasSession(): Boolean = saved.optString("accessToken").isNotBlank()
     private fun requestIdentity(): PlayerRequestIdentity? = if (hasSession()) PlayerRequestIdentity(saved.optString("userId"), identityGeneration) else null
@@ -127,7 +130,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val incomingId = incomingUser?.optString("id").orEmpty()
         if (saved.optString("userId").isNotBlank() && incomingId.isNotBlank() && incomingId != saved.optString("userId")) {
             identityGeneration++; pending = null; saved.remove("pendingCommand")
-            state.update { it.copy(profile = null, platform = JSONObject(), overview = JSONObject(), resource = JSONObject(), match = null, board = null, screen = PlayerScreen.HOME, activeId = null, hasPendingCommand = false, loading = true) }
+            state.update { it.copy(profile = null, platform = JSONObject(), overview = JSONObject(), resource = JSONObject(), match = null, board = null, screen = PlayerScreen.HOME, activeId = null, hasPendingCommand = false, loading = true, homeFeed = JSONObject(), homeFeedLoading = false, homeFeedError = null) }
         }
         saved.put("accessToken", token).put("refreshToken", refresh).put("local", false)
             .put("expiresAt", if (result.optLong("expires_at") > 0) result.getLong("expires_at") * 1000 else api.serverNow() + result.optLong("expires_in", 3600) * 1000)
@@ -159,11 +162,15 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private suspend fun loadCurrent() {
         if (!hasSession()) return
         val screen = state.value.screen
+        if (screen == PlayerScreen.HOME) {
+            loadHome()
+            return
+        }
         val id = state.value.activeId
         val generation = identityGeneration
         val ticket = snapshots.capture()
         val resource = when (screen) {
-            PlayerScreen.HOME, PlayerScreen.BOARDS, PlayerScreen.NOTIFICATIONS -> api.call("/player-experience")
+            PlayerScreen.BOARDS, PlayerScreen.NOTIFICATIONS -> api.call("/player-experience")
             PlayerScreen.SCREENS -> {
                 val experience = api.call("/player-experience")
                 val context = api.call("/oche/v1/context")
@@ -220,11 +227,37 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             profile = if (screen == PlayerScreen.PROFILE) resource.optJSONObject("user")?.let(PlayerProfile::parse) ?: current.profile else current.profile,
         ) }
     }
+    private suspend fun loadHome() {
+        val identity = requestIdentity() ?: return
+        homePolls.started(SystemClock.elapsedRealtime())
+        val read = homeReads.begin(identity, snapshots.capture())
+        fun current() = homeReads.accepts(read, requestIdentity(), snapshots.capture(), state.value.screen)
+        state.update { it.copy(homeFeedLoading = true, homeFeedError = null) }
+        var experienceFailure: Exception? = null
+        try {
+            fetchPlayerHome(
+                request = { path -> api.call(path) },
+                onExperience = { experience -> if (current()) state.update { it.copy(resource = experience, loading = false, online = true) } },
+                onFeed = { feed -> if (current()) state.update { it.copy(homeFeed = feed, homeFeedLoading = false, homeFeedError = null) } },
+                onExperienceFailure = { failure -> experienceFailure = failure },
+                onFeedFailure = { failure -> if (current()) state.update { it.withHomeFeedFailure(failure) } },
+            )
+            experienceFailure?.let { if (current()) throw it }
+        } finally {
+            if (current()) state.update { it.copy(homeFeedLoading = false) }
+        }
+    }
     fun navigate(screen: PlayerScreen, id: String? = null) {
         state.update { it.copy(screen = screen, activeId = id, resource = JSONObject(), match = if (screen == PlayerScreen.MATCH) null else it.match, loading = hasSession(), error = null, notice = null) }
         if (hasSession()) launchTask(showBusy = false) { loadCurrent() }
     }
-    fun refresh() = launchTask(showBusy = false) { if (!ready) initialize() else if (hasSession()) { loadIdentity(); loadCommon(); loadCurrent() } }
+    fun refresh() = launchTask(showBusy = false) {
+        if (!ready) initialize()
+        else if (hasSession()) {
+            if (state.value.screen != PlayerScreen.HOME) { loadIdentity(); loadCommon() }
+            loadCurrent()
+        }
+    }
     fun dismissMessage() { state.update { it.copy(error = null, notice = null) } }
     fun reportError(message: String) { state.update { it.copy(error = message.take(300)) } }
     fun consumeGoogleUrl() { state.update { it.copy(googleUrl = null) } }
@@ -305,6 +338,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
     private suspend fun signedIn() {
         identityGeneration++
+        // Review/local login replies need not identify the account until /session.
+        // Clear private home data before that first suspended identity request as well.
+        state.update { it.withoutHomeFeed() }
         loadIdentity(); loadCommon(); restoreDestination(); loadCurrent()
         state.update { it.copy(online = true, loading = false, notice = "Je bent ingelogd.") }
     }
@@ -442,6 +478,10 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             clearSession()
             state.update { it.copy(notice = "Je verzoek om je account en gegevens te verwijderen is ontvangen. Je bent uitgelogd. Hulp of vragen: info@dartflow.nl.") }
             return
+        }
+        val changedCommunity = input.optJSONObject("action")?.optString("type").orEmpty()
+        if (path.startsWith("/safety/") || changedCommunity.startsWith("community.") || changedCommunity in listOf("friend.block", "friend.unblock")) {
+            state.update { it.withoutHomeFeed() }
         }
         if (path.startsWith("/profile")) loadIdentity()
         if (generation != identityGeneration || !hasSession()) return

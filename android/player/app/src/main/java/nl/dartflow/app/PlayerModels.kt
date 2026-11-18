@@ -48,6 +48,7 @@ data class PlayerUiState(
     val online: Boolean = true, val hasPendingCommand: Boolean = false, val capabilities: JSONObject = JSONObject(),
     val safety: JSONObject = JSONObject(),
     val accountDeletion: JSONObject = JSONObject(),
+    val homeFeed: JSONObject = JSONObject(), val homeFeedLoading: Boolean = false, val homeFeedError: String? = null,
 )
 
 fun JSONArray?.objects(): List<JSONObject> = if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }

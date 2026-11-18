@@ -16,7 +16,7 @@ ui_test_status=0
 screenshot_directory=app/build/reports/androidTests/screenshots
 mkdir -p "$screenshot_directory"
 screenshot_status=0
-for screenshot_name in compact-login.png compact-screens.png compact-events.png score-status-default.png score-status-large-font.png; do
+for screenshot_name in compact-login.png compact-screens.png compact-events.png score-status-default.png score-status-large-font.png compact-home-feed.png; do
   screenshot_path="$screenshot_directory/$screenshot_name"
   if adb exec-out cat "/data/local/tmp/dartflow-ui-fixtures/$screenshot_name" > "$screenshot_path" &&
     [[ "$(od -An -tx1 -N8 "$screenshot_path" | tr -d ' \n')" == 89504e470d0a1a0a ]]; then
