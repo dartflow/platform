@@ -497,7 +497,7 @@ private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JS
         PlayerScoreConsole(title = e.text("name", "Solo ${game.optInt("startScore", 501)}"), players = players.mapIndexed { i, p -> ScorePlayer("$i", p, remaining.getOrElse(i) { 501 }) }, active = game.optInt("turn"), canScore = e.optBoolean("canManage"), busy = state.busy, offline = !state.online,
             checkout = null, message = state.error, scoreKey = "$id:${e.optInt("revision")}", onSubmit = { score, darts, double, attempts -> entityCommand(actions, e, json("type" to "training.score", "id" to id, "score" to score, "darts" to darts, "doubleConfirmed" to double, "doubleAttempts" to attempts)) }, onBack = { console = false }, onRetry = actions.retry, pending = state.hasPendingCommand,
             activity = e.obj("boardActivity"), onExtend = { extendActivity(e.obj("boardActivity"), actions) }, options = {
-                Action("Laatste beurt terug", !state.busy && s.optJSONArray("undo")?.length()?.let { it > 0 } == true, false) { entityCommand(actions, e, json("type" to "training.undo", "id" to id)) }
+                Action("Laatste beurt terug", !state.busy && s.optInt("undoCount", s.optJSONArray("undo")?.length() ?: 0) > 0, false) { entityCommand(actions, e, json("type" to "training.undo", "id" to id)) }
                 Action("Training bewaren en beëindigen", !state.busy, false) { entityCommand(actions, e, json("type" to "training.finish", "id" to id)) }
             })
     } else Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {

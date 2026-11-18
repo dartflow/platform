@@ -1,0 +1,68 @@
+{
+  "checkedOn": "2026-11-18",
+  "baseCommit": "71355105e651d2908f18342ac4ed4e15aae0ae85",
+  "scope": "Local working-tree score-response fix; synthetic development data only",
+  "measurement": {
+    "method": "Invoke the actual NextRequest native API handlers against the existing loopback PostgreSQL database. Count pg.Client query calls and measure the handler plus JSON response serialization with performance.now().",
+    "fixture": "Create a new private 501 Dartbot training for the standard local development player. Submit 112 followed by two valid zero visits. Compare the command response, existing refresh chain and targeted training read on that same fixture.",
+    "cleanup": "Delete only the generated training UUID, audit rows and known command receipts. Decrement only this measurement's rate-limit usage in the matching reset windows. Preserve the standard local account and all unrelated data.",
+    "limitations": [
+      "In-process route timings exclude Android/mobile network RTT, TLS and hosted Supabase Auth round trips.",
+      "Platform overview query counts depend on the local fixture account's accessible clubs, matches and other entities.",
+      "These figures are not a production latency guarantee. No hosted data was changed."
+    ]
+  },
+  "before": {
+    "blockingHttpRequestsPerThrow": 5,
+    "databaseQueriesPerThrow": 575,
+    "command": {
+      "path": "POST /api/player/v1/platform/actions (training.score)",
+      "databaseQueries": 23,
+      "samplesMs": [11.09, 12.11, 10.54],
+      "responseBytes": [2540, 6190, 12533]
+    },
+    "blockingRefreshChain": [
+      {"path": "GET /api/player/v1/overview", "databaseQueries": 35},
+      {"path": "GET /api/player/v1/platform", "databaseQueries": 253},
+      {"path": "GET /api/player/v1/safety", "databaseQueries": 11},
+      {"path": "GET /api/player/v1/platform (training reload)", "databaseQueries": 253}
+    ],
+    "blockingRefreshSamplesMs": [273.38, 211.03, 226.19]
+  },
+  "after": {
+    "blockingHttpRequestsPerThrow": 1,
+    "databaseQueriesPerThrow": 23,
+    "removedQueriesFromBlockingPath": 552,
+    "command": {
+      "samplesMs": [10.54, 10.28, 10.21],
+      "responseBytes": [1238, 1590, 1942]
+    },
+    "activeTrainingPoll": {
+      "path": "GET /api/player/v1/trainings/<training UUID>",
+      "databaseQueries": 13,
+      "samplesMs": [5.93, 5.58, 4.8],
+      "responseBytes": [1184, 1536, 1888],
+      "previousFullPlatformQueries": 253
+    },
+    "initialization": "The new app explicitly requests GET /api/player/v1/platform?trainingProjection=compact. Only native callers with this query receive compact training entries; existing web and older native overview DTOs remain unchanged.",
+    "nativeTrainingProjection": "Keep the accepted current game, visits, statistics, rules, revision, members and board activity. Omit state.undo, expose its length as state.undoCount and return an empty game.history array. Server state and idempotency receipts retain the complete undo data."
+  },
+  "regressions": {
+    "command": "npx tsx --test --test-concurrency=1 tests/native-player-projection.test.ts tests/native-player.test.ts tests/native-player-flows.test.ts tests/platform-db.test.ts",
+    "result": {"passed": 29, "failed": 0, "skipped": 0},
+    "typecheck": "npm run typecheck — passed",
+    "lint": "ESLint on all changed backend routes, projection, domain reader and regression files — passed",
+    "scenarios": [
+      "Targeted training reconnect matches the accepted command revision and score.",
+      "Another actor, a non-training entity and missing IDs are rejected.",
+      "The physical-board projection preserves its absolute deadline and shared extension count.",
+      "A locally seeded training contains 45 engine-accepted zero visits and exceeds the Android client's 2,000,000-byte legacy response ceiling.",
+      "Compact native GET, score response and initialization training list remain below 64,000 bytes; full private undo/history remain in database and the legacy DTO.",
+      "Retry returns the same accepted response; an actual undo and targeted reconnect restore the authoritative prior game.",
+      "Projection does not mutate the canonical source object or idempotency receipt."
+    ],
+    "schemaChanges": "None",
+    "secretChanges": "None",
+    "authenticationChanges": "None"
+  }
+}

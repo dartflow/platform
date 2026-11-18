@@ -7,16 +7,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import org.json.JSONObject
@@ -45,10 +49,18 @@ class PlayerUiTest {
 
     /** Export only these synthetic, offline fixtures for release-time visual inspection. */
     private fun saveFixtureScreenshot(filename: String) {
-        require(filename in setOf("compact-login.png", "compact-screens.png", "compact-events.png"))
+        require(filename in setOf("compact-login.png", "compact-screens.png", "compact-events.png", "score-status-default.png", "score-status-large-font.png"))
         // CI runs API 36. Keep UI assertions usable on older supported devices.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-        val bitmap = compose.onNodeWithTag("compact-fixture").captureToImage().asAndroidBitmap()
+        val fixture = compose.onNodeWithTag("compact-fixture")
+        val bounds = fixture.getUnclippedBoundsInRoot()
+        val root = compose.onRoot().getUnclippedBoundsInRoot()
+        assertTrue("The complete screenshot fixture must fit inside the physical Compose window", bounds.left >= root.left && bounds.right <= root.right && bounds.top >= root.top && bounds.bottom <= root.bottom)
+        val bitmap = fixture.captureToImage().asAndroidBitmap()
+        with(compose.density) {
+            assertEquals("Screenshot must include the full fixture width", (bounds.right - bounds.left).roundToPx(), bitmap.width)
+            assertEquals("Screenshot must include the full fixture height", (bounds.bottom - bounds.top).roundToPx(), bitmap.height)
+        }
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
         val directory = "/data/local/tmp/dartflow-ui-fixtures"
         ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("mkdir -p $directory")).use { it.readBytes() }
@@ -159,6 +171,54 @@ class PlayerUiTest {
         val bottomKey = compose.onNodeWithTag("score-key-0").getUnclippedBoundsInRoot()
         assertTrue("Bevestigen must remain inside score console", confirm.bottom <= console.bottom)
         assertTrue("Bottom keypad row must remain visible", bottomKey.bottom < confirm.top)
+    }
+
+    private fun assertScoreHeaderFitsViewport(width: Dp, height: Dp, fontScale: Float, screenshot: String) {
+        compose.setContent {
+            Box(Modifier.requiredSize(width, height).testTag("compact-fixture")) {
+                val density = LocalDensity.current.density
+                CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
+                    DartFlowPlayerTheme {
+                        PlayerScoreConsole("Dartbot", listOf(ScorePlayer("p1", "Danny G", 501), ScorePlayer("p2", "Dartbot", 501)), 0, true, false, false, null, null, "m1:1", { _, _, _, _ -> }, {}, {})
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("compact-fixture").assertWidthIsEqualTo(width).assertHeightIsEqualTo(height)
+        val viewport = compose.onNodeWithTag("compact-fixture").getUnclippedBoundsInRoot()
+        val console = compose.onNodeWithTag("native-score-console").getUnclippedBoundsInRoot()
+        assertTrue("The complete console must fit the requested phone viewport", console.top >= viewport.top && console.bottom <= viewport.bottom)
+        listOf(0 to "AAN DE BEURT", 1 to "WACHT").forEach { (index, status) ->
+            val card = compose.onNodeWithTag("score-player-card-$index").assertIsDisplayed().getUnclippedBoundsInRoot()
+            val name = compose.onNodeWithTag("score-player-name-$index").assertIsDisplayed().getUnclippedBoundsInRoot()
+            val remaining = compose.onNodeWithTag("score-player-remaining-$index").assertIsDisplayed().getUnclippedBoundsInRoot()
+            val statusNode = compose.onNodeWithTag("score-player-status-$index").assertIsDisplayed().assertTextEquals(status)
+            val statusBounds = statusNode.getUnclippedBoundsInRoot()
+            assertTrue("Player $index identity must precede the remaining score", name.bottom <= remaining.top)
+            assertTrue("Player $index remaining score must precede its complete status label", remaining.bottom <= statusBounds.top)
+            assertTrue("Player $index status must fit fully inside its score card at font scale $fontScale", statusBounds.top >= card.top && statusBounds.bottom <= card.bottom && statusBounds.left >= card.left && statusBounds.right <= card.right)
+            val layouts = mutableListOf<TextLayoutResult>()
+            statusNode.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            assertEquals("Player $index status exposes exactly one text layout", 1, layouts.size)
+            assertFalse("Player $index status text must not be vertically clipped at font scale $fontScale", layouts.single().didOverflowHeight)
+            assertFalse("Player $index status text must not wrap or ellipsize", layouts.single().hasVisualOverflow)
+        }
+        compose.onNodeWithTag("score-key-1").performClick()
+        compose.onNodeWithTag("score-key-1").performClick()
+        compose.onNodeWithTag("score-key-2").performClick()
+        val confirm = compose.onNodeWithTag("confirm-score").assertIsDisplayed().assertIsEnabled().getUnclippedBoundsInRoot()
+        val bottomKey = compose.onNodeWithTag("score-key-0").assertIsDisplayed().getUnclippedBoundsInRoot()
+        assertTrue("Confirm must remain fully inside the score console with enlarged score cards", confirm.top >= console.top && confirm.bottom <= console.bottom && confirm.left >= console.left && confirm.right <= console.right)
+        assertTrue("The complete numeric keypad must precede Confirm", bottomKey.bottom <= confirm.top)
+        saveFixtureScreenshot(screenshot)
+    }
+
+    @Test fun scorePlayerStatusFits360By640AtDefaultFontScale() {
+        assertScoreHeaderFitsViewport(360.dp, 640.dp, 1f, "score-status-default.png")
+    }
+
+    @Test fun scorePlayerStatusFits390By844AtLargeFontScale() {
+        assertScoreHeaderFitsViewport(390.dp, 844.dp, 1.3f, "score-status-large-font.png")
     }
 
     @Test fun opponentTurnDisablesEveryScoreMutation() {

@@ -26,6 +26,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private var saved = store.read()
     private val refreshLock = Mutex()
     private val commandLock = Mutex()
+    private val snapshots = PlayerSnapshotGate()
     private var loop: Job? = null
     private var foreground = false
     private var ready = false
@@ -54,6 +55,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         if (loop?.isActive == true) return
         loop = viewModelScope.launch {
             while (foreground) {
+                val ticket = snapshots.capture()
                 try {
                     if (!ready) initialize() else if (hasSession() && !state.value.busy) {
                         if (state.value.profile == null || state.value.screen in listOf(PlayerScreen.HOME, PlayerScreen.NOTIFICATIONS, PlayerScreen.PROFILE) && identityPoll++ % 3 == 0) {
@@ -65,6 +67,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     delay(state.value.capabilities.optLong("pollAfterMs", 2000).coerceIn(1500, 15_000))
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (failure: Exception) {
+                    // A read started before an accepted command must not replace its
+                    // connection/error feedback either, even when that older read fails.
+                    if (!snapshots.accepts(ticket)) continue
                     handleFailure(failure, polling = ready)
                     delay(if (failure is PlayerApiFailure) maxOf(3000L, failure.retryAfterMs) else 3000)
                 }
@@ -133,20 +138,22 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private fun sessionMetadata() = PlayerSession(saved.optString("userId"), saved.optString("email"), saved.optLong("expiresAt"), saved.optBoolean("local"))
     private suspend fun loadIdentity() {
         val generation = identityGeneration
+        val ticket = snapshots.capture()
         val result = api.call("/session")
-        if (generation != identityGeneration || !hasSession()) return
+        if (generation != identityGeneration || !hasSession() || !snapshots.accepts(ticket)) return
         val profile = result.optJSONObject("user")?.let(PlayerProfile::parse)
         profile?.let { saved.put("userId", it.id); persist() }
         state.update { it.copy(profile = profile, session = sessionMetadata()) }
     }
     private suspend fun loadCommon() {
         val generation = identityGeneration
+        val ticket = snapshots.capture()
         val overview = api.call("/overview")
-        if (generation != identityGeneration || !hasSession()) return
-        val platform = api.call("/platform")
-        if (generation != identityGeneration || !hasSession()) return
+        if (generation != identityGeneration || !hasSession() || !snapshots.accepts(ticket)) return
+        val platform = api.call("/platform?trainingProjection=compact")
+        if (generation != identityGeneration || !hasSession() || !snapshots.accepts(ticket)) return
         val safety = api.call("/safety")
-        if (generation != identityGeneration || !hasSession()) return
+        if (generation != identityGeneration || !hasSession() || !snapshots.accepts(ticket)) return
         state.update { it.copy(overview = overview, platform = platform, safety = safety, profile = platform.optJSONObject("profile")?.let(PlayerProfile::parse) ?: it.profile) }
     }
     private suspend fun loadCurrent() {
@@ -154,6 +161,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val screen = state.value.screen
         val id = state.value.activeId
         val generation = identityGeneration
+        val ticket = snapshots.capture()
         val resource = when (screen) {
             PlayerScreen.HOME, PlayerScreen.BOARDS, PlayerScreen.NOTIFICATIONS -> api.call("/player-experience")
             PlayerScreen.SCREENS -> {
@@ -176,6 +184,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 if (invitation != null) match.put("invitation", invitation.opt("invitation"))
                 match
             } ?: JSONObject()
+            PlayerScreen.TRAINING -> id?.let { api.call("/trainings/${PlayerLinks.encode(it)}") } ?: run {
+                val platform = api.call("/platform?trainingProjection=compact")
+                if (generation == identityGeneration && snapshots.accepts(ticket)) state.update { it.copy(platform = platform) }
+                platform
+            }
             PlayerScreen.FEED -> api.call("/community/feed" + feedQuery(id))
             PlayerScreen.CHAT -> {
                 val parts = id.orEmpty().split(':', limit = 2)
@@ -185,16 +198,23 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             PlayerScreen.SEASONS -> api.call("/seasons")
             PlayerScreen.SEASON -> id?.let { api.call("/seasons/${PlayerLinks.encode(it)}") } ?: JSONObject()
             else -> {
-                val platform = api.call("/platform")
-                if (generation == identityGeneration) state.update { it.copy(platform = platform) }
+                val platform = api.call("/platform?trainingProjection=compact")
+                if (generation == identityGeneration && snapshots.accepts(ticket)) state.update { it.copy(platform = platform) }
                 if (screen in listOf(PlayerScreen.LOBBY, PlayerScreen.TRAINING, PlayerScreen.EVENT)) {
                     JSONObject().put("entity", listOf("lobbies", "trainings", "leagues", "tournaments", "clubs", "rooms").asSequence()
                         .flatMap { platform.optJSONArray(it).objects().asSequence() }.firstOrNull { it.optString("id") == id } ?: JSONObject())
                 } else platform
             }
         }
-        if (generation != identityGeneration || screen != state.value.screen || id != state.value.activeId) return
-        state.update { current -> current.copy(resource = resource, loading = false, online = true,
+        if (generation != identityGeneration || !snapshots.accepts(ticket) || screen != state.value.screen || id != state.value.activeId) return
+        state.update { current ->
+            if (screen == PlayerScreen.TRAINING && id != null) {
+                val entity = resource.optJSONObject("entity")
+                if (entity?.optString("id") != id || entity.optString("kind") != "training") throw java.io.IOException("Ongeldige trainingsgegevens.")
+                applyPlayerTrainingSnapshot(current, entity).copy(online = true)
+            } else if (screen == PlayerScreen.MATCH && resource.length() > 0) {
+                applyPlayerMatchSnapshot(current, resource).copy(online = true)
+            } else current.copy(resource = resource, loading = false, online = true,
             match = if (screen == PlayerScreen.MATCH && resource.length() > 0) PlayerMatch.parse(resource) else if (screen == PlayerScreen.MATCH) null else current.match,
             board = if (screen == PlayerScreen.BOARD) resource else current.board,
             profile = if (screen == PlayerScreen.PROFILE) resource.optJSONObject("user")?.let(PlayerProfile::parse) ?: current.profile else current.profile,
@@ -326,6 +346,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             check(pending == null) { "Controleer eerst de uitkomst van je vorige actie via Opnieuw proberen." }
             val command = NativePlayerCommand.create(path, body)
             val generation = identityGeneration
+            snapshots.advance()
             // PIN-bearing commands are retried once in memory with the same identity, never retained.
             val sensitive = command.sensitive
             if (!sensitive) savePendingCommand(command)
@@ -358,6 +379,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         commandLock.withLock {
             val command = pending ?: return@withLock
             val generation = identityGeneration
+            snapshots.advance()
             try {
                 val result = execute(command)
                 clearPendingCommand()
@@ -407,6 +429,12 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
     private suspend fun afterCommand(path: String, input: JSONObject, result: JSONObject, generation: Int) {
         if (generation != identityGeneration || !hasSession()) return
+        snapshots.advance()
+        val accepted = acceptedPlayerScoreSnapshot(state.value, path, input, result)
+        if (accepted != null) {
+            state.value = accepted
+            return
+        }
         if (path == "/account/deletion") {
             check(result.optBoolean("ok") && result.optString("status") in listOf("pending", "processing", "completed")) { "Het verwijderverzoek kon niet worden bevestigd. Probeer opnieuw." }
             // Acceptance invalidates access server-side. Erase tokens, queued actions, profile,
@@ -446,11 +474,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private fun launchTask(showBusy: Boolean = true, task: suspend () -> Unit) {
         viewModelScope.launch {
             if (showBusy && state.value.busy) return@launch
+            val generation = identityGeneration
+            val ticket = snapshots.capture()
             if (showBusy) state.update { it.copy(busy = true, error = null, notice = null) }
             try { task() }
             catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: Exception) { handleFailure(failure) }
-            finally { state.update { it.copy(busy = false, loading = false) } }
+            catch (failure: Exception) {
+                if (snapshots.acceptsTaskFeedback(ticket, showBusy, generation, identityGeneration)) handleFailure(failure)
+            }
+            finally {
+                if (snapshots.acceptsTaskFeedback(ticket, showBusy, generation, identityGeneration)) state.update { it.finishedTask(ownsBusy = showBusy) }
+            }
         }
     }
     private fun handleFailure(failure: Exception, polling: Boolean = false) {

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { closeDatabase, executeMatchCommand, getBoardForActor, getMatch, getPublicSnapshot } from '../lib/db';
-import { executePlatformCommand, getMatchSignals, getPlatformCast, getPlatformMessages, getPlatformOverview, reconcilePlatformCalls, reconcilePlatformResults, replayMatchCommands, exportPlatformCsv, sendMatchChat, getMatchChat, sendMatchSignal } from '../lib/platform';
+import { executePlatformCommand, getPlatformTraining, getMatchSignals, getPlatformCast, getPlatformMessages, getPlatformOverview, reconcilePlatformCalls, reconcilePlatformResults, replayMatchCommands, exportPlatformCsv, sendMatchChat, getMatchChat, sendMatchSignal } from '../lib/platform';
 import {mediaConfiguration}from'../lib/media';
 import type { MatchAction } from '../lib/types';
 import type { PlatformCommand } from '../lib/platform-types';
@@ -30,6 +30,7 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
       const race=await Promise.allSettled([run(alice,{type:'board.start',boardId:board,mode:'solo'}),run(bob,{type:'board.start',boardId:board,mode:'solo'})]);
       assert.equal(race.filter(r=>r.status==='fulfilled').length,1);const first=race[0].status==='fulfilled'?race[0].value:(race[1] as PromiseFulfilledResult<Awaited<ReturnType<typeof run>>>).value,player=race[0].status==='fulfilled'?alice:bob,other=player===alice?bob:alice;
       assert.equal(first.kind,'training');assert.equal((await getBoardForActor(player,board)).practiceId,first.id);assert.equal((await getBoardForActor(other,board)).practiceId,undefined);assert.equal((await getBoardForActor(other,board)).canStart,false);
+      const targeted=await getPlatformTraining(player,first.id!);assert.equal(targeted.entity.boardActivity?.sourceId,first.id);assert.equal(targeted.entity.boardActivity?.deadlineAt,first.entity!.state.boardLeaseUntil);assert.equal(targeted.entity.boardActivity?.extensionsUsed,0);assert.equal(targeted.entity.revision,first.entity!.revision);await assert.rejects(getPlatformTraining(other,first.id!),{status:403});
       const token=String(first.screenUrl).split('/').at(-1)!;assert.equal(token.length,64);assert.equal((await getPublicSnapshot(token)).match?.players.length,1);
       const scored=await run(player,{type:'training.score',id:first.id,score:180},first.entity!.revision);assert.equal((await getPublicSnapshot(token)).match?.remaining[0],321);
       const screenRequest=randomUUID();await run(player,{type:'board.screen',boardId:board},undefined,screenRequest);await owner.query('delete from dartflow_private.club_memberships where club_id=$1 and user_id=$2',[club,player]);await assert.rejects(getPublicSnapshot(token),{status:404});await assert.rejects(run(player,{type:'board.screen',boardId:board},undefined,screenRequest),{status:403});

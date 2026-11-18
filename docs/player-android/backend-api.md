@@ -62,6 +62,7 @@ Alle routes hieronder beginnen met `/api/player/v1/`. Queryparameters en JSON-DT
 | POST | `profile/complete` | `requestId`, `username`, `displayName`, `pin`, `pinConfirmation` |
 | POST | `profile/player-pin` | `requestId`, `mode` (`initial`, `change`, `reset`), `pin`, `pinConfirmation`, waar nodig `currentPin` |
 | GET | `overview`, `platform`, `locations`, `player-experience` | Bestaande spelersoverzichten |
+| GET | `trainings/<uuid>` | Eigen actuele training als `{entity}`, met bestaande rechten en revisie |
 | POST | `player-experience` | Bestaande favoriet-, spel- en trainingsdoelvoorkeuren |
 | GET | `player-statistics` | Bestaande filters `startScore`, `offset`, `opponent`, `search`, `opponentOffset`, `practiceOffset` |
 | GET | `boards/<uuid>` | Baancontext volgens bestaande scan-, reserverings- en toegangsregels |
@@ -84,6 +85,10 @@ Alle routes hieronder beginnen met `/api/player/v1/`. Queryparameters en JSON-DT
 | POST | `oche/v1/claim`, `oche/v1/home-session`, `oche/v1/devices/<uuid>` | Bestaande eenmalige apparaatkoppeling en beheerrechten |
 
 `platform` gebruikt de bestaande `PlatformOverview` uit `lib/platform-types.ts`: profiel, wedstrijden, historie, baancontext, spelers, clubs, kamers, trainingen, competities, toernooien, lobby's, vrienden en voorkeuren. `matches/<uuid>` gebruikt `MatchView` uit `lib/types.ts`: restscores, spelers, beurten, statistieken en `permissions`. De client baseert bediening op deze actuele rechten. De server valideert iedere actie opnieuw, inclusief de actor, de beurt, revisie en actuele baantoewijzing. Verander bij retries nooit `requestId` of payload van dezelfde operatie.
+
+Vanaf spelersapp 0.1.3 verwerkt de scoreconsole de volledige geaccepteerde commandoresponse direct, inclusief de eventuele Dartbotbeurt. Een oude poll of refresh mag een hogere revisie niet overschrijven. Een ontbrekende of onvolledige bevestiging volgt het bestaande herlaadpad; de app berekent geen voorlopige score. Actieve trainingen worden via `trainings/<uuid>` opgehaald, zonder dashboardreconciliatie.
+
+Native trainingsreads en trainingscommandoresponses bevatten de actuele game en bezoeken, maar geen `state.undo`-snapshots; `state.undoCount` bepaalt of server-undo beschikbaar is en `game.history` is leeg. Volledige hersteldata blijven in opslag en commandoreceipts. Alleen de expliciete native query `platform?trainingProjection=compact` gebruikt dezelfde compacte trainingslijst. De bestaande webprojectie en oudere native overview-aanvragen behouden hun DTO. Dit voorkomt dat lange trainingen de clientlimiet van 2 MB overschrijden.
 
 Native PIN-reset gebruikt uitsluitend de claims die bij de bearer zijn geverifieerd en dezelfde bestaande 15-minutenregel voor interactieve herauthenticatie. Een tokenrefresh of een eigen metadatawaarde maakt een oude login niet recent. Lokale fixtures mogen de bestaande loopback-herauthenticatie gebruiken.
 
