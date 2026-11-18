@@ -18,16 +18,28 @@ test('durable privacy erasure blocks access, retries Auth safely, scrubs prior n
  const admin=new pg.Client({connectionString:process.env.DARTFLOW_DATABASE_ADMIN_URL});await admin.connect();
  const worker=new pg.Pool({connectionString:process.env.DARTFLOW_DATABASE_ADMIN_URL,options:'-c role=dartflow_privacy_worker',max:2});
  const actor=randomUUID(),other=randomUUID(),club=randomUUID(),event=randomUUID(),match=randomUUID(),room=randomUUID(),post=randomUUID(),ownedClub=randomUUID(),training=randomUUID();
- const activeMatches:string[]=[],boards:string[]=[],entities:string[]=[],sessions:string[]=[];
- const name=`Privacy-${randomUUID().slice(0,8)}`,address=`${actor}@example.invalid`;
+ const activeMatches:string[]=[],boards:string[]=[],entities:string[]=[],sessions:string[]=[],mailIds:string[]=[];const invite=randomUUID(),joinRequest=randomUUID(),fixtureEntity=randomUUID(),mailEnvironment=`synthetic-${randomUUID()}`;
+ const name=`Privacy-${randomUUID().slice(0,8)}`,displayName='Ann',address=`${actor}@example.invalid`;
  try{
-  for(const[id,label]of [[actor,name],[other,`Other-${randomUUID().slice(0,8)}`]])await admin.query('insert into dartflow_private.profiles(id,name,display_name,email,display_name_confirmed)values($1,$2,$2,$3,true)',[id,label,id===actor?address:null]);
+  for(const[id,label]of [[actor,name],[other,`Other-${randomUUID().slice(0,8)}`]])await admin.query('insert into dartflow_private.profiles(id,name,display_name,email,display_name_confirmed)values($1,$2,$3,$4,true)',[id,label,displayName,id===actor?address:null]);
   await admin.query('insert into dartflow_private.clubs(id,name)values($1,$2)',[club,'Synthetic privacy club']);
   await admin.query('insert into dartflow_private.events(id,club_id,name,date,capacity)values($1,$2,$3,current_date,8)',[event,club,'Synthetic official result']);
-  const snapshot={id:match,players:[{id:actor,name:'Historical previous display name',email:address},{id:other,name:'Opponent preserved'}],legs:[3,1],winnerId:actor};
+  const snapshot={id:match,players:[{id:actor,name:'Historical previous display name',email:address},{id:other,name:'Ann',displayName:'Anna'}],title:'Annual club event',legs:[3,1],winnerId:actor};
   await admin.query('insert into dartflow_private.matches(id,club_id,event_id,revision,state)values($1,$2,$3,1,$4)',[match,club,event,JSON.stringify({...snapshot,status:'confirmed',resultPublished:true})]);
   for(const[id,index]of [[actor,0],[other,1]])await admin.query('insert into dartflow_private.match_players(match_id,user_id,position)values($1,$2,$3)',[match,id,index]);
   await admin.query('insert into dartflow_private.match_results(match_id,event_id,result_revision,snapshot)values($1,$2,1,$3)',[match,event,JSON.stringify(snapshot)]);
+  await admin.query('insert into dartflow_private.club_invites(id,club_id,user_id,invited_by)values($1,$2,$3,$4)',[invite,club,other,actor]);
+  await admin.query('insert into dartflow_private.club_intake_versions(club_id,version)values($1,1)',[club]);
+  await admin.query("insert into dartflow_private.club_join_requests(id,club_id,user_id,version,kind)values($1,$2,$3,1,'open')",[joinRequest,club,actor]);
+  await admin.query("insert into dartflow_private.platform_entities(id,kind,owner_id,visibility,state)values($1,'league',$2,'private',$3)",[fixtureEntity,other,JSON.stringify({name:'Annual club event',fixtures:[{id:'fixture-one',players:[actor,other]}]})]);entities.push(fixtureEntity);
+  for(const[source,eventId,body]of [[match,`match:${match}:synthetic:result-confirmed`,'Historical previous display name versus Ann'],[club,`club-invite:${invite}`,'Ann invited you'],[club,`unrelated:${randomUUID()}`,'Annual event for Ann and Anna'],[club,`club-request:${joinRequest}:reviewers`,'Ann asked to join'],[fixtureEntity,`reminder:fixture:${fixtureEntity}:fixture-one:synthetic`,'Your opponent is Ann']]){
+   const id=randomUUID();mailIds.push(id);
+   await admin.query("insert into dartflow_private.mail_outbox(id,environment,scope_key,event_id,template_id,recipient_key,recipient_id,kind,status,snapshot,template_version,transport_key,entity_id)values($1,'staging','platform',$2,'result-confirmed',$3,$4,'event','sent',$5,'1',$6,$7)",[id,eventId,`user:${other}`,other,JSON.stringify({subject:body,html:`<p>${body}</p>`,text:body,...(source===fixtureEntity?{reminder:{fixtureId:'fixture-one',at:'synthetic'}}:{}),replyTo:address,from:{name:'Other account',address:'other@example.invalid'}}),`synthetic/${id}`,source]);
+   await admin.query("insert into dartflow_private.mail_provider_events(environment,provider_event_id,provider_message_id,event_type,occurred_at,job_id)values('staging',$1,$2,'delivered',clock_timestamp(),$3)",[`synthetic-${id}`,`message-${id}`,id]);
+   await admin.query("insert into dartflow_private.mail_events(environment,scope_key,event_id,template_id,recipient_key,payload_hash)values('staging','platform',$1,'result-confirmed',$2,'synthetic-no-content')",[eventId,`user:${other}`]);
+  }
+  await admin.query("insert into dartflow_private.mail_policies(environment,scope_key,settings,updated_by)values($1,'platform',$2,$3)",[mailEnvironment,JSON.stringify({replyTo:address,fromName:'Ann'}),other]);
+  await admin.query("insert into dartflow_private.integration_settings(environment,provider,settings)values($1,'resend',$2)",[mailEnvironment,JSON.stringify({mode:'live',replyTo:address,from:{name:'Ann',address},testRecipients:[address,'other@example.invalid']})]);
   await admin.query("insert into dartflow_private.platform_entities(id,kind,owner_id,visibility,state)values($1,'room',$2,'private',$3)",[room,other,JSON.stringify({name:'Synthetic privacy room'})]);
   await admin.query('insert into dartflow_private.platform_messages(id,room_id,author_id,body)values($1,$2,$3,$4)',[randomUUID(),room,actor,'Synthetic private message']);
   await admin.query("insert into dartflow_private.platform_relationships(source_id,target_id,kind)values($1,$2,'friend')",[actor,other]);
@@ -56,6 +68,14 @@ test('durable privacy erasure blocks access, retries Auth safely, scrubs prior n
   }
   await admin.query("insert into dartflow_private.platform_entities(id,kind,owner_id,visibility,state)values($1,'training',$2,'private','{}')",[training,actor]);
   for(const[source,position,label,ordinal]of [[match,0,'Historical animation username',0],[match,1,'Opponent animation preserved',1],[training,0,'Historical solo username',0]])await admin.query("insert into dartflow_private.board_score_events(id,board_id,source_id,revision,ordinal,kind,visit)values($1,$2,$3,1,$4,'score',$5)",[randomUUID(),boards[0],source,ordinal,JSON.stringify({playerIndex:position,playerName:label,score:60})]);
+
+  await t.test('stable identity cleanup preserves other players with equal and substring display names and shared titles',async()=>{
+   const value={players:[{id:actor,name:'Old personal label',displayName:'Ann',email:address,avatarUrl:'https://example.invalid/own.png'},{id:other,name:'Ann',displayName:'Anna',email:'other@example.invalid'}],title:'Annual club event',notes:['Ann','Anna'],actorId:actor,actorName:'Historical actor label',opponentId:other,opponentName:'Ann',author:{userId:actor,name:'Previous own name'}};
+   const actual=(await admin.query('select dartflow_private.scrub_deleted_identity($1::jsonb,$2::text[],$3) value',[JSON.stringify(value),[address,name,displayName],actor])).rows[0].value;
+   assert.deepEqual(actual,{...value,players:[{...value.players[0],name:'Verwijderde speler',displayName:'Verwijderde speler',email:null,avatarUrl:null},value.players[1]],actorName:'Verwijderde speler',author:{userId:actor,name:'Verwijderde speler'}});
+   const again=(await admin.query('select dartflow_private.scrub_deleted_identity($1::jsonb,$2::text[],$3) value',[JSON.stringify(actual),[address,name,displayName],actor])).rows[0].value;
+   assert.deepEqual(again,actual);
+  });
 
   await t.test('normal web role cannot execute privileged erasure or read worker admin configuration',async()=>{
    await assert.rejects(database().query('select dartflow_private.erase_account_job($1,$2)',[randomUUID(),randomUUID()]),{code:'42501'});
@@ -97,7 +117,7 @@ test('durable privacy erasure blocks access, retries Auth safely, scrubs prior n
    for(const table of ['player_pin_verifiers','platform_relationships'])assert.equal((await admin.query(`select count(*)::int n from dartflow_private.${table} where ${table==='player_pin_verifiers'?'user_id=$1':'source_id=$1 or target_id=$1'}`,[actor])).rows[0].n,0);
    assert.equal((await admin.query('select body from dartflow_private.platform_messages where author_id=$1',[actor])).rows[0].body,'Verwijderd');
    const saved=(await admin.query('select snapshot from dartflow_private.match_results where match_id=$1',[match])).rows[0].snapshot;
-   assert.equal(saved.players[0].id,actor);assert.equal(saved.players[0].name,'Verwijderde speler');assert.equal(saved.players[0].email,null);assert.deepEqual(saved.legs,[3,1]);assert.equal(saved.players[1].name,'Opponent preserved');
+   assert.equal(saved.players[0].id,actor);assert.equal(saved.players[0].name,'Verwijderde speler');assert.equal(saved.players[0].email,null);assert.deepEqual(saved.legs,[3,1]);assert.equal(saved.players[1].name,'Ann');assert.equal(saved.players[1].displayName,'Anna');assert.equal(saved.title,'Annual club event');
    assert.equal(JSON.stringify(saved).includes('Historical previous display name'),false);assert.equal(JSON.stringify(saved).includes(address),false);
    const remainingReview=(await admin.query("select password_envelope,review_details,companion_user_id from dartflow_private.play_review_accounts where environment='production' and user_id=$1",[other])).rows[0];
    assert.equal(remainingReview.review_details,null);assert.equal(remainingReview.companion_user_id,null);assert.deepEqual(remainingReview.password_envelope,{fixture:'other-primary-credential'});
@@ -106,6 +126,15 @@ test('durable privacy erasure blocks access, retries Auth safely, scrubs prior n
    assert.equal(done.reduce((n,r)=>n+r.processed,0),1);assert.deepEqual(seen,[actor]);assert.equal((await getAccountDeletionStatus(actor)).status,'completed');
    await assert.rejects(assertAccountActive(actor),{code:'account_deleted'});
    assert.equal((await admin.query("select count(*)::int n from dartflow_private.platform_members where entity_id=$1 and user_id=$2 and role='owner'",[ownedClub,actor])).rows[0].n,1);
+  });
+  await t.test('rendered notices are removed by their stable sources while unrelated same-name notices and delivery deduplication stay intact',async()=>{
+   const saved=(await admin.query('select id,snapshot from dartflow_private.mail_outbox where id=any($1::uuid[])',[mailIds])).rows;
+   assert.equal(saved.length,1);assert.equal(saved[0].id,mailIds[2]);assert.equal(saved[0].snapshot.text,'Annual event for Ann and Anna');
+   assert.equal(saved[0].snapshot.replyTo,null);assert.deepEqual(saved[0].snapshot.from,{name:'Other account',address:'other@example.invalid'});
+   assert.deepEqual((await admin.query('select settings from dartflow_private.mail_policies where environment=$1',[mailEnvironment])).rows[0].settings,{replyTo:null,fromName:'Ann'});
+   assert.deepEqual((await admin.query('select settings from dartflow_private.integration_settings where environment=$1',[mailEnvironment])).rows[0].settings,{mode:'log',replyTo:null,from:null,testRecipients:['other@example.invalid']});
+   assert.equal((await admin.query('select count(*)::int n from dartflow_private.mail_provider_events where job_id=any($1::uuid[])',[mailIds])).rows[0].n,1);
+   assert.equal((await admin.query('select count(*)::int n from dartflow_private.mail_events where recipient_key=$1',[`user:${other}`])).rows[0].n,5);
   });
   await t.test('historical animation names are scrubbed by stable match participant and private solo caches removed',async()=>{
    const animations=(await admin.query('select visit from dartflow_private.board_score_events where source_id=$1 order by ordinal',[match])).rows;
@@ -116,6 +145,13 @@ test('durable privacy erasure blocks access, retries Auth safely, scrubs prior n
   await worker.end();
   await admin.query('rollback');
   await admin.query('delete from dartflow_private.account_deletion_jobs where actor_id=$1',[actor]);
+  await admin.query('delete from dartflow_private.mail_provider_events where job_id=any($1::uuid[])',[mailIds]);
+  await admin.query('delete from dartflow_private.mail_outbox where id=any($1::uuid[])',[mailIds]);
+  await admin.query('delete from dartflow_private.mail_events where recipient_key=$1',[`user:${other}`]);
+  await admin.query('delete from dartflow_private.club_invites where id=$1',[invite]);
+  await admin.query('delete from dartflow_private.club_join_requests where id=$1',[joinRequest]);
+  await admin.query('delete from dartflow_private.mail_policies where environment=$1',[mailEnvironment]);
+  await admin.query('delete from dartflow_private.integration_settings where environment=$1',[mailEnvironment]);
   await admin.query('delete from dartflow_private.play_review_accounts where user_id=any($1::uuid[])',[[actor,other]]);
   await admin.query('delete from dartflow_private.platform_messages where room_id=$1',[room]);
   await admin.query('delete from dartflow_private.community_posts where id=$1',[post]);

@@ -43,6 +43,18 @@ Follow-up `20261118130850_scrub_deleted_score_event_names.sql` koppelt
 animatiegebeurtenissen zonder profiel-ID via de vaste wedstrijddeelnemer, zodat
 ook oude gebruikersnamen uit de displaycache verdwijnen. Solo-animatiecaches
 van het verwijderde account worden gewist.
+Follow-up `20261118141517_scrub_deleted_identity_by_profile_id.sql` laat
+identiteitsopschoning uitsluitend afhangen van een stabiel profiel-ID of een
+expliciet ID/naam-veldenpaar. Gelijke weergavenamen en naamdelen in andere
+spelers of evenementtitels blijven daardoor intact. Opgeslagen, gerenderde
+notificaties zonder persoons-ID worden geheel verwijderd als de vaste
+wedstrijd-, clubverzoek-, uitnodigings- of fixturekoppeling de persoon aanwijst;
+de inhoudsloze leveringsmarkers voor andere ontvangers blijven behouden.
+Bekende antwoord-, afzender- en testadresvelden worden alleen bij een exacte
+match met het eigen profieladres gewist. Als dat de actieve mailafzender was,
+gaat die configuratie naar logmodus totdat beheer een geldige afzender kiest.
+Een hostallowlist is geen persoonlijke profielopslag en moet bij een wijziging
+van de organisatieadressen afzonderlijk operationeel worden nagelopen.
 De hostprovisioner stelt het wachtwoord veilig in. De rol kan alleen de queue
 lezen, beperkte verwerkingskolommen wijzigen en de private cleanupfunctie
 uitvoeren. De runtime, `PUBLIC`, `anon` en `authenticated` krijgen geen uitvoerrecht
@@ -159,3 +171,7 @@ uitsluitend synthetische loopbackrecords. Ze controleren recente authenticatie,
 expliciete bevestiging, dubbele aanvragen, de directe blokkade, PIN-toegang,
 afgeschermde cleanuprechten, de Auth-netwerkfout, concurrente workers, retries en
 het behouden van een officiële uitslag met verwijderde oude profielnaam.
+De regressie bevat twee spelers met weergavenaam `Ann`, een `Anna`-label en
+`Annual club event`; alleen de identiteit van het bevestigde profiel verandert.
+Dezelfde test bevestigt verwijdering van gekoppelde mailkopieën en behoud van
+een ongerelateerde melding, de andere afzender en de idempotentiemarkers.
