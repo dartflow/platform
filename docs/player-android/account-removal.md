@@ -112,6 +112,15 @@ hostinrichting. Een helper-/unitupdate vraagt geen nieuwe applicatiebuild en
 verandert de actieve applicatie-SHA niet. Activeer de timer pas nadat het
 bijbehorende workerartifact live staat en de eenmalige rechtencontrole slaagt.
 
+De applicatiebuild bundelt de volledige JavaScript-dependencyclosure van de
+worker. De webservertracing van Next kan pakketten die uitsluitend de worker
+gebruikt weglaten; de worker mag daar niet van afhankelijk zijn. De ESM-bundle
+behoudt top-level await en gebruikt `createRequire` voor gebundelde CommonJS-
+dependencies. Alleen de niet-gebruikte optionele `pg-native`-backend blijft
+extern. De bootregressie in `tests/release-package.test.ts` start de echte bundle
+vanuit een losse map zonder `node_modules` en bevestigt dat uitsluitend de
+ontbrekende private workerconfiguratie het starten tegenhoudt.
+
 ## Wat wordt gewist en wat blijft?
 
 Contactvelden, PIN-verifier, sociale relaties, persoonlijke voorkeuren,

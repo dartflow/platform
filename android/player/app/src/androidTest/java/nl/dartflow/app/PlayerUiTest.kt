@@ -23,9 +23,10 @@ class PlayerUiTest {
         var email: String? = null; var google = false
         compose.setContent { DartFlowPlayerTheme { PlayerApp(PlayerUiState(loading = false), PlayerActions(requestOtp = { email = it }, google = { google = true })) } }
         compose.onNodeWithText("E-mailadres").performTextInput("darter@example.test")
-        compose.onNodeWithText("Stuur mij een inlogcode").performClick()
+        // The IME can reduce the viewport: exercise the visible, enabled button after scrolling.
+        compose.onNodeWithText("Stuur mij een inlogcode").performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
         compose.runOnIdle { assertEquals("darter@example.test", email) }
-        compose.onNodeWithText("Doorgaan met Google").performClick()
+        compose.onNodeWithText("Doorgaan met Google").performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
         compose.runOnIdle { assertTrue(google) }
     }
 
