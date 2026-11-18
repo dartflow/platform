@@ -119,7 +119,7 @@ test('real privacy worker boots without node_modules and stops at its missing pr
     prepare(root);
     const bundle=join(isolated,'account-removal-worker.mjs');
     await copyFile(join(root,'.next/standalone/account-removal-worker.mjs'),bundle);
-    const result=spawnSync(process.execPath,[bundle],{cwd:isolated,env:{PATH:process.env.PATH??'/usr/bin:/bin'},encoding:'utf8',timeout:20000});
+    const result=spawnSync(process.execPath,[bundle],{cwd:isolated,env:{PATH:process.env.PATH??'/usr/bin:/bin',NODE_ENV:'test'},encoding:'utf8',timeout:20000});
     assert.equal(result.status,1);
     assert.match(result.stderr,/DARTFLOW_PRIVACY_DATABASE_URL ontbreekt/);
     assert.doesNotMatch(result.stderr,/ERR_MODULE_NOT_FOUND|Cannot find (?:package|module)|Dynamic require .*not supported/);
