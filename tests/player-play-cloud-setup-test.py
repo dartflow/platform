@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Offline Cloud bootstrap regression tests: every gcloud call is a local fake."""
+import copy
 import json
 import os
 from pathlib import Path
@@ -21,7 +22,7 @@ def finish(value): p.write_text(json.dumps(s));print(json.dumps(value));sys.exit
 if a[:3]==['config','get-value','project']:
  p.write_text(json.dumps(s));print(s.get('selected',s['project']));sys.exit(0)
 assert flag('--project')==s['project']
-if a[:2]==['projects','describe']: finish({'projectId':s['project'],'projectNumber':'123456789012','lifecycleState':'ACTIVE'})
+if a[:2]==['projects','describe']: finish({'projectId':s['project'],'projectNumber':s.get('projectNumber','123456789012'),'lifecycleState':'ACTIVE'})
 if a[:2]==['services','enable']: s['mutations'].append('enable-apis');finish({})
 if a[:2]==['projects','get-iam-policy']: finish(s.get('projectPolicy',{}))
 if a[:3]==['iam','service-accounts','list']: finish(s.get('accounts',[]))
@@ -32,9 +33,13 @@ if a[:4]==['iam','service-accounts','keys','list']: assert flag('--managed-by')=
 if a[:3]==['iam','service-accounts','create']:
  s['mutations'].append('create-account');s['accounts']=[{'projectId':s['project'],'email':a[3]+'@'+s['project']+'.iam.gserviceaccount.com','displayName':flag('--display-name'),'description':flag('--description')}];finish(s['accounts'][0])
 if a[:3]==['iam','workload-identity-pools','create']:
- s['mutations'].append('create-pool');s['pools']=[{'name':'projects/123456789012/locations/global/workloadIdentityPools/'+a[3],'state':'ACTIVE','displayName':flag('--display-name'),'description':flag('--description')}];finish(s['pools'][0])
+ s['mutations'].append('create-pool');s['pools']=[{'name':'projects/'+s.get('projectNumber','123456789012')+'/locations/global/workloadIdentityPools/'+a[3],'state':'ACTIVE','displayName':flag('--display-name'),'description':flag('--description')}];finish(s['pools'][0])
 if a[:4]==['iam','workload-identity-pools','providers','create-oidc']:
  s['mutations'].append('create-provider');s['providers']=[{'name':s['pools'][0]['name']+'/providers/'+a[4],'state':'ACTIVE','displayName':flag('--display-name'),'description':flag('--description'),'attributeMapping':dict(v.split('=',1) for v in flag('--attribute-mapping').split(',')),'attributeCondition':flag('--attribute-condition'),'oidc':{'issuerUri':flag('--issuer-uri')}}];finish(s['providers'][0])
+if a[:4]==['iam','workload-identity-pools','providers','update-oidc']:
+ assert set(x.split('=',1)[0] for x in a[5:])=={'--project','--location','--workload-identity-pool','--attribute-condition','--format'}
+ assert a[4]=='github-main' and flag('--location')=='global' and flag('--workload-identity-pool')=='dartflow-player-play'
+ s['mutations'].append('update-provider-condition');s['providers'][0]['attributeCondition']=flag('--attribute-condition');finish(s['providers'][0])
 if a[:3]==['iam','service-accounts','add-iam-policy-binding']:
  assert flag('--role')=='roles/iam.workloadIdentityUser' and flag('--condition')=='None'
  s['mutations'].append('bind-federation');s['accountPolicy']={'bindings':[{'role':flag('--role'),'members':[flag('--member')]}]};finish(s['accountPolicy'])
@@ -73,7 +78,7 @@ class CloudSetupTests(unittest.TestCase):
         result = self.run_script('--project', PROJECT)
         self.assertEqual(result.returncode, 0)
         self.assertIn("assertion.workflow_ref == 'dartflow/platform/.github/workflows/player-play-release.yml@refs/heads/main'", result.stdout)
-        for required in ["assertion.repository_id == '1453713803'", "assertion.repository_owner_id == '355255545'", "assertion.ref == 'refs/heads/main'", "assertion.sub == 'repo:dartflow/platform:environment:player-play-production'", "assertion.environment == 'player-play-production'", "assertion.event_name == 'workflow_dispatch'"]:
+        for required in ["assertion.repository_id == '1453713803'", "assertion.repository_owner_id == '355255545'", "assertion.ref == 'refs/heads/main'", "assertion.sub == 'repo:dartflow@355255545/platform@1453713803:environment:player-play-production'", "assertion.environment == 'player-play-production'", "assertion.event_name == 'workflow_dispatch'"]:
             self.assertIn(required, result.stdout)
         self.assertNotIn('assertion.job_workflow_ref', result.stdout)
         for args in [[], ['--apply'], ['--project', '12345'], ['--project', 'wrong project'], ['--project', 'test;touch-file'], ['--project', PROJECT, '--project', PROJECT], ['--project', PROJECT, '--apply', '--apply'], ['--project', PROJECT, '--unknown']]:
@@ -123,6 +128,88 @@ class CloudSetupTests(unittest.TestCase):
             before = self.current()['mutations']
             self.assertNotEqual(self.run_script('--project', PROJECT, '--apply').returncode, 0)
             self.assertEqual(self.current()['mutations'], before + ['enable-apis'])
+
+
+class CloudSubjectRepairTests(unittest.TestCase):
+    setUp = CloudSetupTests.setUp
+    tearDown = CloudSetupTests.tearDown
+    current = CloudSetupTests.current
+    update = CloudSetupTests.update
+
+    def run_repair(self, *arguments):
+        return subprocess.run(['bash', str(ROOT / 'ops/player-play-cloud-repair-subject.sh'), *arguments], env=self.env, capture_output=True, text=True, timeout=15)
+
+    def legacy(self):
+        self.update(project='dartflow', projectNumber='955883910359')
+        result = subprocess.run(['bash', str(SCRIPT), '--project', 'dartflow', '--apply'], env=self.env, capture_output=True, text=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        values = self.current()['providers']
+        values[0]['attributeCondition'] = values[0]['attributeCondition'].replace('repo:dartflow@355255545/platform@1453713803:environment:', 'repo:dartflow/platform:environment:')
+        self.update(providers=values, calls=[], mutations=[])
+        return copy.deepcopy(self.current())
+
+    def test_repair_default_is_offline_and_wrong_arguments_never_call_cloud(self):
+        result = self.run_repair('--project', 'dartflow')
+        self.assertEqual(result.returncode, 0)
+        self.assertIn('repo:dartflow@355255545/platform@1453713803:environment:player-play-production', result.stdout)
+        for args in [[], ['--project', PROJECT], ['--project', 'dartflow', '--project', 'dartflow'], ['--project', 'dartflow', '--apply', '--apply'], ['--project', 'dartflow', '--unknown']]:
+            self.assertNotEqual(self.run_repair(*args).returncode, 0)
+        self.assertEqual(self.current()['calls'], [])
+
+    def test_repair_changes_only_exact_legacy_subject_and_preserves_all_other_provider_fields(self):
+        original = self.legacy()
+        result = self.run_repair('--project', 'dartflow', '--apply')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        after = self.current()
+        self.assertEqual(after['mutations'], ['update-provider-condition'])
+        expected = copy.deepcopy(original['providers'])
+        expected[0]['attributeCondition'] = expected[0]['attributeCondition'].replace('repo:dartflow/platform:environment:', 'repo:dartflow@355255545/platform@1453713803:environment:')
+        self.assertEqual(after['providers'], expected)
+        for field in ['accounts', 'pools', 'accountPolicy']:
+            self.assertEqual(after[field], original[field])
+        for call in after['calls']:
+            self.assertNotIn('print-access-token', call)
+            self.assertFalse('service-accounts' in call or 'enable' in call or 'create' in call)
+
+    def test_repair_repeated_on_correct_subject_is_a_readonly_noop(self):
+        self.legacy()
+        self.assertEqual(self.run_repair('--project', 'dartflow', '--apply').returncode, 0)
+        before = self.current()
+        result = self.run_repair('--project', 'dartflow', '--apply')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('al correct', result.stdout)
+        self.assertEqual(self.current()['mutations'], before['mutations'])
+        self.assertEqual(self.current()['providers'], before['providers'])
+
+    def test_repair_rejects_changed_condition_issuer_mapping_labels_or_extra_provider(self):
+        original = self.legacy()
+        provider = original['providers'][0]
+        modifications = [
+            {'attributeCondition': 'true'},
+            {'attributeCondition': provider['attributeCondition'].replace('refs/heads/main', 'refs/heads/other')},
+            {'oidc': {'issuerUri': 'https://attacker.example.invalid'}},
+            {'oidc': {'issuerUri': 'https://token.actions.githubusercontent.com', 'allowedAudiences': ['other']}},
+            {'attributeMapping': {**provider['attributeMapping'], 'google.subject': "'forged'"}},
+            {'description': 'another resource'},
+            {'displayName': 'another provider'},
+        ]
+        for modification in modifications:
+            values = [dict(provider, **modification)]
+            self.update(providers=values, mutations=[], calls=[])
+            with self.subTest(modification=modification):
+                self.assertNotEqual(self.run_repair('--project', 'dartflow', '--apply').returncode, 0)
+                self.assertEqual(self.current()['mutations'], [])
+                self.assertEqual(self.current()['providers'], values)
+        self.update(providers=[provider, dict(provider, name=provider['name']+'-other')], mutations=[])
+        self.assertNotEqual(self.run_repair('--project', 'dartflow', '--apply').returncode, 0)
+        self.assertEqual(self.current()['mutations'], [])
+
+    def test_repair_requires_exact_selected_project_and_number_before_any_update(self):
+        self.legacy()
+        for change in [{'selected': 'other-project'}, {'selected': 'dartflow', 'projectNumber': '999999999999'}]:
+            self.update(**change, mutations=[])
+            self.assertNotEqual(self.run_repair('--project', 'dartflow', '--apply').returncode, 0)
+            self.assertEqual(self.current()['mutations'], [])
 
 
 if __name__ == '__main__':

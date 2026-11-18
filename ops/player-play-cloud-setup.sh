@@ -25,7 +25,7 @@ readonly account_id='dartflow-player-play'
 readonly account_name='DartFlow player Play publisher'
 readonly marker='Managed by ops/player-play-cloud-setup.sh v1; package nl.dartflow.app'
 readonly workflow='dartflow/platform/.github/workflows/player-play-release.yml@refs/heads/main'
-readonly subject='repo:dartflow/platform:environment:player-play-production'
+readonly subject='repo:dartflow@355255545/platform@1453713803:environment:player-play-production'
 readonly condition="assertion.repository_id == '1453713803' && assertion.repository_owner_id == '355255545' && assertion.ref == 'refs/heads/main' && assertion.workflow_ref == '$workflow' && assertion.sub == '$subject' && assertion.environment == 'player-play-production' && assertion.event_name == 'workflow_dispatch'"
 readonly mapping='google.subject=assertion.sub,attribute.repository_id=assertion.repository_id,attribute.repository_owner_id=assertion.repository_owner_id,attribute.ref=assertion.ref,attribute.workflow_ref=assertion.workflow_ref,attribute.environment=assertion.environment,attribute.event_name=assertion.event_name'
 readonly account_email="$account_id@$project_id.iam.gserviceaccount.com"

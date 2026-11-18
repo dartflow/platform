@@ -15,9 +15,12 @@ De eigenaar heeft het project via een Console-screenshot bevestigd:
 | Project-ID | **`dartflow`** |
 | Projectnummer | **`955883910359`** |
 
-De eigenaar bevestigt dat de **Google Play Android Developer API is ingeschakeld**
-en dat **Cloud Shell openstaat**. De volgende stap is het onderstaande script
-in Cloud Shell uitvoeren. Serviceaccount, pool en provider zijn nog niet aangemaakt.
+De eigenaar heeft de Cloud-bootstrap uitgevoerd en de twee publieke outputs
+bevestigd. Serviceaccount, pool en provider bestaan; de GitHub-variabelen zijn
+ingesteld. De eigenaar bevestigt ook de appgebonden Play-rechten. De provider
+vraagt nog het hieronder beschreven eenmalige subjectherstel. Houd
+`PLAYER_PLAY_ENABLED=false` totdat dit herstel en de eerste handmatige
+AAB-upload zijn gecontroleerd.
 
 1. Projectkeuze en inschakelen van **Google Play Android Developer API** zijn door de eigenaar bevestigd.
 2. Maak een afzonderlijk serviceaccount voor de spelersapp. Maak geen downloadbare JSON-sleutel.
@@ -37,12 +40,13 @@ in Cloud Shell uitvoeren. Serviceaccount, pool en provider zijn nog niet aangema
 | Variabele | Instelling |
 | --- | --- |
 | `PLAYER_PLAY_ENABLED` | Eerst `false`; pas `true` nadat Cloud, Play-rechten en eerste handmatige upload gereed zijn. |
-| `PLAY_WIF_PROVIDER` | **Voorgenomen, nog niet aangemaakt:** `projects/955883910359/locations/global/workloadIdentityPools/dartflow-player-play/providers/github-main`. Pas na geslaagde inrichting instellen. |
-| `PLAY_SERVICE_ACCOUNT` | **Voorgenomen, nog niet aangemaakt:** `dartflow-player-play@dartflow.iam.gserviceaccount.com`. Pas na geslaagde inrichting instellen. |
+| `PLAY_WIF_PROVIDER` | Door de eigenaar bevestigd en ingesteld: `projects/955883910359/locations/global/workloadIdentityPools/dartflow-player-play/providers/github-main`. Het subjectherstel hieronder is nog nodig. |
+| `PLAY_SERVICE_ACCOUNT` | Door de eigenaar bevestigd en ingesteld: `dartflow-player-play@dartflow.iam.gserviceaccount.com`. |
 | `PLAY_APP_SIGNING_SHA256` | Het vastgelegde publieke Play App Signing-certificaat voor `nl.dartflow.app`: `DE:54:EB:62:ED:D3:10:AA:F9:39:0F:47:6D:AF:73:E2:94:13:75:CE:EE:BE:DC:0B:89:D8:8D:E2:D4:EC:3E:F1`. |
 
-De bootstrap hieronder is voorbereid, maar nog niet op Google Cloud uitgevoerd.
-Controleer vóór toepassen **project-ID dartflow**, **projectnummer 955883910359**
+De eigenaar bevestigt de uitvoering van de bootstrap. Een echte WIF-uitwisseling
+en Play-API-toegang zijn hiermee nog niet getest.
+Controleer vóór herhaling **project-ID dartflow**, **projectnummer 955883910359**
 en de trustregels. Het script blijft algemeen bruikbaar met expliciet `--project`;
 deze documentatie legt de door de eigenaar bevestigde projectidentiteit vast.
 Een Google Cloud-project hoeft volgens Google niet meer apart aan het Play-
@@ -78,11 +82,47 @@ De exacte trust vereist repository-ID `1453713803`, eigenaar-ID `355255545`,
 `ref=refs/heads/main`, `event_name=workflow_dispatch`,
 `workflow_ref=dartflow/platform/.github/workflows/player-play-release.yml@refs/heads/main`,
 `environment=player-play-production` en
-`sub=repo:dartflow/platform:environment:player-play-production`.
+`sub=repo:dartflow@355255545/platform@1453713803:environment:player-play-production`.
 De huidige job is **geen herbruikbare workflow**; daarom wordt `workflow_ref`
 gecontroleerd. `job_workflow_ref` is daarvoor niet het juiste claim. Aangepaste
 GitHub-subjecttemplates passen niet bij deze exacte subjectcontrole en worden
 niet stilzwijgend toegestaan. [GitHub OIDC-claims](https://docs.github.com/en/actions/reference/security/oidc)
+
+### Eenmalig herstel van de al aangemaakte provider
+
+De read-only GitHub-controle op 18 november 2026 bevestigt voor deze repository
+`use_default=true`, `use_immutable_subject=true` en subjectprefix
+`repo:dartflow@355255545/platform@1453713803`. De repository is op 11 november
+2026 aangemaakt. De eerdere bootstrap gebruikte de oude subject zonder IDs;
+die condition weigert de actuele geldige tokens. GitHub gebruikt voor nieuwe
+repositories de [immutable subjectvorm](https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims).
+
+Gebruik de gereviewde versie van `ops/player-play-cloud-repair-subject.sh` in
+de eigen Cloud Shell, met project `dartflow` geselecteerd. Bekijk eerst het plan:
+
+```sh
+bash ops/player-play-cloud-repair-subject.sh --project dartflow
+```
+
+Pas na controle van de twee subjectstrings de beperkte repair toe:
+
+```sh
+bash ops/player-play-cloud-repair-subject.sh --project dartflow --apply
+```
+
+Dit script is uitsluitend voor project `dartflow` met nummer `955883910359` en
+de bestaande provider `dartflow-player-play/github-main`. Het valideert eerst de
+exacte oorspronkelijke condition, pool, issuer, mapping, naam en beschrijving.
+Alleen `attributeCondition` verandert van de bekende oude subject naar de
+immutable variant; repository-ID, eigenaar-ID, branch, workflow, environment en
+event blijven gelijk. Het maakt geen resources, sleutels of IAM-bindings aan en
+activeert geen API's. Afwijkende inrichting stopt vóór wijziging. Bij de juiste
+nieuwe condition is herhalen een read-only no-op. Daarna wordt opnieuw gelezen
+en gecontroleerd dat alle andere providervelden gelijk zijn gebleven.
+
+Deze repair is voorbereid en offline getest; er is door deze taak geen echte
+Cloud-wijziging uitgevoerd. De gewone bootstrap accepteert vanaf nu uitsluitend
+de immutable condition en overschrijft de oude provider niet automatisch.
 
 Na uitvoering verschijnen alleen de publieke `PLAY_WIF_PROVIDER` en
 `PLAY_SERVICE_ACCOUNT` plus de handmatige Play-instructie. Geef deze gebruiker in
@@ -93,12 +133,14 @@ en app-ondertekening van Play gebruiken**. Laat overige app-rechten en alle
 accountrechten uit; de productiereleaserol bevat volgens Google ook enkele
 onvermijdelijk gebundelde rechten. [Exacte Play-rechten](https://support.google.com/googleplay/android-developer/answer/9844686?hl=nl)
 
-Syntax en vijf fake-gcloud-regressies zijn lokaal gecontroleerd met
-`bash -n ops/player-play-cloud-setup.sh` en
+Syntax en tien fake-gcloud-regressies (vijf bootstrap, vijf repair) zijn lokaal gecontroleerd met
+`bash -n ops/player-play-cloud-setup.sh`,
+`bash -n ops/player-play-cloud-repair-subject.sh` en
 `python3 -B tests/player-play-cloud-setup-test.py`. Daarbij is geen echte
 Cloud-aanroep, WIF-tokenuitwisseling, API-toegang of Play-publicatie getest.
 Voor het providercommando en de beperkte binding zijn de actuele
 [OIDC-CLI](https://docs.cloud.google.com/sdk/gcloud/reference/iam/workload-identity-pools/providers/create-oidc)
+en [beperkte providerupdate](https://docs.cloud.google.com/sdk/gcloud/reference/iam/workload-identity-pools/providers/update-oidc)
 en [serviceaccount-IAM-CLI](https://docs.cloud.google.com/sdk/gcloud/reference/iam/service-accounts/add-iam-policy-binding)
 gecontroleerd op 18 november 2026.
 
