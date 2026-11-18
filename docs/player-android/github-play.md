@@ -15,15 +15,7 @@ De eigenaar heeft het project via een Console-screenshot bevestigd:
 | Project-ID | **`dartflow`** |
 | Projectnummer | **`955883910359`** |
 
-De eigenaar heeft de Cloud-bootstrap uitgevoerd en de twee publieke outputs
-bevestigd. Serviceaccount, pool en provider bestaan; de GitHub-variabelen zijn
-ingesteld. De eigenaar bevestigt de appgebonden Play-rechten, het geslaagde
-subjectherstel en de eerste AAB-upload. De echte WIF-/Play-toegangsproef is
-geslaagd en `PLAYER_PLAY_ENABLED=true`. De eerdere API-controle bevestigde versiecode **2** als
-`completed` op de interne én productietrack. De eigenaar heeft die eerste
-productierelease ter beoordeling ingediend; goedkeuring en openbare beschikbaarheid
-zijn niet bevestigd. De nieuwe **0.1.2 (3)**-release is ondertekend beschikbaar op
-GitHub en beide backends zijn uitgerold; de afzonderlijke Play-uitkomst staat hieronder.
+De eigenaar heeft de Cloud-bootstrap uitgevoerd en de publieke outputs, appgebonden Play-rechten, het subjectherstel en de eerste AAB-upload bevestigd. Serviceaccount, pool, provider en GitHub-variabelen zijn ingericht; `PLAYER_PLAY_ENABLED=true`. De eerste productie-indiening is door de eigenaar gedaan. De actuele ondertekende update is **0.1.3 (4)**, applicatiebron `4a234040109b0c5f1dd8118462a0dea3ae062994`. Beide backends draaien die bron. De [afzonderlijke Play-API-controle](https://github.com/dartflow/platform/actions/runs/44415166749) bevestigt op **18 november 2026 om 22:50:12 UTC** versiecode **4** met status **`completed`** op intern en productie. Google-goedkeuring en openbare beschikbaarheid zijn niet vastgesteld. Bestands-, backend- en Play-uitkomsten staan apart in het [releasebewijs](../evidence/player-home-score-2026-11-18.json); eerdere releases blijven historisch bewaard.
 
 1. Projectkeuze en inschakelen van **Google Play Android Developer API** zijn door de eigenaar bevestigd.
 2. Maak een afzonderlijk serviceaccount voor de spelersapp. Maak geen downloadbare JSON-sleutel.
@@ -166,7 +158,23 @@ vereist ook voor de eerste productiepublicatie een handmatige Console-release.
 Daarna kan hij een gecontroleerde interne versie naar productie promoveren.
 Een API-commit is geen bewijs dat Google de app al heeft goedgekeurd of beschikbaar gesteld.
 
-### Ondertekende update · 0.1.2 (3)
+### Actuele ondertekende update · 0.1.3 (4)
+
+Gebruik uitsluitend [tag `android-player-0.1.3-4`](https://github.com/dartflow/platform/releases/tag/android-player-0.1.3-4), pakket **`nl.dartflow.app`**, versionName **`0.1.3`**, versionCode **`4`** en de assets `app-production-release.aab` plus `release-receipt.json`. De exacte applicatiebron is [`4a234040109b0c5f1dd8118462a0dea3ae062994`](https://github.com/dartflow/platform/commit/4a234040109b0c5f1dd8118462a0dea3ae062994), met PR #14, #15, #16 en #17. De AAB is **26.336.260 bytes** groot en heeft de gecontroleerde SHA-256 **`faf386e230345ea5d1c4eccfd36194a55c416f10c53f4f4b49cdb791b37ab251`**. Neem bij een herhaling nooit de oude 0.1.2-hash over.
+
+| Releasegate | Gecontroleerde uitkomst |
+| --- | --- |
+| [Native CI](https://github.com/dartflow/platform/actions/runs/44411071496) | Geslaagd: 159 JVM-uitvoeringen en 28 uitgevoerde UI-proeven, zonder fouten of skips; lint en builds geslaagd. |
+| [Web-CI](https://github.com/dartflow/platform/actions/runs/44411071479) | Geslaagd: 474 applicatietests, 46 prototypetests, 5 aparte Feed/chat-browserproeven, 72 volledige browserproeven en 166 Python-regressies; typecheck, lint, build en packaging geslaagd. |
+| Ondertekende GitHubrelease | De exacte CI-AAB en de daaruit gemaakte universele APK zijn ondertekend; alle tien releaseassetdigests en zes synthetische PNG's zijn gecontroleerd. Visuele releasegate **PASS / GO**. |
+| [Staging](https://github.com/dartflow/platform/actions/runs/44413151778) / [productie](https://github.com/dartflow/platform/actions/runs/44413713570) | Dezelfde bron gezond op releases `44413151778-1` en `44413713570-1`. Publieke preflight voor beide backends, productie-App Links en juridische pagina's geslaagd. |
+| [Play `upload-internal`](https://github.com/dartflow/platform/actions/runs/44414825686) | Geslaagd: API-edit gecommit, versiecode 4 en exacte AAB-hash gecontroleerd. |
+| [Play `promote-production`](https://github.com/dartflow/platform/actions/runs/44415019037) | Geslaagd: API-edit gecommit voor dezelfde versiecode 4 en AAB-hash. |
+| [Afzonderlijke `check-access`](https://github.com/dartflow/platform/actions/runs/44415166749) | Alleen-lezen nacontrole geslaagd: op 18 november 2026 om 22:50:12 UTC bevatten `internal` en `production` elk versiecode **4**, status **`completed`**. |
+
+De vijf gerichte Feed/chat-browserproeven overlappen de volledige browsersuite en zijn afzonderlijk herhaald. De workflow blijft `ERROR_IF_IN_REVIEW` gebruiken. Deze bescherming is niet omzeild; bij `CHANGES_ALREADY_IN_REVIEW` stopt de uitrol. `completed` is een API-trackstatus, geen bewijs van Google-goedkeuring of openbare beschikbaarheid. Er zijn geen nieuwe migraties, secrets of authenticatiewijzigingen. De afzonderlijke Oche Live-app is niet naar Play uitgerold. [Bestanden, testgrenzen en toestelcontroles](oplevering.md) en het [samengevoegde bewijs](../evidence/player-home-score-2026-11-18.json) horen bij de applicatiebron hierboven; een latere documentatiecommit vervangt die bron niet.
+
+### Historische ondertekende update · 0.1.2 (3)
 
 De compactere spelersinterface hoort bij mainbron
 `6694643c74c39699d5e9e0a14de023054eaf71a8` ([PR #10](https://github.com/dartflow/platform/pull/10),
@@ -263,10 +271,10 @@ moet op staging en productie actief zijn.
 1. Kies eerst `check-access` om de ingestelde Play-rechten en bestaande tracks
    te controleren. Er wordt geen AAB geüpload of trackrelease gewijzigd.
 2. Gebruik `upload-internal` met de bronrelease en de verplichte
-   `bundle_sha256`. Voor de 0.1.2 (3)-release is de brontag `android-player-0.1.2-3`,
+   `bundle_sha256`. Voor de 0.1.3 (4)-release is de brontag `android-player-0.1.3-4`,
    met assets `app-production-release.aab` en `release-receipt.json`.
-   Gebruik bundelhash `6c8ba503326a493b4db75bba162e0ade79de4dc4b28f3472ed43278782e7b1be`
-   uit het bevroren receipt en versiecode `3`.
+   Gebruik bundelhash `faf386e230345ea5d1c4eccfd36194a55c416f10c53f4f4b49cdb791b37ab251`
+   uit het bevroren receipt en versiecode `4`.
    De workflow controleert het receipt en de AAB voordat hij het bestaande
    spelerspakket op de gekozen interne track bijwerkt.
 3. Kies na een gecontroleerde interne release `promote-production` om diezelfde
