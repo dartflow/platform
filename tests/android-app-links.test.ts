@@ -30,4 +30,7 @@ test('the actual signed player APK verifies only its own production or staging p
   assert.ok(production);assert.ok(staging);
   assert.ok(!androidAppLinks('production').some(entry=>entry.target.package_name.endsWith('.staging')));
   assert.equal(production.target.sha256_cert_fingerprints[0],'97:C8:A2:78:FF:67:14:BD:E4:F1:BC:B5:4E:BA:15:12:28:D4:2E:83:8F:11:D4:3B:CF:6E:71:C7:DE:08:A0:09');
+  const playCertificate='DE:54:EB:62:ED:D3:10:AA:F9:39:0F:47:6D:AF:73:E2:94:13:75:CE:EE:BE:DC:0B:89:D8:8D:E2:D4:EC:3E:F1';
+  assert.ok(production.target.sha256_cert_fingerprints.includes(playCertificate));
+  assert.ok(!staging.target.sha256_cert_fingerprints.includes(playCertificate));
 });
