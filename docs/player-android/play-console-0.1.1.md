@@ -2,7 +2,7 @@
 
 **Controledatum: 18 november 2026 · Console: Nederlands · Store: nl-NL · Doel: productiepublicatie.**
 
-**Status: Open punten vóór indienen.** Dit blad beschrijft de gewijzigde spelersapp. Definitieve signing, uitgerolde serverconfiguratie, reviewerprovisioning, de actuele Console-taken en onderstaande gegevensvragen moeten bij de release worden bevestigd. Een geslaagde build is geen Google-goedkeuring. Dit document bevat geen credentials, pincodes, tokens, echte spelersgegevens of fictieve reviewbaan-URL.
+**Status: Open punten vóór indienen.** Beide synthetische reviewaccounts en hun eigen reviewbaan zijn privé ingericht op staging en productie. De nieuwe serverrelease en de bijbehorende toegangsproeven zijn nog niet afgerond. Het Play-app-signingcertificaat is bekend; de definitieve ondertekende AAB wordt lokaal gemaakt. Cloud-project **dartflow** en ingeschakelde Play API zijn door de eigenaar bevestigd; WIF-/Play-toegang, de eerste handmatige upload, actuele Console-taken en onderstaande gegevensvragen staan nog open. Er is niets naar Google Play gepubliceerd. Dit document bevat geen credentials, pincodes, tokens of echte spelersgegevens.
 
 | Release-identiteit | Waarde |
 | --- | --- |
@@ -13,7 +13,9 @@
 | Productie / staging | `https://dartflow.nl` / `https://staging.dartflow.nl` |
 | Support, privacy, kindveiligheid | **info@dartflow.nl** |
 | Niet dit pakket | `nl.dartflow.ochelive`, `.staging` en `.dev` hebben afzonderlijke identiteiten |
-| Bron-SHA en definitieve ondertekende AAB | Overnemen uit de definitieve releaseoplevering. Het hieronder genoemde unsigned bouwbewijs niet uploaden. |
+| Huidige bron | Main **`9b2782908a60d3bfc5ad451b5eb0e8473f816137`**; actieve staging-/productie-SHA na uitrol afzonderlijk bevestigen |
+| Definitieve ondertekende AAB | Wordt lokaal gemaakt; pad, hash en signingcontrole uit de definitieve releaseoplevering overnemen. Het oude unsigned bouwbewijs niet uploaden. |
+| Play App Signing SHA-256 | **`DE:54:EB:62:ED:D3:10:AA:F9:39:0F:47:6D:AF:73:E2:94:13:75:CE:EE:BE:DC:0B:89:D8:8D:E2:D4:EC:3E:F1`**; dit is niet het uploadcertificaat |
 
 ## Wat in deze versie is veranderd
 
@@ -74,10 +76,10 @@ Afsluiten met **Opslaan** en de Store-preview controleren. Store-afbeeldingen zi
 | Accountverwijderings-URL | **https://dartflow.nl/account-verwijderen** | Bevestigd in bron | Onafhankelijke webroute met eigen formulier en e-mailalternatief | Werking na uitrol bevestigen; geen nieuwe fictieve URL nodig. |
 | Advertenties | **Nee** | Bevestigd voor huidige code | Geen advertentieplaatsing of Ads-SDK in het pakket | Eventuele later toegevoegde betaalde sponsorplaatsingen opnieuw beoordelen. |
 | App-toegang / Inloggegevens | Kies **alle of sommige functies zijn beperkt toegankelijk**; exacte formuliertekst te bevestigen | Bevestigd | Spelersfuncties vereisen account; rechten bepalen overige toegang | Niet ‘alles zonder beperking toegankelijk’ kiezen. |
-| Reviewcredentials verkrijgen | Inloggen als bevoegde platformeigenaar op **https://dartflow.nl/app/platform/integraties** → **Toegang voor appbeoordeling** → **Toon beoordelaargegevens** | Voorziening te verifiëren | Server vereist eigen recent geverifieerde aanmelding, maximaal 15 minuten; gegevens worden tijdelijk getoond | Provisioning en eigen recente aanmelding moeten geslaagd zijn. Niet fotograferen of in Git/chat plakken. |
+| Reviewcredentials verkrijgen | Na de serveruitrol inloggen als bevoegde platformeigenaar op **https://dartflow.nl/app/platform/integraties** → **Toegang voor appbeoordeling** → **Toon beoordelaargegevens** | Provisioning bevestigd; nieuwe routeproef nog open | Primary en companion zijn privé ingericht in beide omgevingen. Server vereist recente eigen verificatie, maximaal 15 minuten | Ownerpaneel en beide reviewlogins op de uiteindelijke release testen. Niet fotograferen of in Git/chat plakken. |
 | Reviewgegevens plaatsen | Alleen rechtstreeks in de beveiligde Play Console-velden voor app-toegang | Bevestigd | [Reviewtoegang](https://support.google.com/googleplay/android-developer/answer/15748846?hl=en) | Primary e-mail/wachtwoord en companion e-mail/wachtwoord apart invullen. |
-| Extra reviewgegevens | De synthetische gebruikersnamen en spelerspincodes alleen in de private aanvullende toegangsvelden van Console | Voorziening te verifiëren | Versleuteld `review_details`; gewone lokale deelnemerskoppeling | Geen waarden in dit document; PIN is geen accountwachtwoord. |
-| Permanente reviewbaan | Alleen de daadwerkelijk ingerichte URL gebruiken wanneer provisioning geslaagd is | Te verifiëren | Geen blijvende reviewbaan-URL in dit document vastgelegd | Exacte URL uit geverifieerde oplevering/ownerpaneel toevoegen. Geen aflopende uitnodigingscode als vervanger gebruiken. |
+| Extra reviewgegevens | De synthetische gebruikersnamen en spelerspincodes alleen in de private aanvullende toegangsvelden van Console | Privé ingericht; werking nog te verifiëren | Versleuteld `review_details`; gewone lokale deelnemerskoppeling | Geen waarden in dit document; PIN is geen accountwachtwoord. |
+| Permanente reviewbaan | Na uitrol de vaste baan-URL uit het beveiligde ownerpaneel overnemen | Privé ingericht; route-/deelnameproef nog open | Eigen reviewclub, twee leden en vaste baan, afzonderlijk per omgeving; URL in versleuteld `review_details` | Openen en één-telefoonflow op uiteindelijke release testen. Alleen de productie-URL aan Google geven. Geen aflopende uitnodigingscode gebruiken. |
 | Geografische/hardwarebeperking | Reviewaccount en eventuele testbaan mogen geen fysieke aanwezigheid of eigenaarshandeling vereisen | Te verifiëren | Doel van de synthetische voorziening | De ingediende build van buiten de club testen. |
 | App-content → Vereist aandacht | Werkelijk getoonde taken aflopen | Te verifiëren | Geen ingelogde export van deze app beschikbaar | Formuliertekst te bevestigen bij ontbrekende vertakkingen. |
 
@@ -220,7 +222,7 @@ De oude scannerverklaring vervalt voor deze nieuwe build. Zolang een oudere vers
 | Scherm / veld of vraag | Exact invullen of aanklikken | Status | App-bewijs / officiële bron | Vervolgactie |
 | --- | --- | --- | --- | --- |
 | Verzamelt of deelt je app vereiste typen gebruikersgegevens? | **Ja** | Bevestigd | Accounts, scores, relaties, berichten en moderatiegegevens | Niet ‘geen verzameling’ kiezen omdat analytics ontbreekt. |
-| Alles versleuteld tijdens overdracht? | **Open — pas Ja na releasecontrole van API, Auth, signalering én TURN** | Te verifiëren | HTTPS/cleartextverbod in native code; TURN-hardening is releasewerk | Geen algemene Ja uit alleen HTTPS op de homepage afleiden. |
+| Alles versleuteld tijdens overdracht? | **Open — pas Ja na controle van de uiteindelijke API-, Auth-, signaal- en relayconfiguratie** | Relay geverifieerd; totale releasestroom nog te verifiëren | TLS 1.3, vertrouwde host/keten en geauthenticeerde relay-roundtrip slagen voor staging én productie; nieuwe bron weigert onveilige hosted TURN-URL’s | Live runtime moet de bedoelde `turns:`-URL verstrekken. De infrastructuurproef is geen bewijs van een volledige native mediaproef. |
 | Methode: Gebruikersnaam en andere verificatie | **Aanvinken** | Bevestigd | E-mail + OTP kan een account aanmaken | E-mailadres geldt hier als accountidentificatie. |
 | Methode: OAuth | **Aanvinken** | Bevestigd | Google kan een account vormen | — |
 | Methode: Gebruikersnaam en wachtwoord | De app heeft nu **Ja, beperkte wachtwoordaanmelding** voor vooraf ingerichte reviewaccounts. Als de vraag uitsluitend **accountaanmaak door de gebruiker** betreft: geen algemene wachtwoordregistratie claimen; exacte Console-vraag bevestigen. | Te verifiëren voor formulierafslag | `/auth/review` gebruikt gewone Supabase-passwordauth voor exact ingerichte IDs; gewone spelers registreren via OTP/Google | Bij een vraag naar ondersteunde **aanmeldmethoden** deze optie wel aanvinken. Leg de reviewbeperking bij de private instructies uit. |
@@ -287,7 +289,7 @@ De oude scannerverklaring vervalt voor deze nieuwe build. Zolang een oudere vers
 | Andere spelers/schermpubliek | De door functie/rechten toegestane namen, inhoud en scores | Een bedoelde gebruikersactie kan een deeluitzondering dragen. Controleer standaard profielvindbaarheid en openbare displayprojectie voordat alles op Gedeeld Nee gaat. |
 | Fysieke check-in | Account + baan + moment | Als de baan een concrete venue identificeert, Exacte locatie overwegen/verklaren, optioneel, App-functionaliteit, niet kortstondig bij opslag. Geen GPS-permissie is geen volledige ontkenning van locatieverwerking. |
 | Google-avatar | Eigen profielcode neemt naam/e-mail/ID over; Auth-provider kan aanvullende metadata bewaren | Geen Foto’s Nee aannemen alleen omdat de native UI initialen toont. Verifieer met synthetische Google-login welke afbeelding-/metadata werkelijk wordt opgeslagen/gebruikt. |
-| WebRTC-media | Realtime peerverbinding, eventueel relay; signalering wordt opgeslagen | Versleuteld transport is niet automatisch bewezen end-to-end uitzondering voor alle gegevens. Beeld/geluid en bewaarde account-/match-/ICE-metadata apart behandelen. |
+| WebRTC-media | Realtime peerverbinding, eventueel relay; signalering wordt opgeslagen. TLS-relay is op beide omgevingen extern geverifieerd | TLS bewijst niet automatisch de end-to-end-uitzondering voor alle gegevens. Beeld/geluid, bewaarde account-/match-/ICE-metadata en de uiteindelijke runtime afzonderlijk beoordelen. |
 | Serverbeveiliging | Rate limiting, aanvraag-/beheerregistraties en fouten | Geen algemene analytics- of diagnostiekclaim verzinnen. Leg werkelijke velden, doel, ontvangers en bewaartermijnen vast. |
 
 Verklaar **Gedeeld Nee** alleen waar de feitelijke ontvanger en uitzondering zijn onderbouwd. Bij verschillende stromen binnen één type moet het formulier het geheel dekken. ‘Kortstondig’ niet gebruiken voor gegevens die in tabellen, queues, logs of back-ups blijven staan. Bewaartermijnen zijn doelafhankelijk; de publieke pagina belooft geen algemene automatische wisdatum en geen gegarandeerde volledige verwijdering binnen één maand.
@@ -301,7 +303,7 @@ Verklaar **Gedeeld Nee** alleen waar de feitelijke ontvanger en uitzondering zij
 5. Een duurzame worker verwijdert Auth en persoonlijke applicatiegegevens of anonimiseert bewaarde wedstrijdverwijzingen. Een minimaal naamloos technisch record en noodzakelijke officiële uitslagen kunnen blijven; webpagina/privacy leggen uitzonderingen uit.
 6. Zonder geïnstalleerde app: **https://dartflow.nl/account-verwijderen**. Zonder werkende login: mail **info@dartflow.nl**; eigendom wordt passend gecontroleerd, zonder wachtwoord of PIN per e-mail.
 
-Deze inrichting volgt het vereiste onderscheid tussen accountverwijdering, uitloggen en een onafhankelijke webroute. De werkelijke worker-/Auth-uitkomst moet met synthetische gegevens in de releasecontrole worden aangetoond. [Google-accountverwijdering](https://support.google.com/googleplay/android-developer/answer/13327111?hl=nl)
+Deze inrichting volgt het vereiste onderscheid tussen accountverwijdering, uitloggen en een onafhankelijke webroute. De beperkte workerrol is op beide omgevingen met read-only privilegesproeven gecontroleerd; daarbij zijn **geen jobs verwerkt of Auth-aanroepen gedaan**. De werkelijke worker-/Auth-uitkomst blijft een afzonderlijke synthetische releaseproef. [Google-accountverwijdering](https://support.google.com/googleplay/android-developer/answer/13327111?hl=nl)
 
 Afsluiten: per gekozen gegevenstype de vervolgvragen → **Samenvatting / Store-preview** → controleren → **Opslaan**. Een onbekend antwoord als concept laten staan, niet naar Nee omzetten om door te kunnen.
 
@@ -343,22 +345,25 @@ Afsluiten: iedere werkelijk getoonde aanvullende verklaring afzonderlijk **Opsla
 | Landen/regio’s | **Open — expliciet kiezen** | Te verifiëren | Nederlands is een taal, geen landenkeuze | Niet automatisch wereldwijd selecteren. |
 | Persoonlijk account na 13 november 2023 | Indien van toepassing: eerst 12 testers, 14 dagen onafgebroken aangemeld voor gesloten test, daarna productieaanvraag | Te verifiëren | [Testvereisten](https://support.google.com/googleplay/android-developer/answer/14151465?hl=nl) | Eerdere informele tests of Oche-tests vervangen dit niet. |
 | Organisatie/ander account | Geen persoonlijke 12/14-gate aannemen zonder Console-taak | Te verifiëren | Werkelijk accounttype onbekend | Productietoegang in dashboard controleren. |
-| AAB | Alleen de definitieve **ondertekende productionRelease 0.1.1 (2)** gebruiken | Te verifiëren bij definitieve oplevering | Voorlopige bouw is unsigned | SHA, certificaat en package uit definitieve release noteren. |
-| App Links | Play-app-signingcertificaat, eigen spelerspakket en juiste hosts moeten zijn gekoppeld | Te verifiëren bij releasecontrole | Bestaande hostflow; geen Oche-certificaat als vervanger | Installatie uit Play en linkretour controleren. |
-| JVM-tests | **31 per flavor, totaal 93 uitvoeringen geslaagd** | Bevestigd | Voorlopige remote broncontrole 18 november | Root koppelt definitief bewijs aan commit/SHA. |
+| AAB | Alleen de definitieve **ondertekende productionRelease 0.1.1 (2)** gebruiken | Lokale ondertekening in uitvoering; artifact nog te verifiëren | Bestaande eigen spelersuploadsleutel; definitieve hash nog over te nemen | SHA, certificaat en package uit definitieve release noteren. |
+| App Links | **`nl.dartflow.app`** met het hierboven vastgelegde **DE:54…**-Play-certificaat | Certificaat bevestigd; uitgerolde koppeling nog te verifiëren | Vastgelegd in `github-play.md` en `android/player/ci/check_release_readiness.py` | Publieke `assetlinks.json` na uitrol controleren; installatie uit Play en linkretour blijven apart te testen. |
+| JVM-tests | **34 per flavor, totaal 102 uitvoeringen geslaagd** | Bevestigd | `play-readiness-native.md`, inclusief media-intrekkingsfix | Definitief bouwbewijs aan artifact/SHA koppelen. |
 | Lint | 3 debugflavors geslaagd; per flavor 0 fatal/errors, 27 niet-blokkerende waarschuwingen | Bevestigd | Dependency-, icoon- en stijlwaarschuwingen | Niet rapporteren als ‘nul waarschuwingen’. |
 | APK / AndroidTest APK / unsigned AAB | Gebouwd | Bevestigd | Nieuwe Camera2-/safety-/review-/verwijdercode compileert | Geen uploadrecht afleiden uit unsigned bouw. |
-| Compose | 13 proeven gecompileerd; op deze VPS **niet uitgevoerd** | Bevestigd | Geen emulator/system images/KVM beschikbaar | CI/werkelijk emulatorresultaat apart opnemen wanneer beschikbaar. |
+| Compose | 14 proeven gecompileerd; op deze VPS **niet uitgevoerd** | Bevestigd | Geen emulator/system images/KVM beschikbaar | CI/werkelijk emulatorresultaat apart opnemen wanneer beschikbaar. |
+| TURN TLS | Staging **3478**, productie **3479**: TLS 1.3, geauthenticeerde allocation/roundtrip, private-peerblokkade en afwijzing plaintext TCP geslaagd | Bevestigd voor infrastructuur | `docs/evidence/player-play-turn-tls-{staging,production}-2026-11-18.json` | Applicatie-URL en fysieke video apart bevestigen; oude UDP-listener bestaat voor compatibiliteit. |
+| Reviewaccounts en privacyworker | Primary + companion privé ingericht in beide omgevingen; beperkte workerrol read-only gecontroleerd | Provisioning bevestigd; nieuwe route-/workerproeven open | Release-uitvoerder en `docs/evidence/player-play-privacy-worker-role-{staging,production}-2026-11-18.json` | Geen login-, verwijder- of apparaatproef uit alleen provisioning afleiden. |
+| Google Cloud / Play API / eerste upload | Cloud-project **dartflow / 955883910359** bevestigd; API-/WIF-/Play-inrichting en eerste upload nog open | Blokkeert automatische Play-uitrol | Eigenaarscreenshot bevestigt projectnaam DartFlow, ID en nummer; geen uitgevoerde Cloud-bootstrap of eerste AAB-upload | Nu API inschakelen via de link hieronder; geen wijziging van GitHub-abonnement nodig. |
 | Echte apparaten | QR, App Links, OTP/Google, camera-/microfoonweigering en twee-toestellenvideo nog fysiek controleren | Te verifiëren | Eigenaar test toestellen later | Geen fictieve toesteltestresultaten opnemen. |
 
-Voorlopig unsigned bouwbewijs: 26.297.053 bytes; SHA-256 `a19f13c17c8b05a56fcff36434bb6c4ef018f80ec0c0895c81e45668682464b1`. Dit hash hoort niet automatisch bij de later getekende AAB. Zie [native wijzigings- en testbeschrijving](play-readiness-native.md).
+Historisch unsigned bouwbewijs: 26.297.053 bytes; SHA-256 `a19f13c17c8b05a56fcff36434bb6c4ef018f80ec0c0895c81e45668682464b1`. Dit artifact is door de media-intrekkingsfix vervangen en is **geen uploadbestand**. Zie [native wijzigings- en testbeschrijving](play-readiness-native.md). De [TLS-bewijzen](../evidence/player-play-turn-tls-production-2026-11-18.json) bewijzen relaytransport, geen fysieke app-/videotest.
 
 ## H. Release aanmaken en indienen
 
 | Scherm / veld of vraag | Exact invullen of aanklikken | Status | App-bewijs / officiële bron | Vervolgactie |
 | --- | --- | --- | --- | --- |
 | Testen en releasen → Productie | **Nieuwe release maken**, als de track beschikbaar is | Voorstel | [Releaseprocedure](https://support.google.com/googleplay/android-developer/answer/9859348?hl=nl) | Openstaande dashboardtaken eerst afronden. |
-| Play App Signing | Eigen spelersapp-signing controleren | Te verifiëren | Aparte speleridentiteit | Uploadkey is niet hetzelfde als app-signingkey. |
+| Play App Signing | Gebruik het vastgelegde spelerscertificaat **DE:54…** | Bevestigd | Volledige SHA-256 bovenaan en in `github-play.md` | Uploadkey is niet hetzelfde als app-signingkey; beide afzonderlijk controleren. |
 | Bundle uploaden | Definitieve ondertekende AAB uit oplevering | Te verifiëren | Geen debug/staging/unsigned bestand | Package, versionName en versionCode na upload controleren. |
 | Releasenaam | Voorstel **0.1.1 (2) — spelersapp** | Voorstel | Interne Console-naam | Bij afwijkende definitieve code aanpassen. |
 | Releaseopmerkingen | Tekst hieronder, `nl-NL`, **269/500 Unicode-tekens** exclusief locale-tags | Voorstel | Beschrijft gewijzigde functies zonder ongeteste goedkeuringsclaim | — |
@@ -390,3 +395,17 @@ QR-codes worden lokaal op je telefoon herkend.
 - Store-assets tonen de native spelersapp met synthetische data. Gecompileerde tests niet als fysieke tests presenteren.
 
 Geen ‘Klaar om over te nemen’ voor de complete productie-indiening zolang verplichte open formulierantwoorden of toegangsproeven ontbreken. De bronimplementatie, webuitrol, Android-artifactlevering en Google Play-publicatie zijn afzonderlijk te verifiëren stappen.
+
+### Eigenaar: steeds één volgende stap
+
+**Projectkeuze en API-inschakeling zijn afgerond; Cloud Shell staat open. Nu volgt stap 3.** Na iedere stap eerst de uitkomst controleren voordat de volgende wordt gestart. De volledige technische inrichting staat in [GitHub → Google Play](github-play.md).
+
+1. **Afgerond:** project **DartFlow**, ID **dartflow**, nummer **955883910359**, door eigenaar bevestigd.
+2. **Afgerond volgens eigenaar:** Google Play Android Developer API ingeschakeld; Cloud Shell geopend.
+3. Voer het gereviewde script in Cloud Shell uit volgens `github-play.md`; controleer de exacte project- en repositorybinding. Geen JSON-sleutel downloaden.
+4. Voeg het serviceaccount in **Play Console → Gebruikers en rechten** toe met uitsluitend de vereiste rechten voor **nl.dartflow.app**. Oche Live en financiële/accountbeheerrechten niet toevoegen.
+5. Download na definitieve oplevering de ondertekende **productionRelease-AAB** en controleer versie, package en opgegeven bestandshash. Upload dit eerste bestand **handmatig** in de beschikbare passende Play-track; een eventuele verplichte testgate blijft gelden.
+6. Vul de open Console-formulieren en Store-assets uit dit blad aan. Zet uitsluitend de na uitrol geteste productie-reviewgegevens in de private app-toegangsvelden; bevestig landen, accounttype/testgate en de open gegevensverklaringen.
+7. Controleer **Publicatieoverzicht** en verstuur pas daarna voor beoordeling. Google-goedkeuring en daadwerkelijke beschikbaarheid zijn nog niet verkregen.
+
+Automatische toekomstige uploads worden pas ingeschakeld nadat Cloud-/Play-rechten en de eerste handmatige upload gereed zijn. De eerste productiepublicatie blijft volgens de bestaande releasehelper een Console-stap.

@@ -136,7 +136,13 @@ async function main(environment){
   atomic(workerPath,Object.entries(worker).map(([k,v])=>`${k}=${v}`).join('\n')+'\n');
   const password=decodeURIComponent(new URL(worker.DARTFLOW_PRIVACY_DATABASE_URL).password);requireValue(/^[A-Za-z0-9_-]{40,}$/.test(password));
   await db.query(`alter role dartflow_privacy_worker password '${password}'`);
-  const service=`[Unit]\nDescription=DartFlow ${environment} account erasure\nAfter=dartflow-${environment}.service network-online.target\n[Service]\nType=oneshot\nDynamicUser=yes\nEnvironment=NODE_EXTRA_CA_CERTS=/usr/local/share/dg-certificates/supabase-prod-ca-bundle.crt\nEnvironmentFile=${workerPath}\nExecStart=/opt/node-v24.18.0-linux-x64/bin/node ${site}/current/account-removal-worker.mjs\nTimeoutStartSec=180\nNoNewPrivileges=yes\nPrivateTmp=yes\nProtectHome=yes\nProtectSystem=strict\nProtectProc=invisible\nRestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX\nUMask=0077\n`;
+  // Code is intentionally readable to a separate DynamicUser, without exposing
+  // the application's group-private runtime environment or web server tree.
+  for(const directory of ['/var/lib/dg-privacy-code',`/var/lib/dg-privacy-code/${environment}`]){
+   try{fs.mkdirSync(directory,{mode:0o755});}catch(error){if(error.code!=='EEXIST')throw error;}
+   const stat=fs.lstatSync(directory);requireValue(stat.isDirectory()&&!stat.isSymbolicLink()&&stat.uid===0&&!(stat.mode&0o022));fs.chmodSync(directory,0o755);
+  }
+  const service=`[Unit]\nDescription=DartFlow ${environment} account erasure\nAfter=dartflow-${environment}.service network-online.target\n[Service]\nType=oneshot\nDynamicUser=yes\nEnvironment=NODE_EXTRA_CA_CERTS=/usr/local/share/dg-certificates/supabase-prod-ca-bundle.crt\nEnvironmentFile=${workerPath}\nExecStartPre=+/usr/bin/env -i /usr/bin/python3 -I /usr/local/libexec/dartflow-privacy-release.py ${environment}\nExecStart=/opt/node-v24.18.0-linux-x64/bin/node /var/lib/dg-privacy-code/${environment}/current/account-removal-worker.mjs\nTimeoutStartSec=180\nNoNewPrivileges=yes\nPrivateTmp=yes\nProtectHome=yes\nProtectSystem=strict\nReadWritePaths=/var/lib/dg-privacy-code/${environment}\nProtectProc=invisible\nRestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX\nUMask=0077\n`;
   atomic(`/etc/systemd/system/dartflow-privacy-${environment}.service`,service,0o644);
   atomic(`/etc/systemd/system/dartflow-privacy-${environment}.timer`,`[Unit]\nDescription=DartFlow ${environment} privacy queue\n[Timer]\nOnBootSec=2min\nOnUnitActiveSec=1min\nPersistent=true\n[Install]\nWantedBy=timers.target\n`,0o644);
   execFileSync('/usr/bin/systemctl',['daemon-reload']);completed=true;
