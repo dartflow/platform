@@ -3,6 +3,7 @@ package nl.dartflow.app
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,7 +45,7 @@ class PlayerUiTest {
 
     /** Export only these synthetic, offline fixtures for release-time visual inspection. */
     private fun saveFixtureScreenshot(filename: String) {
-        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        val bitmap = compose.onNodeWithTag("compact-fixture").captureToImage().asAndroidBitmap()
         InstrumentationRegistry.getInstrumentation().targetContext.openFileOutput(filename, Context.MODE_PRIVATE).use { output ->
             assertTrue("Could not save synthetic UI screenshot $filename", bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
         }
@@ -57,9 +58,10 @@ class PlayerUiTest {
     }
 
     @Test fun loginGoogleActionFitsSmallPhoneWithoutScrolling() {
-        compose.setContent { DartFlowPlayerTheme { Box(Modifier.size(360.dp, 640.dp).testTag("compact-fixture")) {
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
             PlayerApp(PlayerUiState(loading = false), PlayerActions())
         } } }
+        compose.onNodeWithTag("compact-fixture").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
         val viewport = compose.onNodeWithTag("compact-fixture").getUnclippedBoundsInRoot()
         val google = compose.onNodeWithText("Doorgaan met Google").assertIsDisplayed().assertIsEnabled().getUnclippedBoundsInRoot()
         assertTrue("Google sign-in must be fully visible at first open on a 360×640 phone", google.bottom <= viewport.bottom && google.top >= viewport.top)
@@ -68,9 +70,10 @@ class PlayerUiTest {
     }
 
     @Test fun allNavigationLabelsFitOneLineOnNarrowPhone() {
-        compose.setContent { DartFlowPlayerTheme { Box(Modifier.size(360.dp, 640.dp)) {
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
             PlayerApp(signedIn().copy(screen = PlayerScreen.EVENTS), PlayerActions())
         } } }
+        compose.onNodeWithTag("compact-fixture").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
         listOf("Vandaag", "Spelen", "Evenementen", "Vrienden", "Meer").forEach { label ->
             val layouts = mutableListOf<TextLayoutResult>()
             compose.onNodeWithText(label, useUnmergedTree = true).assertIsDisplayed()
@@ -83,9 +86,10 @@ class PlayerUiTest {
     }
 
     @Test fun screenPairingFieldsFitAboveNavigationOnSmallPhone() {
-        compose.setContent { DartFlowPlayerTheme { Box(Modifier.size(360.dp, 640.dp)) {
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
             PlayerApp(signedIn().copy(screen = PlayerScreen.SCREENS), PlayerActions())
         } } }
+        compose.onNodeWithTag("compact-fixture").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
         compose.onNodeWithText("Koppelcode").assertIsDisplayed()
         compose.onNodeWithText("Schermnaam").assertIsDisplayed()
         val name = compose.onNodeWithText("Schermnaam").getUnclippedBoundsInRoot()
