@@ -1,0 +1,327 @@
+{
+  "sourceSha": "267fa5c76baed699214bdbd957a042ba901a5559",
+  "androidTree": "4045a8a87894a1d21b8ce054102adbb38d306ef3",
+  "checkedAt": "2026-11-15T13:57:27.264116+00:00",
+  "passed": true,
+  "checks": {
+    "sourceBytes": true,
+    "gradleBuildSuccess": true,
+    "bundletoolChecksum": true,
+    "bundleValidation": true,
+    "productionIdentity": true,
+    "releaseNotDebuggable": true,
+    "releaseBackupDisabled": true,
+    "releaseCleartextDisabled": true,
+    "productionLinksIsolated": true,
+    "callbackIsolated": true,
+    "bundle16KB": true,
+    "uniqueZipEntries": true,
+    "native64Bit16KB": true,
+    "unsignedPlayBundle": true,
+    "unitTestsAllVariants": true,
+    "developmentDebugSignature": true,
+    "developmentZipAlignment": true,
+    "developmentPackage": true,
+    "stagingDebugSignature": true,
+    "stagingZipAlignment": true,
+    "stagingPackage": true,
+    "artifactsUnchanged": true
+  },
+  "manifest": {
+    "package": "nl.dartflow.app",
+    "versionName": "0.1.0",
+    "versionCode": "1",
+    "minSdk": "26",
+    "targetSdk": "36"
+  },
+  "apkPackages": {
+    "development": "nl.dartflow.app.dev",
+    "staging": "nl.dartflow.app.staging"
+  },
+  "nativeAlignment": "PAGE_ALIGNMENT_16K",
+  "nativeAbis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
+  "nativeLibraries": [
+    {
+      "path": "base/lib/arm64-v8a/libandroidx.graphics.path.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    },
+    {
+      "path": "base/lib/arm64-v8a/libjingle_peerconnection_so.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    },
+    {
+      "path": "base/lib/armeabi-v7a/libandroidx.graphics.path.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    },
+    {
+      "path": "base/lib/armeabi-v7a/libjingle_peerconnection_so.so",
+      "loadSegments": [
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        },
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        },
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        }
+      ],
+      "compatible16KB": false
+    },
+    {
+      "path": "base/lib/x86/libandroidx.graphics.path.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    },
+    {
+      "path": "base/lib/x86/libjingle_peerconnection_so.so",
+      "loadSegments": [
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        },
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        },
+        {
+          "alignment": 4096,
+          "compatible16KB": false
+        }
+      ],
+      "compatible16KB": false
+    },
+    {
+      "path": "base/lib/x86_64/libandroidx.graphics.path.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    },
+    {
+      "path": "base/lib/x86_64/libjingle_peerconnection_so.so",
+      "loadSegments": [
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        },
+        {
+          "alignment": 16384,
+          "compatible16KB": true
+        }
+      ],
+      "compatible16KB": true
+    }
+  ],
+  "native16KBScope": {
+    "abis": [
+      "arm64-v8a",
+      "x86_64"
+    ],
+    "reference": "https://developer.android.com/guide/practices/page-sizes",
+    "legacy32BitAbis": [
+      "armeabi-v7a",
+      "x86"
+    ]
+  },
+  "unitTests": [
+    {
+      "variant": "testStagingDebugUnitTest",
+      "class": "nl.dartflow.app.PlayerAuthorizationRaceTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "variant": "testStagingDebugUnitTest",
+      "class": "nl.dartflow.app.PlayerDataTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "variant": "testDevelopmentDebugUnitTest",
+      "class": "nl.dartflow.app.PlayerAuthorizationRaceTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "variant": "testDevelopmentDebugUnitTest",
+      "class": "nl.dartflow.app.PlayerDataTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "variant": "testProductionDebugUnitTest",
+      "class": "nl.dartflow.app.PlayerAuthorizationRaceTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "variant": "testProductionDebugUnitTest",
+      "class": "nl.dartflow.app.PlayerDataTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "artifacts": [
+    {
+      "kind": "development-apk",
+      "file": "app-development-debug.apk",
+      "bytes": 61601074,
+      "sha256": "4f5478e46fbb118c8ba8268fc17d430e97871887ce549a9908474ca26bcae842"
+    },
+    {
+      "kind": "staging-apk",
+      "file": "app-staging-debug.apk",
+      "bytes": 61600081,
+      "sha256": "286054759ec89a9b5c927e1ae64ac6dbb90f9451864f86b57f3eae54c5636cfb"
+    },
+    {
+      "kind": "production-unsigned-aab",
+      "file": "app-production-release.aab",
+      "bytes": 26531602,
+      "sha256": "c901e5a8a447e5b2363c82ef2adf043f04e6bcc222f1e793dd0ec96c22e7af2d"
+    }
+  ],
+  "playUploaded": false,
+  "playSigningConfigured": false,
+  "hostedDeployed": false,
+  "localTransfersVerified": true,
+  "backendTests": {
+    "passed": 433,
+    "failed": 0,
+    "skipped": 0
+  },
+  "webBrowserRegressions": {
+    "passed": 11,
+    "failed": 0
+  },
+  "webTypecheck": true,
+  "webEslint": true,
+  "webProductionBuild": true,
+  "pullRequest": "https://github.com/dartflow/platform/pull/1",
+  "ciRun": "https://github.com/dartflow/platform/actions/runs/43721440238",
+  "physicalDevicesTested": false,
+  "realProviderLoginTested": false,
+  "ciCheckoutSha": "9b6dcb130279fe4aaf6d2f2659efb61f6d9e09e2",
+  "ciTreeMatchesSource": true,
+  "ciVerify": "success",
+  "ciBuildArtifact": "https://github.com/dartflow/platform/actions/runs/43721440238/artifacts/14164917790",
+  "ciWeb": {
+    "url": "https://github.com/dartflow/platform/actions/runs/43721440279",
+    "conclusion": "success",
+    "applicationTestsPassed": 433,
+    "prototypeTestsPassed": 46,
+    "browserTestsPassed": 69,
+    "scopedFeedChatBrowserTestsPassed": 5
+  },
+  "ciOcheCompatibility": {
+    "url": "https://github.com/dartflow/platform/actions/runs/43721440261",
+    "conclusion": "success",
+    "phoneUi": "success",
+    "tvUi": "success",
+    "playPublication": "skipped",
+    "phoneTestsPassed": 4,
+    "tvTestsPassed": 4
+  },
+  "ciConclusion": "success",
+  "nativeUiTests": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 19.864,
+    "device": "Android 16 emulator-5554",
+    "artifact": "https://github.com/dartflow/platform/actions/runs/43721440238/artifacts/14165546070",
+    "artifactSha256": "337037c4acf8f0af916187093b141e73009ad5f4ca1999ffea0f4b83c218980d",
+    "report": "connected/debug/flavors/development/nl.dartflow.app.PlayerUiTest.html"
+  }
+}

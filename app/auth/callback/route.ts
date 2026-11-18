@@ -7,8 +7,10 @@ import { cookies } from 'next/headers';
 import { ownerAccess } from '@/lib/integrations-core';
 import { GOOGLE_ATTEMPT_COOKIE, verifyGoogleLoginProof } from '@/lib/google-proof';
 import { googleConfigurationRevision, recordVerifiedGoogleLogin } from '@/lib/integrations';
+import {nativePlayerCallback} from '@/lib/native-player';
 
 export async function GET(request:NextRequest) {
+  const native=nativePlayerCallback(request);if(native)return native;
   const config=appConfig(); const code=request.nextUrl.searchParams.get('code');
   const jar=await cookies(),attemptCookie=jar.get(GOOGLE_ATTEMPT_COOKIE)?.value;
   jar.delete(GOOGLE_ATTEMPT_COOKIE);jar.delete('dartflow-oauth-provider');

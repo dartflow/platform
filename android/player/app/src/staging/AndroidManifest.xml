@@ -1,0 +1,16 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application><activity android:name=".MainActivity" android:exported="true">
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.DEFAULT"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https"/>
+            <data android:host="${playerHost}"/>
+            <data android:pathPrefix="/baan/"/>
+            <data android:pathPrefix="/wedstrijd/"/>
+            <data android:pathPrefix="/w/"/>
+            <data android:pathPrefix="/koppel-scherm"/>
+            <data android:pathPrefix="/app/"/>
+        </intent-filter>
+    </activity></application>
+</manifest>

@@ -37,6 +37,8 @@ import type {SeasonCommand} from '@/lib/seasons-types';
 import {acceptSeasonPlayerPin} from '@/lib/season-pin';
 import {seasonCalendar} from '@/lib/season-calendar';
 import {getFeedState,getFeedResult,executeFeedAction,getFeedReplies} from '@/lib/feed';
+import {handleNativePlayerApi} from '@/lib/native-player';
+import {nativePlayerPrincipal} from '@/lib/native-player-context';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -44,6 +46,7 @@ const json=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{'C
 const uuid=(value:unknown):value is string=>typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const digest=(value:string)=>createHash('sha256').update(value).digest('hex');
 function csrf(request:NextRequest) {
+  if(nativePlayerPrincipal(request))return;
   if (request.headers.get('origin') !== appConfig().origin) throw new DomainError('origin','Ververs de pagina en probeer opnieuw.',403);
   if (request.headers.get('sec-fetch-site') === 'cross-site') throw new DomainError('origin','Ongeldige aanvraag.',403);
 }
@@ -77,6 +80,8 @@ async function limit(key:string,max:number,seconds:number) {
 async function handle(request:NextRequest,parts:string[],method:string) {
   const path=parts.join('/');
   if(appConfig().mode==='local' && !isLocalRequest(request)) throw new DomainError('local_only','Deze testomgeving is alleen lokaal bereikbaar.',403);
+  const nativePlayer=await handleNativePlayerApi(request,parts,handle);
+  if(nativePlayer)return nativePlayer;
   const ocheDevice=await handleOcheDeviceApi(request,parts);
   if(ocheDevice)return ocheDevice;
   const blogAdmin=await handleBlogAdminApi(request,parts);
@@ -210,7 +215,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if(method==='POST'&&path==='profile/player-pin'){
     const data=await body(request);
     let recentAuth=appConfig().mode==='local'&&isLocalRequest(request);
-    if(!recentAuth){const {data:verified,error}=await (await supabaseServer()).auth.getClaims();recentAuth=!error&&hasRecentVerifiedAuthentication(actor.id,verified?.claims);}
+    if(!recentAuth){const native=nativePlayerPrincipal(request);if(native)recentAuth=hasRecentVerifiedAuthentication(actor.id,native.claims);else{const {data:verified,error}=await (await supabaseServer()).auth.getClaims();recentAuth=!error&&hasRecentVerifiedAuthentication(actor.id,verified?.claims);}}
     return json(await updatePlayerPin(actor.id,{requestId:data.requestId,pin:data.pin,pinConfirmation:data.pinConfirmation,currentPin:data.currentPin,mode:data.mode},{recentAuth}));
   }
   if(method==='POST'&&path==='player-pin/lobby-add'){
