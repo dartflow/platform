@@ -1,10 +1,10 @@
 package nl.dartflow.app
 
-import android.content.Context
 import android.graphics.Bitmap
+import android.os.Build
+import android.os.ParcelFileDescriptor
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
@@ -45,9 +45,22 @@ class PlayerUiTest {
 
     /** Export only these synthetic, offline fixtures for release-time visual inspection. */
     private fun saveFixtureScreenshot(filename: String) {
+        require(filename in setOf("compact-login.png", "compact-screens.png", "compact-events.png"))
+        // CI runs API 36. Keep UI assertions usable on older supported devices.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
         val bitmap = compose.onNodeWithTag("compact-fixture").captureToImage().asAndroidBitmap()
-        InstrumentationRegistry.getInstrumentation().targetContext.openFileOutput(filename, Context.MODE_PRIVATE).use { output ->
-            assertTrue("Could not save synthetic UI screenshot $filename", bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val directory = "/data/local/tmp/dartflow-ui-fixtures"
+        ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("mkdir -p $directory")).use { it.readBytes() }
+        // Use shell-owned storage: Gradle uninstalls the fixture app after tests.
+        // executeShellCommandRw returns stdout at index 0 and stdin at index 1.
+        val descriptors = automation.executeShellCommandRw("dd of=$directory/$filename")
+        ParcelFileDescriptor.AutoCloseInputStream(descriptors[0]).use { completion ->
+            ParcelFileDescriptor.AutoCloseOutputStream(descriptors[1]).use { output ->
+                assertTrue("Could not export synthetic UI screenshot $filename", bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+            }
+            // Closing stdin lets dd finish; reading to EOF waits until it has done so.
+            assertTrue("PNG export produced unexpected stdout", completion.readBytes().isEmpty())
         }
     }
 
@@ -133,9 +146,10 @@ class PlayerUiTest {
 
     @Test fun scoreKeypadAndConfirmFit360By640WithoutScrolling() {
         var score: Int? = null
-        compose.setContent { DartFlowPlayerTheme { Box(Modifier.size(360.dp, 640.dp)) {
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("score-fixture")) { DartFlowPlayerTheme {
             PlayerScoreConsole("Set 1 · Leg 1", listOf(ScorePlayer("p1", "Danny", 148), ScorePlayer("p2", "Rick", 188)), 0, true, false, false, "T20 D20", null, "m1:1", { s, _, _, _ -> score = s }, {}, {})
         } } }
+        compose.onNodeWithTag("score-fixture").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
         compose.onNodeWithTag("score-key-6").performClick()
         compose.onNodeWithTag("score-key-0").performClick()
         compose.onNodeWithTag("confirm-score").assertIsDisplayed().assertIsEnabled().performClick()
@@ -172,9 +186,10 @@ class PlayerUiTest {
     }
     @Test fun inactivityWarningKeepsPhoneKeypadAndConfirmReachable() {
         val activity = JSONObject("{\"sessionId\":\"board-session-1\",\"phase\":\"warning\",\"serverNow\":120000,\"warningAt\":120000,\"deadlineAt\":180000,\"extensionsUsed\":0,\"canExtend\":true}")
-        compose.setContent { DartFlowPlayerTheme { Box(Modifier.size(360.dp, 640.dp)) {
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("score-fixture")) { DartFlowPlayerTheme {
             PlayerScoreConsole("Set 1 · Leg 1", listOf(ScorePlayer("p1", "Danny", 148), ScorePlayer("p2", "Rick", 188)), 0, true, false, false, null, null, "m1:1", { _, _, _, _ -> }, {}, {}, activity = activity)
         } } }
+        compose.onNodeWithTag("score-fixture").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
         compose.onNodeWithTag("continue-board").assertIsDisplayed().assertIsEnabled()
         compose.onNodeWithTag("score-key-0").assertIsDisplayed()
         val keypad = compose.onNodeWithTag("score-key-0").getUnclippedBoundsInRoot()

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -188,7 +189,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         Box(Modifier.width(38.dp).heightIn(min = 25.dp).background(if (selected) PlayerPanel else Color.Transparent, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
             Text(glyph, color = color, fontSize = 20.sp, lineHeight = 23.sp)
         }
-        Text(label, color = color, fontFamily = PlayerSans, fontSize = 10.sp, lineHeight = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+        Text(label, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = color, fontFamily = PlayerSans, fontSize = 10.sp, lineHeight = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
     }
 }
 
