@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -109,4 +109,19 @@ test('standalone preparation copies public assets and removes nested private bui
     assert.equal(await readFile(join(root,'.next/standalone/.next/static/client.js'),'utf8'),'// client fixture\n');
     for(const path of ['nested/.env.runtime','nested/.local/session.key','.next/static/.env.accidental']) await assert.rejects(readFile(join(root,'.next/standalone',path)),{code:'ENOENT'});
   } finally { await rm(root,{recursive:true,force:true}); }
+});
+
+test('real privacy worker boots without node_modules and stops at its missing private environment guard',async()=>{
+  const root=await fixture(),isolated=await mkdtemp(join(tmpdir(),'dartflow-private-worker-'));
+  try {
+    await mkdir(join(root,'lib'));
+    for(const file of ['scripts/account-removal-worker.ts','lib/account-removal-worker.ts'])await copyFile(resolve(file),join(root,file));
+    prepare(root);
+    const bundle=join(isolated,'account-removal-worker.mjs');
+    await copyFile(join(root,'.next/standalone/account-removal-worker.mjs'),bundle);
+    const result=spawnSync(process.execPath,[bundle],{cwd:isolated,env:{PATH:process.env.PATH??'/usr/bin:/bin'},encoding:'utf8',timeout:20000});
+    assert.equal(result.status,1);
+    assert.match(result.stderr,/DARTFLOW_PRIVACY_DATABASE_URL ontbreekt/);
+    assert.doesNotMatch(result.stderr,/ERR_MODULE_NOT_FOUND|Cannot find (?:package|module)|Dynamic require .*not supported/);
+  } finally {await Promise.all([rm(root,{recursive:true,force:true}),rm(isolated,{recursive:true,force:true})]);}
 });

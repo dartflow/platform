@@ -13,8 +13,11 @@ async function removePrivateFiles(directory) {
 }
 await removePrivateFiles(target);
 // The privacy timer has a separate identity and environment; no runtime admin key
-// is traced into the web server. Bundle only its code, with existing runtime deps.
-await build({entryPoints:[new URL('account-removal-worker.ts',import.meta.url).pathname],outfile:new URL('account-removal-worker.mjs',target).pathname,bundle:true,platform:'node',target:'node24',format:'esm',packages:'external'});
+// is traced into the web server. Next's server tracing can omit dependencies
+// consumed only by this entrypoint, so include its complete JavaScript closure.
+// createRequire supports bundled CommonJS dependencies while retaining top-level
+// await in the ESM entrypoint. pg-native remains an unused optional pg backend.
+await build({entryPoints:[new URL('account-removal-worker.ts',import.meta.url).pathname],outfile:new URL('account-removal-worker.mjs',target).pathname,bundle:true,platform:'node',target:'node24',format:'esm',external:['pg-native'],banner:{js:'import {createRequire as __privacyCreateRequire} from "node:module";const require=__privacyCreateRequire(import.meta.url);'}});
 const publicBuildConfig={
   DARTFLOW_DATA_MODE:process.env.DARTFLOW_DATA_MODE || 'local',
   DARTFLOW_APP_ORIGIN:process.env.DARTFLOW_APP_ORIGIN || 'http://localhost:3000',
