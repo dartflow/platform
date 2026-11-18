@@ -12,7 +12,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -83,6 +82,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     val profile = state.profile
     var fullScore by remember(state.match?.id) { mutableStateOf(true) }
     var more by remember { mutableStateOf(false) }
+    val navigationSection = playerNavigationSection(state.screen, state.activeId)
     val activeMatch = state.screen == PlayerScreen.MATCH && state.match != null
     BackHandler(enabled = state.session != null && state.screen != PlayerScreen.HOME) {
         if (activeMatch && fullScore) fullScore = false else actions.navigate(PlayerScreen.HOME, null)
@@ -118,7 +118,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
                 Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.width(112.dp).height(32.dp), contentScale = ContentScale.Fit)
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { actions.navigate(PlayerScreen.NOTIFICATIONS, null) }) { Text("Meldingen", fontSize = 12.sp) }
+                    IconButton(onClick = { actions.navigate(PlayerScreen.NOTIFICATIONS, null) }, modifier = Modifier.semantics { contentDescription = "Meldingen" }) { PlayerIcon(PlayerNavIcon.BELL) }
                     Box(Modifier.size(48.dp).clickable { actions.navigate(PlayerScreen.PROFILE, null) }, contentAlignment = Alignment.Center) {
                         Avatar(profile?.displayName?.ifBlank { profile.name } ?: "DartFlow", Modifier.size(32.dp))
                     }
@@ -130,10 +130,10 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
             Column(Modifier.background(PlayerInk).navigationBarsPadding()) {
                 HorizontalDivider(color = PlayerBorder)
                 Row(Modifier.fillMaxWidth().selectableGroup()) {
-                    listOf(Triple(PlayerScreen.HOME, "⌂", "Vandaag"), Triple(PlayerScreen.PLAY, "◎", "Spelen"), Triple(PlayerScreen.EVENTS, "▣", "Evenementen"), Triple(PlayerScreen.FRIENDS, "♧", "Vrienden")).forEach { (route, glyph, label) ->
-                        PlayerNavigationItem(label, glyph, state.screen == route, Modifier.weight(1f)) { actions.navigate(route, null) }
+                    listOf(Triple(PlayerScreen.HOME, PlayerNavIcon.HOME, "Vandaag"), Triple(PlayerScreen.PLAY, PlayerNavIcon.PLAY, "Spelen"), Triple(PlayerScreen.EVENTS, PlayerNavIcon.EVENTS, "Evenementen"), Triple(PlayerScreen.FRIENDS, PlayerNavIcon.FRIENDS, "Vrienden")).forEach { (route, icon, label) ->
+                        PlayerNavigationItem(label, icon, !more && navigationSection == icon, Modifier.weight(1f)) { actions.navigate(route, null) }
                     }
-                    PlayerNavigationItem("Meer", "☰", more, Modifier.weight(1f)) { more = true }
+                    PlayerNavigationItem("Meer", PlayerNavIcon.MORE, more || navigationSection == PlayerNavIcon.MORE, Modifier.weight(1f)) { more = true }
                 }
             }
         }
@@ -171,25 +171,22 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         }
     }
     if (more) ModalBottomSheet(onDismissRequest = { more = false }, containerColor = PlayerPanel) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Heading("Jouw DartFlow", "MEER")
-            listOf(PlayerScreen.FEED to "Community", PlayerScreen.BOARDS to "Banen & favorieten", PlayerScreen.HISTORY to "Wedstrijdhistorie", PlayerScreen.STATISTICS to "Statistieken", PlayerScreen.SEASONS to "Competities", PlayerScreen.TRAINING to "Training", PlayerScreen.SCREENS to "Oche Live-schermen", PlayerScreen.PROFILE to "Profiel & instellingen").forEach { (route, label) ->
-                TextButton(onClick = { more = false; actions.navigate(route, null) }, Modifier.fillMaxWidth()) { Text(label, Modifier.fillMaxWidth(), color = Color.White) }
+            listOf(
+                "Spelen & voortgang" to listOf(PlayerScreen.BOARDS to "Banen & favorieten", PlayerScreen.TRAINING to "Training", PlayerScreen.HISTORY to "Wedstrijdhistorie", PlayerScreen.STATISTICS to "Statistieken"),
+                "Community & evenementen" to listOf(PlayerScreen.FEED to "Community", PlayerScreen.FRIENDS to "Vrienden & spelerskamers", PlayerScreen.SEASONS to "Competities"),
+                "Schermbeheer" to listOf(PlayerScreen.SCREENS to "Oche Live-schermen"),
+                "Jouw account" to listOf(PlayerScreen.PROFILE to "Profiel & instellingen", PlayerScreen.NOTIFICATIONS to "Meldingen"),
+            ).forEach { (group, entries) ->
+                Text(group.uppercase(Locale.ROOT), Modifier.padding(top = 10.dp, start = 12.dp), color = PlayerMuted, fontSize = 10.sp, letterSpacing = 1.sp)
+                entries.forEach { (route, label) -> TextButton(onClick = { more = false; actions.navigate(route, null) }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Text(label, Modifier.weight(1f), color = if (state.screen == route) PlayerLime else PlayerText, textAlign = TextAlign.Start)
+                    PlayerIcon(PlayerNavIcon.FORWARD, modifier = Modifier.size(16.dp))
+                } }
             }
             Spacer(Modifier.height(12.dp))
         }
-    }
-}
-
-@Composable private fun PlayerNavigationItem(label: String, glyph: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    val color = if (selected) PlayerLime else PlayerMuted
-    Column(modifier.selectable(selected = selected, role = Role.Tab, onClick = onClick)
-        .heightIn(min = 56.dp).padding(horizontal = 2.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Box(Modifier.width(38.dp).heightIn(min = 25.dp).background(if (selected) PlayerPanel else Color.Transparent, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
-            Text(glyph, color = color, fontSize = 20.sp, lineHeight = 23.sp)
-        }
-        Text(label, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = color, fontFamily = PlayerSans, fontSize = 10.sp, lineHeight = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -200,8 +197,8 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         description?.let { Text(it, color = PlayerMuted, style = MaterialTheme.typography.bodyMedium) }
     }
 }
-@Composable internal fun PlayerCard(title: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth().border(1.dp, PlayerBorder, RoundedCornerShape(14.dp)).background(PlayerPanel.copy(alpha = .92f), RoundedCornerShape(14.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+@Composable internal fun PlayerCard(title: String? = null, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(modifier.fillMaxWidth().border(1.dp, PlayerBorder, RoundedCornerShape(14.dp)).background(PlayerPanel.copy(alpha = .92f), RoundedCornerShape(14.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         title?.let { Text(it, color = PlayerText, style = MaterialTheme.typography.titleLarge) }; content()
     }
 }
@@ -316,28 +313,67 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
 
 @Composable private fun HomeScreen(state: PlayerUiState, actions: PlayerActions) {
     val experience = state.resource
-    Heading("Hoi ${state.profile?.displayName?.ifBlank { state.profile.name } ?: "darter"}.", "VANDAAG", "Jouw wedstrijden, banen en community op één plek.")
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Action("Scan baan-QR", modifier = Modifier.weight(1f), onClick = actions.scan)
-        Action("Vrij spelen", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.PLAY, null) }
-    }
     val resume = experience.rows("resume")
-    resume.forEach { m -> PlayerCard("Hervat je partij") {
-        Text(m.optJSONArray("players")?.strings()?.joinToString(" – ") ?: "Jouw wedstrijd", fontWeight = FontWeight.Bold)
-        Text(m.optJSONArray("remaining")?.strings()?.joinToString(" – ") ?: "", fontFamily = PlayerBarlow, fontSize = 44.sp, color = PlayerLime)
-        Text("Schrijver: ${m.text("writer")}", color = PlayerMuted)
-        Action("Open score-invoer") { actions.openLink(m.text("href", "/wedstrijd/${m.text("id")}")) }
-    } }
-    experience.rows("fixtures").forEach { f -> FixtureCard(f, actions, state.busy) }
-    if (resume.isEmpty() && experience.rows("fixtures").isEmpty()) PlayerCard("De oche wacht op je") { Text("Begin een oefening of nodig een tegenstander uit. Je geplande partijen en actieve wedstrijden verschijnen hier.", color = PlayerMuted); Action("Start een partij") { actions.navigate(PlayerScreen.PLAY, null) } }
-    experience.rows("actions").forEach { item -> PlayerCard { Text(item.text("label"), style = MaterialTheme.typography.titleMedium); item.text("detail").takeIf { it.isNotBlank() }?.let { Text(it, color = PlayerMuted) }; Action("Openen", primary = false) { actions.openLink(item.text("href")) } } }
-    PlayerCard("Jouw voortgang") {
-        val stats = state.platform.obj("statistics")
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Stat("Gespeeld", stats.text("played", "0")); Stat("AVG", if (stats.has("average")) number(stats.optDouble("average")) else "—"); Stat("180's", stats.text("oneEighties", "0")) }
-        Action("Bekijk statistieken", primary = false) { actions.navigate(PlayerScreen.STATISTICS, null) }
+    val feed = state.homeFeed
+    var composeOpen by rememberSaveable(state.session?.userId) { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text("Hoi ${state.profile?.displayName?.ifBlank { state.profile.name } ?: "darter"}.", style = MaterialTheme.typography.titleLarge, color = PlayerText)
+        Text("Wat speelt er vandaag?", color = PlayerMuted, style = MaterialTheme.typography.bodyMedium)
     }
-    if (state.profile?.pinConfigured == false) PlayerCard("Spelen met één telefoon") { Text("Stel je spelerspincode in. Dan kan een andere speler jou met je gebruikersnaam toevoegen aan een lokale baanpartij.", color = PlayerMuted); Action("Pincode instellen", primary = false) { actions.navigate(PlayerScreen.PROFILE, null) } }
-    Action("Bekijk de community", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.FEED, null) }
+    // The actual active assignment always comes before discovery and community.
+    resume.take(2).forEach { match -> PlayerCard {
+        Text("JOUW PARTIJ", color = PlayerLime, fontSize = 10.sp, letterSpacing = 1.sp)
+        Text(match.optJSONArray("players")?.strings()?.joinToString(" – ") ?: "Jouw wedstrijd", style = MaterialTheme.typography.titleMedium)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(match.optJSONArray("remaining")?.strings()?.joinToString(" – ") ?: "", Modifier.weight(1f), fontFamily = PlayerBarlow, fontSize = 34.sp, lineHeight = 38.sp, color = PlayerLime)
+            Action(match.text("actionLabel", "Hervat je partij"), modifier = Modifier.widthIn(max = 190.dp)) { actions.openLink(match.text("href", "/wedstrijd/${match.text("id")}")) }
+        }
+    } }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Button(onClick = actions.scan, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("home-scan-button"), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
+            PlayerIcon(PlayerNavIcon.QR, PlayerInk, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Scan baan-QR")
+        }
+        OutlinedButton(onClick = { actions.navigate(PlayerScreen.PLAY, null) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("home-play-button"), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
+            PlayerIcon(PlayerNavIcon.PLAY, PlayerLime, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Vrij spelen")
+        }
+    }
+    experience.rows("fixtures").firstOrNull()?.let { FixtureCard(it, actions, state.busy) }
+    // Community is the main home content, using the exact same server posts and
+    // actions as the standalone feed. Keep the first page compact on startup.
+    Column(Modifier.fillMaxWidth().testTag("home-community-feed"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("Community", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            TextButton(onClick = { actions.navigate(PlayerScreen.FEED, null) }) { Text("Alle berichten") }
+        }
+        if (feed.rows("scopes").isNotEmpty()) {
+            OutlinedButton(onClick = { composeOpen = !composeOpen }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = RoundedCornerShape(12.dp)) {
+                Text(if (composeOpen) "Sluit bericht" else "Deel iets met je community", Modifier.weight(1f), textAlign = TextAlign.Start)
+            }
+            if (composeOpen) { CommunityConsent(state, actions); CommunityPostComposer(feed, state, actions) }
+        }
+        state.homeFeedError?.let { message ->
+            Column(Modifier.fillMaxWidth().background(PlayerPanel, RoundedCornerShape(12.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(message, color = PlayerError, fontSize = 12.sp)
+                TextButton(onClick = actions.refresh, modifier = Modifier.heightIn(min = 48.dp).testTag("home-feed-retry")) { Text("Community opnieuw laden") }
+            }
+        }
+        if (state.homeFeedLoading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = PlayerLime)
+        feed.rows("posts").take(5).forEach { post -> CommunityPostCard(post, state, actions, "home-feed") }
+        if (feed.rows("posts").isEmpty() && !state.homeFeedLoading && state.homeFeedError == null) {
+            PlayerCard {
+                Text("Nog geen berichten", style = MaterialTheme.typography.titleMedium)
+                Text("Berichten uit jouw verenigingen en evenementen verschijnen hier. Deel zelf iets of bekijk de community.", color = PlayerMuted)
+            }
+        }
+    }
+    if (state.profile?.pinConfigured == false) PlayerCard("Spelen met één telefoon") {
+        Text("Met je spelerspincode kan je tegenstander jou toevoegen aan een lokale partij.", color = PlayerMuted)
+        Action("Pincode instellen", primary = false) { actions.navigate(PlayerScreen.PROFILE, null) }
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Action("Jouw statistieken", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.STATISTICS, null) }
+        Action("Wedstrijdhistorie", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.HISTORY, null) }
+    }
 }
 @Composable private fun FixtureCard(f: JSONObject, actions: PlayerActions, busy: Boolean) {
     PlayerCard(f.text("seasonName", "Jouw speeldag")) {
@@ -585,17 +621,33 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
 }
 
 @Composable private fun EventsScreen(state: PlayerUiState, actions: PlayerActions) {
-    Heading("Samen aan de oche", "EVENEMENTEN", "Jouw toernooien, verenigingen en competities.")
-    Action("Competities & speeldagen", modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.SEASONS, null) }
+    Heading("Samen aan de oche", "EVENEMENTEN", "Jouw toernooien, competities en verenigingen.")
+    Action("Competities & speeldagen", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.SEASONS, null) }
     val events = state.platform.rows("tournaments") + state.platform.rows("leagues")
-    events.forEach { e -> PlayerCard(e.text("name")) {
-        Text(if (e.text("kind") == "league") "Competitie" else "Toernooi", color = PlayerLime, fontSize = 12.sp)
-        Text(e.obj("state").text("description", "Bekijk deelnemers, wedstrijden en je baanoproep."), color = PlayerMuted)
-        Action("Open evenement", primary = false) { actions.navigate(PlayerScreen.EVENT, e.text("id")) }
+    val additional = state.overview.rows("events").filter { event -> events.none { it.text("id") == event.text("id") } }
+    if (events.isNotEmpty() || additional.isNotEmpty()) {
+        Text("Jouw evenementen", style = MaterialTheme.typography.titleMedium)
+        events.forEach { event -> PlayerCard {
+            Text(if (event.text("kind") == "league") "COMPETITIE" else "TOERNOOI", color = PlayerLime, fontSize = 10.sp, letterSpacing = 1.sp)
+            Text(event.text("name"), style = MaterialTheme.typography.titleLarge)
+            event.obj("state").text("description").takeIf { it.isNotBlank() }?.let { Text(it, color = PlayerMuted) }
+            Action("Open evenement", primary = false) { actions.navigate(PlayerScreen.EVENT, event.text("id")) }
+        } }
+        additional.forEach { event -> PlayerCard(event.text("name")) {
+            event.text("date").takeIf { it.isNotBlank() }?.let { Text(shortDate(it), color = PlayerMuted) }
+            Action("Open evenement", primary = false) { actions.navigate(PlayerScreen.EVENT, event.text("id")) }
+        } }
+    } else Text("Nog geen geplande evenementen. Je inschrijvingen en uitnodigingen verschijnen hier.", color = PlayerMuted, style = MaterialTheme.typography.bodyMedium)
+    val clubs = state.platform.rows("clubs")
+    if (clubs.isNotEmpty()) Text("Jouw verenigingen", Modifier.padding(top = 6.dp), style = MaterialTheme.typography.titleMedium)
+    clubs.forEach { club -> PlayerCard {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Avatar(club.text("name"), Modifier.size(40.dp))
+            Column(Modifier.weight(1f)) { Text(club.text("name"), style = MaterialTheme.typography.titleMedium); Text("Vereniging", color = PlayerMuted, fontSize = 11.sp) }
+        }
+        club.obj("state").text("description").takeIf { it.isNotBlank() }?.let { Text(it, color = PlayerMuted) }
+        Action("Open verenigingschat", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.CHAT, "club:${club.text("id")}") }
     } }
-    state.overview.rows("events").filter { e -> events.none { it.text("id") == e.text("id") } }.forEach { e -> PlayerCard(e.text("name")) { Text(shortDate(e.text("date")), color = PlayerMuted); Action("Open evenement", primary = false) { actions.navigate(PlayerScreen.EVENT, e.text("id")) } } }
-    if (events.isEmpty() && state.overview.rows("events").isEmpty()) PlayerCard("Nog geen evenementen") { Text("Evenementen waarvoor je toegang hebt verschijnen hier. Een uitnodiging kan rechtstreeks in de app worden geopend.", color = PlayerMuted) }
-    state.platform.rows("clubs").forEach { e -> PlayerCard(e.text("name")) { Text(e.obj("state").text("description"), color = PlayerMuted); Action("Verenigingschat", primary = false) { actions.navigate(PlayerScreen.CHAT, "club:${e.text("id")}") } } }
 }
 @Composable private fun EventScreen(state: PlayerUiState, actions: PlayerActions) {
     val e = entityFor(state, "tournaments").takeIf { it.length() > 0 } ?: entityFor(state, "leagues")
@@ -674,30 +726,69 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     val page = state.resource
     val feedParams = runCatching { PlayerLinks.query(java.net.URI("https://native.invalid/?${state.activeId.orEmpty()}")) }.getOrDefault(emptyMap())
     val parentId = feedParams["parentId"]
-    val scopes = page.rows("scopes")
-    var compose by remember { mutableStateOf("") }; var selected by rememberSaveable { mutableStateOf("") }
-    val scope = scopes.find { "${it.text("kind")}:${it.text("id")}" == selected } ?: scopes.firstOrNull()
     Heading(if (parentId != null) "Reacties" else "Jouw dartcommunity", "FEED", "Berichten uit jouw verenigingen, evenementen en het platform.")
     CommunityConsent(state, actions)
     if (parentId != null) Action("Terug naar de feed", primary = false) { actions.navigate(PlayerScreen.FEED, null) }
-    if (scope != null) PlayerCard("Deel iets met je spelers") {
-        Choice("Plaatsen in", "${scope.text("kind")}:${scope.text("id")}", scopes.map { "${it.text("kind")}:${it.text("id")}" to it.text("name") }, { selected = it })
-        Field("Jouw bericht", compose, { compose = it }, !state.busy && scope.optBoolean("canWrite") && canUseCommunity(state.safety), max = 4000, multiline = true)
-        Action("Bericht plaatsen", compose.isNotBlank() && !state.busy && scope.optBoolean("canWrite") && canUseCommunity(state.safety), modifier = Modifier.fillMaxWidth()) { if (parentId != null) actions.platformAction(json("type" to "community.reply", "postId" to parentId, "body" to compose)) else actions.platformAction(json("type" to "community.post", "scopeKind" to scope.text("kind"), "scopeId" to scope.text("id"), "body" to compose)); compose = "" }
-    }
-    page.rows("posts").forEach { post -> PlayerCard {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { Avatar(post.text("authorName"), Modifier.size(40.dp)); Column { Text(post.text("authorName"), fontWeight = FontWeight.Bold); Text("${post.text("scopeName")} · ${shortDate(post.text("createdAt"))}", color = PlayerMuted, fontSize = 11.sp) } }
-        Text(post.text("body"))
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { actions.platformAction(json("type" to "community.like", "postId" to post.text("id"), "liked" to !post.optBoolean("liked"))) }, enabled = !state.busy) { Text("${if (post.optBoolean("liked")) "♥" else "♡"} ${post.optInt("likes")}") }
-            TextButton(onClick = { actions.navigate(PlayerScreen.FEED, "kind=${PlayerLinks.encode(post.text("scopeKind"))}&id=${PlayerLinks.encode(post.text("scopeId"))}&parentId=${PlayerLinks.encode(post.text("id"))}") }) { Text("${post.optInt("replyCount")} reacties") }
-            if (post.optBoolean("canDelete")) TextButton(onClick = { actions.platformAction(json("type" to "community.delete", "postId" to post.text("id"))) }, enabled = !state.busy) { Text("Verwijderen") }
-        }
-        PlayerSafetyControls(state, actions, post.text("authorId"), post.text("authorName", "Speler"), PlayerReportTarget(if (post.text("parentId").isNotBlank()) "reply" else "post", post.text("id"), if (post.text("parentId").isNotBlank()) "Reactie" else "Bericht", post.text("scopeKind"), post.text("scopeId")))
-    } }
+    CommunityPostComposer(page, state, actions, parentId, feedParams["kind"]?.let { "$it:${feedParams["id"].orEmpty()}" })
+    page.rows("posts").forEach { post -> CommunityPostCard(post, state, actions) }
     if (page.rows("posts").isEmpty() && !state.loading) Text("Nog geen berichten. Begin een gesprek in jouw community.", color = PlayerMuted)
     page.text("nextCursor").takeIf { it.isNotBlank() }?.let { cursor -> Action("Eerdere berichten", primary = false) { actions.navigate(PlayerScreen.FEED, state.activeId.orEmpty().substringBefore("&cursor=").let { if (it.isBlank()) "cursor=${PlayerLinks.encode(cursor)}" else "$it&cursor=${PlayerLinks.encode(cursor)}" }) } }
+}
 
+/** The home stream and full feed use one composer and the same permissions. */
+@Composable private fun CommunityPostComposer(page: JSONObject, state: PlayerUiState, actions: PlayerActions, parentId: String? = null, replyScopeKey: String? = null) {
+    val scopes = page.rows("scopes")
+    var draft by rememberSaveable(state.session?.userId, parentId) { mutableStateOf("") }
+    var selected by rememberSaveable(state.session?.userId, parentId) { mutableStateOf("") }
+    val scope = if (parentId != null) scopes.find { "${it.text("kind")}:${it.text("id")}" == replyScopeKey }
+        else scopes.find { "${it.text("kind")}:${it.text("id")}" == selected } ?: scopes.firstOrNull()
+    if (scope == null) return
+    PlayerCard(if (parentId == null) "Deel iets met je spelers" else "Jouw reactie") {
+        if (parentId == null) Choice("Plaatsen in", "${scope.text("kind")}:${scope.text("id")}", scopes.map { "${it.text("kind")}:${it.text("id")}" to it.text("name") }, { selected = it })
+        else Text(scope.text("name"), color = PlayerMuted, fontSize = 12.sp)
+        Field("Jouw bericht", draft, { draft = it }, !state.busy && scope.optBoolean("canWrite") && canUseCommunity(state.safety), max = 4000, multiline = true)
+        Action(if (parentId == null) "Bericht plaatsen" else "Reactie plaatsen", draft.isNotBlank() && !state.busy && scope.optBoolean("canWrite") && canUseCommunity(state.safety), modifier = Modifier.fillMaxWidth()) {
+            if (parentId != null) actions.platformAction(json("type" to "community.reply", "postId" to parentId, "body" to draft))
+            else actions.platformAction(json("type" to "community.post", "scopeKind" to scope.text("kind"), "scopeId" to scope.text("id"), "body" to draft))
+            draft = ""
+        }
+    }
+}
+
+/** Real server posts, identical reply routes, moderation and write actions everywhere. */
+@Composable private fun CommunityPostCard(post: JSONObject, state: PlayerUiState, actions: PlayerActions, tagPrefix: String = "feed") {
+    val id = post.text("id")
+    val authorId = post.text("authorId")
+    val author = post.text("authorName", "Speler")
+    var optionsOpen by remember(state.session?.userId, id) { mutableStateOf(false) }
+    val canModerate = authorId.isNotBlank() && authorId != state.profile?.id
+    PlayerCard(modifier = Modifier.testTag("$tagPrefix-post-$id")) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Avatar(author, Modifier.size(36.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(author, fontWeight = FontWeight.Bold)
+                Text(listOf(post.text("scopeName"), shortDate(post.text("createdAt"))).filter { it.isNotBlank() }.joinToString(" · "), color = PlayerMuted, fontSize = 11.sp, lineHeight = 15.sp)
+            }
+        }
+        Text(post.text("body"), style = MaterialTheme.typography.bodyMedium)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = { actions.platformAction(json("type" to "community.like", "postId" to id, "liked" to !post.optBoolean("liked"))) }, enabled = !state.busy) {
+                Text("${if (post.optBoolean("liked")) "Leuk gevonden" else "Leuk"} · ${post.optInt("likes")}", fontSize = 12.sp)
+            }
+            TextButton(onClick = { actions.navigate(PlayerScreen.FEED, "kind=${PlayerLinks.encode(post.text("scopeKind"))}&id=${PlayerLinks.encode(post.text("scopeId"))}&parentId=${PlayerLinks.encode(id)}") }, modifier = Modifier.testTag("$tagPrefix-replies-$id")) {
+                Text("${post.optInt("replyCount")} reacties", fontSize = 12.sp)
+            }
+            Spacer(Modifier.weight(1f))
+            if (canModerate || post.optBoolean("canDelete")) IconButton(onClick = { optionsOpen = !optionsOpen }, modifier = Modifier.semantics { contentDescription = if (canModerate) "Berichtopties: melden en blokkeren" else "Berichtopties" }) {
+                PlayerIcon(PlayerNavIcon.MORE, modifier = Modifier.size(18.dp))
+            }
+        }
+        if (optionsOpen) {
+            HorizontalDivider(color = PlayerBorder)
+            PlayerSafetyControls(state, actions, authorId, author, PlayerReportTarget(if (post.text("parentId").isNotBlank()) "reply" else "post", id, if (post.text("parentId").isNotBlank()) "Reactie" else "Bericht", post.text("scopeKind"), post.text("scopeId")), blocked = state.platform.rows("blocked").any { it.text("id") == authorId })
+            if (post.optBoolean("canDelete")) TextButton(onClick = { actions.platformAction(json("type" to "community.delete", "postId" to id)) }, enabled = !state.busy) { Text("Bericht verwijderen", color = PlayerError) }
+        }
+    }
 }
 
 @Composable private fun ChatScreen(state: PlayerUiState, actions: PlayerActions) {

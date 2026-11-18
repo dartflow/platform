@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Rule
@@ -33,6 +34,29 @@ class PlayerUiTest {
     @get:Rule val compose = createComposeRule()
     private fun profile(pin: Boolean = true, confirmed: Boolean = true) = PlayerProfile("p1", "Danny", "danny", "Danny", pin, pin && confirmed, confirmed)
     private fun signedIn(p: PlayerProfile = profile()) = PlayerUiState(loading = false, session = PlayerSession(p.id, "fixture@example.test", Long.MAX_VALUE, true), profile = p)
+    private val homePostId = "00000000-0000-4000-8000-000000000201"
+    private val homeClubId = "00000000-0000-4000-8000-000000000202"
+    private val homePostBody = "Vanavond trainen we samen op baan 1."
+    private fun homeFeed(withPost: Boolean = true) = JSONObject()
+        .put("scopes", JSONArray(listOf(JSONObject().put("kind", "club").put("id", homeClubId).put("name", "Dartclub Test").put("canWrite", true))))
+        .put("posts", JSONArray(if (withPost) listOf(JSONObject().put("id", homePostId).put("authorId", "p2").put("authorName", "Noor Testspeler")
+            .put("scopeKind", "club").put("scopeId", homeClubId).put("scopeName", "Dartclub Test")
+            .put("createdAt", "2026-11-18T18:00:00.000Z").put("body", homePostBody).put("likes", 2).put("liked", false).put("replyCount", 3).put("canDelete", false)) else emptyList<JSONObject>()))
+        .put("nextCursor", JSONObject.NULL)
+    private fun homeState(feed: JSONObject = homeFeed(), loading: Boolean = false, error: String? = null) = signedIn().copy(
+        resource = JSONObject().put("resume", JSONArray()).put("fixtures", JSONArray()).put("actions", JSONArray()),
+        homeFeed = feed, homeFeedLoading = loading, homeFeedError = error,
+        safety = JSONObject().put("requiresAcceptance", false).put("rulesVersion", "2026-11-18"),
+    )
+
+    private fun assertHomeActionsFitNarrowViewport() {
+        compose.onNodeWithTag("compact-fixture").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
+        val viewport = compose.onNodeWithTag("compact-fixture").getUnclippedBoundsInRoot()
+        listOf("home-scan-button", "home-play-button").forEach { tag ->
+            val bounds = compose.onNodeWithTag(tag).assertIsDisplayed().assertIsEnabled().assertHeightIsAtLeast(48.dp).getUnclippedBoundsInRoot()
+            assertTrue("$tag must be fully reachable on first open without scrolling", bounds.top >= viewport.top && bounds.bottom <= viewport.bottom && bounds.left >= viewport.left && bounds.right <= viewport.right)
+        }
+    }
 
     /** Check rendered glyphs, rather than a theme token which Text might not inherit. */
     private fun assertReadableText(text: String, background: Color) {
@@ -49,7 +73,7 @@ class PlayerUiTest {
 
     /** Export only these synthetic, offline fixtures for release-time visual inspection. */
     private fun saveFixtureScreenshot(filename: String) {
-        require(filename in setOf("compact-login.png", "compact-screens.png", "compact-events.png", "score-status-default.png", "score-status-large-font.png"))
+        require(filename in setOf("compact-login.png", "compact-screens.png", "compact-events.png", "score-status-default.png", "score-status-large-font.png", "compact-home-feed.png"))
         // CI runs API 36. Keep UI assertions usable on older supported devices.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
         val fixture = compose.onNodeWithTag("compact-fixture")
@@ -123,6 +147,108 @@ class PlayerUiTest {
         assertReadableText("Oche Live-schermen", PlayerInk)
         assertReadableText("Scherm koppelen", PlayerPanel)
         saveFixtureScreenshot("compact-screens.png")
+    }
+
+    @Test fun homePlayScanAndRealCommunityPostFitNarrowPhone() {
+        var scanned = false
+        var destination: Pair<PlayerScreen, String?>? = null
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
+            PlayerApp(homeState(), PlayerActions(scan = { scanned = true }, navigate = { screen, id -> destination = screen to id }))
+        } } }
+        assertHomeActionsFitNarrowViewport()
+        compose.onNodeWithTag("home-feed-post-$homePostId").assertIsDisplayed()
+        compose.onNodeWithText(homePostBody).assertIsDisplayed()
+        compose.onNodeWithText("Noor Testspeler").assertIsDisplayed()
+        saveFixtureScreenshot("compact-home-feed.png")
+        compose.onNodeWithTag("home-scan-button").performClick()
+        compose.runOnIdle { assertTrue(scanned) }
+        compose.onNodeWithTag("home-play-button").performClick()
+        compose.runOnIdle { assertEquals(PlayerScreen.PLAY to null, destination) }
+    }
+
+    @Test fun homePostRepliesOpenExistingScopedCommunityRoute() {
+        var destination: Pair<PlayerScreen, String?>? = null
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
+            PlayerApp(homeState(), PlayerActions(navigate = { screen, id -> destination = screen to id }))
+        } } }
+        compose.onNodeWithTag("home-feed-replies-$homePostId").performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
+        compose.runOnIdle {
+            assertEquals(PlayerScreen.FEED, destination?.first)
+            val parameters = PlayerLinks.query(java.net.URI("https://native.invalid/?${destination?.second.orEmpty()}"))
+            assertEquals("club", parameters["kind"])
+            assertEquals(homeClubId, parameters["id"])
+            assertEquals(homePostId, parameters["parentId"])
+        }
+    }
+
+    @Test fun emptyHomeFeedKeepsPlayAndQrScanAvailable() {
+        var scanned = false
+        var playing = false
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
+            PlayerApp(homeState(homeFeed(withPost = false)), PlayerActions(scan = { scanned = true }, navigate = { screen, _ -> playing = screen == PlayerScreen.PLAY }))
+        } } }
+        assertHomeActionsFitNarrowViewport()
+        compose.onNodeWithText("Nog geen berichten", substring = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("home-scan-button").performScrollTo().performClick()
+        compose.onNodeWithTag("home-play-button").performScrollTo().performClick()
+        compose.runOnIdle { assertTrue(scanned); assertTrue(playing) }
+    }
+
+    @Test fun loadingHomeFeedDoesNotBlockPlayOrShowFalseEmptyState() {
+        var scanned = false
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
+            PlayerApp(homeState(homeFeed(withPost = false), loading = true), PlayerActions(scan = { scanned = true }))
+        } } }
+        assertHomeActionsFitNarrowViewport()
+        compose.onNodeWithText("Nog geen berichten", substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("home-scan-button").performClick()
+        compose.runOnIdle { assertTrue(scanned) }
+    }
+
+    @Test fun failedHomeFeedRetainsCachedPostAndQuickActionsAndOffersRetry() {
+        var retries = 0
+        val failure = "De community is tijdelijk niet bereikbaar."
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
+            PlayerApp(homeState(error = failure), PlayerActions(refresh = { retries++ }))
+        } } }
+        assertHomeActionsFitNarrowViewport()
+        compose.onNodeWithText(failure, substring = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("home-feed-retry").performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, retries) }
+        compose.onNodeWithText(homePostBody).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("home-scan-button").performScrollTo().assertIsEnabled()
+        compose.onNodeWithTag("home-play-button").performScrollTo().assertIsEnabled()
+    }
+
+    @Test fun moreMenuScrollsToAccountAndLastEntryAndOpensTheirScreens() {
+        var destination: Pair<PlayerScreen, String?>? = null
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
+            PlayerApp(homeState(homeFeed(withPost = false)), PlayerActions(navigate = { screen, id -> destination = screen to id }))
+        } } }
+        compose.onNodeWithTag("compact-fixture").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
+        compose.onNodeWithText("Meer").performClick()
+        // A swipe also expands a partially opened native sheet before scrolling
+        // its list; account entries must remain reachable without shrinking text.
+        compose.onNode(hasScrollAction() and hasAnyDescendant(hasText("Profiel & instellingen"))).performTouchInput { swipeUp() }
+        compose.onNodeWithText("Profiel & instellingen").performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(PlayerScreen.PROFILE to null, destination) }
+        compose.onNodeWithText("Profiel & instellingen").assertDoesNotExist()
+        compose.onNodeWithText("Meer").performClick()
+        compose.onNode(hasScrollAction() and hasAnyDescendant(hasText("Profiel & instellingen"))).performTouchInput { swipeUp() }
+        compose.onNodeWithText("Meldingen").performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(PlayerScreen.NOTIFICATIONS to null, destination) }
+    }
+
+    @Test fun eventDetailKeepsEventsTabSelectedAndCanReturnToItsParent() {
+        var destination: Pair<PlayerScreen, String?>? = null
+        compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
+            PlayerApp(signedIn().copy(screen = PlayerScreen.EVENT, activeId = "00000000-0000-4000-8000-000000000203"), PlayerActions(navigate = { screen, id -> destination = screen to id }))
+        } } }
+        compose.onNodeWithText("Evenementen").assertIsDisplayed().assertIsSelected()
+        compose.onNodeWithText("Vandaag").assertIsNotSelected()
+        compose.onNodeWithText("Meer").assertIsNotSelected()
+        compose.onNodeWithText("Evenementen").performClick()
+        compose.runOnIdle { assertEquals(PlayerScreen.EVENTS to null, destination) }
     }
 
     @Test fun loginUsesNativeEmailCodeAndGoogleControls() {

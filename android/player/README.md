@@ -2,7 +2,7 @@
 
 Een zelfstandige Kotlin/Jetpack Compose-app met ingebouwde spelersschermen. De app gebruikt dezelfde DartFlow-accounts, wedstrijd-ID's, score-engine, baanrechten en definitieve statistieken als de website en Oche Live. De Android-client bepaalt nooit zelf wie mag scoren of welke score definitief is.
 
-Zie de [oplevering met installatiebestanden en testresultaten](../../docs/player-android/oplevering.md) voor de eerste gecontroleerde versie 0.1.0 (1). De wijzigingen voor 0.1.1 (2) en de daarbij te controleren native veiligheidsflows staan in [Play-gereedheid](../../docs/player-android/play-readiness-native.md).
+Zie de [oplevering met installatiebestanden en testresultaten](../../docs/player-android/oplevering.md) voor de actuele ondertekende release en eerdere versies. De native veiligheidsflows staan in [Play-gereedheid](../../docs/player-android/play-readiness-native.md).
 
 ## Identiteit en builds
 
@@ -29,6 +29,14 @@ De drie identiteiten en Oche Live kunnen naast elkaar worden geïnstalleerd. Dev
 - Accountverwijdering aanvragen na recente eigen verificatie; na serveracceptatie worden de lokale sessie, wachtrij en media onmiddellijk gewist/gestopt. Beoordelaarstoegang gebruikt uitsluitend een afzonderlijk server-side ingericht account.
 
 De app gebruikt ingebouwde schermen. Google-accountselectie opent in een beveiligde browsertab; het privacybeleid en gedeelde openbare links gebruiken de daarvoor bestemde Android-acties. Meldingen worden in de app opgehaald. Er is in deze versie geen FCM-pushdienst of achtergrondvideo toegevoegd.
+
+## Beginscherm en scorebevestiging vanaf 0.1.3
+
+Vandaag combineert directe speelacties, een eventuele actieve partij en maximaal vijf actuele communityberichten. De volledige feed, reacties, berichtplaatsing en meld-/blokkeeropties gebruiken dezelfde bestaande routes en rechten. Evenementen en verenigingen krijgen eigen groepen; het scrollbare Meer-menu groepeert spelen, community, schermbeheer en accountinstellingen. De navigatie gebruikt één familie ingebouwde iconen en markeert ook bij detailpagina's de bijbehorende hoofdtab.
+
+De speelcontext en feed laden onafhankelijk. Een onbereikbare feed blokkeert spelen niet; de accountgebonden feedcache staat uitsluitend in geheugen en wordt bij een accountwissel gewist. Het beginscherm ververst hoogstens elke vijftien seconden automatisch en direct bij opnieuw openen of handmatig verversen. De actieve scoreconsole houdt zijn bestaande snellere verversing.
+
+Na een worp past de console de volledige serverbevestiging direct toe, inclusief een eventuele Dartbotbeurt. Verouderde achtergrondaanvragen kunnen die stand niet overschrijven. De app rekent geen voorlopige scores uit. De status onder de restscore krijgt ruimte op basis van de werkelijke teksthoogte en systeemtekstgrootte.
 
 ## Lokaal starten
 
