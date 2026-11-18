@@ -9,6 +9,8 @@ import type {MatchAction,MatchView,Profile} from '../lib/types';
 import type {PlatformEntity,PlatformResponse} from '../lib/platform-types';
 import type {PlayerStatisticsResponse} from '../lib/player-statistics-types';
 import {invitationAttemptRequired} from '../lib/invitations';
+import {newTraining,trainingAction} from '../lib/platform-domain';
+import {getPlatformTraining} from '../lib/platform';
 
 try{process.loadEnvFile('.env.local');}catch{/* CI supplies loopback development credentials. */}
 const loopback=(value:string|undefined)=>{try{return !!value&&['localhost','127.0.0.1','[::1]'].includes(new URL(value).hostname);}catch{return false;}};
@@ -57,6 +59,7 @@ test('native player real API flows keep lobby, flattened score DTO, authoritativ
   let completed=0;
   for(const setup of ['localone','remote','hybrid'])await t.test(`${setup}: two fixture accounts complete a real native lobby and one shared match`,async()=>{
    const created=await platform(first,{type:'lobby.create',name:`${prefix} ${setup}`,setup,startScore:301,bestOfLegs:1});
+   assert.equal((await call<{code:string}>(first,`trainings/${created.id}`,'GET',undefined,403)).code,'forbidden','The targeted training reader must not expose a different entity kind.');
    assert.ok(created.id);assert.match(created.code??'',/^[A-Z0-9]{4}$/);assert.equal(created.entity?.kind,'lobby');assert.equal(created.entity?.state.setup,setup);assert.equal(created.entity?.state.settings?.startScore,301);assert.equal(created.entity?.state.ready?.[first],undefined);
    const resolved=await platform(second,{type:'invitation.resolve',code:created.code!.toLowerCase()});assert.equal(resolved.id,created.id);assert.equal(resolved.kind,'lobby');
    await platform(second,{type:'lobby.join',id:created.id,code:created.code});
@@ -96,15 +99,39 @@ test('native player real API flows keep lobby, flattened score DTO, authoritativ
   });
   await t.test('solo practice uses real exact-retry, finish and practice statistics without changing played match totals',async()=>{
    const before=await stats(first),created=await platform(first,{type:'training.create',mode:'solo',startScore:501});assert.ok(created.id);assert.equal(created.entity?.state.game?.remaining[0],501);assert.equal(created.entity?.state.mode,'solo');
+   const initial=await call<{entity:PlatformEntity}>(first,`trainings/${created.id}`);assert.deepEqual(initial.entity,created.entity);assert.deepEqual(Object.keys(initial),['entity']);
+   assert.equal((await call<{code:string}>(second,`trainings/${created.id}`,'GET',undefined,403)).code,'forbidden');
+   assert.equal((await call<{code:string}>(first,`trainings/${randomUUID()}`,'GET',undefined,404)).code,'not_found');
    const command={type:'training.score',id:created.id,score:180,darts:3},requestId=randomUUID();
    const [accepted,retry]=await Promise.all([platform(first,command,created.entity!.revision,requestId),platform(first,command,created.entity!.revision,requestId)]);assert.deepEqual(accepted,retry);assert.equal(accepted.entity?.state.game?.remaining[0],321);assert.equal(accepted.entity?.state.game?.visits.length,1);
+   const refreshed=await call<{entity:PlatformEntity}>(first,`trainings/${created.id}`);assert.deepEqual(refreshed.entity,accepted.entity,'A targeted reconnect returns the accepted authoritative command revision and score.');
    assert.equal((await platform(first,{...command,score:60},created.entity!.revision,requestId,409)).code,'request_reused');assert.equal((await platform(first,command,created.entity!.revision,randomUUID(),409)).code,'revision_conflict');
    await platform(second,command,accepted.entity!.revision,randomUUID(),403);
    let progress=accepted;for(const score of [100,100,81])progress=await platform(first,{type:'training.score',id:created.id,score,darts:3},progress.entity!.revision);
    const finished=await platform(first,{type:'training.score',id:created.id,score:40,darts:3,doubleConfirmed:true,doubleAttempts:1},progress.entity!.revision);assert.equal(finished.entity?.state.completed,true);assert.equal(finished.entity?.state.game?.status,'finished');assert.equal(finished.entity?.state.game?.remaining[0],0);
    const saved=await platform(first,{type:'training.finish',id:created.id},finished.entity!.revision);assert.equal(saved.entity?.state.completed,true);
+   const restored=await call<{entity:PlatformEntity}>(first,`trainings/${created.id}`);assert.deepEqual(restored.entity,saved.entity,'Finished practice retains the existing entity projection and history.');
    const state=await call<{trainings:PlatformEntity[]}>(first,'platform');assert.equal(state.trainings.find(row=>row.id===created.id)?.state.game?.visits.length,5);
    const after=await stats(first);assert.equal(after.summary.played,before.summary.played);assert.equal(after.practice.pagination.total,before.practice.pagination.total+1);const session=after.practice.sessions.find(row=>row.id===created.id);assert.ok(session);assert.equal(session.average,100.2);assert.equal(session.darts,15);assert.equal(session.highestFinish,40);assert.equal(after.matches.some(row=>row.id===created.id),false);
+  });
+  await t.test('a long practice keeps private undo data on the server and compact native score, retry and reconnect responses',async()=>{
+   const created=await platform(first,{type:'training.create',mode:'solo',startScore:501});assert.ok(created.id);
+   // Seed only this fixture with 45 actual engine-accepted zero visits. This
+   // reproduces the >2 MB legacy payload without 45 unrelated HTTP requests.
+   let source=newTraining(created.id!,first,{mode:'solo',startScore:501});
+   for(let turn=0;turn<45;turn++)source=trainingAction(source,{type:'training.score',score:0,darts:3});
+   assert.ok(Buffer.byteLength(JSON.stringify(source))>2_000_000);
+   await admin.query('update dartflow_private.platform_entities set state=$2,revision=45 where id=$1 and owner_id=$3',[created.id,JSON.stringify(source),first]);
+   const current=await call<{entity:PlatformEntity}>(first,`trainings/${created.id}`);
+   assert.equal(current.entity.state.undoCount,45);assert.equal('undo'in current.entity.state,false);assert.deepEqual(current.entity.state.game?.history,[]);assert.equal(current.entity.state.game?.visits.length,45);assert.ok(Buffer.byteLength(JSON.stringify(current))<64_000);
+   const command={type:'training.score',id:created.id,score:0,darts:3},requestId=randomUUID();
+   const accepted=await platform(first,command,45,requestId),retry=await platform(first,command,45,requestId);assert.deepEqual(accepted,retry);assert.equal(accepted.entity?.state.undoCount,46);assert.equal(accepted.entity?.state.game?.visits.length,46);assert.ok(Buffer.byteLength(JSON.stringify(accepted))<64_000);
+   const compactList=await call<{trainings:PlatformEntity[]}>(first,'platform?trainingProjection=compact'),compactTraining=compactList.trainings.find(row=>row.id===created.id);assert.deepEqual(compactTraining?.state,accepted.entity?.state);assert.equal(compactTraining?.revision,accepted.entity?.revision);assert.equal(compactTraining?.canManage,true);assert.deepEqual(compactTraining?.members.map(member=>member.id),[first]);assert.ok(Buffer.byteLength(JSON.stringify(compactList.trainings))<64_000,'Starting the new app must not download the private multi-megabyte undo chains.');
+   const legacyList=await call<{trainings:PlatformEntity[]}>(first,'platform'),legacyTraining=legacyList.trainings.find(row=>row.id===created.id);assert.equal(legacyTraining?.state.undo?.length,46);assert.equal(legacyTraining?.state.game?.history.length,46);assert.equal('undoCount'in legacyTraining!.state,false,'Older app reads retain their existing DTO.');
+   const stored=await getPlatformTraining(first,created.id!);assert.equal(stored.entity.state.undo?.length,46);assert.equal(stored.entity.state.game?.history.length,46,'The ordinary/web domain projection keeps all private undo snapshots.');
+   const undone=await platform(first,{type:'training.undo',id:created.id},accepted.entity!.revision);assert.equal(undone.entity?.state.undoCount,45);assert.equal(undone.entity?.state.game?.visits.length,45);assert.deepEqual(undone.entity?.state.game?.remaining,[501,501]);
+   const reconnected=await call<{entity:PlatformEntity}>(first,`trainings/${created.id}`);assert.deepEqual(reconnected.entity,undone.entity);
+   const authoritative=(await admin.query('select state from dartflow_private.platform_entities where id=$1',[created.id])).rows[0].state;assert.equal(authoritative.undo.length,45);assert.equal(authoritative.game.history.length,45);
   });
  }finally{
   // Fixed local accounts are never deleted or broadly cleaned. Every deletion is

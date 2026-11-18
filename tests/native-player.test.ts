@@ -15,6 +15,8 @@ const request=(path='session',method='GET',headers:Record<string,string>={},inpu
 const localEnvironment=()=>{process.env.DARTFLOW_DATA_MODE='local';process.env.DARTFLOW_APP_ORIGIN=origin;};
 const actor='00000000-0000-4000-8000-000000000002';
 test('native route allowlist includes player functions and excludes admin, worker, cookie auth and arbitrary forwarding',()=>{
+ const training=randomUUID();assert.equal(nativePlayerRouteAllowed(`trainings/${training}`,'GET'),true);
+ for(const [path,method]of [[`trainings/${training}`,'POST'],[`trainings/${training}/actions`,'POST'],[`trainings/${training}/extra`,'GET'],['trainings/not-an-id','GET']])assert.equal(nativePlayerRouteAllowed(path,method),false,path);
  for(const [path,method]of [['session','GET'],['profile','GET'],['profile/complete','POST'],['profile/player-pin','POST'],['platform/actions','POST'],[`matches/${randomUUID()}/actions`,'POST'],[`events/${randomUUID()}/actions`,'POST'],[`platform/matches/${randomUUID()}/signals`,'POST'],['player-statistics','GET'],['oche/v1/context','GET'],['oche/v1/devices','GET'],['oche/v1/claim','POST'],['oche/v1/home-session','POST'],[`oche/v1/devices/${randomUUID()}`,'POST']])assert.equal(nativePlayerRouteAllowed(path,method),true,path);
  for(const [path,method]of [['auth/google','GET'],['auth/otp','POST'],['auth/local','POST'],['mail/process','POST'],['integrations','GET'],['blog/admin','POST'],['health','GET'],['platform/export/players','GET'],['oche/v1/devices','POST'],['oche/v1/start','POST'],['oche/v1/redeem','POST'],['oche/v1/snapshot','GET'],['oche/v1/limits','POST'],['session','DELETE'],['../platform','GET'],['platform%2factions','POST'],['platform/actions/extra','POST']])assert.equal(nativePlayerRouteAllowed(path,method),false,path);
 });

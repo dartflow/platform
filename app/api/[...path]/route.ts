@@ -18,7 +18,7 @@ import { DomainError } from '@/lib/domain';
 import type { EventAction, MatchAction } from '@/lib/types';
 import { ensureAuthProfile } from '@/lib/accounts';
 import { handleIntegrationPublic, handleIntegrations, workerTokenMatches } from '@/lib/integrations';
-import { getPlatformOverview, executePlatformCommand, getPlatformMessages, getMatchSignals, sendMatchSignal, reconcilePlatformResults, reconcilePlatformCalls, getPlatformCast, getPlatformStatistics, exportPlatformCsv, replayMatchCommands, getMatchChat, sendMatchChat } from '@/lib/platform';
+import { getPlatformOverview, getPlatformTraining, executePlatformCommand, getPlatformMessages, getMatchSignals, sendMatchSignal, reconcilePlatformResults, reconcilePlatformCalls, getPlatformCast, getPlatformStatistics, exportPlatformCsv, replayMatchCommands, getMatchChat, sendMatchChat } from '@/lib/platform';
 import { mediaConfiguration } from '@/lib/media';
 import { getClubBoardScreen } from '@/lib/club-boards';
 import {getCommunityFeed,getCommunityChat} from '@/lib/community';
@@ -39,6 +39,7 @@ import {seasonCalendar} from '@/lib/season-calendar';
 import {getFeedState,getFeedResult,executeFeedAction,getFeedReplies} from '@/lib/feed';
 import {handleNativePlayerApi} from '@/lib/native-player';
 import {nativePlayerPrincipal} from '@/lib/native-player-context';
+import {nativePlayerTrainingProjection} from '@/lib/native-player-projection';
 import {getAccountDeletionStatus,requestAccountDeletion} from '@/lib/account-removal';
 import {getPlayerSafety,acceptPlayerSafety} from '@/lib/player-safety';
 import {handlePlayReviewManagement} from '@/lib/play-review';
@@ -263,7 +264,15 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     if(method==='POST'&&parts.length===3)return json(await createBoardScreenDevice(actor.id,parts[1],(await body(request)).name));
     if(method==='DELETE'&&parts.length===4&&uuid(parts[3])){await revokeBoardScreenDevice(actor.id,parts[1],parts[3]);return json({ok:true});}
   }
-  if(method==='GET' && path==='platform')return json(await getPlatformOverview(actor.id));
+  if(method==='GET' && path==='platform'){
+    const overview=await getPlatformOverview(actor.id);
+    // An explicit native opt-in preserves the existing web and older app DTOs.
+    return json(nativePlayerPrincipal(request)&&request.nextUrl.searchParams.get('trainingProjection')==='compact'?{...overview,trainings:overview.trainings.map(nativePlayerTrainingProjection)}:overview);
+  }
+  if(method==='GET' && parts[0]==='trainings' && uuid(parts[1]) && parts.length===2){
+    const training=await getPlatformTraining(actor.id,parts[1]);
+    return json(nativePlayerPrincipal(request)?{entity:nativePlayerTrainingProjection(training.entity)}:training);
+  }
   if(method==='GET' && path==='locations')return json(await getLocationOverview(actor.id));
   if(method==='GET' && path==='community/feed')return json(await getCommunityFeed(actor.id,{kind:request.nextUrl.searchParams.get('kind')||'my',id:request.nextUrl.searchParams.get('id'),cursor:request.nextUrl.searchParams.get('cursor'),parentId:request.nextUrl.searchParams.get('parentId')}));
   if(method==='GET' && parts[0]==='community'&&parts[1]==='chat'&&parts.length===4)return json(await getCommunityChat(actor.id,parts[2],parts[3],Number(request.nextUrl.searchParams.get('after')||'0')));
@@ -274,7 +283,8 @@ async function handle(request:NextRequest,parts:string[],method:string) {
       const address=(request.headers.get('x-forwarded-for')||'loopback').split(',').at(-1)!.trim();
       await limit(`invite:ip:${digest(address)}`,20,60);
     }
-    return json(await executePlatformCommand(actor.id,input));
+    const result=await executePlatformCommand(actor.id,input);
+    return json(nativePlayerPrincipal(request)&&result.entity?.kind==='training'?{...result,entity:nativePlayerTrainingProjection(result.entity)}:result);
   }
   if(method==='GET' && path==='platform/statistics')return json(await getPlatformStatistics(actor.id));
   if(method==='GET' && parts[0]==='platform' && parts[1]==='export' && parts.length===3){

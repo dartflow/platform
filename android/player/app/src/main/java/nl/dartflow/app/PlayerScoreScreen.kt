@@ -66,12 +66,14 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
                     Text(if (offline) "Offline" else "● Live", color = if (offline) PlayerError else PlayerLime, fontSize = 11.sp)
                 }
             }
-            Row(Modifier.fillMaxWidth().height(if (compact) 87.dp else 112.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Grow with the actual text metrics, including the system font scale.
+            // A fixed card height clipped the turn label below large rest scores.
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = if (compact) 87.dp else 112.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 players.forEachIndexed { index, player ->
-                    Column(Modifier.weight(1f).fillMaxHeight().border(if (index == active) 2.dp else 1.dp, if (index == active) PlayerLime else PlayerBorder, RoundedCornerShape(12.dp)).background(if (index == active) PlayerLime.copy(alpha = .08f) else PlayerPanel, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp, vertical = if (compact) 4.dp else 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Text(player.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.Bold)
-                        Text("${player.remaining}", fontFamily = PlayerBarlow, fontSize = if (compact) 43.sp else 56.sp, lineHeight = if (compact) 44.sp else 58.sp, color = if (index == active) PlayerLime else Color.White, modifier = Modifier.semantics { contentDescription = "${player.name}, restscore ${player.remaining}${if (index == active) ", aan de beurt" else ""}" })
-                        Text(if (index == active) "AAN DE BEURT" else "WACHT", color = if (index == active) PlayerLime else PlayerMuted, fontSize = 8.sp, letterSpacing = 1.sp)
+                    Column(Modifier.weight(1f).fillMaxHeight().testTag("score-player-card-$index").border(if (index == active) 2.dp else 1.dp, if (index == active) PlayerLime else PlayerBorder, RoundedCornerShape(12.dp)).background(if (index == active) PlayerLime.copy(alpha = .08f) else PlayerPanel, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp, vertical = if (compact) 4.dp else 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                        Text(player.name, modifier = Modifier.fillMaxWidth().testTag("score-player-name-$index"), textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = if (compact) 12.sp else 14.sp, lineHeight = if (compact) 16.sp else 18.sp, fontWeight = FontWeight.Bold)
+                        Text("${player.remaining}", fontFamily = PlayerBarlow, fontSize = if (compact) 43.sp else 56.sp, lineHeight = if (compact) 44.sp else 58.sp, maxLines = 1, textAlign = TextAlign.Center, color = if (index == active) PlayerLime else Color.White, modifier = Modifier.fillMaxWidth().testTag("score-player-remaining-$index").semantics { contentDescription = "${player.name}, restscore ${player.remaining}${if (index == active) ", aan de beurt" else ""}" })
+                        Text(if (index == active) "AAN DE BEURT" else "WACHT", modifier = Modifier.fillMaxWidth().testTag("score-player-status-$index"), textAlign = TextAlign.Center, color = if (index == active) PlayerLime else PlayerMuted, fontSize = 8.sp, lineHeight = 11.sp, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
                     }
                 }
             }

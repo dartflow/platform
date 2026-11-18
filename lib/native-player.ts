@@ -14,7 +14,7 @@ import {signInPlayReviewer} from './play-review';
 
 const id='[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
 const reads=[/^(?:session|profile|overview|platform|player-statistics|player-experience|locations|feed|seasons|safety|account\/deletion)$/,
- new RegExp(`^matches/${id}(?:/invitation)?$`,'i'),new RegExp(`^boards/${id}$`,'i'),new RegExp(`^media/${id}$`,'i'),
+ new RegExp(`^matches/${id}(?:/invitation)?$`,'i'),new RegExp(`^trainings/${id}$`,'i'),new RegExp(`^boards/${id}$`,'i'),new RegExp(`^media/${id}$`,'i'),
  new RegExp(`^platform/matches/${id}/(?:chat|signals)$`,'i'),new RegExp(`^platform/rooms/${id}/messages$`,'i'),
  new RegExp(`^seasons/${id}$`,'i'),new RegExp(`^feed/(?:result|replies)/${id}$`,'i'),/^community\/feed$/,
  new RegExp(`^community/chat/(?:club|league|tournament|match)/${id}$`,'i'),/^oche\/v1\/(?:context|devices)$/];

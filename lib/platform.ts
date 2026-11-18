@@ -201,6 +201,26 @@ export async function getPlatformMessages(actorId: string, roomId: string): Prom
   await requireAccess(database(), row, actor);
   return { messages: await readMessages(database(), actor, row.id) };
 }
+/** The scoring phone needs its current training, not the directory, history and
+ * reconciliation work in the full platform overview. Keep the existing private
+ * projection and ACLs inside one committed, read-only snapshot. Deadline writes
+ * remain with accepted commands and the existing board-activity worker. */
+export async function getPlatformTraining(actorId:string,trainingId:string):Promise<{entity:NonNullable<PlatformResponse['entity']>}> {
+  const actor=uuid(actorId),id=uuid(trainingId),client=await database().connect();
+  try {
+    await client.query('begin isolation level repeatable read read only');
+    const row=await entity(client,id);
+    if(row.kind!=='training'||row.owner_id!==actor)throw new DomainError('forbidden','Deze training hoort bij een andere speler.',403);
+    await requireAccess(client,row,actor);
+    const projected=await view(client,row,actor);
+    if(typeof row.state.boardId==='string'||row.state.discarded){
+      const activity=await readSourceBoardActivity(client,row.id,actor);
+      if(activity)projected.boardActivity=activity;
+    }
+    await client.query('commit');
+    return {entity:projected};
+  }catch(error){await client.query('rollback');throw error;}finally{client.release();}
+}
 export async function getPlatformOverview(actorId: string): Promise<PlatformOverview> {
   const actor = uuid(actorId), profile = await getProfile(actor);
   await reconcilePlatformResults();
