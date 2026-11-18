@@ -163,7 +163,11 @@ internal class PlayerVideoCall(
                     override fun onIceCandidate(candidate: IceCandidate) { scope.launch {
                         if (generation != currentGeneration) return@launch
                         if (!descriptionPublished) outgoingIce.add(candidate)
-                        else runCatching { sendIce(candidate) }.onFailure { notice = "Signaalverbinding onderbroken. Je score blijft beschikbaar." }
+                        else try { sendIce(candidate) }
+                        catch (cancelled: CancellationException) { throw cancelled }
+                        catch (failure: Exception) {
+                            if (!handleSignalingFailure(failure, currentGeneration)) notice = "Signaalverbinding onderbroken. Je score blijft beschikbaar."
+                        }
                     } }
                     override fun onIceCandidatesRemoved(candidates: Array<IceCandidate>) {}
                     override fun onAddStream(stream: MediaStream) {}
@@ -189,20 +193,27 @@ internal class PlayerVideoCall(
                 microphone = true; cursor = 0; pendingIce.clear(); outgoingIce.clear(); descriptionPublished = false; callId = ""
                 open = true
                 notice = if (config.optBoolean("relayConfigured")) "Verbinding opzetten; laat de andere speler ook verbinden." else "Direct verbinden; er is geen relay geconfigureerd."
-                acceptSignals(initiator)
+                acceptSignals(initiator, currentGeneration)
+                if (generation != currentGeneration) return@launch
                 if (initiator) {
                     callId = UUID.randomUUID().toString()
                     val offer = createDescription(true)
+                    if (generation != currentGeneration) return@launch
                     setDescription(offer, true)
+                    if (generation != currentGeneration) return@launch
                     signal("offer", JSONObject().put("sdp", JSONObject().put("type", "offer").put("sdp", offer.description)))
-                    publishPendingIce()
+                    if (generation != currentGeneration) return@launch
+                    publishPendingIce(currentGeneration)
                 }
-                polling = scope.launch {
+                polling = scope.launch signalingLoop@ {
                     while (isActive && generation == currentGeneration) {
                         delay(1000)
-                        try { acceptSignals(initiator) }
+                        try { acceptSignals(initiator, currentGeneration) }
                         catch (cancelled: CancellationException) { throw cancelled }
-                        catch (_: Exception) { notice = "Signaalverbinding onderbroken. Opnieuw synchroniseren…"; delay(1500) }
+                        catch (failure: Exception) {
+                            if (handleSignalingFailure(failure, currentGeneration)) return@signalingLoop
+                            notice = "Signaalverbinding onderbroken. Opnieuw synchroniseren…"; delay(1500)
+                        }
                     }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -214,24 +225,38 @@ internal class PlayerVideoCall(
         if (generation != version || track !is VideoTrack || remoteTrack === track) return@launch
         remoteView?.let { remoteTrack?.removeSink(it) }; remoteTrack = track; remoteView?.let(track::addSink)
     } }
+    /** Permission loss must stop an already established peer connection as well as polling.
+     * Transient signaling loss can recover without interrupting media. An old poll must never
+     * tear down a replacement call that the user has since started. */
+    internal fun handleSignalingFailure(failure: Exception, expectedGeneration: Int = generation): Boolean {
+        if (expectedGeneration != generation) return true
+        if (failure !is PlayerApiFailure || failure.status !in listOf(401, 403, 404, 410)) return false
+        releaseConnection()
+        notice = "De beeldverbinding is gestopt omdat de toegang is gewijzigd of geblokkeerd. Camera en microfoon zijn uit. Je kunt blijven scoren."
+        return true
+    }
     private suspend fun signal(type: String, payload: JSONObject) {
         api.call("/platform/matches/$matchId/signals", JSONObject().put("requestId", UUID.randomUUID().toString()).put("targetId", peerId).put("type", type).put("payload", payload.put("callId", callId)))
     }
     private suspend fun sendIce(candidate: IceCandidate) {
         signal("ice", JSONObject().put("candidate", JSONObject().put("sdpMid", candidate.sdpMid).put("sdpMLineIndex", candidate.sdpMLineIndex).put("candidate", candidate.sdp)))
     }
-    private suspend fun publishPendingIce() {
+    private suspend fun publishPendingIce(expectedGeneration: Int) {
         // Remote peers must receive offer/answer before the first candidate for this call ID.
-        while (outgoingIce.isNotEmpty()) sendIce(outgoingIce.removeAt(0))
-        descriptionPublished = true
+        while (generation == expectedGeneration && outgoingIce.isNotEmpty()) sendIce(outgoingIce.removeAt(0))
+        if (generation == expectedGeneration) descriptionPublished = true
     }
-    private suspend fun acceptSignals(initiator: Boolean) {
+    private suspend fun acceptSignals(initiator: Boolean, expectedGeneration: Int) {
+        if (generation != expectedGeneration) return
         val connection = peer ?: return
         val response = api.call("/platform/matches/$matchId/signals?after=$cursor")
+        // A successful response can arrive after the old call was stopped too.
+        if (generation != expectedGeneration) return
         val signals = response.optJSONArray("signals")
         cursor = response.optLong("cursor", cursor)
         if (signals == null) return
         for (i in 0 until signals.length()) {
+            if (generation != expectedGeneration) return
             val item = signals.getJSONObject(i)
             if (item.optString("actorId") == actorId) continue
             val created = runCatching { java.time.Instant.parse(item.optString("createdAt")).toEpochMilli() }.getOrDefault(0)
@@ -244,13 +269,20 @@ internal class PlayerVideoCall(
                 callId = incoming
                 descriptionPublished = false
                 setDescription(SessionDescription(SessionDescription.Type.OFFER, sdp.getString("sdp")), false)
+                if (generation != expectedGeneration) return
                 drainIce(connection)
-                val answer = createDescription(false); setDescription(answer, true)
+                val answer = createDescription(false)
+                if (generation != expectedGeneration) return
+                setDescription(answer, true)
+                if (generation != expectedGeneration) return
                 signal("answer", JSONObject().put("sdp", JSONObject().put("type", "answer").put("sdp", answer.description)))
-                publishPendingIce()
+                if (generation != expectedGeneration) return
+                publishPendingIce(expectedGeneration)
             } else if (incoming == callId && type == "answer" && connection.signalingState() == PeerConnection.SignalingState.HAVE_LOCAL_OFFER) {
                 val sdp = payload.optJSONObject("sdp") ?: continue
-                setDescription(SessionDescription(SessionDescription.Type.ANSWER, sdp.getString("sdp")), false); drainIce(connection)
+                setDescription(SessionDescription(SessionDescription.Type.ANSWER, sdp.getString("sdp")), false)
+                if (generation != expectedGeneration) return
+                drainIce(connection)
             } else if (incoming == callId && type == "ice") {
                 val value = payload.optJSONObject("candidate") ?: continue
                 val candidate = IceCandidate(value.optString("sdpMid"), value.optInt("sdpMLineIndex"), value.optString("candidate"))
@@ -281,9 +313,10 @@ internal class PlayerVideoCall(
         val camera = capturer ?: return
         if (switching) return
         switching = true
+        val currentGeneration = generation
         camera.switchCamera(object : CameraVideoCapturer.CameraSwitchHandler {
-            override fun onCameraSwitchDone(front: Boolean) { scope.launch { switching = false; localView?.setMirror(front); notice = "Camera gewisseld. Geluid en score blijven actief." } }
-            override fun onCameraSwitchError(error: String) { scope.launch { switching = false; notice = "Camera wisselen mislukt. Je huidige verbinding blijft actief." } }
+            override fun onCameraSwitchDone(front: Boolean) { scope.launch { if (generation != currentGeneration) return@launch; switching = false; localView?.setMirror(front); notice = "Camera gewisseld. Geluid en score blijven actief." } }
+            override fun onCameraSwitchError(error: String) { scope.launch { if (generation != currentGeneration) return@launch; switching = false; notice = "Camera wisselen mislukt. Je huidige verbinding blijft actief." } }
         })
     }
     fun toggleMicrophone() { microphone = !microphone; audioTrack?.setEnabled(microphone) }
