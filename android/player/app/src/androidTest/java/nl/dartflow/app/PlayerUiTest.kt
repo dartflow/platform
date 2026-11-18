@@ -159,6 +159,13 @@ class PlayerUiTest {
         compose.onNodeWithTag("home-feed-post-$homePostId").assertIsDisplayed()
         compose.onNodeWithText(homePostBody).assertIsDisplayed()
         compose.onNodeWithText("Noor Testspeler").assertIsDisplayed()
+        listOf("Statistieken", "Historie").forEach { label ->
+            val layouts = mutableListOf<TextLayoutResult>()
+            compose.onNodeWithText(label, useUnmergedTree = true).assertIsDisplayed()
+                .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            assertEquals("$label must fit one line on the home screen", 1, layouts.single().lineCount)
+            assertFalse("$label must remain complete", layouts.single().hasVisualOverflow)
+        }
         saveFixtureScreenshot("compact-home-feed.png")
         compose.onNodeWithTag("home-scan-button").performClick()
         compose.runOnIdle { assertTrue(scanned) }
