@@ -9,6 +9,8 @@ import { MAIL_CATALOG } from '../lib/integrations-catalog';
 import { integrationTransaction, storeCredential } from '../lib/integrations-core';
 import { enqueueDomainMail, listMailLog, listMailTemplates, planMailReminders, processMailBatch, receiveResendWebhook, senderSettings, updateMailTemplate, updateMailPolicy } from '../lib/integrations-mail';
 import { getGoogleSettings, getResendSettings, updateGoogleSettings, updateResendSettings } from '../lib/integrations';
+import { seasonSettings } from '../lib/seasons-domain';
+import type { SeasonState } from '../lib/seasons-types';
 try{process.loadEnvFile('.env.local');}catch{/* CI injects loopback URLs. */}
 const loopback=(value:string|undefined)=>{try{return !!value&&['localhost','127.0.0.1','[::1]'].includes(new URL(value).hostname);}catch{return false;}};
 const configured=process.env.DARTFLOW_DATA_MODE==='local'&&loopback(process.env.DARTFLOW_DATABASE_ADMIN_URL)&&loopback(process.env.DARTFLOW_DATABASE_URL);
@@ -17,7 +19,7 @@ test('durable mail verifies transactions, scope, CAS, immutable snapshots, provi
  process.env.DARTFLOW_ENV='development';process.env.DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY=randomBytes(32).toString('base64');process.env.DARTFLOW_MAIL_MAX_MODE='test';
  const suffix=randomUUID(),actor=randomUUID(),player=randomUUID(),outsider=randomUUID(),club=randomUUID(),scope=`club:${club}`,address=`test-${suffix}@example.com`,from=`sender-${suffix}@example.com`,replyTo=`support-${suffix}@example.com`;
  process.env.DARTFLOW_MAIL_ALLOWED_FROM=from;process.env.DARTFLOW_MAIL_ALLOWED_REPLY_TO=replyTo;process.env.DARTFLOW_MAIL_TEST_RECIPIENTS=address;
- const entityId=randomUUID(),fixtureId=randomUUID(),outsideScope=`club:${randomUUID()}`;
+ const entityId=randomUUID(),fixtureId=randomUUID(),outsideClub=randomUUID(),outsideScope=`club:${outsideClub}`,outsideSeasonId=randomUUID(),outsideSeasonFixtureId=randomUUID();
  const owner=new pg.Client({connectionString:process.env.DARTFLOW_DATABASE_ADMIN_URL});await owner.connect();
  const isolation=new pg.Client({connectionString:process.env.DARTFLOW_DATABASE_ADMIN_URL});await isolation.connect();
  const ids:string[]=[],outsideIds:string[]=[];
@@ -34,6 +36,15 @@ test('durable mail verifies transactions, scope, CAS, immutable snapshots, provi
   await owner.query("insert into dartflow_private.integration_settings(environment,provider,revision,settings) values('development','resend',0,'{\"mode\":\"log\"}') on conflict(environment,provider) do update set revision=0,settings=excluded.settings");
   for(const [id,name,email]of [[actor,'Mail owner',`owner-${suffix}@example.com`],[player,'Mail player',address],[outsider,'Mail outsider',`outsider-${suffix}@example.com`]])await owner.query('insert into dartflow_private.profiles(id,name,display_name,email,email_verified) values($1,$2,$3,$4,true)',[id,`mail${id.slice(0,8)}`,name,email]);
   await owner.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'owner')",[actor]);await owner.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[club,`Mail ${suffix}`]);await owner.query("insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,'organizer')",[club,actor]);
+  // A fresh eligible canonical season proves isolation cannot pass only because
+  // an earlier worker already deduplicated reminders from existing local data.
+  await owner.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[outsideClub,`Outside mail ${suffix}`]);
+  for(const id of [actor,outsider])await owner.query("insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,'player')",[outsideClub,id]);
+  const publishedAt=new Date().toISOString(),seasonAt=new Date(Date.now()+3600_000).toISOString(),windowEnd=new Date(Date.now()+7*86400_000).toISOString(),divisionId=randomUUID();
+  const outsideSeason:SeasonState={id:outsideSeasonId,revision:0,name:`Outside season ${suffix}`,scope:'internal',clubId:outsideClub,ownerId:actor,managerIds:[actor],status:'planned',format:'singles',settings:seasonSettings({}),rulesVersion:1,publishedAt,eventId:randomUUID(),coreClubId:outsideClub,divisions:[{id:divisionId,name:'Singles'}],participants:[actor,outsider].map(id=>({id,name:'Outside participant',divisionId,status:'active',available:true,checkedIn:false})),teams:[],rounds:[{number:1,startsAt:publishedAt,endsAt:windowEnd,released:true}],fixtures:[{id:outsideSeasonFixtureId,round:1,divisionId,homeId:actor,awayId:outsider,status:'scheduled',startsAt:seasonAt,endsAt:new Date(Date.parse(seasonAt)+3600_000).toISOString(),windowStart:publishedAt,windowEnd,boardIds:[],slots:[{id:randomUUID(),index:0,players:[actor,outsider],starter:0,status:'scheduled'}],lineups:{},confirmations:[],checkIns:[]}],decisions:[],deductions:{},createdAt:publishedAt};
+  await owner.query("insert into dartflow_private.platform_entities(id,kind,owner_id,club_id,visibility,state) values($1,'league',$2,$3,'club',$4)",[outsideSeasonId,actor,outsideClub,JSON.stringify({name:outsideSeason.name,seasonManaged:true,fixtures:[]})]);
+  await owner.query("insert into dartflow_private.competition_seasons(id,scope,club_id,owner_id,status,state) values($1,'internal',$2,$3,'planned',$4)",[outsideSeasonId,outsideClub,actor,JSON.stringify(outsideSeason)]);
+  const outsideSeasonFingerprint=(await owner.query('select md5(row_to_json(s)::text) fingerprint from dartflow_private.competition_seasons s where id=$1',[outsideSeasonId])).rows[0].fingerprint;
   // More than one full worker batch of older, unrelated fixture mail must stay untouched.
   for(let index=0;index<12;index++){
    const id=await integrationTransaction(client=>enqueueDomainMail(client,{id:`outside:${suffix}:${index}`,templateId:'welcome',scope:outsideScope,recipientId:outsider,variables:{name:'Outside fixture'}}));
@@ -44,7 +55,12 @@ test('durable mail verifies transactions, scope, CAS, immutable snapshots, provi
   // queries isolate the real worker/planner without consuming or rewriting other mail.
   await isolation.query('begin');await isolation.query("set local lock_timeout='5s'");
   await isolation.query("select id from dartflow_private.platform_entities where kind in ('league','tournament') and id<>$1 order by id for update",[entityId]);
+  await isolation.query('select id from dartflow_private.competition_seasons where id<>$1 order by id for update',[outsideSeasonId]);
   await isolation.query("select id from dartflow_private.mail_outbox where environment='development' and scope_key<>$1 order by id for update",[scope]);
+  await isolation.query('savepoint outside_season_source');
+  await isolation.query('select id from dartflow_private.competition_seasons where id=$1 for update',[outsideSeasonId]);
+  const outsideSeasonEventId=`season-reminder:${outsideSeasonId}:${outsideSeasonFixtureId}:${seasonAt}`;
+  assert.equal((await owner.query('select count(*)::int n from dartflow_private.mail_events where scope_key=$1 and event_id=$2',[outsideScope,outsideSeasonEventId])).rows[0].n,0);
   outsideSnapshot=(await outsiderMail()).rows;
   await t.test('current server roles enforce owner credentials and cross-club log/template access',async()=>{await assert.rejects(getResendSettings(player),{code:'owner_required'});await assert.rejects(listMailTemplates(outsider,scope),{code:'mail_forbidden'});await assert.rejects(listMailLog(player,scope),{code:'mail_forbidden'});const settings=await getResendSettings(actor);assert.equal('apiKey'in settings,false);assert.equal('webhookSigningSecret'in settings,false);});
   await t.test('a separately allowed Reply-To cannot become a sender or test recipient',async()=>{
@@ -80,6 +96,18 @@ test('durable mail verifies transactions, scope, CAS, immutable snapshots, provi
   await t.test('Google adapter fixes the project, accepts only Google fields, hides provider secrets and persists uncertainty',async()=>{const original=globalThis.fetch,oldToken=process.env.SUPABASE_MANAGEMENT_TOKEN;process.env.DARTFLOW_ENV='staging';process.env.SUPABASE_MANAGEMENT_TOKEN='fixture_project_scoped_management_token';let clientId='',clientSecret='',enabled=false,failReadback=false;const patches:Record<string,unknown>[]=[];globalThis.fetch=async(url,options)=>{assert.equal(String(url),'https://api.supabase.com/v1/projects/dsnqnvbckkqpzadblshu/config/auth');assert.equal(options?.redirect,'error');if(options?.method==='PATCH'){const patch=JSON.parse(String(options.body));patches.push(patch);enabled=patch.external_google_enabled??enabled;clientId=patch.external_google_client_id??clientId;clientSecret=patch.external_google_secret??clientSecret;return Response.json({external_google_enabled:enabled,external_google_client_id:clientId,external_google_secret:clientSecret,smtp_pass:'must-never-reach-browser'});}if(failReadback&&patches.length>1)throw new Error('Fixture network interruption');return Response.json({external_google_enabled:enabled,external_google_client_id:clientId,external_google_secret:clientSecret,external_email_enabled:true,smtp_pass:'must-never-reach-browser'});};try{await assert.rejects(updateGoogleSettings(actor,{expectedRevision:0,projectRef:'forged'}),{code:'unknown_field'});const saved=await updateGoogleSettings(actor,{expectedRevision:0,enabled:true,clientId:'12345-fixture.apps.googleusercontent.com',clientSecret:'GOCSPX_fixture_private_secret'});assert.equal(saved.revision,1);assert.deepEqual(Object.keys(patches[0]).sort(),['external_google_client_id','external_google_enabled','external_google_secret']);const view=await getGoogleSettings(actor);assert.equal(view.management,'ready');assert.equal(view.lastVerifiedLoginAt,null);assert.ok(!JSON.stringify(view).includes('GOCSPX_fixture_private_secret'));assert.ok(!JSON.stringify(view).includes('smtp_pass'));await assert.rejects(updateGoogleSettings(actor,{expectedRevision:0,enabled:false}),{code:'revision_conflict'});await assert.rejects(updateGoogleSettings(actor,{expectedRevision:1,clientId:'12345-changed.apps.googleusercontent.com',clientSecret:''}),{code:'google_secret_required'});failReadback=true;await assert.rejects(updateGoogleSettings(actor,{expectedRevision:1,enabled:false}),{code:'management_unknown'});const row=(await owner.query("select revision,settings from dartflow_private.integration_settings where environment='staging' and provider='google'")).rows[0];assert.equal(row.revision,2);assert.equal(row.settings.lastVerifiedLoginAt,null);assert.equal(row.settings.lastError,'management_unknown');assert.equal((await owner.query("select 1 from dartflow_private.integration_audit where actor_id=$1 and operation='google-update' and outcome='uncertain'",[actor])).rowCount,1);}finally{globalThis.fetch=original;process.env.DARTFLOW_ENV='development';if(oldToken===undefined)delete process.env.SUPABASE_MANAGEMENT_TOKEN;else process.env.SUPABASE_MANAGEMENT_TOKEN=oldToken;await owner.query("delete from dartflow_private.integration_settings where environment='staging' and provider='google'");}});
   assert.equal((await senderSettings()).mode,'test');
   assert.deepEqual((await outsiderMail()).rows,outsideSnapshot);
+  await t.test('canonical season isolation skips a fresh due source, then releasing only that source plans two reminders once',async()=>{
+   assert.equal((await owner.query('select md5(row_to_json(s)::text) fingerprint from dartflow_private.competition_seasons s where id=$1',[outsideSeasonId])).rows[0].fingerprint,outsideSeasonFingerprint);
+   assert.equal((await owner.query('select count(*)::int n from dartflow_private.mail_events where scope_key=$1 and event_id=$2',[outsideScope,outsideSeasonEventId])).rows[0].n,0);
+   // Keep every unrelated source and all older mail locked. Only this captured
+   // synthetic season becomes available to the real SKIP LOCKED planner.
+   await isolation.query('rollback to savepoint outside_season_source');
+   assert.equal((await planMailReminders()).planned,2);
+   const reminders=await owner.query('select template_id,recipient_key,snapshot from dartflow_private.mail_outbox where entity_id=$1',[outsideSeasonId]);
+   assert.equal(reminders.rowCount,2);assert.deepEqual(new Set(reminders.rows.map(row=>row.recipient_key)),new Set([`user:${actor}`,`user:${outsider}`]));
+   assert.ok(reminders.rows.every(row=>row.template_id==='fixture-reminder'&&row.snapshot.reminder?.kind==='season-reminder'&&row.snapshot.reminder?.fixtureId===outsideSeasonFixtureId));
+   assert.equal((await planMailReminders()).planned,0);
+  });
  }finally{
   try{
    // Release row locks before removing only the captured synthetic jobs/profiles.
@@ -98,11 +126,13 @@ test('durable mail verifies transactions, scope, CAS, immutable snapshots, provi
    await owner.query("delete from dartflow_private.mail_provider_events where environment='development' and provider_message_id=any($1::text[])",[[`provider-${suffix}`,`early-provider-${suffix}`]]);
    await owner.query("delete from dartflow_private.mail_suppressions where environment='development' and recipient_key=$1",[`user:${player}`]);
    await owner.query('delete from dartflow_private.mail_outbox where id=any($1::uuid[])',[outsideIds]);
+   await owner.query('delete from dartflow_private.mail_outbox where entity_id=$1',[outsideSeasonId]);
    await owner.query("delete from dartflow_private.mail_events where environment='development' and scope_key=$1",[outsideScope]);
    for(const table of ['mail_outbox','mail_events','mail_template_versions','mail_templates','mail_policies'])await owner.query(`delete from dartflow_private.${table} where environment='development' and scope_key=$1`,[scope]);
    await owner.query('delete from dartflow_private.integration_audit where actor_id=$1',[actor]);
    await owner.query('delete from dartflow_private.platform_entities where id=$1',[entityId]);
-   await owner.query('delete from dartflow_private.platform_roles where user_id=$1',[actor]);await owner.query('delete from dartflow_private.club_memberships where club_id=$1',[club]);await owner.query('delete from dartflow_private.clubs where id=$1',[club]);await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[[actor,player,outsider]]);
+   await owner.query('delete from dartflow_private.platform_entities where id=$1',[outsideSeasonId]);
+   await owner.query('delete from dartflow_private.platform_roles where user_id=$1',[actor]);await owner.query('delete from dartflow_private.club_memberships where club_id=any($1::uuid[])',[[club,outsideClub]]);await owner.query('delete from dartflow_private.clubs where id=any($1::uuid[])',[[club,outsideClub]]);await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[[actor,player,outsider]]);
   }finally{
    await isolation.end();await owner.end();await closeDatabase();globalThis.fetch=originalFetch;
    for(const[key,value]of Object.entries(previous)){if(value===undefined)delete process.env[key];else process.env[key]=value;}
