@@ -1,0 +1,98 @@
+{
+  "format": "dartflow-hosted-migration-validation-v1",
+  "environment": "staging",
+  "projectRef": "dsnqnvbckkqpzadblshu",
+  "migrationSourceCommit": "f97292a9ec0ebb734f9c509b4613c254e78ea2a2",
+  "verifiedAt": "2026-11-19T16:36:44.543574+00:00",
+  "migrations": [
+    {
+      "file": "20261119145211_national_player_rating.sql",
+      "sha256": "54df35547d560093c5a23b665b2cfd6d8432a71da00c4b59b56070369af262a3"
+    },
+    {
+      "file": "20261119150236_ranking_destinations_generations.sql",
+      "sha256": "6502ce7793975eee994bfcd493bcf41e990b8675bfc9f50c0e477b89d5383859"
+    },
+    {
+      "file": "20261119152234_organizer_drafts.sql",
+      "sha256": "5258915908980af97ef4bbc5d294dd4aed1929f1f7ed7480c50a67bb8a770a64"
+    },
+    {
+      "file": "20261119152915_faq_publication.sql",
+      "sha256": "7a0060ede44844f3ecaa4498211f8679f08486097efc7907f90868019fae591c"
+    },
+    {
+      "file": "20261119153249_primary_match_corrections.sql",
+      "sha256": "8fccf407fc462a5b28d0d37f169448e3e42ab0ee2620556a4355207f36ed1c40"
+    },
+    {
+      "file": "20261119155843_versioned_unthrown_ranking_rosters.sql",
+      "sha256": "51d679d5cca175ecfd9b5471109ca849a7506e80f0a9b61a2def952e3d30feac"
+    },
+    {
+      "file": "20261119161328_season_unthrown_reserve.sql",
+      "sha256": "89ac299957cb79eda9accd0daa7ad12c5df3fc3234115e7e6195c59cf7fd2dc1"
+    },
+    {
+      "file": "20261119163240_remote_reservation_matches.sql",
+      "sha256": "1584aef1f41eb764ff71bd5204770cef2677fba6095fb3ecb06400581890964f"
+    },
+    {
+      "file": "20261119171500_oche_theme.sql",
+      "sha256": "a53b6171f79ae2784c68a83d9c366017cf5882de771665571ac9e228f2a35c8c"
+    },
+    {
+      "file": "20261119184010_private_correction_cases.sql",
+      "sha256": "fdd1165a5808ea315e57b1e91671a5bde76f71c04eb397a263945b3995b9bba8"
+    }
+  ],
+  "allTenRecorded": true,
+  "historicalStateTables": {
+    "matches": {
+      "rows": 1,
+      "beforeAndAfterMd5": "a11eef8d1f80c858a49d7b63684e21a6"
+    },
+    "match_results": {
+      "rows": 0,
+      "beforeAndAfterMd5": "d751713988987e9331980363e24189ce"
+    },
+    "platform_entities": {
+      "rows": 9,
+      "beforeAndAfterMd5": "961c0d9e27087dded901ea9397cea49e"
+    },
+    "competition_seasons": {
+      "rows": 0,
+      "beforeAndAfterMd5": "d751713988987e9331980363e24189ce"
+    }
+  },
+  "readinessMarkers": {
+    "national_player_rating": 1,
+    "ranking_destinations_generations": 1,
+    "organizer_drafts": 1,
+    "faq_publication": 1,
+    "primary_match_corrections": 1,
+    "ranking_roster_versions": 1,
+    "oche_theme": 1,
+    "private_correction_cases": 1
+  },
+  "privateTables": 138,
+  "tablesWithoutRls": 0,
+  "anonTableAccess": 0,
+  "authenticatedTableAccess": 0,
+  "reserveHelperExecute": {
+    "anon": false,
+    "authenticated": false,
+    "service_role": false,
+    "dartflow_app": true
+  },
+  "securityAdvisors": "Unchanged baseline: owner_bootstrap RLS-without-policy INFO and disabled Auth leaked-password-protection WARN; no new findings.",
+  "previousApplicationCompatibility": {
+    "sha": "4a234040109b0c5f1dd8118462a0dea3ae062994",
+    "releaseId": "44413151778-1",
+    "ready": "ready",
+    "database": "ok",
+    "auth": "reachable"
+  },
+  "registrationRecovery": "FAQ SQL committed before provider history insertion collided with a same-second version. Actual schema markers/history were inspected; idempotent FAQ SQL reapplied successfully and remaining migrations recorded with separated timestamps.",
+  "newApplicationDeployment": "pending exact-main CI; this records database expansion and previous-version compatibility only"
+}

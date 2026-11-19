@@ -1,6 +1,6 @@
 {
   "format": "dartflow-full-release-local-validation-v1",
-  "createdAt": "2026-11-19T16:24:04.492357+00:00",
+  "createdAt": "2026-11-19T16:39:31.382201+00:00",
   "scope": "Local loopback validation, not hosted, store, or physical-device acceptance. Exact GitHub source SHA must be bound by subsequent CI and deployment receipts.",
   "webBuild": "passed",
   "typecheck": "passed",
@@ -22,7 +22,16 @@
     "passed": 64,
     "log": "full-release-deployer-local-2026-11-19.log"
   },
-  "browser": "Full fresh-fixture browser run pending; earlier theme3/3 and seasons9/9 are separately documented.",
+  "browser": {
+    "command": "npm run test:e2e",
+    "passed": 82,
+    "failed": 0,
+    "skipped": 0,
+    "durationMinutes": 6.3,
+    "log": "full-release-browser-local-2026-11-19.log",
+    "scope": "A mixture of actual loopback HTTP/DB multi-session scenarios and explicit presentation fixtures; no hosted or physical-device claim.",
+    "contractUpdates": "Open-registration scenario explicitly chooses public visibility; profile statistics assertions include the new opening-rule cohort label. Both targeted reruns and the subsequent complete82-test run passed."
+  },
   "backupsAndRestore": "Staging103tables923rows and production103tables276rows restored in isolated loopback databases; all ten candidate migrations applied twice, 234 foreign keys checked, historical rows unchanged.",
   "sourceDigests": {
     "lib/competition-precalls.ts": "e984de53f8e2943fe247ef8b44c5754c2832fba223eec628c11d008519dcebb3",
@@ -32,6 +41,15 @@
     "components/sprint-display.tsx": "107568e56a78858dfdf498a0d39e7ea09e31f2fce615e9437ae65967ebff0d11",
     "components/oche-live.css": "207a0c685fcbf3e18c87dae9e100f28a5e5d93e5c17d7a2787819d31bfed3347",
     "tests/platform-db.test.ts": "2ca0d5d2824e0e78ce41703f75774d7b51b61b9b5326ec0a60f892512310e790",
-    "tests/e2e/release-oche-theme.spec.ts": "f92189f2d5d2a553958b8b833e26695086e43a796c7fb8de302aef9c9d0bfaba"
+    "tests/e2e/release-oche-theme.spec.ts": "f92189f2d5d2a553958b8b833e26695086e43a796c7fb8de302aef9c9d0bfaba",
+    "tests/e2e/cast.spec.ts": "58924ac8ef657021be9f6787584ca452752f58f91f02fce0ea005cfbf21422fa",
+    "tests/e2e/player-profile-ui.spec.ts": "b7e8a55663c908cb33e2343a578155143026a99b2b7a1b1473857187fdabe8e1",
+    "android/oche-live/ci/play_release.py": "fd2cf36300139187b91ba0623dc8fb125217af972f4417f4eec75bcf231f4436",
+    "android/oche-live/ci/test_play_release.py": "656f2315412837e5ea9bd7bf2a041d0f342186e98c4d1a9fab9c12f6ef199f4a"
+  },
+  "playReadOnlyHelper": {
+    "passed": 19,
+    "failed": 0,
+    "scope": "Mock transport and CLI checks only; no Google request, upload, track update, validation or commit."
   }
 }
