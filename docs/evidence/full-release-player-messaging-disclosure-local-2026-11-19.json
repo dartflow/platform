@@ -1,0 +1,76 @@
+{
+  "collectedAt": "2026-11-19T18:04:31.830681+00:00",
+  "scope": "Local source/dependency inspection for candidate Player 0.2.0 (5); not Play Console, delivery or final-main release evidence",
+  "sourceHeadAtInspection": "fda865cdc7406cccddbaa8b5577eb3b47b358779",
+  "sourceSha256": {
+    "android/player/app/build.gradle.kts": "b9437bd59850185b4b352b970d3411090fb2cd3948cae44f8b8c80dcdc1b0e2e",
+    "android/player/app/src/main/AndroidManifest.xml": "a2a6ac06c8d7fe9378be64ba3cce36bf5879ac3c3e64d6169238b360a3e9072f",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerPush.kt": "34b57101cef969594dedb05170a073a8faa3238851bf5c6702362260ee33961a",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerPushControls.kt": "1ae0492355a315fb773c26c4acfb05ce7e711b4dcb433586080b3a5433ec5785",
+    "lib/native-push.ts": "fe1074feeb8b08387e6e934098c27015d09f20c9c60d6a6e20604574245f42a6",
+    "lib/native-push-config.ts": "12431c18c696791cb3c169eaf5e21238b6140ece841d28a9820e4ba99234bab7",
+    "supabase/migrations/20261119194300_native_push.sql": "aee89bf65101d2ebf00293c261f8e5bf19cbd1ee04dc74cc9662ae7c66879aeb",
+    "tests/native-push.test.ts": "314c2d41b9fc0f7ce7f5b74c40ac9f9596ac72e809d5a6d880cf3a477c8f0617"
+  },
+  "runtimeDependencyResolution": {
+    "performedWithoutSourceCompilation": true,
+    "reportSha256": "6476fc4a8234063589001338085093452d6cd3cb021027ee8cf740d6f650de28",
+    "gradleInputHashes": {
+      "app/build.gradle.kts": "b9437bd59850185b4b352b970d3411090fb2cd3948cae44f8b8c80dcdc1b0e2e",
+      "build.gradle.kts": "b7e8343ad7c348e87a1dbdcb0736e92416771bdb70490acd5f543249beba8a70",
+      "gradle.properties": "5fe2571c19a9f9380abbc24cd45851ca41f6877f082c98f007c6f8c71648e34e",
+      "settings.gradle.kts": "024ad50f5a6bda4548a5f6483acb1c96cfaed41191f09f944ecb05de44e1f211",
+      "version.properties": "7892f9a72f615e06ca2ba73a94f015e4210bb69855fca7214ff798ae84824e0f",
+      "gradle/wrapper/gradle-wrapper.properties": "3b6b8df392b92f86332d907707f3d952a32c8d6e1fedabafe2b5ec3d933a78c4"
+    },
+    "observed": {
+      "firebase-messaging": "25.0.1",
+      "firebase-installations": "18.0.0",
+      "firebase-datatransport": "18.2.0",
+      "firebase-measurement-connector": "19.0.0",
+      "datatransport-transport-api": "3.1.0",
+      "datatransport-transport-runtime": "3.1.9",
+      "datatransport-transport-backend-cct": "3.1.9",
+      "play-services-base": "18.1.0",
+      "play-services-basement": "18.3.0",
+      "play-services-tasks": "18.1.0"
+    },
+    "absentSdkGroups": [
+      "Firebase Analytics",
+      "GMS measurement SDK",
+      "Ads",
+      "Billing",
+      "Crashlytics",
+      "MLKit"
+    ],
+    "analyticsConnectorIsNotAnalyticsSdk": true
+  },
+  "manifest": {
+    "package": "nl.dartflow.app",
+    "version": "0.2.0",
+    "versionCode": 5,
+    "minSdk": 26,
+    "targetSdk": 36,
+    "postNotifications": true,
+    "advertisingIdPermission": false,
+    "messagingAutoInitDefault": false,
+    "analyticsCollectionDefault": false,
+    "firebaseSdkOptions": "Optional runtime-only; no google-services.json bundled"
+  },
+  "privacyRegression": {
+    "realLocalDatabase": true,
+    "provider": "mock HTTP-v1 only; retention case no FCM credentials",
+    "tests": 18,
+    "failures": 0,
+    "skipped": 0,
+    "testLogSha256": "dc8007a55db03ce15156caed6846eeeb5abaff3876053fe36976f53d5d694ba9",
+    "lintPassed": true,
+    "retentionWithoutProviderTest": "retention purges expired token envelopes and inbox deliveries while FCM is unconfigured",
+    "accountDeletionTest": "soft deletion immediately erases token envelopes, inbox and leased deliveries through real deletion command"
+  },
+  "actualFirebaseConfigurationReadConfirmed": false,
+  "actualDeviceFcmDeliveryConfirmed": false,
+  "playConsoleDataSafetyVerified": false,
+  "storeFormChanged": false,
+  "signedOrPublished": false
+}

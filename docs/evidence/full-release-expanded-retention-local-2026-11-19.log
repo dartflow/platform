@@ -1,0 +1,27 @@
+✔ native route allowlist includes player functions and excludes worker, cookie auth and arbitrary forwarding (2.448146ms)
+✔ published native FAQ is available before login while ranking and director reads still require bearer (29.770181ms)
+✔ native authentication never falls back to cookies, actor headers, browser Origin, malformed or oversized bearer (1.548431ms)
+✔ local native bearer is signed, expiring, fixture-bound and never accepted outside local loopback (2.038859ms)
+✔ bearer principal is isolated across requests, asynchronous work and parallel users (5.857231ms)
+✔ capabilities expose only public auth and use independent fixed production/staging identities (0.899665ms)
+✔ Google callback relays only one-use code and state to the fixed environment app and leaves ordinary callback untouched (1.70638ms)
+✔ native real API uses verified bearer actor and existing authorization while ordinary web POST retains CSRF (50.730109ms)
+✔ Supabase native bearer checks current Auth user, cryptographic claims, identity match and anonymous status using a local auth adapter (123.574608ms)
+▶ native push lifecycle uses opaque notifications, current ACL, device binding, preferences and actual receipt stages
+  ✔ exact package/config and encrypted account-bound tokens (30.236336ms)
+  ✔ retention purges expired token envelopes and inbox deliveries while FCM is unconfigured (27.552542ms)
+  ✔ domain event dedupe queues once even without an email address; disabled preference suppresses (22.027192ms)
+  ✔ mock transport acceptance is separate from device receipt and open; no private content in provider payload (112.020409ms)
+  ✔ each dispatch batch bounds three concurrent provider requests and leaves later jobs queued (81.540366ms)
+  ✔ expired/current source checks reject stale notifications and switched account bindings (9.933467ms)
+  ✔ soft deletion immediately erases token envelopes, inbox and leased deliveries through real deletion command (12.818748ms)
+  ✔ safe lockscreen text never interpolates source variables (0.409466ms)
+✔ native push lifecycle uses opaque notifications, current ACL, device binding, preferences and actual receipt stages (364.706582ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1402.777391

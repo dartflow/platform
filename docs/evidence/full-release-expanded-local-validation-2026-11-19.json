@@ -1,0 +1,73 @@
+{
+  "recordedAt": "2026-11-19T18:17:11.425533+00:00",
+  "environment": "isolated loopback PostgreSQL and local production-mode Next.js preview",
+  "baseCommit": "fda865cdc7406cccddbaa8b5577eb3b47b358779",
+  "sourceFingerprint": {
+    "algorithm": "SHA-256 of sorted path/content-SHA256 JSON",
+    "files": 395,
+    "sha256": "84315b7203a06869351399f9152dd27ebb4b907434e88a2873124e774b73ebe0"
+  },
+  "broadServiceCheckpoint": {
+    "tests": 655,
+    "passed": 655,
+    "failed": 0,
+    "skipped": 0,
+    "log": "full-release-expanded-unit-local-2026-11-19.log"
+  },
+  "subsequentBackendChange": {
+    "scope": "Expired push inbox/device purge now also runs without FCM configuration",
+    "focusedTests": 18,
+    "passed": 18,
+    "failed": 0,
+    "skipped": 0,
+    "log": "full-release-expanded-retention-local-2026-11-19.log"
+  },
+  "build": "Production build, TypeScript and final full ESLint passed. Later changes only adjust test locators and evidence/disclosure prose.",
+  "prototype": {
+    "tests": 46,
+    "passed": 46
+  },
+  "deployer": {
+    "tests": 64,
+    "passed": 64
+  },
+  "browser": {
+    "distinctCasesCovered": 86,
+    "completeSingleRun": false,
+    "centralExactMainRunRequired": true,
+    "attempt": {
+      "completedPassed": 82,
+      "reportedFailures": 0,
+      "processExit": 143,
+      "log": "full-release-expanded-browser-interrupted-local-2026-11-19.log"
+    },
+    "remainingPilotAfterLocalReset": {
+      "passed": 4,
+      "failed": 0,
+      "log": "full-release-expanded-pilot-local-2026-11-19.log"
+    },
+    "newOrdinaryHttpCases": {
+      "passed": 4,
+      "failed": 0,
+      "names": [
+        "two-account bull with public screen",
+        "guest CSV preview/apply and authorization",
+        "ranking publication pause/resume and reason privacy",
+        "offline conflict preserved and reasoned resolution"
+      ],
+      "log": "full-release-expanded-controls-browser-local-2026-11-19.log"
+    },
+    "visualReview": "All six screenshots in full-release-controls-web-2026-11-19 were independently inspected."
+  },
+  "native": {
+    "player": "99 JVM tests per variant locally; 61 UI cases compiled, fresh exact-main execution pending",
+    "oche": "Earlier component 3108: actual phone10/10 and TV10/10, zero skipped; not a main release"
+  },
+  "hosted": "Staging schema has all14 expansions and previous-version compatibility. New staging/production application deployment pending exact-main gates.",
+  "limits": [
+    "Synthetic loopback accounts only; some pre-existing browser renderer tests intercept API fixtures.",
+    "No complete acceptance row among the71 source scenarios is claimed solely from these checks.",
+    "Google Play Oche access returned403; current Firebase config and actual device delivery remain unverified.",
+    "The full current656-service/86-browser main CI must pass before deployment."
+  ]
+}

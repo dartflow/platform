@@ -88,6 +88,9 @@ test("club boards provide permanent registration QR and live read-only scoring w
     await a.getByRole("combobox", { name: "Spelvorm", exact: true }).selectOption("local");
     await a.getByRole("combobox", { name: "Startscore", exact: true }).selectOption("301");
     await a.getByRole("combobox", { name: "Best of legs", exact: true }).selectOption("1");
+    // Keep this registration/binding case on its published fixed opener; the
+    // separate release-bull-start case verifies the complete bull procedure.
+    await a.locator('select[name="startProcedure"]').selectOption('home-first');
     await a.getByRole("button", { name: "Op deze baan starten", exact: true }).click();
     await expect(a).toHaveURL(/\/app\/lobby\/[a-f0-9-]{36}/);
     await expect(screen.getByRole("heading", { name: "Jouw tegenstander staat klaar.", exact: true })).toBeVisible();
@@ -177,10 +180,26 @@ test("club boards provide permanent registration QR and live read-only scoring w
     // Keep a failed display assertion from leaving the shared local test players busy.
     if (fixtureMatchId) try {
       let state: MatchView = await (await first.request.get(`/api/matches/${fixtureMatchId}`)).json();
+      // A failure before the first dart can leave the new bull flow pending.
+      // Complete only this fixture through its ordinary two authenticated sides.
+      if (['called','ready'].includes(state.status)) {
+        if (!state.accepted[0]) state = await matchAction(first, fixtureMatchId, {type:'accept'});
+        if (!state.accepted[1]) state = await matchAction(second, fixtureMatchId, {type:'accept'});
+        for(let round=0;state.bull&&state.bull.status!=='complete'&&round<8;round++) {
+          if(state.bull.status==='throwing')state=await matchAction(first,fixtureMatchId,{type:'bull-throw',hit:state.bull.throws.some(hit=>hit.round===state.bull!.round)?'outside':'DB'});
+          else {
+            for(const context of[first,second]){
+              const own:MatchView=await(await context.request.get(`/api/matches/${fixtureMatchId}`)).json();
+              if(own.permissions.canBullConfirm)state=await matchAction(context,fixtureMatchId,{type:'bull-confirm'});
+            }
+          }
+        }
+        if(state.status==='ready')state=await matchAction(first,fixtureMatchId,{type:'start'});
+      }
       for (let turn = 0; state.status === "live" && turn < 8; turn++) {
         const remaining = state.remaining[0];
         state = await matchAction(first, fixtureMatchId, {
-          type: "score", score: state.turn === 0 ? remaining > 170 ? remaining - 40 : remaining : 0,
+          type: "score", score: state.turn === 0 ? remaining > 170 ? Math.min(180,remaining - 40) : remaining : 0,
           ...(state.turn === 0 && remaining <= 170 ? { doubleConfirmed: true } : {}),
         });
       }

@@ -1,0 +1,53 @@
+
+> dartflow@0.1.0 build
+> next build --webpack && node scripts/prepare-standalone.mjs
+
+▲ Next.js 16.4.6 (webpack)
+- Environments: .env.local
+✓ Running next.config.ts took 28ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 5.2s
+  Running TypeScript ...
+  Finished TypeScript in 2.5s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/12) ...
+  Generating static pages using 11 workers (3/12) 
+  Generating static pages using 11 workers (6/12) 
+  Generating static pages using 11 workers (9/12) 
+✓ Generating static pages using 11 workers (12/12) in 186ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /.well-known/assetlinks.json
+├ ƒ /[[...path]]
+├ ○ /account-verwijderen
+├ ƒ /api/[...path]
+├ ƒ /api/board-screens/[boardId]/manifest.webmanifest
+├ ƒ /auth/callback
+├ ƒ /auth/native/callback
+├ ƒ /blog
+├ ƒ /blog/[slug]
+├ ƒ /blog/beheer
+├ ƒ /blog/beheer/voorbeeld/[id]
+├ ○ /communityregels
+├ ƒ /help/[[...path]]
+├ ○ /koppel-scherm
+├ ○ /link-onbekend
+├ ○ /oche-live
+├ ƒ /privacy
+├ ○ /robots.txt
+├ ƒ /scorebord/manifest.webmanifest
+├ ƒ /sitemap.xml
+├ ƒ /speler/manifest.webmanifest
+└ ○ /voorwaarden
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Standalone server en publieke assets gereed; runtime-env wordt apart aangeleverd.

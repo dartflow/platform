@@ -79,7 +79,9 @@ export async function executeNativePushCommand(actor:string,input:Record<string,
 
 /** Existing mail timer invokes this. FCM acceptance is not counted as device delivery. */
 export async function processNativePushBatch(fetcher:typeof fetch=fetch):Promise<{processed:number}>{
- const environment=integrationRuntime().environment;if(!fcmCredentialsConfigured())return {processed:0};
+ const environment=integrationRuntime().environment;
+ await database().query("delete from dartflow_private.native_push_inbox where environment=$1 and expires_at<now()-interval '30 days'",[environment]);await database().query("delete from dartflow_private.native_push_devices where environment=$1 and expires_at<now()",[environment]);
+ if(!fcmCredentialsConfigured())return {processed:0};
  const jobs=await integrationTransaction(async client=>(await client.query(`with due as(select o.id from dartflow_private.native_push_outbox o join dartflow_private.native_push_inbox i on i.id=o.inbox_id where i.environment=$1 and((o.status in('queued','retry')and o.available_at<=now())or(o.status='processing'and o.lease_until<now()))order by o.available_at,o.id for update of o skip locked limit 3)update dartflow_private.native_push_outbox o set status='processing',claim_token=$2,lease_until=now()+interval '2 minutes',attempts=attempts+1 from due where due.id=o.id returning o.*`,[environment,randomUUID()])).rows);
  await Promise.all(jobs.map(async job=>{let status='failed',error:string|null=null,provider:string|null=null;const dispatch=await database().connect();try{
   await dispatch.query('begin');
@@ -99,5 +101,5 @@ export async function processNativePushBatch(fetcher:typeof fetch=fetch):Promise
  }catch{await dispatch.query('rollback').catch(()=>{});status='retry';error='transport-unknown';}finally{dispatch.release();}
   await database().query("update dartflow_private.native_push_outbox set status=$3,error_category=$4,provider_id=$5,claim_token=null,lease_until=null,available_at=now()+interval '2 minutes',updated_at=now()where id=$1 and claim_token=$2 and status='processing' and lease_until>clock_timestamp()",[job.id,job.claim_token,status,error,provider]);
  }));
- await database().query("delete from dartflow_private.native_push_inbox where environment=$1 and expires_at<now()-interval '30 days'",[environment]);await database().query("delete from dartflow_private.native_push_devices where environment=$1 and expires_at<now()",[environment]);return {processed:jobs.length};
+ return {processed:jobs.length};
 }

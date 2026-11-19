@@ -1,31 +1,31 @@
 {
-  "recordedAt": "2026-11-19T16:22:02.615Z",
+  "recordedAt": "2026-11-19T17:56:14.579Z",
   "command": "npx tsx --test --test-concurrency=1 tests/ranking-performance-db.test.ts",
   "environment": "isolated-loopback-postgres",
   "measurement": "actual final executeMatchCommand confirmation through a fresh getRankings response; service and database only",
   "concurrency": 16,
   "batchCount": 3,
   "samples": 48,
-  "p50Ms": 328.60089100000005,
-  "p95Ms": 550.6572470000001,
-  "maximumMs": 613.953141,
+  "p50Ms": 307.3313440000002,
+  "p95Ms": 507.78242000000046,
+  "maximumMs": 558.6338059999998,
   "batches": [
     {
       "batch": 1,
-      "p50Ms": 344.2533139999996,
-      "p95Ms": 613.953141,
+      "p50Ms": 341.81083600000056,
+      "p95Ms": 558.6338059999998,
       "sourceCount": 16
     },
     {
       "batch": 2,
-      "p50Ms": 289.37331900000027,
-      "p95Ms": 530.6347999999998,
+      "p50Ms": 222.34961300000032,
+      "p95Ms": 434.86856699999953,
       "sourceCount": 32
     },
     {
       "batch": 3,
-      "p50Ms": 274.22084299999915,
-      "p95Ms": 530.1116000000002,
+      "p50Ms": 207.09536299999854,
+      "p95Ms": 398.22350000000006,
       "sourceCount": 48
     }
   ],

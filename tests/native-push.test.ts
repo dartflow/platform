@@ -32,6 +32,17 @@ test('native push lifecycle uses opaque notifications, current ACL, device bindi
    assert.equal((await command(a,{type:'device.register',installationId:installation,packageName:'nl.dartflow.app.dev',token})as{deviceId:string}).deviceId,device);
    const raw=(await admin.query('select token_cipher from dartflow_private.native_push_devices where id=$1',[device])).rows[0];assert.ok(!JSON.stringify(raw).includes(token));assert.ok(!JSON.stringify(await getNativePush(a)).includes(token));
   });
+  await t.test('retention purges expired token envelopes and inbox deliveries while FCM is unconfigured',async()=>{
+   const expiredDevice=await command(b,{type:'device.register',installationId:randomUUID(),packageName:'nl.dartflow.app.dev',token:'expired-test-token-'+randomUUID()})as{deviceId:string};
+   const id='native-push-retention:'+randomUUID();await enqueue(id,b,new Date(Date.now()-31*24*60*60*1000).toISOString());
+   const oldInbox=(await admin.query('select id from dartflow_private.native_push_inbox where event_id=$1',[id])).rows[0].id;
+   assert.equal((await admin.query('select count(*)::int n from dartflow_private.native_push_outbox where inbox_id=$1',[oldInbox])).rows[0].n,1);
+   await admin.query("update dartflow_private.native_push_devices set expires_at=now()-interval '1 day' where id=$1",[expiredDevice.deviceId]);
+   assert.equal((await processNativePushBatch()).processed,0);
+   assert.equal((await admin.query('select count(*)::int n from dartflow_private.native_push_devices where id=$1',[expiredDevice.deviceId])).rows[0].n,0);
+   assert.equal((await admin.query('select count(*)::int n from dartflow_private.native_push_inbox where id=$1',[oldInbox])).rows[0].n,0);
+   assert.equal((await admin.query('select count(*)::int n from dartflow_private.native_push_outbox where inbox_id=$1',[oldInbox])).rows[0].n,0);
+  });
   await t.test('domain event dedupe queues once even without an email address; disabled preference suppresses',async()=>{
    const id='native-push-proof:'+randomUUID();await enqueue(id);await enqueue(id);inbox=(await admin.query('select id from dartflow_private.native_push_inbox where recipient_id=$1 and event_id=$2',[a,id])).rows[0].id;
    assert.equal((await admin.query('select count(*)::int n from dartflow_private.native_push_outbox where inbox_id=$1',[inbox])).rows[0].n,1);

@@ -1,0 +1,42 @@
+{
+  "capturedAt": "2026-11-19T17:54:05.608039+00:00",
+  "headAtCapture": "d894d5c0507376f010587f04b06f992d180ae062",
+  "workingTreeUncommitted": true,
+  "command": "npx tsx --test --test-concurrency=1 tests/season-delegation-db.test.ts",
+  "scope": "Actual service and loopback PostgreSQL only; no hosted, browser, installed-app or external delivery acceptance claim. No DDL in this proof.",
+  "result": {
+    "tests": 1,
+    "pass": 1,
+    "fail": 0,
+    "skip": 0
+  },
+  "actualProof": [
+    "National platform authority assigns an active confirmed nonguest account for exactly one existing season. The official edits and publishes its genuine calendar without receiving a platform, club membership or event-staff role.",
+    "The ordinary actor cannot self-appoint. The assigned official cannot re-delegate, manage another season or create/copy a national season. The projected canDelegate is false and the account catalog is omitted.",
+    "The actual timer creates one deduplicated overdue follow-up for the explicitly assigned official. Fresh source applicability succeeds while assigned and fails immediately after revocation.",
+    "Revocation immediately removes season and ranking management plus core event access; both new mutations and an earlier accepted settings receipt are denied. An account awaiting erasure cannot be appointed."
+  ],
+  "validation": {
+    "typecheck": {
+      "command": "npx tsc --noEmit",
+      "exitCode": 0
+    },
+    "lint": {
+      "command": "npx eslint lib/season-authority.ts lib/seasons.ts lib/seasons-types.ts lib/season-reminders.ts components/season-workspace.tsx tests/season-delegation-db.test.ts",
+      "exitCode": 0
+    }
+  },
+  "log": {
+    "path": "docs/evidence/full-release-season-delegation-local-2026-11-19.tap.txt",
+    "sha256": "90674812ddc7d6f9a59aff48e42a6e4d9149f83ab62f8014799ca96d4b195514"
+  },
+  "sourceSha256": {
+    "lib/season-authority.ts": "b4eaf300e2be01cc82564b86efc16ca642b697cdd97930f725804b6c21051d6b",
+    "lib/seasons.ts": "99c9ae14cb798016dece618fc76ac73fc91f8b0ceb3b5856c0671b94f97dd3da",
+    "lib/seasons-types.ts": "92c90277e1e7cd43a984292637515c67f1831a7c6f44dc2a3b82ecb2cea4a36d",
+    "lib/season-reminders.ts": "84dffec6e89ed02bef1dc425b726f464245f638734a2bfa66395c7fe0502ffd6",
+    "lib/ranking-seasons.ts": "776adc12956098cc7d665898801d9d75a6751e2fc8ef6b6c3ef14572012c74cc",
+    "components/season-workspace.tsx": "485d35e657aa2620e0059fb4988e6cb5d43582112d868f799878e4d9bf80e07f",
+    "tests/season-delegation-db.test.ts": "069e4ce832e96a3f1e560526b473b390fa778d172c20b515233e130570a40c30"
+  }
+}

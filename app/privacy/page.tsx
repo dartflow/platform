@@ -37,7 +37,7 @@ export default function Privacy() {
         <p className={styles.eyebrow}>DartFlow · DG Webservices</p>
         <h1>Privacybeleid<span>.</span></h1>
         <p className={styles.lead}>Jouw gegevens, jouw keuzes. Dit beleid geldt voor de DartFlow-website, het spelers- en beheerdersplatform, de webapps, de native DartFlow-spelersapp en de Android-app DartFlow Oche Live.</p>
-        <p className={styles.updated}>Laatst bijgewerkt: <time dateTime="2026-11-18">18 november 2026</time></p>
+        <p className={styles.updated}>Laatst bijgewerkt: <time dateTime="2026-11-19">19 november 2026</time></p>
       </header>
       <aside className={styles.summary} aria-labelledby="privacy-samenvatting">
         <h2 id="privacy-samenvatting">Goed om te weten</h2>
@@ -59,6 +59,7 @@ export default function Privacy() {
               <li><strong>Spelen en organiseren.</strong> Deelnemers, inschrijvingen, clubs en rollen, locaties, banen, reserveringen, worpen, uitslagen, trainingen en statistieken. Deze zijn nodig voor het uitvoeren van wedstrijden, baanbeheer, toernooien, competitie en jouw gespeelde historie.</li>
               <li><strong>Contact en community.</strong> Berichten, vriendschapsverzoeken, reacties, gedeelde resultaten, blokkades, geaccepteerde regelversies en eventuele meldingen die je indient. We gebruiken die voor de gekozen communicatie en voor moderatie en ondersteuning.</li>
               <li><strong>E-mail.</strong> Je e-mailadres, de inhoud van een verzonden bericht en aflever- of foutmeldingen. Dit maakt inloggen met een e-mailcode, uitnodigingen, serviceberichten en gekozen meldingen mogelijk.</li>
+              <li><strong>Optionele systeemmeldingen in de spelersapp.</strong> Als deze functie beschikbaar is en je haar inschakelt, gebruiken DartFlow en Google Firebase Cloud Messaging een technische installatie-ID, een bezorgadres voor jouw app, app- en toestelinformatie en ontvangst- en openbevestigingen om meldingen te bezorgen. Je kiest de categorieën zelf en kunt de meldingen weer uitschakelen. Spelen en de inbox blijven beschikbaar zonder systeemmeldingen.</li>
               <li><strong>Apparaten en beveiliging.</strong> Installatie- en sessiegegevens, netwerkgegevens zoals je IP-adres, aanvraagmomenten en gegevens over fouten, koppelingen en beheeracties. Hiermee leveren en beveiligen we de dienst en begrenzen we misbruik.</li>
               <li><strong>Websiteanalyse.</strong> Alleen na toestemming kunnen bezochte pagina’s, klikken, herkomst en technische browser- of apparaatgegevens via SocialHero worden gemeten. Zie ook onderdeel 6.</li>
             </ul>
@@ -98,7 +99,7 @@ export default function Privacy() {
               <li><strong>DG Webservices en hostingdienstverleners:</strong> het uitvoeren, onderhouden, ondersteunen en beveiligen van DartFlow.</li>
               <li><strong>Supabase:</strong> accountaanmelding, database en de bijbehorende backenddiensten.</li>
               <li><strong>Resend:</strong> verzending en afleververwerking van aanmeld- en applicatiemails.</li>
-              <li><strong>Google:</strong> als je kiest voor Google-login. Bij installatie via Google Play verwerkt Google daarnaast gegevens volgens zijn eigen voorwaarden en privacybeleid.</li>
+              <li><strong>Google:</strong> als je kiest voor Google-login en, wanneer je systeemmeldingen inschakelt, voor de bezorging via Firebase Cloud Messaging. Deze meldingen bevatten een algemene categorie en een verwijzing naar je inbox; namen, scores en berichtinhoud worden na het openen met je actuele toegangsrechten opgehaald. Zie ook <a href="https://firebase.google.com/support/privacy" rel="noopener noreferrer">privacy en beveiliging bij Firebase</a>. Bij installatie via Google Play verwerkt Google daarnaast gegevens volgens zijn eigen voorwaarden en privacybeleid.</li>
               <li><strong>SocialHero van DG Webservices:</strong> websiteanalyse na toestemming en het publiceren van redactionele blogcontent via een beveiligde koppeling. Die publicatiekoppeling geeft geen algemene toegang tot spelersaccounts of privéwedstrijden.</li>
               <li><strong>Medespelers, organisatoren en schermpubliek:</strong> uitsluitend de informatie die bij deelname, rechten en de gekozen zichtbaarheid hoort.</li>
             </ul>
@@ -115,6 +116,8 @@ export default function Privacy() {
               <li><strong>Account en profiel:</strong> zolang je account wordt aangehouden en de gegevens nodig zijn voor de dienst. Je kunt een verwijderingsverzoek indienen.</li>
               <li><strong>Wedstrijden, trainingen en organisatiegegevens:</strong> zolang ze nodig zijn voor historie, statistieken, competitie- en toernooibeheer of een gerechtvaardigde afhandeling van geschillen. Bij een verzoek beoordelen we ook de gegevens en belangen van andere deelnemers en mogelijkheden om gegevens te anonimiseren.</li>
               <li><strong>Schermkoppelingen:</strong> zolang de koppeling bestaat. Tijdelijke codes, goedkeuringen en herstelgegevens hebben een beperkte geldigheid. Het verlopen daarvan betekent niet dat alle beveiligings- of beheerregistraties meteen zijn gewist.</li>
+              <li><strong>Systeemmeldingen:</strong> een toestelregistratie verloopt na 90 dagen zonder gebruik; verlopen inboxgegevens worden na 30 dagen opgeruimd. Bij een accountverwijderverzoek verwijderen we de bezorgadressen en uitstaande meldingen uit DartFlow. Je kunt een toestel ook zelf afmelden. Voor de verwerking door Firebase gelden daarnaast de voorwaarden van die dienst.</li>
+              <li><strong>Deelnemersimport:</strong> een tijdelijk importvoorbeeld verloopt na 30 minuten; de ingevoerde CSV en namen worden daarna periodiek verwijderd. Een bevestigde inschrijving en noodzakelijke wedstrijdhistorie blijven onder de bovenstaande termijnen voor organisatiegegevens vallen.</li>
               <li><strong>Ondersteuning, mail- en beveiligingsregistraties:</strong> voor zover nodig voor de afhandeling van je vraag, betrouwbare aflevering, storingsonderzoek, misbruikpreventie en eventuele wettelijke verplichtingen.</li>
               <li><strong>Back-ups:</strong> gegevens kunnen in beveiligde back-ups blijven staan totdat die worden vervangen of verwijderd. Bij een verwijderingsverzoek nemen we dit mee in de afhandeling en informeren we je over eventuele beperkingen.</li>
             </ul>
