@@ -1,4 +1,6 @@
 "use client";
+
+import CompetitionBoardLobbyPanel from "./competition-board-lobby";
 import GuestMatchControls from './guest-match-controls';
 import BullStartPanel,{StartProcedureFields,readWinByTwo} from './bull-start-panel';
 import OfflineConflictPanel from './offline-conflict-panel';
@@ -1575,6 +1577,7 @@ function BoardPage({
       <Heading kicker="BAANMODUS" title={board.name}>
         {data.club?.name || data.event.name}
       </Heading>
+      <CompetitionBoardLobbyPanel boardId={boardId} actorId={user.id} onChanged={lookup.refresh}/>
       <div className="panel board-wait">
         <img src="/assets/dartboard.svg" alt="Dartbord" />
         <Empty

@@ -1,6 +1,8 @@
 package nl.dartflow.app
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.Manifest
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -9,7 +11,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
 import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
-import android.Manifest
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.runtime.*
 import androidx.core.net.toUri
@@ -51,7 +52,8 @@ class MainActivity : ComponentActivity() {
                     PlayerActions(
                         request = { path, body -> model.api.call(path, body) },
                         selectGuestOperator = model::selectGuestOperator,
-                        pushConsent = { enabled -> if (!enabled || PlayerPush.permitted(this@MainActivity)) model.setPushEnabled(enabled) else if (android.os.Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                        pushConsent = { enabled -> if (!enabled || PlayerPush.permitted(this@MainActivity)) model.setPushEnabled(enabled) else if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) else openNotificationSettings() },
+                        pushSettings = ::openNotificationSettings,
                         openNotification = model::handlePushTap,
                         read = { model.api.call(it) },
                         navigate = model::navigate, back = model::back, saveOrganizerDraft = model::saveOrganizerDraft, refresh = model::refresh, requestOtp = model::requestOtp,
@@ -77,6 +79,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    private fun openNotificationSettings() { startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)) }
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent); setIntent(intent)
         intent.data?.let { model.handleDeepLink(it.toString()) }

@@ -2,6 +2,7 @@ import{publicBullStart}from'./bull-start';
 import {matchEventNotice} from './event-display-notice';
 import {readPublicPrecall} from './competition-precalls';
 import {readSeasonDisplay} from './season-display';
+import {readCompetitionLobbyDisplay} from './competition-board-lobby';
 import {assignedBoardMatch} from './board-match-projection';
 import {publicMatchSides,publicMatchVisit,publicMatchSettings,matchParticipants} from './match-sides';
 import {getOcheStatistics} from './player-statistics-db';
@@ -127,5 +128,5 @@ export async function getClubBoardScreen(boardId:string,client?:Client):Promise<
  const blocked=row.blocked||Boolean(location?.physical.archived_at);
  const closed=Boolean(location?.physical.closed_at),closePending=Boolean(location?.physical.close_after_session),activity=publicBoardActivity(rawActivity);
  const statistics=await getOcheStatistics(client,{boardId:id,state:row.state,lobbyId:lease?.kind==='lobby'?lease.id:null,allowRecap:!row.state&&!lease&&!blocked&&!closed&&!closePending&&!location?.reservation});
- return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied,closed,closePending,publicScan:row.access==='all'&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:closed?'closed':match?'playing':lease?'waiting':blocked?'blocked':closePending?'closed':location?.reservation?'reserved':'available',snapshot:{board:{id,name:row.name},event:{name:[location?.reservation?.label??row.club_name,await matchEventNotice(client,row.state?.id)].filter(Boolean).join(' · ')},match,...await readSeasonDisplay(client,row.state?.id),...await readPublicPrecall(client,id,row.state?.eventId??row.event_id),...(statistics?{statistics}:{}),...(activity?{boardActivity:activity}:{}),...await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
+ return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied,closed,closePending,publicScan:row.access==='all'&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:closed?'closed':match?'playing':lease?'waiting':blocked?'blocked':closePending?'closed':location?.reservation?'reserved':'available',snapshot:{board:{id,name:row.name},event:{name:[location?.reservation?.label??row.club_name,await matchEventNotice(client,row.state?.id)].filter(Boolean).join(' · ')},match,...await readSeasonDisplay(client,row.state?.id),...(!row.state?{competitionLobby:await readCompetitionLobbyDisplay(client,id)}:{}),...await readPublicPrecall(client,id,row.state?.eventId??row.event_id),...(statistics?{statistics}:{}),...(activity?{boardActivity:activity}:{}),...await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
 }

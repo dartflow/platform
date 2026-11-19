@@ -1,3 +1,4 @@
+import {projectPublicIdentitySnapshots}from'./public-player-projection';
 import{consolationOutcome}from'./tournament-consolation';
 import {readEventGuestIds}from'./event-guests';
 import{decorateCircuitQualificationState}from'./circuit-qualifications';
@@ -75,7 +76,7 @@ export async function view(client: Client, row: EntityRow, actor: string,cachedM
   const own = row.owner_id === actor, self = members.find(m => m.id === actor);
   const canManage = row.club_id&&['league','tournament'].includes(row.kind)?await clubPermission(client,row.club_id,actor,row.kind==='league'?'competitions.manage':'tournaments.manage'):own || self?.status === 'active' && ['owner', 'admin', 'moderator'].includes(self.role);
   const full = own || self?.status === 'active';
-  const state = (await decorateCircuitQualificationState(client,row)).state;if(state.consolation?.enabled)state.consolation=consolationOutcome(state.fixtures??[],state.consolation.title);
+  const state = await projectPublicIdentitySnapshots(client,(await decorateCircuitQualificationState(client,row)).state);if(state.consolation?.enabled)state.consolation=consolationOutcome(state.fixtures??[],state.consolation.title);
   if (!full) { delete state.game; delete state.undo; delete state.ready; delete state.coreClubId; }
   const visibleMembers = full ? members.filter(m => canManage || ['active', 'waitlisted'].includes(m.status) || m.id === actor) : members.filter(m => m.id === actor);
   return { id: row.id, kind: row.kind, name: state.name, ownerId: row.owner_id, clubId: row.club_id, visibility: row.visibility, revision: row.revision, state, members: visibleMembers, canManage: Boolean(canManage),...(full&&self?.status!=='banned'&&invitationCodeAccepted(row,row.invitation_code)?{inviteCode:row.invitation_code!}:{}) };
@@ -121,7 +122,7 @@ export async function createCoreMatch(client: Client, row: EntityRow, players: s
   for (const id of players) await provisionPlayer(client, row.state, id);
   // Lock verified names through insertion so concurrent profile completion cannot
   // pass validation after an older, unconfirmed name was already snapshotted.
-  const { rows: profiles } = await client.query<Profile>('select id,coalesce(nullif(display_name,\'\'),name) as name from dartflow_private.profiles where id=any($1::uuid[]) order by id for share', [players]);
+  const { rows: profiles } = await client.query<Profile>('select p.id,l.name,l.username,l.display_name as "displayName" from dartflow_private.profiles p join dartflow_private.profile_labels l using(id) where p.id=any($1::uuid[]) order by p.id for share of p', [players]);
   if (profiles.length !== 2) throw new DomainError('invalid_players', 'Een speler bestaat niet.');
   for(const player of players)await requireScoreboardName(client,player);
   const participants = players.map(id => profiles.find(p => p.id === id)!);

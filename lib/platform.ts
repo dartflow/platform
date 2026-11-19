@@ -1,3 +1,4 @@
+import {projectMatchPublicPlayers,projectPublicIdentitySnapshots} from './public-player-projection';
 import{consolationOutcome}from'./tournament-consolation';
 import{guestHistoryAliases,projectClaimedGuestResult}from'./event-guests';
 import {decorateCircuitQualificationState} from './circuit-qualifications';
@@ -86,7 +87,7 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
         if(typeof row.state.boardId==='string'&&typeof row.state.eventId==='string')await eventAccess(client,actor,row.state.eventId);
         if(m?.status==='banned'||(row.club_id&&!(await isClubMember(client,row.club_id,actor)))||await blocked(client,actor,row.owner_id)||(row.visibility==='private'&&row.owner_id!==actor&&!m?.status.match(/^(active|invited|pending|waitlisted)$/)))throw new DomainError('forbidden','Je hebt geen toegang meer tot dit onderdeel.',403);
       }
-      return response;
+      return projectPublicIdentitySnapshots(client,response);
     }
     const action = command.action;
     let result: PlatformResponse | null = null;
@@ -267,15 +268,15 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
     catch(error){if(row.kind==='club'&&error instanceof DomainError&&[403,404].includes(error.status))return null;throw error;}
   }));
   const list = projected.filter((item):item is NonNullable<typeof item>=>item!==null);
-  const { rows: people } = await client.query<Profile>(`select p.id,p.name from dartflow_private.profile_labels p left join dartflow_private.platform_preferences f on f.user_id=p.id where p.id<>$1 and p.display_name_confirmed and coalesce(f.discoverable,true) and not exists(select 1 from dartflow_private.event_guests guest where guest.profile_id=p.id)
+  const { rows: people } = await client.query<Profile>(`select p.id,p.name,p.username,p.display_name as "displayName",null::text as avatar from dartflow_private.profile_labels p left join dartflow_private.platform_preferences f on f.user_id=p.id where p.id<>$1 and p.display_name_confirmed and coalesce(f.discoverable,true) and not exists(select 1 from dartflow_private.event_guests guest where guest.profile_id=p.id)
     and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$1 and b.target_id=p.id) or (b.target_id=$1 and b.source_id=p.id))) order by p.name,p.id limit 200`, [actor]);
-  const { rows: relationships } = await client.query<{ source_id: string; target_id: string; kind: string; name: string }>('select r.*,p.name from dartflow_private.platform_relationships r join dartflow_private.profile_labels p on p.id=case when r.source_id=$1 then r.target_id else r.source_id end where r.source_id=$1 or r.target_id=$1', [actor]);
+  const { rows: relationships } = await client.query<{ source_id: string; target_id: string; kind: string; name: string;username:string|null;displayName:string|null }>('select r.*,p.name,p.username,p.display_name as "displayName",null::text as avatar from dartflow_private.platform_relationships r join dartflow_private.profile_labels p on p.id=case when r.source_id=$1 then r.target_id else r.source_id end where r.source_id=$1 or r.target_id=$1', [actor]);
   const friends: PlatformOverview['friends'] = [];
   for (const rel of relationships) {
     const id = rel.source_id === actor ? rel.target_id : rel.source_id;
     if (!['friend', 'request'].includes(rel.kind) || (rel.kind === 'friend' && rel.source_id !== actor) || relationships.some(r => r.kind === 'block' && [r.source_id, r.target_id].includes(id))) continue;
     if (friends.some(f => f.id === id && f.status === 'friend')) continue;
-    friends.push({ id, name: rel.name, status: rel.kind === 'friend' ? 'friend' : rel.source_id === actor ? 'outgoing' : 'incoming', favorite: relationships.some(r => r.kind === 'favorite' && r.source_id === actor && r.target_id === id) });
+    friends.push({ id, name: rel.name,username:rel.username,displayName:rel.displayName,avatar:null, status: rel.kind === 'friend' ? 'friend' : rel.source_id === actor ? 'outgoing' : 'incoming', favorite: relationships.some(r => r.kind === 'favorite' && r.source_id === actor && r.target_id === id) });
   }
   const { rows: prefs } = await client.query('select discoverable,allow_requests as "allowRequests" from dartflow_private.platform_preferences where user_id=$1', [actor]);
   const messages: Record<string, PlatformMessage[]> = {};
@@ -305,10 +306,10 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
     from dartflow_private.matches m left join dartflow_private.club_memberships c on c.club_id=m.club_id and c.user_id=$1
     where m.state->>'status'<>'abandoned' and (exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$1) or m.state->>'delegatedWriterId'=$1::text or m.state->'remoteWriterIds' ? $1::text or jsonb_path_exists(m.state,'$.sideParticipants[*][*] ? (@.id == $actor)',jsonb_build_object('actor',$1::text)))
     and (exists(select 1 from dartflow_private.club_boards cb where cb.event_id=m.event_id) or c.user_id is not null or (exists(select 1 from dartflow_private.entries x where x.event_id=m.event_id and x.user_id=$1 and x.status='registered') and exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and ((e.kind='lobby' and e.state->>'boardId' is null) or (e.kind in ('league','tournament') and (e.club_id is null or e.state->>'eligibility' in ('all','code'))))))) order by m.updated_at desc,m.id limit 200`,[actor]);
-  const matches=[];for(const row of ownMatchRows){try{const access=await eventAccess(client,actor,row.state.eventId);matches.push({...matchView(row.state,actor,access.canManage),offlineSupported:row.offline_supported});}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}
+  const matches=[];for(const row of ownMatchRows){try{const access=await eventAccess(client,actor,row.state.eventId);matches.push({...matchView(await projectMatchPublicPlayers(client,row.state),actor,access.canManage),offlineSupported:row.offline_supported});}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}
   const clubBoards=await listClubBoards(client,actor,list.filter(e=>e.kind==='club').map(e=>e.id));
   const {rows:ownHistory}=await client.query<{snapshot:ResultView}>(`select r.snapshot from dartflow_private.match_results r join dartflow_private.match_players p on p.match_id=r.match_id where(p.user_id=$1 or exists(select 1 from dartflow_private.event_guest_claim_decisions claim where claim.guest_id=p.user_id and claim.account_id=$1 and claim.decision='accept'))and ${finalResultSql} order by r.created_at desc,r.match_id limit 200`,[actor]);
-  const guestAliases=await guestHistoryAliases(client,actor),history=ownHistory.map(row=>projectClaimedGuestResult(row.snapshot,actor,guestAliases.map(alias=>alias.guestId)));
+  const guestAliases=await guestHistoryAliases(client,actor),history=await projectPublicIdentitySnapshots(client,ownHistory.map(row=>projectClaimedGuestResult(row.snapshot,actor,guestAliases.map(alias=>alias.guestId))));
   const statistics=await getPlatformStatistics(actor);
   return { profile,matches,history,clubBoards, players: people, clubs: list.filter(e => e.kind === 'club'), rooms: list.filter(e => e.kind === 'room'), trainings: list.filter(e => e.kind === 'training'), leagues: list.filter(e => e.kind === 'league'), tournaments: list.filter(e => e.kind === 'tournament'), lobbies: list.filter(e => e.kind === 'lobby'), friends, blocked: relationships.filter(r => r.kind === 'block' && r.source_id === actor).map(r => ({ id: r.target_id, name: r.name })), preferences: prefs[0] ?? { discoverable: true, allowRequests: true }, messages,registrations,reports,canManageRegistrations,statistics };
 }
@@ -362,6 +363,7 @@ export async function getPlatformCast(token: string): Promise<Record<string, unk
   const row = await decorateCircuitQualificationState(database(),rows[0]);
   const underReview=Boolean(row.state.circuitSourceStale||row.state.primaryCorrectionOpen||row.state.primaryCorrectionHold);
   const { rows: boards } = await database().query<{ id: string; name: string; blocked: boolean; state: MatchState | null }>('select b.id,b.name,b.blocked,case when m.event_id=b.event_id then m.state end as state from dartflow_private.boards b left join dartflow_private.matches m on m.board_id=b.id where b.event_id=$1 order by b.name,b.id', [row.state.eventId]);
+  for(const board of boards)if(board.state)board.state=await projectMatchPublicPlayers(database(),board.state);
   const names = await database().query<Profile>('select p.id,p.name from dartflow_private.platform_members m join dartflow_private.profile_labels p on p.id=m.user_id where m.entity_id=$1 and m.status=\'active\' and m.attributes->>\'registered\'=\'true\'', [row.id]);
   const publicName = (id: string | null | undefined) => id?names.rows.find(p => p.id === id)?.name ?? 'Speler':'Vrij vak';
   const sourceFixtures=row.state.fixtures??[],format=String(row.state.format),playerIds=row.state.tournamentRules?.seedOrder??names.rows.map(p=>p.id),table=tournamentTable(sourceFixtures,format,playerIds,row.state.tournamentRules?.swissRounds),outcome=table!==null?tournamentOutcome(sourceFixtures,format,playerIds,row.state.tournamentRules?.swissRounds):null;

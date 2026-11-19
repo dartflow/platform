@@ -1,6 +1,6 @@
 export type Role = 'organizer' | 'player';
 export type { ClubBoardView,ClubBoardScreenView } from './platform-types';
-export type Profile = { id: string; name: string; email?: string; role?: Role; displayNameConfirmed?: boolean;username?:string;displayName?:string;pinConfigured?:boolean;showPublicStatistics?:boolean;onboardingComplete?:boolean };
+export type Profile = { id: string; name: string; email?: string; role?: Role; displayNameConfirmed?: boolean;username?:string|null;displayName?:string|null;fullName?:string|null;usernameLocked?:boolean;identityNeedsReview?:boolean;avatar?:string|null;pinConfigured?:boolean;showPublicStatistics?:boolean;onboardingComplete?:boolean };
 export type Club = { id: string; name: string; role: Role };
 export type StartDecision={procedure:'bull'|'server-lot'|'home-first';ruleVersion:1;starter?:0|1};
 export type BullState={reason:'match'|'deciding-leg';setNumber:number;legNumber:number;status:'throwing'|'confirming'|'complete';round:number;order:[0|1,0|1];throws:{round:number;side:0|1;hit:'DB'|'SB'|'outside'}[];winner?:0|1;confirmed:[boolean,boolean]};
@@ -70,6 +70,7 @@ export type Overview = {
   permissions: { canManage: boolean };
 };
 export type PublicSnapshot = {
+ competitionLobby?:import('./competition-board-lobby-types').CompetitionLobbyDisplay;
  pendingCall?:{label:string;players:[string,string];writerName?:string};
  encounter?:{name:string;homeName:string;awayName:string;score:[number,number];legs:[number,number];component:{index:number;label:string}};
  theme?:{id:'dartflow'|'onzetrots';version:1}; statistics?:import('./player-statistics-types').OcheHistoricalStatistics;sessionKey?:string;scoreEvents?:import('./score-events').ScoreEvent[];boardActivity?:import('./board-activity-types').BoardActivityView; board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'currentLegVisits' | 'currentLegStartScore' | 'winnerId' | 'resultPublished' | 'settings' | 'writerId' | 'scoringMode' | 'stats' | 'legNumber' | 'setNumber' | 'paused' | 'sideParticipants' | 'sideNames' | 'currentThrower' | 'cricket' | 'bull' | 'startDecision'> };

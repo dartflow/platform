@@ -33,7 +33,7 @@ test('preferences and display management persist across sessions and enforce cur
  const admin=new pg.Client({connectionString:process.env.DARTFLOW_DATABASE_ADMIN_URL});await admin.connect();
  const owner=randomUUID(),player=randomUUID(),outsider=randomUUID(),club=randomUUID(),event=randomUUID(),board=randomUUID(),otherBoard=randomUUID(),ids=[owner,player,outsider];
  try{
-  for(const id of ids)await admin.query('insert into dartflow_private.profiles(id,name) values($1,$2)',[id,`Experience ${id.slice(0,8)}`]);
+  for(const id of ids)await admin.query('insert into dartflow_private.profiles(id,name,display_name) values($1,$2,$3)',[id,`experience${id.slice(0,8)}`,`Experience ${id.slice(0,8)}`]);
   await admin.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[club,'Experience fixture']);
   for(const id of [owner,player])await admin.query('insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,$3)',[club,id,id===owner?'organizer':'player']);
   await admin.query('insert into dartflow_private.events(id,club_id,name,date,capacity) values($1,$2,$3,current_date,8)',[event,club,'Experience fixture']);

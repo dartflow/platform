@@ -22,7 +22,7 @@ async function fits(page:Page){
 for(const viewport of [{width:390,height:844},{width:360,height:640}])test(`warning retains reachable scoring and server extension state at ${viewport.width}x${viewport.height}`,async({browser,baseURL})=>{
  if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw new Error('Mocked activity UI requires the loopback development app.');
  const context=await browser.newContext({viewport}),page=await context.newPage();let current=snapshot();const submitted:Record<string,unknown>[]=[],continuations:Record<string,unknown>[]=[];
- const overview:Overview={profile:{id:actor,name:'Noor Dart',displayNameConfirmed:true},clubs:[],currentClub:null,events:[],matches:[],boards:[],participants:[],history:[],standings:[],permissions:{canManage:false}};
+ const overview:Overview={profile:{id:actor,name:'Noor Dart',username:'noordart',displayName:'Noor Dart',usernameLocked:true,displayNameConfirmed:true},clubs:[],currentClub:null,events:[],matches:[],boards:[],participants:[],history:[],standings:[],permissions:{canManage:false}};
  try{
   // Only this page's transport is mocked. No fixture account, score, assignment or provider is changed.
   await page.route('**/api/**',async route=>{

@@ -1,3 +1,5 @@
+import {searchPlayers}from'@/lib/player-search';
+import {usernameAvailability} from '@/lib/profile-name';
 import{getNativePush,executeNativePushCommand}from'@/lib/native-push';
 import{buildTournamentPlan,parseTournamentPlanning}from'@/lib/tournament-planning';
 import {getMatchCorrections,executeMatchCorrectionCommand} from '@/lib/match-corrections';
@@ -41,6 +43,7 @@ import {getLocationOverview} from '@/lib/locations';
 import {requiresDisplayName} from '@/lib/display-name';
 import {invitationAttemptRequired} from '@/lib/invitations';
 import {BOARD_SCREEN_COOKIE,boardScreenCookiePath,getBoardScreen,listBoardScreenDevices,createBoardScreenDevice,revokeBoardScreenDevice,pairBoardScreenDevice,heartbeatBoardScreen,setBoardScreenPreferences} from '@/lib/board-screens';
+import {getCompetitionBoardContext,executeCompetitionLobbyCommand,confirmCompetitionLobbyPin} from '@/lib/competition-board-lobby';
 import {extendBoardActivity,processBoardActivityBatch,publicBoardActivity} from '@/lib/board-activity';
 import {completePlayerProfile} from '@/lib/profile-setup';
 import {updatePlayerPin} from '@/lib/player-pin';
@@ -219,6 +222,12 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if (method==='GET' && parts[0]==='platform' && parts[1]==='cast' && parts.length===3) return json(await getPlatformCast(parts[2]));
   if(method==='GET'&&parts[0]==='feed'&&parts[1]==='result'&&parts.length===3)return json(await getFeedResult(await actorId(request),parts[2]));
   const actor=await requireActor(request);
+  if(method==='GET'&&parts[0]==='boards'&&uuid(parts[1])&&parts[2]==='competition'&&parts.length===3)return json(await getCompetitionBoardContext(actor.id,parts[1]));
+  if(method==='POST'&&path==='competition-lobbies/actions')return json(await executeCompetitionLobbyCommand(actor.id,await body(request)));
+  if(method==='POST'&&path==='competition-lobbies/player-pin'){const address=(request.headers.get('x-forwarded-for')||'loopback').split(',').at(-1)!.trim();return json(await confirmCompetitionLobbyPin(actor.id,await body(request),digest(address)));}
+  if(method==='GET'&&parts[0]==='boards'&&uuid(parts[1])&&parts[2]==='competition'&&parts.length===3)return json(await getCompetitionBoardContext(actor.id,parts[1]));
+  if(method==='POST'&&path==='competition-lobbies/actions')return json(await executeCompetitionLobbyCommand(actor.id,await body(request)));
+  if(method==='POST'&&path==='competition-lobbies/player-pin'){const input=await body(request);const address=(request.headers.get('x-forwarded-for')||'loopback').split(',').at(-1)!.trim();return json(await confirmCompetitionLobbyPin(actor.id,input,digest(address)));}
   if(method==='GET'&&path==='push')return json(await getNativePush(actor.id));
   if(method==='POST'&&path==='push/actions')return json(await executeNativePushCommand(actor.id,await body(request)));
   if(method==='GET'&&path==='organizer-drafts')return json(await getOrganizerDrafts(actor.id,{kind:(request.nextUrl.searchParams.get('kind')??undefined) as 'tournament'|'season'|undefined,clubId:request.nextUrl.searchParams.get('clubId')??undefined}));
@@ -246,6 +255,8 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if(method==='GET'&&parts[0]==='seasons'&&uuid(parts[1])&&parts[2]==='calendar.ics'&&parts.length===3){const {season}=await getSeason(actor.id,parts[1]);return new NextResponse(seasonCalendar(season,appConfig().origin),{headers:{'Content-Type':'text/calendar; charset=utf-8','Content-Disposition':'attachment; filename="dartflow-programma.ics"','Cache-Control':'private, no-store'}});}
   if(method==='GET'&&parts[0]==='seasons'&&uuid(parts[1])&&parts[2]==='export'&&parts.length===3){const result=await exportSeason(actor.id,parts[1]);return new NextResponse(result.csv,{headers:{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="dartflow-seizoen.csv"','Cache-Control':'private, no-store'}});}
   if(method==='GET'&&path==='profile')return json({user:actor.profile});
+  if(method==='GET'&&path==='players')return json(await searchPlayers(actor.id,request.nextUrl.searchParams.get('search')??'',request.nextUrl.searchParams.get('offset')??0));
+  if(method==='GET'&&path==='profile/username-availability')return json(await usernameAvailability(actor.id,request.nextUrl.searchParams.get('username')));
   if(method==='POST'&&path==='profile/complete')return json(await completePlayerProfile(actor.id,await body(request)));
   if(method==='POST'&&path==='profile/player-pin'){
     const data=await body(request);

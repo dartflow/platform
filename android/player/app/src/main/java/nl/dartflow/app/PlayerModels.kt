@@ -13,12 +13,15 @@ data class PlayerProfile(
     val id: String, val name: String, val username: String = "", val displayName: String = name,
     val pinConfigured: Boolean = false, val onboardingComplete: Boolean = false,
     val displayNameConfirmed: Boolean = false,
+    val fullName: String? = null, val usernameLocked: Boolean = displayNameConfirmed && username.isNotBlank(), val identityNeedsReview: Boolean = false,
 ) {
     companion object {
         fun parse(value: JSONObject) = PlayerProfile(
-            value.optString("id"), value.optString("name", value.optString("displayName", "Speler")),
-            value.optString("username"), value.optString("displayName", value.optString("name", "Speler")),
+            value.text("id"), playerPublicName(value), value.text("username"), value.text("displayName"),
             value.optBoolean("pinConfigured"), value.optBoolean("onboardingComplete"), value.optBoolean("displayNameConfirmed"),
+            value.text("fullName").takeIf { it.isNotBlank() },
+            value.optBoolean("usernameLocked", value.optBoolean("displayNameConfirmed") && value.text("username").isNotBlank()),
+            value.optBoolean("identityNeedsReview"),
         )
     }
 }
@@ -68,14 +71,20 @@ fun JSONArray?.ints(): List<Int> = if (this == null) emptyList() else (0 until l
 /** Same label normalization as the server. Availability and uniqueness remain server decisions. */
 object PlayerValidation {
     fun normalizeName(value: String): String = Normalizer.normalize(value, Normalizer.Form.NFC).replace(Regex("[\\s\\p{Z}\\uFEFF]+"), " ").trim()
-    fun normalizeUsername(value: String): String = normalizeName(value).let { if (it.startsWith('@')) normalizeName(it.drop(1)) else it }
+    fun normalizeUsername(value: String): String = Normalizer.normalize(value, Normalizer.Form.NFKC).removePrefix("@").lowercase(Locale.ROOT)
     fun validName(value: String): Boolean {
         val normalized = normalizeName(value)
         return normalized.isNotEmpty() && normalized.length <= 80 && normalized.codePoints().anyMatch { Character.isLetterOrDigit(it) }
             && normalized.codePoints().noneMatch { Character.getType(it) in listOf(Character.CONTROL.toInt(), Character.FORMAT.toInt()) }
             && normalized.lowercase(Locale.forLanguageTag("nl")) != "nieuwe speler"
     }
-    fun validUsername(value: String): Boolean = normalizeUsername(value).let { !it.startsWith('@') && validName(it) }
+    fun validUsername(value: String): Boolean {
+        if (value.codePoints().anyMatch(::invalidUsernameCodePoint)) return false
+        val canonical = normalizeUsername(value)
+        return !canonical.startsWith('@') && canonical.length in 1..80 && validName(canonical) && canonical.codePoints().noneMatch(::invalidUsernameCodePoint)
+    }
+    private fun invalidUsernameCodePoint(code: Int): Boolean = Character.isWhitespace(code) || Character.isSpaceChar(code) || Character.getType(code) in listOf(Character.CONTROL.toInt(), Character.FORMAT.toInt()) || code == 0x034F || code in 0x115F..0x1160 || code in 0x17B4..0x17B5 || code in 0x180B..0x180F || code in 0x2060..0x206F || code == 0x3164 || code in 0xFE00..0xFE0F || code == 0xFFA0 || code in 0xFFF0..0xFFF8 || code in 0x1BCA0..0x1BCA3 || code in 0x1D173..0x1D17A || code in 0xE0000..0xE0FFF
+    fun validFullName(value: String): Boolean = normalizeName(value).let { name -> name.length <= 160 && name.codePoints().noneMatch { Character.getType(it) in listOf(Character.CONTROL.toInt(), Character.FORMAT.toInt()) } }
     fun validPin(value: String): Boolean = value.length == 6 && value.all { it in '0'..'9' }
     fun validOtp(value: String, min: Int = 6, max: Int = 10): Boolean = value.length in min..max && value.all { it in '0'..'9' }
 }

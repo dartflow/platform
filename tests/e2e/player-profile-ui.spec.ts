@@ -6,14 +6,14 @@ import {summarizePlayerStatistics} from '../../lib/player-statistics';
 
 const actor='00000000-0000-4000-8000-000000000002';
 function localOnly(baseURL:string|undefined){if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Profile UI fixtures require a loopback origin.');}
-const profile:Profile={id:actor,name:'Robin Dart',username:'robindart',displayName:'Robin Dart',displayNameConfirmed:true,onboardingComplete:true,pinConfigured:true,showPublicStatistics:false};
+const profile:Profile={id:actor,name:'Robin Dart',username:'robindart',displayName:'Robin Dart',displayNameConfirmed:true,usernameLocked:true,fullName:'Robin Private',onboardingComplete:true,pinConfigured:true,showPublicStatistics:false};
 function overview(user:Profile):Overview{return{profile:user,clubs:[],currentClub:null,events:[],matches:[],boards:[],participants:[],history:[],standings:[],permissions:{canManage:false}};}
 function platform(user:Profile){return{profile:user,matches:[],history:[],players:[],clubs:[],clubBoards:[],rooms:[],trainings:[],leagues:[],tournaments:[],lobbies:[],friends:[],blocked:[],preferences:{}};}
 async function pins(page:Page,pin='012345'){await page.getByLabel('Spelerspincode',{exact:true}).and(page.locator('input')).fill(pin);await page.getByLabel('Herhaal spelerspincode',{exact:true}).fill(pin);}
 
 for(const provider of ['google','email'])test(`${provider} login proposal requires confirmed username, display label and PIN before returning to its original lobby`,async({browser,baseURL})=>{
  localOnly(baseURL);const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'}),page=await context.newPage(),lobbyId=randomUUID(),target=`/app/lobby/${lobbyId}`;
- let authenticated=false,completed=false,failed=false,firstRequestId='';const user:Profile={id:actor,name:provider==='google'?'Robin Google':'Nieuwe speler',username:provider==='google'?'Robin Google':'Nieuwe speler',displayName:provider==='google'?'Robin Google':'Nieuwe speler',displayNameConfirmed:false,onboardingComplete:false,pinConfigured:false};
+ let authenticated=false,completed=false,failed=false,firstRequestId='';const user:Profile={id:actor,name:'Speler',username:null,displayName:null,fullName:provider==='google'?'Robin Google':null,usernameLocked:false,displayNameConfirmed:false,onboardingComplete:false,pinConfigured:false};
  const destinations:string[]=[];
  try{
   await page.route('**/api/**',async route=>{
@@ -22,6 +22,7 @@ for(const provider of ['google','email'])test(`${provider} login proposal requir
    else if(url.pathname==='/api/auth/google'){authenticated=true;destinations.push(url.pathname);return route.fulfill({status:302,headers:{location:`/inloggen?next=${encodeURIComponent(target)}`},body:''});}
    else if(url.pathname==='/api/auth/otp'){expect(route.request().postDataJSON()).toMatchObject({email:'ui-registration@example.invalid',next:target});destinations.push(url.pathname);body={ok:true};}
    else if(url.pathname==='/api/auth/verify'){expect(route.request().postDataJSON()).toMatchObject({token:'12345678',next:target});authenticated=true;destinations.push(url.pathname);body={next:target};}
+   else if(url.pathname==='/api/profile/username-availability')body={valid:true,available:true,username:'robindart',locked:false};
    else if(url.pathname==='/api/profile/complete'){
     const input=route.request().postDataJSON();expect(input).toMatchObject({username:'@robindart',displayName:'Robin Dart',pin:'012345',pinConfirmation:'012345'});
     if(!failed){failed=true;firstRequestId=input.requestId;return route.fulfill({status:503,json:{error:'Lokaal gesimuleerde tijdelijke opslagfout.'}});}
@@ -35,8 +36,8 @@ for(const provider of ['google','email'])test(`${provider} login proposal requir
   await page.goto(`/inloggen?next=${encodeURIComponent(target)}`);
   if(provider==='google')await page.getByRole('link',{name:'Doorgaan met Google',exact:true}).click();
   else{await page.getByLabel('E-mailadres',{exact:true}).fill('ui-registration@example.invalid');await page.getByRole('button',{name:'Stuur mij een inlogcode',exact:true}).click();await page.getByLabel('Inlogcode',{exact:true}).fill('12345678');await page.getByRole('button',{name:'Code bevestigen',exact:true}).click();}
-  await expect(page.getByRole('heading',{name:'Maak je spelersprofiel compleet',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Profiel opslaan en verder',exact:true})).toBeDisabled();if(provider==='google')await expect(page.getByLabel('Weergavenaam',{exact:true})).toHaveValue('Robin Google');else await expect(page.getByLabel('Weergavenaam',{exact:true})).toBeEmpty();
-  await page.getByLabel('Gebruikersnaam',{exact:true}).fill('@robindart');await page.getByLabel('Weergavenaam',{exact:true}).fill('Robin Dart');await pins(page);await page.getByRole('button',{name:'Profiel opslaan en verder',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Maak je spelersprofiel compleet',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Profiel opslaan en verder',exact:true})).toBeDisabled();await expect(page.getByLabel('Displaynaam',{exact:true})).toBeEmpty();await expect(page.getByLabel('Volledige naam',{exact:true})).toHaveValue(provider==='google'?'Robin Google':'');
+  await page.getByLabel('Gebruikersnaam',{exact:true}).fill('@robindart');await page.getByLabel('Displaynaam',{exact:true}).fill('Robin Dart');await page.getByRole('checkbox',{name:'Ik bevestig @robindart als mijn vaste, onveranderbare gebruikersnaam.'}).check();await pins(page);await page.getByRole('button',{name:'Profiel opslaan en verder',exact:true}).click();
   await expect(page.getByRole('alert').filter({hasText:'tijdelijke opslagfout'})).toBeVisible();await expect(page.getByLabel('Spelerspincode',{exact:true}).and(page.locator('input'))).toBeEmpty();await expect(page.getByLabel('Herhaal spelerspincode',{exact:true})).toBeEmpty();await pins(page);await Promise.all([page.waitForEvent('domcontentloaded'),page.getByRole('button',{name:'Profiel opslaan en verder',exact:true}).click()]);
   await expect(page).toHaveURL(target);expect(completed).toBe(true);expect(destinations).toEqual(provider==='google'?['/api/auth/google']:['/api/auth/otp','/api/auth/verify']);
   expect(await page.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}}))).not.toContain('012345');
@@ -61,7 +62,7 @@ test('PIN settings expose status, clear failed changes and use a fresh own login
    else if(url.pathname.startsWith('/api/community'))body={posts:[],messages:[],nextCursor:null};
    await route.fulfill({json:body});
   });
-  await page.goto('/app/settings');const section=page.getByRole('region',{name:'Spelerspincode',exact:true});await expect(section).toContainText('Status: Ingesteld');await expect(section.getByLabel('Huidige spelerspincode',{exact:true})).toBeEmpty();await expect(section.getByLabel('Huidige spelerspincode',{exact:true})).toHaveAttribute('type','password');await expect(page.getByRole('checkbox',{name:'Historische profielcijfers tonen op openbare Oche Live-baanschermen'})).not.toBeChecked();
+  await page.goto('/app/settings');await expect(page.getByLabel('Gebruikersnaam',{exact:true})).toHaveAttribute('readonly','');await expect(page.getByLabel('Volledige naam',{exact:true})).toHaveValue('Robin Private');const section=page.getByRole('region',{name:'Spelerspincode',exact:true});await expect(section).toContainText('Status: Ingesteld');await expect(section.getByLabel('Huidige spelerspincode',{exact:true})).toBeEmpty();await expect(section.getByLabel('Huidige spelerspincode',{exact:true})).toHaveAttribute('type','password');await expect(page.getByRole('checkbox',{name:'Historische profielcijfers tonen op openbare Oche Live-baanschermen'})).not.toBeChecked();
   await section.getByLabel('Huidige spelerspincode',{exact:true}).fill('999999');await pins(page);await section.getByRole('button',{name:'Pincode wijzigen',exact:true}).click();await expect(section.getByRole('alert')).toContainText('Gebruikersnaam of spelerspincode klopt niet.');for(const label of ['Huidige spelerspincode','Spelerspincode','Herhaal spelerspincode'])await expect(section.getByLabel(label,{exact:true}).and(page.locator('input'))).toBeEmpty();
   await section.getByLabel('Huidige spelerspincode',{exact:true}).fill('001234');await pins(page);await section.getByRole('button',{name:'Pincode wijzigen',exact:true}).click();await expect(section.getByRole('status')).toContainText('Je spelerspincode is opgeslagen.');
   await section.getByRole('button',{name:'Pincode vergeten?',exact:true}).click();const verify=section.getByRole('link',{name:'Opnieuw verifiëren via Google of e-mail',exact:true});await expect(verify).toHaveAttribute('href','/inloggen?reauth=1&next=%2Fapp%2Fsettings%3Fpin%3Dreset');

@@ -10,7 +10,7 @@ test('public FAQ searches the shared source and a direct question works without 
 });
 
 for(const width of [390,1440])test(`personal organizer has an independent web entry and explicit ownership at ${width}px`,async({page},info)=>{
- const user={id:'00000000-0000-4000-8000-000000000002',name:'Lokale organisator',username:'organisator',displayName:'Lokale organisator',displayNameConfirmed:true,onboardingComplete:true};
+ const user={id:'00000000-0000-4000-8000-000000000002',name:'Lokale organisator',username:'organisator',displayName:'Lokale organisator',usernameLocked:true,displayNameConfirmed:true,onboardingComplete:true};
  const platform={profile:user,matches:[],history:[],players:[],clubs:[],clubBoards:[],rooms:[],trainings:[],leagues:[],tournaments:[],lobbies:[],friends:[],blocked:[],preferences:{discoverable:true,allowRequests:true},messages:{},registrations:[],reports:[],canManageRegistrations:false,statistics:{played:0,won:0,drawn:0,average:0,oneEighties:0,highestFinish:0,totalDarts:0,trainingSessions:0}};
  const calls:Record<string,unknown>[]=[];
  await page.route('**/api/**',async route=>{const path=new URL(route.request().url()).pathname;const body=path==='/api/session'?{user,local:true}:path==='/api/platform'?platform:path==='/api/overview'?{profile:user,clubs:[],currentClub:null,events:[],matches:[],boards:[],participants:[],history:[],standings:[],permissions:{canManage:false}}:path==='/api/player-experience'?{actions:[],fixtures:[],boards:[],goals:{}}:path==='/api/platform/actions'?(calls.push(route.request().postDataJSON()),{error:'Controleer de invoer opnieuw.'}):{};await route.fulfill({status:path==='/api/platform/actions'?409:200,json:body});});

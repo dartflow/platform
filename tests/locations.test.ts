@@ -25,7 +25,7 @@ test('locations, personal home boards and UTC event reservations have independen
  const future=Math.floor((Date.now()+60*60_000)/1000)*1000;
  const request=(start=future,end=future+60*60_000,boardCount=1,eventId=event,maxMatches=4)=>run(eventId===otherEvent?otherClubOwner:clubOwner,{type:'reservation.request',locationId:loc,eventId,startsAt:new Date(start).toISOString(),endsAt:new Date(end).toISOString(),boardCount,maxMatches});
  try{
-  for(const [index,id] of people.entries())await owner.query('insert into dartflow_private.profiles(id,name) values($1,$2)',[id,`Location fixture ${index}`]);
+  for(const [index,id] of people.entries())await owner.query('insert into dartflow_private.profiles(id,name,display_name) values($1,$2,$3)',[id,`location${id.slice(0,8)}`,`Location fixture ${index}`]);
   for(const [index,id] of clubs.entries())await owner.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[id,`Location fixture club ${index}`]);
   for(const [user,clubId,role] of [[clubOwner,club,'organizer'],[p1,club,'player'],[p2,club,'player'],[otherClubOwner,otherClub,'organizer']] as const)await owner.query('insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,$3)',[clubId,user,role]);
   for(const [id,clubId,creator] of [[event,club,clubOwner],[otherEvent,otherClub,otherClubOwner]]){await owner.query('insert into dartflow_private.events(id,club_id,name,date,capacity) values($1,$2,$3,current_date,16)',[id,clubId,`Reserved day ${id}`]);await owner.query('insert into dartflow_private.event_staff(event_id,user_id) values($1,$2)',[id,creator]);}

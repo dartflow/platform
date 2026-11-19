@@ -15,7 +15,7 @@ android {
         applicationId = "nl.dartflow.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = providers.gradleProperty("playerVersionCode").orElse("5").get().toInt()
+        versionCode = providers.gradleProperty("playerVersionCode").orElse("6").get().toInt()
         versionName = providers.gradleProperty("playerVersionName").orElse(releaseVersion.getProperty("versionName")).get()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -95,7 +95,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.browser:browser:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-    implementation("com.google.firebase:firebase-messaging:25.0.1")
+    implementation("com.google.firebase:firebase-messaging:26.0.2")
     implementation("com.google.zxing:core:3.5.3")
     implementation("io.github.webrtc-sdk:android:144.7559.15")
     debugImplementation("androidx.compose.ui:ui-tooling")

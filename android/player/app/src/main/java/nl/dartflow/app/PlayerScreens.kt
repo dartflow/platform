@@ -58,14 +58,14 @@ import java.util.UUID
 class PlayerActions(
     val request: suspend (String, JSONObject) -> JSONObject = { _, _ -> throw PlayerApiFailure(503, "unavailable", "Deze aanvraag is tijdelijk niet beschikbaar.") },
     val selectGuestOperator: (String) -> Unit = {},
-    val pushConsent: (Boolean) -> Unit = {}, val openNotification: (String) -> Unit = {},
+    val pushConsent: (Boolean) -> Unit = {}, val pushSettings: () -> Unit = {}, val openNotification: (String) -> Unit = {},
     val read: suspend (String) -> JSONObject = { throw PlayerApiFailure(503, "unavailable", "Deze gegevens zijn tijdelijk niet beschikbaar.") },
     val navigate: (PlayerScreen, String?) -> Unit = { _, _ -> },
     val back: () -> Unit = {}, val saveOrganizerDraft: (JSONObject) -> Unit = {},
     val refresh: () -> Unit = {}, val requestOtp: (String) -> Unit = {}, val verifyOtp: (String) -> Unit = {},
     val google: () -> Unit = {}, val localLogin: (String) -> Unit = {}, val logout: () -> Unit = {},
     val reviewLogin: (String, String) -> Unit = { _, _ -> },
-    val completeProfile: (String, String, String, String) -> Unit = { _, _, _, _ -> },
+    val completeProfile: (String, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
     val changePin: (String, String, String) -> Unit = { _, _, _ -> },
     val command: (String, JSONObject) -> Unit = { _, _ -> }, val platformAction: (JSONObject) -> Unit = {},
     val score: (Int, Int, Boolean, Int?) -> Unit = { _, _, _, _ -> },
@@ -80,7 +80,7 @@ internal fun JSONArray.strings(): List<String> = (0 until length()).map { optStr
 internal fun json(vararg pairs: Pair<String, Any?>) = JSONObject().also { o -> pairs.forEach { (k, v) -> o.put(k, v ?: JSONObject.NULL) } }
 internal fun shortDate(value: String): String = runCatching { DateTimeFormatter.ofPattern("d MMM · HH:mm", Locale.forLanguageTag("nl-NL")).withZone(ZoneId.of("Europe/Amsterdam")).format(Instant.parse(value)) }.getOrDefault(value.take(16).replace("T", " "))
 internal fun number(value: Double): String = String.format(Locale.forLanguageTag("nl-NL"), "%.2f", value)
-private fun name(value: JSONObject) = value.text("displayName", value.text("name", "Speler"))
+private fun name(value: JSONObject) = playerPublicName(value)
 internal fun validPlayerName(value: String) = PlayerValidation.validName(value)
 internal fun validPlayerUsername(value: String) = PlayerValidation.validUsername(value)
 internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
@@ -108,7 +108,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         LoginScreen(state, actions)
         return
     }
-    if (profile != null && (!profile.displayNameConfirmed || !validPlayerUsername(profile.username.ifBlank { profile.name }))) {
+    if (profile != null && state.screen != PlayerScreen.HELP && (!profile.displayNameConfirmed || !profile.usernameLocked || !validPlayerUsername(profile.username) || !validPlayerName(profile.displayName))) {
         ProfileCompletionScreen(profile, state.busy, state.error, actions)
         return
     }
@@ -321,24 +321,26 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
 
 @Composable private fun ProfileCompletionScreen(profile: PlayerProfile, busy: Boolean, error: String?, actions: PlayerActions) {
     var username by remember(profile.id) { mutableStateOf(profile.username) }
-    var display by remember(profile.id) { mutableStateOf(profile.displayName.ifBlank { profile.name }.takeIf(::validPlayerName) ?: "") }
+    var display by remember(profile.id) { mutableStateOf(profile.displayName.takeIf(::validPlayerName) ?: "") }
+    var fullName by remember(profile.id) { mutableStateOf(profile.fullName.orEmpty()) }
+    var confirmUsername by remember { mutableStateOf(false) }
     var pin by remember { mutableStateOf("") }; var repeat by remember { mutableStateOf("") }
-    ClearSecretsOnBackground { pin = ""; repeat = "" }
+    ClearSecretsOnBackground { pin = ""; repeat = ""; confirmUsername = false }
+    fun save() { actions.completeProfile(fullName, username, display, pin, repeat); pin = ""; repeat = ""; confirmUsername = false }
     Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Heading("Dit ben jij op het scorebord", "REGISTRATIE AFRONDEN", "Bevestig je naam en kies een unieke gebruikersnaam. Een naam uit Google is een voorstel dat je kunt aanpassen.")
-        Field("Gebruikersnaam", username, { username = it }, !busy, error = if (username.isNotBlank() && !validPlayerUsername(username)) "Kies een geldige, unieke gebruikersnaam." else null, max = 81)
-        Field("Naam op het scorebord", display, { display = it }, !busy, error = if (display.isNotEmpty() && !validPlayerName(display)) "Vul een geldige naam in." else null, max = 80)
+        Heading("Dit ben jij op het scorebord", "REGISTRATIE AFRONDEN", "Kies je openbare displaynaam en leg je gebruikersnaam eenmalig vast. Je volledige naam blijft privé.")
+        val validIdentity = PlayerIdentityFields(profile, !busy, fullName, { fullName = it }, display, { display = it }, username, { username = it }, actions)
         if (!profile.pinConfigured) {
             Text("Gebruik deze pincode om op een QR-baan met jouw DartFlow-profiel mee te spelen.", color = PlayerMuted)
             Field("Spelerspincode", pin, { pin = it.filter { c -> c in '0'..'9' } }, !busy, true, KeyboardType.NumberPassword, if (pin.isNotEmpty() && !validPlayerPin(pin)) "Gebruik precies zes cijfers." else null, 6)
             Field("Herhaal spelerspincode", repeat, { repeat = it.filter { c -> c in '0'..'9' } }, !busy, true, KeyboardType.NumberPassword, if (repeat.isNotEmpty() && repeat != pin) "De pincodes zijn niet gelijk." else null, 6)
         }
         error?.let { Notice(it, true) }
-        Action(if (busy) "Profiel opslaan…" else "Begin met spelen", !busy && validPlayerUsername(username) && validPlayerName(display) && (profile.pinConfigured || validPlayerPin(pin) && pin == repeat), modifier = Modifier.fillMaxWidth()) {
-            actions.completeProfile(username, display, pin, repeat); pin = ""; repeat = ""
-        }
+        Action(if (busy) "Profiel opslaan…" else "Begin met spelen", !busy && validIdentity && (profile.pinConfigured || validPlayerPin(pin) && pin == repeat), modifier = Modifier.fillMaxWidth()) { if (profile.usernameLocked) save() else confirmUsername = true }
         TextButton(onClick = actions.logout) { Text("Ander account gebruiken") }
+        Action("Hulp bij namen en privacy", primary = false) { actions.navigate(PlayerScreen.HELP, "q=gebruikersnaam") }
     }
+    if (confirmUsername) PlayerUsernameConfirmation(username, ::save) { confirmUsername = false }
 }
 
 @Composable private fun HomeScreen(state: PlayerUiState, actions: PlayerActions) {
@@ -488,6 +490,7 @@ internal fun statusLabel(value: String): String = mapOf("live" to "Live", "plann
     var score by rememberSaveable(boardId) { mutableStateOf("501") }
     var legs by rememberSaveable(boardId) { mutableStateOf("3") }
     Heading(board.text("name", "Jouw baan"), "VASTE QR-BAAN", data.obj("club").text("name", data.obj("event").text("name")))
+    if (PlayerCompetitionBoard(data, boardId, state, actions)) return
     data.text("matchId").takeIf { it.isNotBlank() }?.let { id -> Action("Open actuele wedstrijd", modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.MATCH, id) }; return }
     data.text("practiceId").takeIf { it.isNotBlank() }?.let { id -> Action("Open jouw training", modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.TRAINING, id) }; return }
     data.text("ownLobbyId").takeIf { it.isNotBlank() }?.let { id -> Action("Open jouw wedstrijdlobby", modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.LOBBY, id) }; return }
@@ -755,15 +758,12 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     if (seasons.isEmpty() && !state.loading) Text("Geen toegankelijke competities gevonden.", color = PlayerMuted)
 }
 @Composable private fun FriendsScreen(state: PlayerUiState, actions: PlayerActions) {
-    var search by rememberSaveable { mutableStateOf("") }
     Heading("Samen is beter", "VRIENDEN", "Vind spelers, beheer uitnodigingen en overleg in de chat.")
-    PlayerCard("Speler zoeken") { Field("Naam of gebruikersnaam", search, { search = it }); val candidates = state.platform.rows("players").filter { it.text("id") != state.profile?.id && search.isNotBlank() && (name(it) + it.text("username")).contains(search, true) }; candidates.take(20).forEach { p ->
-        Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(name(p)); Text("@${p.text("username", p.text("name"))}", color = PlayerMuted, fontSize = 12.sp) }; TextButton(onClick = { actions.platformAction(json("type" to "friend.request", "userId" to p.text("id"))) }, enabled = !state.busy) { Text("Toevoegen") } }
-        PlayerSafetyControls(state, actions, p.text("id"), name(p))
-    }; if (search.isNotBlank() && candidates.isEmpty()) Text("Geen spelers gevonden.", color = PlayerMuted) }
+    PlayerFriendSearch(state, actions)
     val friends = state.platform.rows("friends")
     friends.sortedByDescending { it.text("status") == "incoming" }.forEach { friend -> PlayerCard {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) { Avatar(name(friend), Modifier.size(46.dp)); Column(Modifier.weight(1f)) { Text(name(friend), fontWeight = FontWeight.Bold); Text(when(friend.text("status")) { "incoming" -> "Wil jouw vriend worden"; "outgoing" -> "Verzoek verzonden"; else -> if (friend.optBoolean("favorite")) "★ Favoriet" else "Vriend" }, color = PlayerMuted, fontSize = 12.sp) } }
+        PlayerPublicIdentity(friend)
+        Text(when(friend.text("status")) { "incoming" -> "Wil jouw vriend worden"; "outgoing" -> "Verzoek verzonden"; else -> if (friend.optBoolean("favorite")) "★ Favoriet" else "Vriend" }, color = PlayerMuted, fontSize = 12.sp)
         val id = friend.text("id")
         if (friend.text("status") == "incoming") Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { Action("Accepteren", !state.busy, modifier = Modifier.weight(1f)) { actions.platformAction(json("type" to "friend.accept", "userId" to id)) }; Action("Afwijzen", !state.busy, false, Modifier.weight(1f)) { actions.platformAction(json("type" to "friend.reject", "userId" to id)) } }
         if (friend.text("status") == "friend") {
@@ -994,8 +994,10 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
 @Composable private fun ProfileScreen(state: PlayerUiState, actions: PlayerActions) {
     val profile = state.profile ?: return
     val data = state.resource.optJSONObject("profile") ?: state.platform.optJSONObject("profile") ?: JSONObject()
-    var username by remember(profile.id, profile.username) { mutableStateOf(profile.username.ifBlank { profile.name }) }
-    var display by remember(profile.id, profile.displayName) { mutableStateOf(profile.displayName.ifBlank { profile.name }) }
+    var username by remember(profile.id, profile.username) { mutableStateOf(profile.username) }
+    var display by remember(profile.id, profile.displayName) { mutableStateOf(profile.displayName) }
+    var fullName by remember(profile.id, profile.fullName) { mutableStateOf(profile.fullName.orEmpty()) }
+    var confirmUsername by remember { mutableStateOf(false) }
     var publicStats by remember(data.optBoolean("showPublicStatistics")) { mutableStateOf(data.optBoolean("showPublicStatistics")) }
     var discoverable by remember { mutableStateOf(state.platform.obj("preferences").optBoolean("discoverable", true)) }
     var allowRequests by remember { mutableStateOf(state.platform.obj("preferences").optBoolean("allowRequests", true)) }
@@ -1004,12 +1006,14 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     ClearSecretsOnBackground { current = ""; pin = ""; repeat = "" }
     Heading(profile.displayName.ifBlank { profile.name }, "JOUW PROFIEL", "Eén profiel voor training, wedstrijden, verenigingen en evenementen.")
     Action("Bekijk statistieken", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.STATISTICS, null) }
-    PlayerCard("Jouw naam") {
-        Field("Gebruikersnaam · uniek in DartFlow", username, { username = it }, !state.busy, max = 81)
-        Field("Weergavenaam", display, { display = it }, !state.busy, max = 80)
+    fun saveIdentity() { actions.platformAction(playerIdentityUpdate(profile, fullName, display, username).put("showPublicStatistics", publicStats)); confirmUsername = false }
+    PlayerCard("Jouw identiteit") {
+        val validIdentity = PlayerIdentityFields(profile, !state.busy, fullName, { fullName = it }, display, { display = it }, username, { username = it }, actions)
         Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(publicStats, { publicStats = it }); Text("Historische profielcijfers tonen op openbare Oche Live-baanschermen", fontSize = 13.sp) }
-        Action("Profiel opslaan", !state.busy && validPlayerUsername(username) && validPlayerName(display), modifier = Modifier.fillMaxWidth()) { actions.platformAction(json("type" to "profile.update", "name" to username, "displayName" to display, "showPublicStatistics" to publicStats)) }
+        Action("Profiel opslaan", !state.busy && state.online && validIdentity, modifier = Modifier.fillMaxWidth()) { if (profile.usernameLocked) saveIdentity() else confirmUsername = true }
+        Action("Hulp bij namen en privacy", primary = false) { actions.navigate(PlayerScreen.HELP, "q=gebruikersnaam") }
     }
+    if (confirmUsername) PlayerUsernameConfirmation(username, ::saveIdentity) { confirmUsername = false }
     PlayerCard("Spelerspincode") {
         Text(if (profile.pinConfigured) "Je spelerspincode is ingesteld." else "Nog instellen. Je kunt ondertussen via je eigen telefoon en bestaande toernooi-inschrijvingen blijven spelen.", color = PlayerMuted)
         if (!showPin) Action("Pincode wijzigen", primary = false) { showPin = true; reset = false }

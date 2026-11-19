@@ -1283,5 +1283,135 @@
       "privé",
       "link"
     ]
+  },
+  {
+    "id": "profiel-identiteit",
+    "category": "Profiel en privacy",
+    "question": "Wat is het verschil tussen mijn volledige naam, displaynaam en gebruikersnaam?",
+    "answer": "Je volledige naam is persoonlijk en privé. Alleen jij ziet die in je profiel, naast daarvoor bevoegde administratieve handelingen die de persoonlijke naam nodig hebben. Je displaynaam is openbaar op je spelerskaart en het scorebord. Spaties zijn toegestaan en verschillende spelers mogen dezelfde displaynaam hebben. Je gebruikersnaam is uniek en wordt waar nodig als @gebruikersnaam getoond. In Instellingen → Jouw profiel zie je vooraf welke openbare identiteit andere spelers zien. Een wijziging van je volledige naam of displaynaam behoudt je speler-ID, vrienden, partijen en historie.",
+    "keywords": [
+      "volledige naam",
+      "displaynaam",
+      "gebruikersnaam",
+      "privé",
+      "openbaar",
+      "profiel"
+    ]
+  },
+  {
+    "id": "profiel-gebruikersnaam",
+    "category": "Profiel en privacy",
+    "question": "Kan ik mijn gebruikersnaam wijzigen en welke tekens mag ik gebruiken?",
+    "answer": "Je kiest één keer een vaste gebruikersnaam. Vóór bevestigen toont DartFlow de beschikbaarheid; na de eerste geslaagde vastlegging staat de gebruikersnaam vast. De server en database bewaken dit ook bij gelijktijdige aanvragen en oudere apps. Gebruik 1 tot 80 tekens en minstens één letter of cijfer, zonder spaties, tabs, regeleinden of onzichtbare tekens. Eén voorloop-@ mag bij invoeren. Hoofdletters en canoniek gelijkwaardige Unicodevormen zijn dezelfde naam. Je kunt de volledige naam en displaynaam wel blijven aanpassen. Had je een ongeldige oude gebruikersnaam of een conflict, dan vraagt je eigen profiel één gecontroleerde nieuwe keuze. Je vaste speler-ID, vrienden en resultaten blijven behouden.",
+    "keywords": [
+      "gebruikersnaam",
+      "eenmalig",
+      "onveranderbaar",
+      "beschikbaarheid",
+      "witruimte",
+      "migratie"
+    ]
+  },
+  {
+    "id": "profiel-zoeken",
+    "category": "Profiel en privacy",
+    "question": "Hoe vind ik een speler met dezelfde displaynaam als iemand anders?",
+    "answer": "Open Vrienden en zoek op openbare displaynaam of gebruikersnaam. Een resultaat toont een avatar, de displaynaam en @gebruikersnaam. Als er geen profielfoto is, gebruikt DartFlow initialen. Met de unieke gebruikersnaam onderscheid je spelers met dezelfde displaynaam; de selectie blijft aan hun vaste speler-ID gekoppeld. De volledige naam en het e-mailadres worden niet als verborgen zoekveld gebruikt. Een ontbrekende displaynaam valt terug op de gebruikersnaam, daarna op een neutrale spelerweergave.",
+    "keywords": [
+      "vrienden",
+      "zoeken",
+      "displaynaam",
+      "gebruikersnaam",
+      "avatar",
+      "privacy"
+    ]
+  },
+  {
+    "id": "meldingen-sociale-identiteit",
+    "category": "Profiel en privacy",
+    "question": "Welke naam zie ik in een vriendschapsmail of sociale melding?",
+    "answer": "De begroeting gebruikt jouw openbare displaynaam, daarna je gebruikersnaam. De tekst noemt de speler die de actie echt uitvoerde, met de openbare displaynaam en waar beschikbaar @gebruikersnaam. Je volledige naam en e-mailadres worden hiervoor niet gebruikt. Ontbreekt een betrouwbare openbare identiteit, dan gebruikt DartFlow een neutrale begroeting of tekst zonder leeg persoonsblok. Een oudere, nog niet verzonden melding kan de afzender alleen uit een eenduidige bron terughalen; al verzonden berichten worden niet opnieuw verstuurd.",
+    "keywords": [
+      "e-mail",
+      "dartmaatje",
+      "afzender",
+      "displaynaam",
+      "gebruikersnaam",
+      "begroeting"
+    ]
+  },
+  {
+    "id": "meldingen-toesteltest",
+    "category": "Aan de slag",
+    "question": "Hoe controleer ik systeemmeldingen op mijn eigen telefoon?",
+    "answer": "Open Instellingen → Meldingen, schakel meldingen bewust in en geef desgevraagd Android-toestemming. Gebruik daarna de toesteltest voor je huidige account en appomgeving. Je ziet apart of de verzendkoppeling is ingericht, of Firebase het bericht heeft aangenomen en of de app ontvangst of openen heeft bevestigd. Alleen aannemen bewijst nog geen zichtbare melding. Een ontbrekende koppeling wordt als niet ingericht getoond; die moet eerst door platformbeheer worden gecontroleerd. De gewone inbox blijft werken als je systeemmeldingen weigert.",
+    "keywords": [
+      "push",
+      "toesteltest",
+      "meldingen",
+      "Firebase",
+      "ontvangst",
+      "toestemming"
+    ]
+  },
+  {
+    "id": "meldingen-privacy-bezorging",
+    "category": "Profiel en privacy",
+    "question": "Wat staat er op mijn vergrendelscherm en wat gebeurt er bij uitloggen?",
+    "answer": "Het vergrendelscherm toont alleen algemene DartFlow-tekst, zonder namen, scores of chatberichten. Na inloggen haalt de app de actuele melding en toegangsrechten op. Een verlopen of ingetrokken oproep voert geen deelname of scoreactie uit. Uitloggen of accountwissel verbreekt de oude toestelbinding. Je categorievoorkeuren gelden ook voor push. Een fout in de pushwachtrij maakt je vriendschapsactie of partij niet ongedaan; DartFlow bewaart de bron voor begrensd herstel en toont een afzonderlijke wachtrijstatus.",
+    "keywords": [
+      "push",
+      "privacy",
+      "vergrendelscherm",
+      "uitloggen",
+      "accountwissel",
+      "wachtrij"
+    ]
+  },
+  {
+    "id": "competitie-baan-qr",
+    "category": "Competities",
+    "question": "Hoe start ik mijn geplande competitiewedstrijd via de baan-QR?",
+    "answer": "Scan de vaste QR van de baan en meld je aan met je eigen account. Je ziet je eigen toegankelijke geplande partijen bij deze vereniging. Kies de juiste partij; bij meerdere mogelijkheden kies je de ontmoeting en ronde. Bestaande speelvensters, vrijgegeven rondes, opstellingen en baantoewijzingen blijven gelden. Bij een blokkade staat de reden erbij en kun je de competitieplanning openen. Een lopende partij hervat je via dezelfde scorekaart. Zonder geschikte competitiepartij blijft de bestaande vrijspelroute beschikbaar.",
+    "keywords": [
+      "competitie QR",
+      "baan",
+      "planning",
+      "gepland",
+      "ronde",
+      "speelvenster",
+      "hervatten"
+    ]
+  },
+  {
+    "id": "competitie-lobby-bevestigen",
+    "category": "Competities",
+    "question": "Hoe bevestigen beide geplande spelers de competitielobby?",
+    "answer": "De eerste speler bevestigt alleen de eigen deelname. De geplande tegenstander scant dezelfde baan-QR met het eigen aangemelde account, of vult op het toestel van de eerste speler de eigen gebruikersnaam en zescijferige spelerspincode in. Daarmee bevestig je alleen deelname aan deze partij; de eigen login van de eerste speler blijft actief. Twee bevestigingen van hetzelfde account tellen niet als twee spelers. Het account van de eerste speler bedient de scorekaart; de lobby toont wie dat is. Daarna blijven de ingestelde bull-, lotings- en startprocedure gelden.",
+    "keywords": [
+      "competitie QR",
+      "lobby",
+      "bevestigen",
+      "PIN",
+      "pincode",
+      "eerste speler",
+      "schrijver",
+      "scorebediening"
+    ]
+  },
+  {
+    "id": "competitie-lobby-verlopen",
+    "category": "Competities",
+    "question": "Wat gebeurt er als de competitielobby verloopt of ik de app herstart?",
+    "answer": "De tijdelijke baanreservering duurt twee minuten. De eerste speler kan de lobby ook sluiten en de baan meteen vrijgeven. De geplande partij blijft bestaan met dezelfde wedstrijdidentiteit en regels. Scan na verlopen opnieuw en bevestig opnieuw waar nodig. Na een appherstart of opnieuw openen van de baan-QR wordt een nog geldige eigen lobby hersteld; een gestarte partij open je via de oorspronkelijke scorekaart. Oche Live toont eerst de openbare spelersnamen en bevestigingen en schakelt daarna over naar de partij.",
+    "keywords": [
+      "competitie QR",
+      "lobby",
+      "verlopen",
+      "annuleren",
+      "herstart",
+      "Oche Live",
+      "hervatten"
+    ]
   }
 ]

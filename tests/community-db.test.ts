@@ -19,7 +19,7 @@ test('v17 feed and chat enforce fresh scope rights, stable pagination, moderatio
  const admin=randomUUID(),alice=randomUUID(),bob=randomUUID(),outsider=randomUUID(),people=[admin,alice,bob,outsider],entities:string[]=[];
  const run=(actor:string,action:PlatformCommand['action'],requestId=randomUUID())=>executePlatformCommand(actor,{requestId,action});
  try{
-  for(const [index,id]of people.entries())await owner.query('insert into dartflow_private.profiles(id,name) values($1,$2)',[id,`Community ${index}`]);
+  for(const [index,id]of people.entries())await owner.query('insert into dartflow_private.profiles(id,name,display_name) values($1,$2,$3)',[id,`community${id.slice(0,8)}`,`Community ${index}`]);
   for(const id of people)await owner.query("insert into dartflow_private.player_safety_acceptances(user_id,version,age_confirmed) values($1,'2026-11-18',true)",[id]);
   const club=(await run(admin,{type:'club.create',name:'Community A'})).id!,other=(await run(outsider,{type:'club.create',name:'Community B'})).id!;entities.push(club,other);
   for(const user of [alice,bob]){await run(user,{type:'club.request',id:club});await run(admin,{type:'club.approve',id:club,userId:user});}

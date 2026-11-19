@@ -43,7 +43,7 @@ test('review login is a scoped real password grant with private credentials, gen
   // The production-shaped mode changes only routing/config. Both database URLs
   // remain the previously verified isolated loopback URLs throughout the suite.
   assert.equal((await db.query("select count(*)::int n from dartflow_private.play_review_accounts where environment='staging'")).rows[0].n,0,'The isolated staging fixture slot must be unused.');
-  for(const[id,name]of [[actor,'Synthetic reviewer'],[companion,'Synthetic companion'],[owner,'Synthetic owner'],[stranger,'Synthetic unrelated player']])await db.query('insert into dartflow_private.profiles(id,name,email,email_verified) values($1,$2,$3,true)',[id,`${name} ${id.slice(0,8)}`,id===actor?email:id===companion?companionEmail:null]);
+  for(const[id,name]of [[actor,'Synthetic reviewer'],[companion,'Synthetic companion'],[owner,'Synthetic owner'],[stranger,'Synthetic unrelated player']])await db.query('insert into dartflow_private.profiles(id,name,display_name,email,email_verified) values($1,$2,$3,$4,true)',[id,`review${id.slice(0,8)}`,`${name} ${id.slice(0,8)}`,id===actor?email:id===companion?companionEmail:null]);
   await db.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'owner')",[owner]);
   setHosted();const envelope=encryptCredential(password,'play-review-password');
   assert.ok(!JSON.stringify(envelope).includes(password),'Encrypted storage must not contain the plaintext synthetic password.');

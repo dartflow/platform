@@ -9,13 +9,15 @@ import {uuid} from './platform-store';
 /** PIN preparation/receipts remain private; generic command receipts never receive PIN fields. */
 export async function completePlayerProfile(actor:string,input:Record<string,unknown>) {
  const id=uuid(actor),requestId=uuid(input.requestId);
- if(!validUsername(input.username))throw new DomainError('username','Vul een geldige, unieke gebruikersnaam in. Gebruik hoogstens één voorloop-@.');
+ const current=input.username===undefined?await getProfile(id):null;
+ const selectedUsername=input.username??(current?.usernameLocked?current.username:undefined);
+ if(!validUsername(selectedUsername))throw new DomainError('username','Vul een geldige, unieke gebruikersnaam in. Gebruik hoogstens één voorloop-@.');
  if(!validDisplayName(input.displayName))throw new DomainError('display_name','Vul een geldige weergavenaam in van maximaal 80 tekens.');
- const username=normalizeUsername(input.username),displayName=normalizeDisplayName(input.displayName);
+ const username=normalizeUsername(selectedUsername),displayName=normalizeDisplayName(input.displayName);
  const status=await getPlayerPinStatus(id);
  const prepared=!status.pinConfigured||input.pin!==undefined?await preparePlayerPinUpdate(id,{requestId,pin:input.pin,pinConfirmation:input.pinConfirmation,mode:'initial'},{recentAuth:false}):null;
  // Only non-secret profile labels are hashed here. The PIN subsystem owns its keyed receipt.
- const fingerprint=createHash('sha256').update(JSON.stringify({username,displayName})).digest('hex');
+ const fingerprint=createHash('sha256').update(JSON.stringify({username,displayName,fullName:input.fullName??null})).digest('hex');
  const client=await database().connect();
  try{
   await client.query('begin');
@@ -23,7 +25,7 @@ export async function completePlayerProfile(actor:string,input:Record<string,unk
   const prior=await client.query('select fingerprint from dartflow_private.profile_setup_receipts where actor_id=$1 and request_id=$2',[id,requestId]);
   if(prior.rows.length){if(prior.rows[0].fingerprint!==fingerprint)throw new DomainError('request_reused','Deze aanvraag is al voor andere profielgegevens gebruikt. Vernieuw je profiel.',409);}
   else{
-   await saveScoreboardName(client,id,username,displayName);
+   await saveScoreboardName(client,id,username,displayName,input.fullName);
    if(prepared)await savePreparedPlayerPin(client,id,prepared);
    if(!(await getPlayerPinStatus(id,client)).pinConfigured)throw new DomainError('player_pin_required','Stel je spelerspincode in om je profiel af te ronden.');
    await client.query('update dartflow_private.profiles set onboarding_complete=true where id=$1',[id]);

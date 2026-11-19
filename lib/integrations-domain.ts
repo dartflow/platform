@@ -23,7 +23,7 @@ export async function enqueueMatchTransition(client:PoolClient,actorId:string,so
  const view=matchView(next,actorId,false),score=(next.settings.bestOfSets>1?view.sets:view.legs).join(' – ');
  for(const kind of kinds)for(const recipientId of kind.recipients){
   const opponent=next.players.find(player=>player.id!==recipientId);
-  await enqueueDomainMail(client,{id:`match:${next.id}:${command.requestId}:${kind.id}`,templateId:kind.id,scope,recipientId,entityId:next.id,...(kind.id==='board-call'?{...(next.callRef&&next.boardId?{call:{ref:next.callRef,boardId:next.boardId}}:{}),expiresAt:new Date(Date.now()+5*60_000).toISOString()}:{}),variables:{actorName:actor.rows[0]?.name||'Een speler',opponentName:opponent?.name||'Deelnemers',eventName:event.rows[0]?.name||'Wedstrijd',date:event.rows[0]?.date||'',boardName:board?.rows[0]?.name||'Baan',score,reason:kind.reason||'',actionUrl:`/wedstrijd/${next.id}`}});
+  await enqueueDomainMail(client,{id:`match:${next.id}:${command.requestId}:${kind.id}`,templateId:kind.id,scope,recipientId,actorId,opponentId:opponent?.id,entityId:next.id,...(kind.id==='board-call'?{...(next.callRef&&next.boardId?{call:{ref:next.callRef,boardId:next.boardId}}:{}),expiresAt:new Date(Date.now()+5*60_000).toISOString()}:{}),variables:{actorName:actor.rows[0]?.name||'Een speler',opponentName:opponent?.name||'Deelnemers',eventName:event.rows[0]?.name||'Wedstrijd',date:event.rows[0]?.date||'',boardName:board?.rows[0]?.name||'Baan',score,reason:kind.reason||'',actionUrl:`/wedstrijd/${next.id}`}});
  }
 }
 

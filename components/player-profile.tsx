@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {Profile} from '@/lib/types';
 import type {PlayerStatisticsResponse,StatisticsMatchRow} from '@/lib/player-statistics-types';
-import {normalizeUsername,validDisplayName,validUsername} from '@/lib/display-name';
+import ProfileIdentityFields from './profile-identity-fields';
 import './player-profile.css';
 
 async function api<T>(path:string,data?:unknown):Promise<T>{
@@ -23,26 +23,22 @@ function PinFields({pin,confirmation,setPin,setConfirmation,disabled}:PinFieldsP
  </>;}
 
 export function ProfileCompletion({user,onComplete}:{user:Profile;onComplete:()=>void}){
- const [username,setUsername]=useState(validUsername(user.username??user.name)?normalizeUsername(user.username??user.name):'');
- const [displayName,setDisplayName]=useState(validDisplayName(user.displayName??user.name)?user.displayName??user.name:'');
+ const [identityValid,setIdentityValid]=useState(false);
  const [pin,setPin]=useState(''),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const requestId=useRef<string|null>(null),needsPin=!user.pinConfigured;
  useEffect(()=>{const clear=()=>{setPin('');setConfirmation('');};window.addEventListener('pagehide',clear);return()=>window.removeEventListener('pagehide',clear);},[]);
  async function submit(event:FormEvent){event.preventDefault();setError('');setBusy(true);requestId.current??=crypto.randomUUID();
-  try{await api('/api/profile/complete',{requestId:requestId.current,username,displayName,...(needsPin?{pin,pinConfirmation:confirmation}:{})});onComplete();}
+  try{const fields=new FormData(event.currentTarget as HTMLFormElement);await api('/api/profile/complete',{requestId:requestId.current,username:fields.get('username'),displayName:fields.get('displayName'),fullName:fields.get('fullName'),...(needsPin?{pin,pinConfirmation:confirmation}:{})});onComplete();}
   catch(error){setError(error instanceof Error?error.message:'Opslaan is niet gelukt.');}
   finally{setBusy(false);setPin('');setConfirmation('');}
  }
  return <form className="auth-card player-profile-form" onSubmit={submit}>
   <span className="eyebrow">REGISTRATIE AFRONDEN</span><h1>Maak je spelersprofiel compleet</h1>
-  <p>Kies een unieke gebruikersnaam en de naam die andere spelers op het scorebord zien. Een Google-naam is een voorstel: bevestig of wijzig die hier.</p>
-  <label className="field">Gebruikersnaam<input name="username" autoComplete="username" required maxLength={81} value={username} onChange={e=>setUsername(e.target.value)} disabled={busy}/></label>
-  <small>Uniek in DartFlow. Met of zonder één voorloop-@.</small>
-  {username&&!validUsername(username)&&<p className="field-error">Kies een geldige gebruikersnaam van maximaal 80 tekens.</p>}
-  <label className="field">Weergavenaam<input name="displayName" autoComplete="nickname" required maxLength={80} value={displayName} onChange={e=>setDisplayName(e.target.value)} disabled={busy}/></label>
+  <p>Kies je openbare displaynaam en bevestig één vaste gebruikersnaam. Je volledige naam blijft privé.</p>
+  <ProfileIdentityFields user={user}disabled={busy}onValidity={setIdentityValid}/>
   {needsPin?<PinFields pin={pin} confirmation={confirmation} setPin={setPin} setConfirmation={setConfirmation} disabled={busy}/>:<p>Spelerspincode: ingesteld.</p>}
   {error&&<div className="notice error" role="alert">{error}</div>}
-  <button className="button gold full" disabled={busy||!validUsername(username)||!validDisplayName(displayName)||needsPin&&(!validPin(pin)||pin!==confirmation)}>{busy?'Profiel opslaan…':'Profiel opslaan en verder'}</button>
+  <button className="button gold full" disabled={busy||!identityValid||needsPin&&(!validPin(pin)||pin!==confirmation)}>{busy?'Profiel opslaan…':'Profiel opslaan en verder'}</button>
  </form>;
 }
 

@@ -1,4 +1,6 @@
 "use client";
+import ProfileIdentityFields from './profile-identity-fields';
+import {socialIdentityLabel} from '@/lib/public-identity';
 
 import {
   useCallback,
@@ -1431,6 +1433,10 @@ function Friends({
   command: Command;
   busy: boolean;
 }) {
+  const [search,setSearch]=useState(''),[found,setFound]=useState<Profile[]>(data.players),[searchError,setSearchError]=useState(''),[nextOffset,setNextOffset]=useState<number|null>(null),[moreBusy,setMoreBusy]=useState(false);
+  const searchRef=useRef(search);searchRef.current=search;
+  useEffect(()=>{let active=true;const controller=new AbortController(),timer=setTimeout(()=>{void fetch('/api/players?'+new URLSearchParams({search}),{credentials:'same-origin',cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw Error('Zoeken is niet gelukt. Probeer opnieuw.');return response.json()as Promise<{players:Profile[];nextOffset:number|null}>;}).then(result=>{if(active){setFound(result.players);setNextOffset(result.nextOffset);setSearchError('');}}).catch(error=>{if(active)setSearchError(error instanceof Error?error.message:'Zoeken is niet gelukt.');});},200);return()=>{active=false;clearTimeout(timer);controller.abort();};},[search]);
+  const query=search.normalize('NFKC').toLowerCase().replace(/^@/,'');
   return (
     <>
       <Title title="Vrienden">
@@ -1447,20 +1453,13 @@ function Friends({
           });
         }}
       >
-        <Field label="Speler" name="userId" required>
-          <option value="">Kies een speler</option>
-          {data.players
-            .filter(
-              (p) =>
-                p.id !== data.profile.id &&
-                !data.friends.some((f) => f.id === p.id),
-            )
-            .map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-        </Field>
+        <label className="field">Zoek op displaynaam of gebruikersnaam<input value={search}onChange={e=>setSearch(e.target.value)}type="search"/></label>
+        {searchError&&<p role="alert">{searchError}</p>}
+        <fieldset className="player-search-results"><legend>Speler kiezen</legend>
+          {found.filter(p=>p.id!==data.profile.id&&!data.friends.some(f=>f.id===p.id)&&(!query||[p.displayName,p.username].some(value=>value?.normalize('NFKC').toLowerCase().includes(query)))).map(p=><label className="player-search-result"key={p.id}><input type="radio"name="userId"value={p.id}required/><span className="player-search-avatar"aria-hidden="true">{Array.from(p.displayName||p.username||'S').slice(0,2).join('').toUpperCase()}</span><span><strong>{p.displayName||p.username||'Speler'}</strong>{p.username&&<small>@{p.username}</small>}</span></label>)}
+        </fieldset>
+        {nextOffset!==null&&<button className="button ghost"type="button"disabled={moreBusy}onClick={async()=>{setMoreBusy(true);const captured=search;try{const response=await fetch('/api/players?'+new URLSearchParams({search,offset:String(nextOffset)}),{credentials:'same-origin',cache:'no-store'});if(!response.ok)throw Error('Volgende spelers ophalen is niet gelukt.');const result=await response.json()as{players:Profile[];nextOffset:number|null};if(searchRef.current===captured){setFound(prior=>[...prior,...result.players.filter(player=>!prior.some(p=>p.id===player.id))]);setNextOffset(result.nextOffset);}}catch(error){if(searchRef.current===captured)setSearchError(error instanceof Error?error.message:'Probeer opnieuw.');}finally{setMoreBusy(false);}}}>Meer spelers tonen</button>}
+        <a href="/help/profiel-zoeken">Hulp bij het vinden van de juiste speler</a>
       </Form>
       <section className="panel">
         <h2>Vrienden & verzoeken</h2>
@@ -1468,7 +1467,7 @@ function Friends({
           data.friends.map((f) => (
             <div className="workspace-row" key={f.id}>
               <div>
-                <strong>{f.name}</strong>
+                <strong>{socialIdentityLabel(f)}</strong>
                 <small>
                   {f.status === "incoming"
                     ? "Wil vrienden worden"
@@ -3594,19 +3593,14 @@ function Preferences({
         onSubmit={async (form) => {
           await command({
             type: "profile.update",
-            name: text(form.get("name")),
+            username: text(form.get("username")),
+            fullName:text(form.get("fullName")),
             displayName:text(form.get('displayName')),
             showPublicStatistics:form.get('showPublicStatistics')==='on',
           });
         }}
       >
-        <Field
-          label="Gebruikersnaam (uniek in DartFlow)"
-          name="name"
-          defaultValue={data.profile.username??data.profile.name}
-          required
-        />
-        <Field label="Weergavenaam" name="displayName" defaultValue={data.profile.displayName??data.profile.name} required/>
+        <ProfileIdentityFields user={data.profile}disabled={busy}/>
         <label className="workspace-checkbox"><input name="showPublicStatistics" type="checkbox" defaultChecked={data.profile.showPublicStatistics===true}/>Historische profielcijfers tonen op openbare Oche Live-baanschermen</label>
       </Form>
       <Form

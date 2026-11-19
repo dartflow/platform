@@ -18,7 +18,8 @@ class PlayerDataTest {
         assertFalse(PlayerValidation.validOtp("１２３４５６７８"))
     }
     @Test fun usernameNormalizationMatchesServerSingleAtRule() {
-        assertEquals("Danny Goldenbelt", PlayerValidation.normalizeUsername(" @Danny   Goldenbelt "))
+        assertEquals("danny", PlayerValidation.normalizeUsername("@Danny"))
+        assertFalse(PlayerValidation.validUsername(" @Danny   Goldenbelt "))
         assertTrue(PlayerValidation.validUsername("@Danny"))
         assertFalse(PlayerValidation.validUsername("@@Danny"))
         assertFalse(PlayerValidation.validName("Nieuwe speler"))

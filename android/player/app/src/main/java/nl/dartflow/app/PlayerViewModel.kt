@@ -21,6 +21,7 @@ import org.json.JSONObject
 /** Native screen state. The server remains the only scoring/authorization authority. */
 class PlayerViewModel(application: Application) : AndroidViewModel(application) {
     private val store = PlayerSessionStore(application)
+    private val notificationOpenStore = PlayerSessionStore(application, "notification-open")
     private val helpCache = PlayerHelpCache(application)
     val api = PlayerApi()
     private val state = MutableStateFlow(PlayerUiState())
@@ -157,7 +158,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         profile?.let { saved.put("userId", it.id); persist() }
         state.update { it.copy(profile = profile, session = sessionMetadata(), canManagePlatform = result.optBoolean("canManagePlatform"), organizerDraft = saved.optJSONObject("organizerDraft") ?: JSONObject(), invitation = saved.optJSONObject("invitation") ?: JSONObject()) }
         profile?.let { runCatching { PlayerPush.sync(getApplication(), api, it.id) } }
-        pendingPushId?.let { id -> pendingPushId = null; openPush(id) }
+        (pendingPushId ?: playerPendingNotification(notificationOpenStore.read(), api.origin))?.let { id -> pendingPushId = null; openPush(id) }
     }
     private suspend fun loadCommon() {
         val generation = identityGeneration
@@ -182,7 +183,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val ticket = snapshots.capture()
         val resource = when (screen) {
             PlayerScreen.BOARDS -> api.call("/player-experience")
-            PlayerScreen.NOTIFICATIONS -> api.call("/player-experience").also { it.put("push", api.call("/push")) }
+            PlayerScreen.NOTIFICATIONS -> api.call("/player-experience").also { it.put("push", api.call("/push").also { push -> if (generation == identityGeneration) PlayerPush.updatePreferences(getApplication(), state.value.profile?.id, push) }) }
             PlayerScreen.SCREENS -> {
                 val experience = api.call("/player-experience")
                 val context = api.call("/oche/v1/context")
@@ -196,7 +197,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 profile
             }
             PlayerScreen.STATISTICS, PlayerScreen.HISTORY -> api.call("/player-statistics" + statisticsQuery(id))
-            PlayerScreen.BOARD -> id?.let { api.call("/boards/${PlayerLinks.encode(it)}") } ?: JSONObject()
+            PlayerScreen.BOARD -> id?.let { api.call("/boards/${PlayerLinks.encode(it)}").also { board -> board.put("competition", api.call("/boards/${PlayerLinks.encode(it)}/competition")) } } ?: JSONObject()
             PlayerScreen.MATCH -> id?.let {
                 val match = api.call("/matches/${PlayerLinks.encode(it)}")
                 val raw = match.optJSONObject("match") ?: match
@@ -424,6 +425,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val token = saved.optString("accessToken")
         val local = saved.optBoolean("local")
         PlayerPush.disable(getApplication(), api)
+        notificationOpenStore.clear(); pendingPushId = null
         clearSession()
         if (!local && token.isNotBlank()) runCatching { api.authCall(auth, "/logout?scope=local", token = token) }
     }
@@ -443,23 +445,27 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
     fun handlePushTap(id: String) {
         if (runCatching { UUID.fromString(id).toString() == id }.getOrDefault(false).not()) return
+        notificationOpenStore.write(json("id" to id, "origin" to api.origin))
         if (!ready || !hasSession()) { pendingPushId = id; state.update { it.copy(notice = "Log in om deze melding en je actuele toegang te controleren.") }; return }
         launchTask { openPush(id) }
     }
     private suspend fun openPush(id: String) {
+        val identity = requestIdentity() ?: return
         val result = api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to json("type" to "notification.open", "id" to id)))
+        if (requestIdentity() != identity) return
+        notificationOpenStore.clear()
         if (result.optBoolean("available")) {
             val settings = PlayerPush.settings(getApplication())
             if (settings.text("deviceId").isNotBlank()) runCatching { api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to json("type" to "delivery.ack", "id" to id, "deviceId" to settings.text("deviceId"), "stage" to "opened"))) }
             handleDeepLink(result.text("href"))
         } else state.update { it.copy(notice = result.text("message", "Deze melding is verlopen of ingetrokken. Open Vandaag voor de actuele informatie.")) }
     }
-    fun completeProfile(username: String, displayName: String, pin: String, confirm: String) {
-        if (!PlayerValidation.validUsername(username) || !PlayerValidation.validName(displayName)) { state.update { it.copy(error = "Vul een geldige gebruikersnaam en weergavenaam in.") }; return }
+    fun completeProfile(fullName: String, username: String, displayName: String, pin: String, confirm: String) {
+        if (!PlayerValidation.validFullName(fullName) || !PlayerValidation.validUsername(username) || !PlayerValidation.validName(displayName)) { state.update { it.copy(error = "Controleer je privénaam, openbare displaynaam en vaste gebruikersnaam.") }; return }
         if (!state.value.profile.let { it?.pinConfigured == true } || pin.isNotBlank() || confirm.isNotBlank()) {
             if (!PlayerValidation.validPin(pin) || pin != confirm) { state.update { it.copy(error = "Gebruik zes cijfers en herhaal dezelfde spelerspincode.") }; return }
         }
-        val body = JSONObject().put("username", PlayerValidation.normalizeUsername(username)).put("displayName", PlayerValidation.normalizeName(displayName))
+        val body = JSONObject().put("username", PlayerValidation.normalizeUsername(username)).put("displayName", PlayerValidation.normalizeName(displayName)).put("fullName", fullName.takeIf { it.isNotBlank() }?.let(PlayerValidation::normalizeName) ?: JSONObject.NULL)
         if (pin.isNotBlank()) body.put("pin", pin).put("pinConfirmation", confirm)
         command("/profile/complete", body)
     }
@@ -563,6 +569,12 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private suspend fun afterCommand(path: String, input: JSONObject, result: JSONObject, generation: Int) {
         if (generation != identityGeneration || !hasSession()) return
         snapshots.advance()
+        if (path == "/competition-lobbies/actions" || path == "/competition-lobbies/player-pin") {
+            val url = result.text("url").ifBlank { if (result.obj("lobby").text("status") == "started") result.obj("lobby").text("matchUrl") else "" }
+            if (url.isNotBlank()) handleDeepLink(url) else loadCurrent()
+            state.update { it.copy(notice = if (path.endsWith("player-pin")) "De geplande tegenstander is bevestigd voor deze wedstrijd." else "Competitielobby bijgewerkt.") }
+            return
+        }
         if (path == "/faq/admin/actions") {
             state.update { it.copy(faqAdminReceipt = result, notice = if (result.has("version")) "Gedeelde hulp gepubliceerd." else "Hulpconcept opgeslagen.") }; loadCurrent(); return
         }
@@ -578,7 +590,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             check(result.optBoolean("ok") && result.optString("status") in listOf("pending", "processing", "completed")) { "Het verwijderverzoek kon niet worden bevestigd. Probeer opnieuw." }
             // Acceptance invalidates access server-side. Erase tokens, queued actions, profile,
             // current match and return destination locally before any further authenticated call.
-            clearSession()
+            notificationOpenStore.clear(); pendingPushId = null; clearSession()
             state.update { it.copy(notice = "Je verzoek om je account en gegevens te verwijderen is ontvangen. Je bent uitgelogd. Hulp of vragen: info@dartflow.nl.") }
             return
         }
@@ -621,6 +633,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         }
         if (generation != identityGeneration || !hasSession()) return
         val notice = when (path) {
+            "/push/actions" -> when (result.text("status")) { "queued" -> "Testmelding staat in de verzendwachtrij. Ververs de verzendstatus om echte ontvangst te controleren."; "configUnavailable" -> "De Firebase-verzendconfiguratie ontbreekt. Er is geen testmelding verzonden; je meldingen blijven in DartFlow beschikbaar."; "suppressed" -> "Je meldingsvoorkeuren houden deze testmelding tegen."; else -> result.text("message", "Meldingsvoorkeuren opgeslagen.") }
             "/safety/report" -> "Je melding is ontvangen. DartFlow beoordeelt deze. Bij direct gevaar bel je 112."
             "/safety/block" -> if (input.optBoolean("blocked")) "Speler geblokkeerd. Nieuwe rechtstreekse interacties worden tegengehouden." else "Blokkade opgeheven."
             "/safety/consent" -> "Communityregels opgeslagen. Je kunt nu een bericht plaatsen."

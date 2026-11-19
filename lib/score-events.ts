@@ -25,5 +25,11 @@ export async function readBoardScoreEvents(client:Client,boardId:string,sourceId
  }
  if(!sourceId)return {sessionKey:`idle-${opaque(boardId)}`,scoreEvents:[]};
  const result=await client.query<{id:string;revision:number;kind:'score'|'undo';visit:PublicVisit|null}>('select id,revision,kind,visit from (select id,revision,ordinal,kind,visit from dartflow_private.board_score_events where source_id=$2 and (board_id=$1 or exists(select 1 from dartflow_private.board_activity_links l join dartflow_private.board_activity_sessions s on s.id=l.session_id where l.board_id=$1 and s.source_id=$2)) and ($3::int is null or revision<=$3) order by revision desc,ordinal desc limit 64) e order by revision,ordinal',[boardId,sourceId,revision??null]);
- return {sessionKey:opaque(sourceId),scoreEvents:result.rows.map(row=>({id:row.id,revision:row.revision,kind:row.kind,...row.visit}))};
+ // Old animation rows contain labels rather than player IDs. Only reuse a label
+ // still published by an actual participant in this same source.
+ const source=await client.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[sourceId]);
+ const ids=source.rows[0]?matchParticipants(source.rows[0].state).map(p=>p.id):(await client.query<{owner_id:string}>("select owner_id from dartflow_private.platform_entities where id=$1 and kind='training'",[sourceId])).rows.map(p=>p.owner_id);
+ const labels=new Set((await client.query<{name:string}>('select name from dartflow_private.profile_labels where id=any($1::uuid[])',[ids])).rows.map(p=>p.name));
+ if(!source.rows[0])labels.add('Dartbot');
+ return {sessionKey:opaque(sourceId),scoreEvents:result.rows.map(row=>{const{playerName,...visit}=row.visit??{};return{id:row.id,revision:row.revision,kind:row.kind,...visit,...(playerName&&labels.has(playerName)?{playerName}:{})};})};
 }

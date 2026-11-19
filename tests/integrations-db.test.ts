@@ -32,7 +32,7 @@ test('durable mail verifies transactions, scope, CAS, immutable snapshots, provi
   configurationSaved=true;
   await owner.query("delete from dartflow_private.integration_settings where environment='staging' and provider='google'");
   await owner.query("insert into dartflow_private.integration_settings(environment,provider,revision,settings) values('development','resend',0,'{\"mode\":\"log\"}') on conflict(environment,provider) do update set revision=0,settings=excluded.settings");
-  for(const [id,name,email]of [[actor,'Mail owner',`owner-${suffix}@example.com`],[player,'Mail player',address],[outsider,'Mail outsider',`outsider-${suffix}@example.com`]])await owner.query('insert into dartflow_private.profiles(id,name,email,email_verified) values($1,$2,$3,true)',[id,name,email]);
+  for(const [id,name,email]of [[actor,'Mail owner',`owner-${suffix}@example.com`],[player,'Mail player',address],[outsider,'Mail outsider',`outsider-${suffix}@example.com`]])await owner.query('insert into dartflow_private.profiles(id,name,display_name,email,email_verified) values($1,$2,$3,$4,true)',[id,`mail${id.slice(0,8)}`,name,email]);
   await owner.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'owner')",[actor]);await owner.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[club,`Mail ${suffix}`]);await owner.query("insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,'organizer')",[club,actor]);
   // More than one full worker batch of older, unrelated fixture mail must stay untouched.
   for(let index=0;index<12;index++){
