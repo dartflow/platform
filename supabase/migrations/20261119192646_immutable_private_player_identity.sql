@@ -44,7 +44,7 @@ update dartflow_private.profiles p set
  display_name_confirmed=a.decision='retained_canonical_claim',
  username_locked_at=case when a.decision='retained_canonical_claim'then clock_timestamp()else null end,
  identity_needs_review=a.decision='owner_review_required'
- from dartflow_private.profile_identity_migration_audit a where a.profile_id=p.id and p.username_locked_at is null;
+ from dartflow_private.profile_identity_migration_audit a where a.profile_id=p.id and p.username_locked_at is null and p.deleted_at is null;
 create unique index profiles_unique_confirmed_username on dartflow_private.profiles(dartflow_private.username_key(name))where display_name_confirmed;
 create or replace function dartflow_private.normalize_profile_username()returns trigger
 language plpgsql security invoker set search_path=pg_catalog,dartflow_private as $$

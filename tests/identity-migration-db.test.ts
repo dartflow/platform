@@ -42,6 +42,12 @@ test('identity migration preserves fixed IDs and relations, quarantines only inv
   await admin.query(`select ${schema}.scrub_social_identity_mail($1)`,[ids[0]]);
   assert.deepEqual((await admin.query(`select id from ${schema}.mail_outbox`)).rows.map(row=>row.id),[mails[3]]);assert.deepEqual((await admin.query(`select job_id from ${schema}.mail_provider_events`)).rows.map(row=>row.job_id),[mails[3]]);assert.equal((await admin.query(`select count(*)::int n from ${schema}.mail_events`)).rows[0].n,1);
   await admin.query(`update ${schema}.profiles set full_name='Erase Private Name'where id=$1`,[ids[0]]);
-  await admin.query(`update ${schema}.profiles set name='Verwijderde speler',display_name_confirmed=false,deleted_at=clock_timestamp()where id=$1`,[ids[0]]);assert.equal((await admin.query(`select full_name from ${schema}.profiles where id=$1`,[ids[0]])).rows[0].full_name,null);assert.equal((await admin.query(`select old_username from ${schema}.profile_identity_migration_audit where profile_id=$1`,[ids[0]])).rows[0].old_username,null);
+  await admin.query(`update ${schema}.profiles set name='Verwijderde speler',display_name='Verwijderde speler',display_name_confirmed=false,deleted_at=clock_timestamp()where id=$1`,[ids[0]]);assert.equal((await admin.query(`select full_name from ${schema}.profiles where id=$1`,[ids[0]])).rows[0].full_name,null);assert.equal((await admin.query(`select old_username from ${schema}.profile_identity_migration_audit where profile_id=$1`,[ids[0]])).rows[0].old_username,null);
+  const erased=(await admin.query(`select to_jsonb(p)as state from ${schema}.profiles p where id=$1`,[ids[0]])).rows[0].state;
+  assert.equal(erased.display_name_confirmed,false);assert.equal(erased.username_locked_at,null);
+  await admin.query(sql);
+  assert.deepEqual((await admin.query(`select to_jsonb(p)as state from ${schema}.profiles p where id=$1`,[ids[0]])).rows[0].state,erased);
+  assert.deepEqual((await admin.query(`select old_username,old_display_name from ${schema}.profile_identity_migration_audit where profile_id=$1`,[ids[0]])).rows[0],{old_username:null,old_display_name:null});
+
  }finally{await admin.query('rollback');await admin.end();}
 });
