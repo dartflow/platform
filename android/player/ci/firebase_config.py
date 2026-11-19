@@ -128,7 +128,10 @@ def main():
     args = parser.parse_args()
     try:
         result = inspect(os.environ.get('FIREBASE_ACCESS_TOKEN', ''), config_dir=args.config_dir)
-    except (InspectionError, OSError, http.client.HTTPException, json.JSONDecodeError):
+    except InspectionError as error:
+        # InspectionError messages are fixed local diagnostics, never Google bodies.
+        parser.exit(1, f'Firebase-inspectie gestopt: {error}\n')
+    except (OSError, http.client.HTTPException, json.JSONDecodeError):
         # No exception repr: never include a token, SDK key, response body or path.
         parser.exit(1, 'Firebase-inspectie gestopt: bestaande projectconfiguratie/leesrechten konden niet veilig worden bevestigd. Er is niets in Google gewijzigd.\n')
     print(json.dumps(result, sort_keys=True))

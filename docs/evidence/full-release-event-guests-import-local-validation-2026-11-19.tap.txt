@@ -1,0 +1,50 @@
+▶ durable privacy erasure blocks access, retries Auth safely, scrubs prior names and preserves official result identity
+  ✔ stable identity cleanup preserves other players with equal and substring display names and shared titles (8.816041ms)
+  ✔ normal web role cannot execute privileged erasure or read worker admin configuration (10.294044ms)
+  ✔ isolated worker cannot browse application PII, insert jobs, change actor identity or bypass row security (97.441246ms)
+  ✔ simultaneous confirmations produce one durable operation and deny new PIN coupling immediately (105.937033ms)
+  ✔ confirmation immediately frees physical boards, discards free score data and interrupts official progress (5.751492ms)
+  ✔ application erasure commits before external Auth failure and retry does not repeat erasure (136.17116ms)
+  ✔ rendered notices are removed by their stable sources while unrelated same-name notices and delivery deduplication stay intact (10.349431ms)
+  ✔ historical animation names are scrubbed by stable match participant and private solo caches removed (2.237974ms)
+✔ durable privacy erasure blocks access, retries Auth safely, scrubs prior names and preserves official result identity (672.509377ms)
+▶ event guests and participant imports retain canonical identity, authenticated decisions and original ranking admission
+  ✔ CSV preview writes no roster, exposes ambiguity/duplicates and applies the reviewed revision exactly once with current-role replay ACL (487.015818ms)
+  ✔ a real personal guest match records the operator, keeps accounts separate and claims only history after the own account accepts (1329.722945ms)
+  ✔ an approved club guest winner retains real place, zero rating and zero guest points after a two-party history claim and refinalization (1519.531982ms)
+✔ event guests and participant imports retain canonical identity, authenticated decisions and original ranking admission (3487.732796ms)
+✔ participant CSV preserves quoted delimiters, escaped quotes, Unicode and physical source lines (1.690918ms)
+✔ import rejects malformed quoting, duplicate/unknown headers and unbounded work before any roster write (4.227695ms)
+▶ canonical profile statistics, immutable kickoff and public privacy converge on persisted local results
+  ✔ both stable profiles see one local result and one head-to-head, with display labels (33.572702ms)
+  ✔ public projection omits historical figures until both accounts opt in (62.472914ms)
+  ✔ kickoff remains unchanged while profile history and accepted live figures advance (100.237022ms)
+  ✔ normal final recap uses the pre-match baseline and yields to a new board assignment (134.366444ms)
+  ✔ renaming labels preserves IDs, saved results and opponent pagination (54.37832ms)
+  ✔ only completed stored practice is included, outside all duel statistics (29.020607ms)
+  ✔ legacy dashboard counts completed 301 duels alongside 501 while its average remains a comparable 501 window (32.296467ms)
+  ✔ authorized pre-publication dispute correction recomputes from accepted visits and publishes exactly one identity (466.593079ms)
+  ✔ a completed official 301 league exposes its stored final placing and played figures to both stable profiles (32.572839ms)
+  ✔ private kickoff snapshots reject runtime rewrites and RLS stays enabled (7.297791ms)
+✔ canonical profile statistics, immutable kickoff and public privacy converge on persisted local results (1161.143732ms)
+✔ 501 in 15 darts is 100.20; 501 in 30 gives weighted 66.80, not mean of averages (10.36268ms)
+✔ lost legs, zero turns and busts retain counted full visits; checkout uses actual 1/2/3 darts (3.799754ms)
+✔ First 9 and exclusive/cumulative buckets use accepted values once, including bust/zero denominator (2.278581ms)
+✔ Last 50 selects comparable finished window before excluding incomplete data; 301 remains separate (55.080431ms)
+✔ an incomplete legacy result counts W/V and head-to-head while average and unprovable finish remain unknown (1.360682ms)
+✔ stable identity deduplicates tournament/board projections; interruption, walkover and aborted free play stay out (6.427648ms)
+✔ top ten finishes keep repeated values and deterministic ties; renamed accounts retain all encounters (3.201176ms)
+✔ only completed persisted practice is returned and its figures never enter match windows (2.034113ms)
+✔ undo recalculates accepted source without stale 180, finish or average (1.228459ms)
+✔ PIN-authorized single-phone writer confirms only the exact matched companion; ordinary local players still confirm individually (2.060098ms)
+✔ First 9 retains a reliable prefix when a later visit lacks darts; best leg still needs the complete leg (0.953869ms)
+✔ known legacy turn scores and valid finishes survive a missing earlier turn without inventing a measured average (0.780989ms)
+✔ practice keeps doubles as hits and only comparable 501 solo/bot averages (2.35757ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7635.404006

@@ -1,0 +1,4 @@
+
+> dartflow@0.1.0 lint
+> eslint app components lib proxy.ts tests --max-warnings 0
+

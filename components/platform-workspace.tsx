@@ -11,6 +11,10 @@ import type { Overview, Profile, MatchView, ResultView, ClubBoardView } from "@/
 import { ClubBoardQr } from "./club-board-screen";
 import MailWorkspace from "./mail-workspace";
 import ScoreConsole from "./score-console";
+import DartVisitInput from "./dart-visit-input";
+import CricketCard from "./cricket-card";
+import {dartValue} from "@/lib/x01-rules";
+import type {CricketState} from "@/lib/cricket";
 import LocalPlayerAdd from "./local-player-add";
 import BoardActivityNotice from "./board-activity-notice";
 import ScreenDeviceManager from "./screen-device-manager";
@@ -22,6 +26,12 @@ import {FeedSpace,ScopedChat} from './community-space';
 import {ClubWorkspace} from './club-ui';
 import LocationWorkspace from './location-workspace';
 import type {ClubEntity} from '@/lib/club-types';
+import RankingEventPanel from './ranking-event-panel';
+import OrganizerDrafts from './organizer-drafts';
+import TournamentManagementPanel,{ConsolationFields} from './tournament-management-panel';
+import OrganizerParticipantsPanel,{GuestClaimsPanel}from'./organizer-participants';
+import TournamentPlanning,{readTournamentPlanning} from './tournament-planning';
+import {StartProcedureFields,readWinByTwo} from './bull-start-panel';
 import {PlayerPinSettings,PlayerStatisticsPanel,ProfileStatisticsLinks} from './player-profile';
 
 type RecordValue = Record<string, unknown>;
@@ -370,10 +380,12 @@ function Scope({
   data,
   defaultValue,
   permission,
+  personal=false,
 }: {
   data: Platform;
   defaultValue?: string;
   permission?:'competitions.manage'|'tournaments.manage';
+  personal?:boolean;
 }) {
   const manageable = data.clubs.filter((club) => permission?club.clubAccess?.permissions.includes(permission):club.canManage);
   return (
@@ -382,10 +394,11 @@ function Scope({
       name="clubId"
       defaultValue={
         defaultValue ??
-        (data.canManageRegistrations ? "" : manageable[0]?.id || "")
+        (personal?'personal':data.canManageRegistrations ? "" : manageable[0]?.id || "")
       }
     >
-      <option value="">Wereldwijd</option>
+      {personal&&<option value="personal">Persoonlijk · geen officiële rankingpunten</option>}
+      {(!personal||data.canManageRegistrations)&&<option value="">Namens DartFlow</option>}
       {manageable.map((c) => (
         <option key={c.id} value={c.id}>
           {c.name}
@@ -404,6 +417,13 @@ function iso(value: unknown) {
         ...(raw.length === 10 ? {} : { timeStyle: "short" }),
       });
 }
+
+function ruleInput(form:FormData){
+  if(form.get('discipline')==='cricket')return{...readWinByTwo(form),discipline:'cricket' as const,cricketMode:form.get('cricketMode')==='no-score'?'no-score' as const:'standard' as const};
+  const inRule=text(form.get('inRule')),outRule=text(form.get('outRule')),home=text(form.get('homeStart')),away=text(form.get('awayStart'));
+  return {...readWinByTwo(form),...(inRule==='double'?{inRule}:{}),...(outRule&&outRule!=='double'?{outRule}:{}),...(home||away?{sideStartScores:[Number(home),Number(away)]}:{})};
+}
+function RulesFields(){const[discipline,setDiscipline]=useState('x01');return <details className="panel"><summary>Discipline, spelregels en handicap</summary><div className="field-grid"><label className="field">Discipline<select name="discipline"value={discipline}onChange={event=>setDiscipline(event.target.value)}><option value="x01">X01</option><option value="cricket">Cricket</option></select></label>{discipline==='cricket'?<Field label="Cricketvariant"name="cricketMode"defaultValue="standard"><option value="standard">Standaard · marks en punten</option><option value="no-score">No score · als eerste sluiten</option></Field>:<><Field label="Openen" name="inRule" defaultValue="single"><option value="single">Open in</option><option value="double">Double in</option></Field><Field label="Uitgooien" name="outRule" defaultValue="double"><option value="double">Double out</option><option value="straight">Straight out</option><option value="master">Master out</option></Field><Field label="Handicap startscore zijde 1" name="homeStart" type="number"/><Field label="Handicap startscore zijde 2" name="awayStart" type="number"/></>}</div><p>Cricket heeft eigen marks en statistieken. Afwijkende X01-regels en Cricket tellen niet voor de landelijke X01-spelersrating.</p></details>;}
 
 export default function PlatformWorkspace({
   path,
@@ -539,9 +559,9 @@ export default function PlatformWorkspace({
           <p>Jouw actuele speelomgeving ophalen…</p>
         </div>
       ) : id &&
-        ["community", "lobby"].includes(page) &&
+        ["community", "lobby", "hall", "tournaments", "leagues", "events"].includes(page) &&
         invitationCode() &&
-        !(page === "community" ? data.rooms : data.lobbies).some(
+        !(page === "community" ? data.rooms : page==='lobby'?data.lobbies:[...data.leagues,...data.tournaments]).some(
           (e) => e.id === id,
         ) ? (
         <>
@@ -554,7 +574,7 @@ export default function PlatformWorkspace({
               disabled={busy}
               onClick={() =>
                 void command({
-                  type: page === "community" ? "room.join" : "lobby.join",
+                  type: page === "community" ? "room.join" : page==='lobby'?"lobby.join":"competition.register",
                   id,
                   code: invitationCode(),
                 })
@@ -694,6 +714,7 @@ function Dashboard({
         }).format(new Date())}{" "}
         · {data.clubs.find((c) => c.id === clubId)?.name || "Wereldwijd"}
       </Title>
+      <GuestClaimsPanel/>
       {organizer ? (
         <>
           <div className="workspace-metrics">
@@ -993,6 +1014,12 @@ function BoundBoardScreen({
     </section>
   );
 }
+function EventAdministration({entity,data,command,busy}:{entity:Entity;data:Platform;command:Command;busy:boolean}){
+ const [ownership,setOwnership]=useState(entity.clubId?'club':entity.kind==='tournament'?'personal':'platform');
+ const clubs=data.clubs.filter(club=>club.clubAccess?.permissions?.includes(entity.kind==='league'?'competitions.manage':'tournaments.manage'));
+ return <details className="panel"><summary>Kopiëren en medebeheer</summary><form onSubmit={event=>{event.preventDefault();const input=new FormData(event.currentTarget);void command({type:'competition.copy',id:entity.id,name:String(input.get('name')),date:String(input.get('date')||new Date().toISOString().slice(0,10)),ownership,clubId:ownership==='club'?String(input.get('clubId')):null},entity).then(result=>{if(result?.id)navigate(`/app/${entity.kind==='league'?'leagues':'hall'}/${result.id}`);});}}><h2>Een nieuwe editie</h2><p>Neem de opzet over. De nieuwe editie begint met een lege deelnemerslijst, eigen erkenning en zonder uitslagen.</p><Field label="Naam van de nieuwe editie" name="name" defaultValue={`${entity.name} · nieuwe editie`}/><Field label="Datum nieuwe editie" name="date" type="date" defaultValue={new Date().toISOString().slice(0,10)}/><label className="field">Organisatie<select value={ownership} onChange={event=>setOwnership(event.target.value)}>{entity.kind==='tournament'&&<option value="personal">Persoonlijk</option>}{clubs.length>0&&<option value="club">Vereniging</option>}{data.canManageRegistrations&&<option value="platform">DartFlow landelijk</option>}</select></label>{ownership==='club'&&<Field label="Organiserende vereniging" name="clubId" defaultValue={entity.clubId??clubs[0]?.id}>{clubs.map(club=><option key={club.id} value={club.id}>{club.name}</option>)}</Field>}<button className="button" disabled={busy}>Lege editie aanmaken</button></form>{entity.ownerId===data.profile.id&&<><h2>Medebeheerders</h2><p>Een medebeheerder krijgt alleen de toegestane taken voor dit evenement. De organisator en officiële rankingbestemmingen blijven bij deze editie horen.</p>{entity.members.filter(member=>member.attributes?.coOrganizer===true).map(member=><div className="button-row" key={member.id}><span>{member.name}</span><Button disabled={busy} onClick={()=>void command({type:'competition.coorganizer',id:entity.id,userId:member.id,enabled:false},entity)}>Medebeheer intrekken</Button></div>)}<form onSubmit={event=>{event.preventDefault();void command({type:'competition.coorganizer',id:entity.id,userId:String(new FormData(event.currentTarget).get('userId')),enabled:true},entity);}}><Field label="Medebeheerder toevoegen" name="userId"><option value="">Kies een speler</option>{data.players.filter(player=>player.id!==entity.ownerId).map(player=><option key={player.id} value={player.id}>{player.name}</option>)}</Field><button className="button" disabled={busy}>Medebeheer toestaan</button></form></>}</details>;
+}
+
 function Training({
   data,
   id,
@@ -1026,9 +1053,9 @@ function Training({
     }catch{/* Private draft storage is optional. */}
   },[pendingKey,draftKey,id]);
   function updateTrainingScore(value:string){const next=value.replace(/\D/g,'').slice(0,3);setScore(next);setDouble(false);setDoubleAttempts(null);try{sessionStorage.setItem(draftKey,next);}catch{/* Optional draft storage. */}}
-  async function submitTrainingScore(){
+  async function submitTrainingScore(input?:{score:number;darts:number;dartHits:string[]}){
     if(!entity||scoreSending.current||busy)return;
-    const pending=pendingScore || {requestId:crypto.randomUUID(),expectedRevision:entity.revision,action:{type:'training.score',id:entity.id,score:number(score),darts:number(visitDarts,3),doubleConfirmed:double,...(doubleAttempts==null?{}:{doubleAttempts})}};
+    const pending=pendingScore || {requestId:crypto.randomUUID(),expectedRevision:entity.revision,action:{type:'training.score',id:entity.id,score:number(score),darts:number(visitDarts,3),doubleConfirmed:double,...(doubleAttempts==null?{}:{doubleAttempts}),...(input??{})}};
     scoreSending.current=true;setPendingScore(pending);try{sessionStorage.setItem(pendingKey,JSON.stringify(pending));}catch{/* The in-memory attempt still keeps its identity. */}
     try{const result=await command(pending.action,entity,pending);if(result){setPendingScore(null);setScore('');setDouble(false);setDoubleAttempts(null);try{sessionStorage.removeItem(pendingKey);sessionStorage.removeItem(draftKey);}catch{/* Optional draft storage. */}}}finally{scoreSending.current=false;}
   }
@@ -1072,6 +1099,7 @@ function Training({
                 const result = await command({
                   type: "training.create",
                   mode: item.mode,
+                  ...ruleInput(f),
                   startScore: number(f.get("startScore"), 501),
                   botAverage: number(f.get("botAverage"), 45),
                 });
@@ -1086,6 +1114,7 @@ function Training({
                   <option>701</option>
                 </Field>
               )}
+              {item.mode === "solo"&&<RulesFields/>}
               {item.mode === "bot" && (
                 <Field
                   label="Doelgemiddelde Dartbot"
@@ -1123,6 +1152,7 @@ function Training({
     );
   if(entity.state.discarded)return <><Title title="Baanpartij beëindigd"/><section className="panel"><p>De baan is vrijgegeven. De voorlopige scores van deze afgebroken partij zijn gewist.</p><a className="button gold" href="/app/spelen">Nieuwe partij starten</a></section></>;
   const game = record(entity.state.game);
+  const detailedScoring=game.discipline==='cricket'||game.inRule==='double'||Boolean(game.outRule&&game.outRule!=='double');
   const remain = Array.isArray(game.remaining) ? game.remaining : [];
   const visits = list(game.visits);
   const finished =
@@ -1132,12 +1162,12 @@ function Training({
   return (
     <>
       {(!consoleOpen||finished)&&<BoardActivityNotice activity={entity.boardActivity} offline={!online}/>}
-      {!finished && entity.state.mode !== 'around' && consoleOpen && <ScoreConsole activity={<BoardActivityNotice activity={entity.boardActivity} offline={!online}/>} title={entity.name} players={[{id:data.profile.id,name:data.profile.name,remaining:number(remain[0] ?? entity.state.target ?? entity.state.remaining,501)},...(entity.state.mode==='bot'&&remain.length>1?[{id:'dartbot',name:'Dartbot',remaining:number(remain[1])}]:[])]} active={number(game.turn,0)} score={score} onScore={updateTrainingScore} darts={number(visitDarts,3)} onDarts={value=>setVisitDarts(String(value))} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={score!==''&&number(score)===number(remain[0]??entity.state.remaining??entity.state.target)} doubleConfirmed={double} onDoubleConfirmed={setDouble} canScore={!finished} busy={busy} disabled={busy||Boolean(pendingScore)} offline={!online} message={error || (pendingScore&&!busy?'Controleer de stand. Je bewaarde worp kan met hetzelfde actie-ID opnieuw worden verzonden.':'')} checkout={text(entity.state.checkout||game.checkout)} onBack={()=>setConsoleOpen(false)} onSubmit={()=>void submitTrainingScore()} options={<>
+      {!finished && entity.state.mode !== 'around' && !detailedScoring && consoleOpen && <ScoreConsole activity={<BoardActivityNotice activity={entity.boardActivity} offline={!online}/>} title={entity.name} players={[{id:data.profile.id,name:data.profile.name,remaining:number(remain[0] ?? entity.state.target ?? entity.state.remaining,501)},...(entity.state.mode==='bot'&&remain.length>1?[{id:'dartbot',name:'Dartbot',remaining:number(remain[1])}]:[])]} active={number(game.turn,0)} score={score} onScore={updateTrainingScore} darts={number(visitDarts,3)} onDarts={value=>setVisitDarts(String(value))} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={score!==''&&number(score)===number(remain[0]??entity.state.remaining??entity.state.target)} doubleConfirmed={double} onDoubleConfirmed={setDouble} canScore={!finished} busy={busy} disabled={busy||Boolean(pendingScore)} offline={!online} message={error || (pendingScore&&!busy?'Controleer de stand. Je bewaarde worp kan met hetzelfde actie-ID opnieuw worden verzonden.':'')} checkout={text(entity.state.checkout||game.checkout)} onBack={()=>setConsoleOpen(false)} onSubmit={()=>void submitTrainingScore()} options={<>
         {pendingScore&&!busy&&<div className="notice"><p>Dezelfde bewaarde worp opnieuw verzenden boekt nooit een extra beurt.</p><Button onClick={()=>void submitTrainingScore()}>Zelfde worp opnieuw proberen</Button><Button onClick={()=>{setPendingScore(null);try{sessionStorage.removeItem(pendingKey);}catch{/* Optional storage. */}}}>Bewaarde worp verwerpen</Button></div>}
         <Button disabled={busy||Boolean(pendingScore)||!Array.isArray(entity.state.undo)||!entity.state.undo.length} onClick={()=>void command({type:'training.undo',id:entity.id},entity)}>Laatste beurt terug</Button>
         <Button disabled={busy||Boolean(pendingScore)} onClick={()=>void command({type:'training.finish',id:entity.id},entity)}>Training bewaren en beëindigen</Button>
       </>} />}
-      {!finished && entity.state.mode !== 'around' && <Button primary onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</Button>}
+      {!finished && entity.state.mode !== 'around' && !detailedScoring && <Button primary onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</Button>}
 
       <Title
         title={entity.name}
@@ -1166,6 +1196,7 @@ function Training({
       <div className="workspace-grid two">
         <section className="panel training-console">
           <Label value={entity.state.mode} />
+          {Boolean(game.cricket)&&<CricketCard cricket={game.cricket as CricketState} names={[data.profile.name]}/>}
           <p className="eyebrow">
             {finished ? "TRAINING AFGEROND" : "JOUW RESTSCORE"}
           </p>
@@ -1231,7 +1262,7 @@ function Training({
                 ))}
               </div>
             </>
-          ) : (
+          ) : detailedScoring ? <><DartVisitInput disabled={finished||busy||Boolean(pendingScore)} onSubmit={hits=>void submitTrainingScore({score:hits.reduce((sum,hit)=>sum+dartValue(hit),0),darts:hits.length,dartHits:hits})}/>{pendingScore&&!busy&&<Button onClick={()=>void submitTrainingScore()}>Zelfde bewaarde beurt opnieuw proberen</Button>}</> : (
             <form
               onSubmit={async (e) => {e.preventDefault();await submitTrainingScore();}}
             >
@@ -2296,6 +2327,7 @@ function Lobby({
             ))}
             <div className="button-row">
               {entity.ownerId === data.profile.id &&
+                !record(entity.state.settings).startProcedure &&
                 !entity.state.matchId &&
                 !entity.state.closed && (
                   <label className="field">
@@ -2445,6 +2477,10 @@ function Lobby({
           onSubmit={async (f) => {
             const result = await command({
               type: "lobby.create",
+              ...ruleInput(f),
+              startProcedure: text(f.get("startProcedure"), "bull"),
+              setOpener: text(f.get("setOpener"), "continuous"),
+              decidingLeg: text(f.get("decidingLeg"), "continue"),
               name: text(f.get("name")) || "Vrije wedstrijd",
               opponentId: text(f.get("opponentId")) || undefined,
               setup: text(f.get("setup")),
@@ -2456,6 +2492,8 @@ function Lobby({
           }}
         >
           <Field label="Wedstrijdnaam" name="name" />
+          <RulesFields/>
+          <StartProcedureFields/>
           <Field
             label="Tegenstander"
             name="opponentId"
@@ -2568,6 +2606,12 @@ function Competitions({
           {text(entity.state.format, "Poules en knock-out")}
           {entity.state.location ? ` · ${text(entity.state.location)}` : ""}
         </Title>
+        {manager&&entity.state.format==='swiss'&&<section className="panel"><h2>Zwitserse ronden</h2><p>Geplaatste ronden: {Math.max(0,...fixtures.map(f=>number(f.round,0)))} · gepubliceerd maximum: {text(record(entity.state.tournamentRules).swissRounds)}</p><Button disabled={busy||entity.state.completed===true} onClick={()=>void command({type:'competition.next-round',id:entity.id},entity)}>Volgende ronde vaststellen</Button></section>}
+        {entity.state.format==='swiss'&&entity.state.completed===true&&!entity.state.championId&&<p className="notice">De hoogste sportieve plaats is gedeeld. Volg het gepubliceerde reglement voor een beslissingspartij op een titel- of kwalificatiegrens.</p>}
+        <RankingEventPanel entityId={entity.id} participant={member?.status==='active'&&member.attributes?.registered===true}/>
+        {entity.kind==='tournament'&&<TournamentManagementPanel key={`${entity.id}:${record(entity.state.tournamentRules).draw?record(record(entity.state.tournamentRules).draw).revision:'initial'}`}entity={entity}canManage={manager}busy={busy}command={(action,expectedRevision)=>command(action,entity,expectedRevision===undefined?undefined:{requestId:crypto.randomUUID(),expectedRevision})}/>}
+        {manager&&<EventAdministration entity={entity} data={data} command={command} busy={busy}/>}
+        {manager&&entity.kind==='tournament'&&<OrganizerParticipantsPanel entityId={entity.id}revision={entity.revision}players={[data.profile,...data.players]}/>}
         {communityAccess&&<><FeedSpace actorId={data.profile.id} kind={entity.kind as 'league'|'tournament'} scopeId={entity.id} compact/><ScopedChat kind={entity.kind as 'league'|'tournament'} scopeId={entity.id} actorId={data.profile.id} label={entity.kind==='tournament'?'Toernooichat':'Competitiechat'}/></>}
         {manager && (
           <CompetitionControls
@@ -2674,7 +2718,7 @@ function Competitions({
                 >
                   Uitnodigingslink maken
                 </Button>
-                <Button
+                {entity.kind!=='tournament'&&<Button
                   disabled={busy}
                   onClick={() =>
                     void command(
@@ -2684,7 +2728,7 @@ function Competitions({
                   }
                 >
                   Schema genereren
-                </Button>
+                </Button>}
                 <Button
                   primary
                   disabled={busy}
@@ -2734,6 +2778,7 @@ function Competitions({
                         .join(" — ") || text(f.name, "Wedstrijd")}
                     </strong>
                     <small>
+                      {({winners:'Winnaarsschema',losers:'Verliezersschema',final:'Finale',reset:'Resetfinale',swiss:'Zwitsers',pool:'Poule',knockout:'Knock-out',league:'Competitie'} as Record<string,string>)[text(f.phase)]??text(f.phase)} ·{' '}
                       {text(f.roundLabel || f.round)} ·{" "}
                       {f.time || f.proposedTime
                         ? iso(f.proposedTime || f.time)
@@ -2764,7 +2809,7 @@ function Competitions({
                       <>
                         <Button
                           primary
-                          disabled={busy}
+                          disabled={busy||players.some(player=>!player)||['bye','void'].includes(text(f.status))}
                           onClick={() =>
                             void command(
                               {
@@ -2818,7 +2863,8 @@ function Competitions({
                       </>
                     )}
                   </div>
-                  {manager && f.status !== "confirmed" && (
+                  {typeof f.pairingNotice==='string'&&<p className="notice">{f.pairingNotice}</p>}
+                  {manager && !['confirmed','bye','void'].includes(text(f.status)) && (
                     <FixtureControls
                       entity={entity}
                       fixture={f}
@@ -2977,22 +3023,24 @@ function Competitions({
                     <th>Speler</th>
                     <th>Gespeeld</th>
                     <th>Gewonnen</th>
-                    <th>Punten</th>
+                    {!String(entity.state.format).startsWith('double-elimination')&&<th>Punten</th>}
+                    {entity.state.format==='swiss'&&<><th>Buchholz</th><th>Legsaldo</th><th>Byes</th></>}
                   </tr>
                 </thead>
                 <tbody>
                   {standings.map((s, i) => (
                     <tr key={i}>
-                      <td>{i + 1}</td>
+                      <td>{text(s.position,String(i+1))}{s.shared===true?' =':''}</td>
                       <td>
                         {text(
                           s.name ||
-                            data.players.find((p) => p.id === s.playerId)?.name,
+                            entity.members.find(member=>member.id===(s.playerId??s.id))?.name||data.players.find((p) => p.id === (s.playerId??s.id))?.name,
                         )}
                       </td>
                       <td>{text(s.played)}</td>
                       <td>{text(s.won)}</td>
-                      <td>{text(s.points)}</td>
+                      {!String(entity.state.format).startsWith('double-elimination')&&<td>{text(s.points)}</td>}
+                      {entity.state.format==='swiss'&&<><td>{text(s.buchholz)}</td><td>{number(s.legsFor,0)-number(s.legsAgainst,0)}</td><td>{text(s.byes,'0')}</td></>}
                     </tr>
                   ))}
                 </tbody>
@@ -3038,8 +3086,12 @@ function Competitions({
           onSubmit={async (f) => {
             const result = await command({
               type: `${create}.create`,
+              drawCheckedInOnly:true,
+              ...ruleInput(f),
               name: text(f.get("name")),
-              clubId: text(f.get("clubId")) || null,
+              clubId: text(f.get("clubId"))==='personal'?null:text(f.get("clubId")) || null,
+              ownership:text(f.get("clubId"))==='personal'?'personal':text(f.get("clubId"))?'club':'platform',
+              ...(create==='tournament'?{visibility:text(f.get('visibility'),'private')}:{}),
               capacity: number(f.get("capacity"), 32),
               ...(text(f.get("eligibility"))
                 ? { eligibility: text(f.get("eligibility")) }
@@ -3047,12 +3099,15 @@ function Competitions({
               format: text(f.get("format")),
               startScore: number(f.get("startScore"), 501),
               bestOfLegs: number(f.get("bestOfLegs"), 3),
+              ...(text(f.get("swissRounds"))?{swissRounds:number(f.get("swissRounds"),1)}:{}),
               date: text(f.get("date")),
               location: text(f.get("location")),
               ...(create === "tournament"
                 ? { approvalRequired: f.get("approvalRequired") === "on" }
                 : {}),
               boards: number(f.get("boards"), 4),
+              poolCount:number(f.get('poolCount'),4),
+              ...(create==='tournament'?{planning:readTournamentPlanning(f),thirdPlace:f.get('thirdPlace')==='on',consolation:f.get('consolation')==='on',consolationTitle:text(f.get('consolationTitle'),'Troostbeker'),acceptPlanningWarnings:f.get('acceptPlanningWarnings')==='on',startProcedure:text(f.get('startProcedure'),'bull'),setOpener:text(f.get('setOpener'),'continuous'),decidingLeg:text(f.get('decidingLeg'),'continue')}:{}),
             });
             if (result?.id)
               navigate(
@@ -3065,8 +3120,13 @@ function Competitions({
           }}
         >
           <Field label="Naam" name="name" required />
+          <RulesFields/>
+          <OrganizerDrafts actorId={data.profile.id}kind={create==='tournament'?'tournament':'season'}/>
           <Field label="Locatie" name="location" />
-          <Scope data={data} permission={create==='league'?'competitions.manage':'tournaments.manage'} />
+          {create==='tournament'&&<><StartProcedureFields/><Field label="Aantal poules" name="poolCount" type="number"defaultValue={4}/><label className="workspace-checkbox"><input type="checkbox"name="thirdPlace"/>Bronzen wedstrijd voor de verliezende halvefinalisten</label><ConsolationFields/><TournamentPlanning/></>}
+          <Field label="Zwitserse ronden (leeg voor automatisch)" name="swissRounds" type="number"/>
+          <Scope data={data} personal={create==='tournament'} permission={create==='league'?'competitions.manage':'tournaments.manage'} />
+          {create==='tournament'&&<><p>Je kunt zelfstandig een persoonlijk toernooi organiseren. Uitslagen blijven buiten officiële ratings en circuits.</p><Field label="Zichtbaarheid" name="visibility" defaultValue="private"><option value="private">Besloten · alleen deelnemers en genodigden</option><option value="public">Openbaar · zichtbaar bij ontdekken</option></Field><a href="/help/start-zonderclub">Hulp bij zelfstandig organiseren</a></>}
           {create === "tournament" && (
             <label className="workspace-checkbox">
               <input name="approvalRequired" type="checkbox" />
@@ -3102,7 +3162,7 @@ function Competitions({
               ) : (
                 <>
                   <option value="pools-knockout">Poules → knock-out</option>
-                  <option value="knockout">Single elimination</option>
+                  <option value="knockout">Single elimination</option><option value="double-elimination-reset">Dubbele eliminatie · resetfinale</option><option value="double-elimination-single">Dubbele eliminatie · enkele finale</option><option value="swiss">Zwitsers</option>
                 </>
               )}
             </Field>
@@ -4241,6 +4301,8 @@ function FixtureControls({
   return (
     <details className="fixture-controls">
       <summary>Indelen & beslissen</summary>
+      {fixture.status==='scheduled'&&<Form title="Vrijblijvende vooroproep" submit="Vooroproep tonen" busy={busy} onSubmit={async(data)=>{await command({type:'fixture.precall',id:entity.id,fixtureId:fixture.id,boardId:text(data.get('boardId')),showOnDisplay:true},entity);}}><p>Laat deelnemers zich voorbereiden zodra de lopende partij kan eindigen. De baan en spelers worden pas bij de definitieve oproep gereserveerd.</p><Field label="Bezette baan voor vooroproep" name="boardId" required><option value="">Kies een baan</option>{boards.filter(board=>!board.blocked&&board.matchId).map(board=><option key={board.id} value={board.id}>{board.name}</option>)}</Field>{Object.entries((entity.state.preCalls??{}) as Record<string,{fixtureId:string}>).filter(([,call])=>call.fixtureId===fixture.id).map(([boardId])=><Button key={boardId} disabled={busy} onClick={()=>void command({type:'fixture.precall',id:entity.id,boardId,enabled:false},entity)}>Vooroproep annuleren</Button>)}</Form>}
+
       <Form
         title="Baan handmatig toewijzen"
         submit="Partij oproepen"

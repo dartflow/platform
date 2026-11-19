@@ -14,7 +14,7 @@ export async function reservationOrganizer(client:Client,actor:string,eventId:st
  const row=result.rows[0];
  if(lockClub)await client.query("select id from dartflow_private.platform_entities where id=$1 and kind='club' for share",[row.club_id]);
  const allowed=row.kind==='tournament'?await clubPermission(client,row.club_id,actor,'tournaments.manage'):row.kind==='league'?await clubPermission(client,row.club_id,actor,'competitions.manage'):await clubPermission(client,row.club_id,actor,'tournaments.manage')||await clubPermission(client,row.club_id,actor,'competitions.manage');
- if(!allowed&&!await seasonEventAccess(client,actor,eventId))throw new DomainError('forbidden','Je hebt geen actueel organisatierecht voor deze verenigingsspeeldag.',403);
+ if(!allowed&&(await seasonEventAccess(client,actor,eventId))?.canManage!==true)throw new DomainError('forbidden','Je hebt geen actueel organisatierecht voor deze verenigingsspeeldag.',403);
  return row;
 }
 export async function canOrganizeReservedEvent(client:Client,actor:string,eventId:string):Promise<boolean>{
@@ -68,9 +68,9 @@ export async function assertPhysicalBoardEvent(client:Client,boardId:string,even
  }
  if(reservation.event_id!==eventId)throw new DomainError('board_reserved','Deze baan is tijdelijk gereserveerd voor een andere speeldag.',409);
  if(!consume||!matchId)return;
- const prior=await client.query('select reservation_id,board_id from dartflow_private.reservation_matches where match_id=$1',[matchId]);
+ const prior=await client.query('select reservation_id,board_id from dartflow_private.reservation_matches where match_id=$1 and board_id=$2',[matchId,boardId]);
  if(prior.rows.length){if(prior.rows[0].reservation_id!==reservation.id||prior.rows[0].board_id!==boardId)throw new DomainError('reservation_match','Deze partij heeft al een andere reserveringskoppeling.',409);return;}
- const used=await client.query<{count:number}>('select count(*)::int as count from dartflow_private.reservation_matches where reservation_id=$1',[reservation.id]);
+ const used=await client.query<{count:number}>('select count(distinct match_id)::int as count from dartflow_private.reservation_matches where reservation_id=$1',[reservation.id]);
  if(used.rows[0].count>=reservation.max_matches)throw new DomainError('reservation_capacity','Het afgesproken maximum aantal partijen voor dit tijdvak is bereikt.',409);
  await client.query('insert into dartflow_private.reservation_matches(reservation_id,match_id,board_id) values($1,$2,$3)',[reservation.id,matchId,boardId]);
 }

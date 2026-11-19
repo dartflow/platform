@@ -5,7 +5,7 @@ import java.util.Locale
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class PlayerScreen { HOME, PLAY, EVENTS, EVENT, FRIENDS, FEED, PROFILE, STATISTICS, HISTORY, BOARDS, MATCH, BOARD, LOBBY, TRAINING, CHAT, SEASONS, SEASON, NOTIFICATIONS, SCREENS }
+enum class PlayerScreen { HOME, PLAY, EVENTS, EVENT, FRIENDS, FEED, PROFILE, STATISTICS, HISTORY, BOARDS, MATCH, BOARD, LOBBY, TRAINING, CHAT, SEASONS, SEASON, NOTIFICATIONS, SCREENS, ORGANIZE, DIRECTOR, RANKINGS, HELP, CLUBS, CLUB, SEASON_CREATE, RANKING_EVENT, FAQ_ADMIN, LOCATIONS }
 
 /** UI session metadata intentionally contains no bearer or refresh credential. */
 data class PlayerSession(val userId: String, val email: String, val expiresAt: Long, val local: Boolean = false)
@@ -27,6 +27,14 @@ data class PlayerMatch(
     val remaining: List<Int>, val turn: Int, val legNumber: Int, val setNumber: Int,
     val checkout: String?, val permissions: JSONObject, val raw: JSONObject,
 ) {
+    /** Side identities and the actual thrower are canonical server projections. */
+    val sides: List<List<PlayerProfile>> get() = players.indices.map { index ->
+        raw.optJSONArray("sideParticipants")?.optJSONArray(index).objects().map(PlayerProfile::parse).ifEmpty { listOf(players[index]) }
+    }
+    val participants: List<PlayerProfile> get() = sides.flatten().distinctBy { it.id }
+    fun sideName(index: Int): String = raw.optJSONArray("sideNames")?.optString(index)?.takeIf { it.isNotBlank() && it != "null" }
+        ?: sides.getOrNull(index)?.joinToString(" & ") { it.displayName.ifBlank { it.name } }.orEmpty()
+    val currentThrower: PlayerProfile? get() = raw.optJSONObject("currentThrower")?.let(PlayerProfile::parse)
     companion object {
         fun parse(value: JSONObject): PlayerMatch {
             val match = value.optJSONObject("match") ?: value
@@ -47,8 +55,11 @@ data class PlayerUiState(
     val pendingEmail: String? = null, val localUsers: List<PlayerProfile> = emptyList(), val googleUrl: String? = null,
     val online: Boolean = true, val hasPendingCommand: Boolean = false, val capabilities: JSONObject = JSONObject(),
     val safety: JSONObject = JSONObject(),
+    val invitation: JSONObject = JSONObject(),
+    val canManagePlatform: Boolean = false, val organizerDraft: JSONObject = JSONObject(), val organizerCloudDraft: JSONObject = JSONObject(), val faqAdminReceipt: JSONObject = JSONObject(),
     val accountDeletion: JSONObject = JSONObject(),
     val homeFeed: JSONObject = JSONObject(), val homeFeedLoading: Boolean = false, val homeFeedError: String? = null,
+    val guestOperatorId: String = "",
 )
 
 fun JSONArray?.objects(): List<JSONObject> = if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }

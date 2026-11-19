@@ -1,0 +1,28 @@
+{
+  "capturedAt": "2026-11-19T17:44:33.441661+00:00",
+  "headAtCapture": "3108fe55716017f9b77c538803042ac1e0a1cff7",
+  "workingTreeUncommitted": true,
+  "command": "npx tsx --test --test-concurrency=1 tests/tournament-rule-overrides-db.test.ts",
+  "scope": "Pure and real service/loopback PostgreSQL evidence only; no hosted, browser, installed-device or external delivery claim.",
+  "result": {
+    "tests": 3,
+    "pass": 3,
+    "fail": 0,
+    "skip": 0
+  },
+  "log": {
+    "path": "docs/evidence/full-release-phase-rules-independent-local-2026-11-19.tap.txt",
+    "sha256": "398f7c94fdfaf550845ae06cafda3d73e098f23d5b27958cb41baa6e77fe8966"
+  },
+  "actualProof": [
+    "An ordinary member cannot change phase rules; organizer must provide current revision. Same accepted request preserves one rule-version increment and unchanged audit count.",
+    "The genuine drawn 301 BO7 double-in/master-out fixture becomes the actual core match. D20/T20/S20 records120 points and181 remaining. Rules cannot change after draw/start and the persisted match state remains identical after the rejected change.",
+    "Four-player Swiss has only two round-one fixtures when round-three301 override causes the501 club-rating request to be rejected. Explicitly excluding Swiss round3 permits the same future declaration without materializing that round."
+  ],
+  "sourceSha256": {
+    "lib/tournament-rule-overrides.ts": "bd51fcb63e19301544ea4ba134de0d8d84e7c4477843580b55740fc55f203d59",
+    "lib/platform-competitions.ts": "55ecb92c3b1ef503ad58c223e3743074d2f411669bfb957b3bb1ebd2e65f6501",
+    "lib/ranking-service.ts": "aab5de91d4d003c13fafc3d1bdd03925f824fd64c44651b2f64a86b9b51f0be5",
+    "tests/tournament-rule-overrides-db.test.ts": "52854127ad6402aa06b9b46696eb5bb42725e22bf7610955289b74f7e0983bc5"
+  }
+}

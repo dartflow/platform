@@ -137,7 +137,7 @@ class PlayerUiTest {
             PlayerApp(signedIn().copy(screen = PlayerScreen.EVENTS), PlayerActions())
         } } }
         compose.onNodeWithTag("compact-fixture").assertWidthIsEqualTo(360.dp).assertHeightIsEqualTo(640.dp)
-        listOf("Vandaag", "Spelen", "Evenementen", "Vrienden", "Meer").forEach { label ->
+        listOf("Vandaag", "Spelen", "Competities", "Toernooien", "Meer").forEach { label ->
             val layouts = mutableListOf<TextLayoutResult>()
             compose.onNodeWithText(label, useUnmergedTree = true).assertIsDisplayed()
                 .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
@@ -286,10 +286,10 @@ class PlayerUiTest {
         compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp).testTag("compact-fixture")) { DartFlowPlayerTheme {
             PlayerApp(signedIn().copy(screen = PlayerScreen.EVENT, activeId = "00000000-0000-4000-8000-000000000203"), PlayerActions(navigate = { screen, id -> destination = screen to id }))
         } } }
-        compose.onNodeWithText("Evenementen").assertIsDisplayed().assertIsSelected()
+        compose.onNodeWithText("Toernooien").assertIsDisplayed().assertIsSelected()
         compose.onNodeWithText("Vandaag").assertIsNotSelected()
         compose.onNodeWithText("Meer").assertIsNotSelected()
-        compose.onNodeWithText("Evenementen").performClick()
+        compose.onNodeWithText("Toernooien").performClick()
         compose.runOnIdle { assertEquals(PlayerScreen.EVENTS to null, destination) }
     }
 

@@ -1,3 +1,11 @@
+import{getNativePush,executeNativePushCommand}from'@/lib/native-push';
+import{buildTournamentPlan,parseTournamentPlanning}from'@/lib/tournament-planning';
+import {getMatchCorrections,executeMatchCorrectionCommand} from '@/lib/match-corrections';
+import type {MatchCorrectionCommand} from '@/lib/match-corrections-types';
+import {getOrganizerDrafts,executeOrganizerDraftCommand} from '@/lib/organizer-drafts';
+import{getOrganizerParticipants,getMyGuestClaims,executeOrganizerParticipantCommand}from'@/lib/event-guests';
+import type{OrganizerParticipantCommand}from'@/lib/event-guests-types';
+import type {OrganizerDraftCommand} from '@/lib/organizer-drafts-types';
 import { NextRequest, NextResponse } from 'next/server';
 import {handleOcheDeviceApi} from '@/lib/oche-device-api';
 import {cleanupOcheDevices} from '@/lib/oche-device-store';
@@ -15,6 +23,13 @@ import { appConfig, safeNext } from '@/lib/config';
 import { releaseIdentity } from '@/lib/release';
 import { database, checkDatabaseReady, getProfile, getOverview, getMatch, getMatchInvitation, getBoardForActor, executeMatchCommand, executeEventCommand, getPublicSnapshot, createScreen, revokeScreen, consumeRateLimit } from '@/lib/db';
 import { DomainError } from '@/lib/domain';
+import {getPublishedFaq,getFaqAdmin,executeFaqAdminCommand} from '@/lib/faq-publication';
+import type {FaqAdminCommand} from '@/lib/faq-publication';
+import {getEventBoards} from '@/lib/event-boards';
+import {getRankings} from '@/lib/rankings';
+import type {StatisticsFilter} from '@/lib/player-statistics-types';
+import {executeRankingServiceCommand,getEventRankingDetails} from '@/lib/ranking-service';
+import type {RankingServiceCommand} from '@/lib/ranking-service-types';
 import type { EventAction, MatchAction } from '@/lib/types';
 import { ensureAuthProfile } from '@/lib/accounts';
 import { handleIntegrationPublic, handleIntegrations, workerTokenMatches } from '@/lib/integrations';
@@ -84,6 +99,7 @@ async function limit(key:string,max:number,seconds:number) {
 async function handle(request:NextRequest,parts:string[],method:string) {
   const path=parts.join('/');
   if(appConfig().mode==='local' && !isLocalRequest(request)) throw new DomainError('local_only','Deze testomgeving is alleen lokaal bereikbaar.',403);
+  if(method==='GET'&&path==='faq'){const q=request.nextUrl.searchParams;return json(await getPublishedFaq({q:q.get('q'),category:q.get('category'),id:q.get('id')}));}
   const nativePlayer=await handleNativePlayerApi(request,parts,handle);
   if(nativePlayer)return nativePlayer;
   const ocheDevice=await handleOcheDeviceApi(request,parts);
@@ -203,6 +219,21 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if (method==='GET' && parts[0]==='platform' && parts[1]==='cast' && parts.length===3) return json(await getPlatformCast(parts[2]));
   if(method==='GET'&&parts[0]==='feed'&&parts[1]==='result'&&parts.length===3)return json(await getFeedResult(await actorId(request),parts[2]));
   const actor=await requireActor(request);
+  if(method==='GET'&&path==='push')return json(await getNativePush(actor.id));
+  if(method==='POST'&&path==='push/actions')return json(await executeNativePushCommand(actor.id,await body(request)));
+  if(method==='GET'&&path==='organizer-drafts')return json(await getOrganizerDrafts(actor.id,{kind:(request.nextUrl.searchParams.get('kind')??undefined) as 'tournament'|'season'|undefined,clubId:request.nextUrl.searchParams.get('clubId')??undefined}));
+  if(method==='POST'&&path==='organizer-drafts/actions')return json(await executeOrganizerDraftCommand(actor.id,await body(request) as OrganizerDraftCommand));
+  if(method==='GET'&&parts[0]==='organizer-participants'&&uuid(parts[1])&&parts.length===2)return json(await getOrganizerParticipants(actor.id,parts[1]));
+  if(method==='GET'&&path==='organizer-guest-claims')return json(await getMyGuestClaims(actor.id));
+  if(method==='POST'&&path==='organizer-participants')return json(await executeOrganizerParticipantCommand(actor.id,await body(request,65536) as OrganizerParticipantCommand));
+  if(method==='GET'&&parts[0]==='matches'&&uuid(parts[1])&&parts[2]==='corrections'&&parts.length===3)return json(await getMatchCorrections(actor.id,parts[1]));
+  if(method==='POST'&&parts[0]==='matches'&&uuid(parts[1])&&parts[2]==='corrections'&&parts[3]==='actions'&&parts.length===4){const input=await body(request) as MatchCorrectionCommand;if(input.action?.type==='correction.request'&&input.action.matchId!==parts[1])throw new DomainError('invalid_id','De partij en het correctieverzoek komen niet overeen.');return json(await executeMatchCorrectionCommand(actor.id,input,parts[1]));}
+  if(method==='GET'&&path==='faq/admin')return json(await getFaqAdmin(actor.id));
+  if(method==='POST'&&path==='faq/admin/actions')return json(await executeFaqAdminCommand(actor.id,await body(request) as FaqAdminCommand));
+  if(method==='POST'&&path==='rankings/actions')return json(await executeRankingServiceCommand(actor.id,await body(request) as RankingServiceCommand));
+  if(method==='GET'&&parts[0]==='rankings'&&parts[1]==='events'&&uuid(parts[2])&&parts.length===3)return json(await getEventRankingDetails(actor.id,parts[2]));
+  if(method==='GET'&&path==='rankings')return json(await getRankings(actor.id,{view:request.nextUrl.searchParams.get('view')==='around'?'around':'top',status:request.nextUrl.searchParams.get('status') as 'all'|'active'|'provisional'|'inactive'??'all',...(request.nextUrl.searchParams.get('listId')?{listId:request.nextUrl.searchParams.get('listId')!}:{})}));
+  if(method==='GET'&&parts[0]==='events'&&uuid(parts[1])&&parts[2]==='boards'&&parts.length===3)return json(await getEventBoards(actor.id,parts[1]));
   if(method==='GET'&&path==='feed'){const q=request.nextUrl.searchParams;return json(await getFeedState(actor.id,{mode:q.get('mode')==='discover'?'discover':'mine',filter:q.get('filter')??'all',channel:q.get('channel')??undefined,cursor:q.get('cursor')??undefined}));}
   if(method==='POST'&&path==='feed/actions')return json(await executeFeedAction(actor.id,await body(request,16384)));
   if(method==='GET'&&parts[0]==='feed'&&parts[1]==='replies'&&parts.length===3)return json(await getFeedReplies(actor.id,parts[2],request.nextUrl.searchParams.get('cursor')??undefined));
@@ -229,7 +260,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   }
   if(method==='GET'&&path==='player-statistics'){
     const q=request.nextUrl.searchParams;
-    return json(await getPlayerStatistics(actor.id,{limit:25,startScore:q.has('startScore')?Number(q.get('startScore')) as 301|501|701:undefined,offset:Number(q.get('offset')||0),opponent:q.get('opponent')||undefined,search:q.get('search')||undefined,opponentOffset:Number(q.get('opponentOffset')||0),practiceOffset:Number(q.get('practiceOffset')||0)}));
+    return json(await getPlayerStatistics(actor.id,{limit:25,...(q.has('outRule')?{outRule:q.get('outRule') as StatisticsFilter['outRule']}:{}),...(q.has('inRule')?{inRule:q.get('inRule') as StatisticsFilter['inRule']}:{}),...(q.get('handicap')==='true'?{handicap:true}:{}),startScore:q.has('startScore')?Number(q.get('startScore')) as 301|501|701:undefined,offset:Number(q.get('offset')||0),opponent:q.get('opponent')||undefined,search:q.get('search')||undefined,opponentOffset:Number(q.get('opponentOffset')||0),practiceOffset:Number(q.get('practiceOffset')||0)}));
   }
   if(method==='POST'&&path==='board-activity/continue'){
     const data=await body(request);
@@ -305,6 +336,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     if(method==='GET')return json(await getMatchSignals(actor.id,parts[2],Number(request.nextUrl.searchParams.get('after') || '0')));
     if(method==='POST')return json(await sendMatchSignal(actor.id,parts[2],await body(request,65536)));
   }
+  if(method==='GET'&&path==='organizer-planning'){const input=Object.fromEntries(request.nextUrl.searchParams);try{return json(buildTournamentPlan(parseTournamentPlanning(input)));}catch(error){throw new DomainError('invalid_planning',error instanceof Error?error.message:'Controleer de planning.');}}
   if (method==='GET' && path==='overview') {
     const clubId=request.nextUrl.searchParams.get('clubId') || undefined;
     if (clubId && !uuid(clubId)) throw new DomainError('club','Ongeldige club.');
@@ -317,7 +349,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
       const data=await body(request);
       if (!uuid(data.requestId) || !Number.isSafeInteger(data.expectedRevision) || Number(data.expectedRevision)<0 || !data.action || typeof data.action!=='object') throw new DomainError('command','Ongeldige wedstrijdactie.');
       if (data.matchId!==undefined && data.matchId!==parts[1]) throw new DomainError('match_changed','Deze actie hoort bij een andere partij. Open de oorspronkelijke wedstrijd.',409);
-      const result=await executeMatchCommand(actor.id,{matchId:parts[1],requestId:data.requestId,expectedRevision:Number(data.expectedRevision),action:data.action as MatchAction});
+      const result=await executeMatchCommand(actor.id,{...(data.guestId===undefined?{}:{guestId:String(data.guestId)}),offline:data.offline===true,matchId:parts[1],requestId:data.requestId,expectedRevision:Number(data.expectedRevision),action:data.action as MatchAction});
       await reconcilePlatformResults();
       return json(result);
     }

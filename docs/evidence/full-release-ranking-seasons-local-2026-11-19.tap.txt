@@ -1,0 +1,15 @@
+▶ published national seven-component encounters book selected singles only after captain confirmation and replay season corrections
+  ✔ recognition sees the published hidden-lineup template and requires each own participant acceptance before a ranked single starts (1637.989537ms)
+  ✔ four singles, two doubles and one team game keep zero rating until the second captain then book four sources once per destination (6020.39247ms)
+  ✔ captain dispute retracts all encounter books, independent acceptance restores only those sources and manual ranking exclusions remain excluded (221.750882ms)
+  ✔ independent season reopening preserves admission, withdraws the encounter and books a changed real winner only after fresh captain signatures (1319.547078ms)
+  ✔ an admitted unthrown reserve keeps the canonical match, archives its proof and requires both actual new players to accept the explicit roster version (1598.796637ms)
+✔ published national seven-component encounters book selected singles only after captain confirmation and replay season corrections (11560.476769ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12129.915874

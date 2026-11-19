@@ -1,0 +1,106 @@
+
+> dartflow@0.1.0 test:e2e
+> playwright test
+
+
+Running 82 tests using 1 worker
+
+(node:724457) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/activity-console.spec.ts:22:71 › warning retains reachable scoring and server extension state at 390x844 (756ms)
+  ✓   2 tests/e2e/activity-console.spec.ts:22:71 › warning retains reachable scoring and server extension state at 360x640 (664ms)
+  ✓   3 tests/e2e/blog-conflicts.spec.ts:16:1 › two editors retain conflicting input, explicitly save it as a new revision and restore without changing live content (2.0s)
+  ✓   4 tests/e2e/blog-conflicts.spec.ts:39:1 › mobile editor keeps toolbar, slash commands, table actions and links reachable without horizontal scroll (1.1s)
+  ✓   5 tests/e2e/blog-conflicts.spec.ts:56:1 › confirmed planning changes get new operation keys so schedule A cancel schedule B cancel leaves no publication scheduled (1.1s)
+  ✓   6 tests/e2e/blog-conflicts.spec.ts:73:1 › an ambiguous save retries the same operation and returns its acted revision before rejecting publication of unseen newer content (1.2s)
+  ✓   7 tests/e2e/blog.spec.ts:5:1 › editor preserves drafts, publishes an explicit revision and refreshes server-rendered homepage cards (1.6s)
+  ✓   8 tests/e2e/board.spec.ts:103:1 › one physical QR binds persisted solo and two real local players to its read-only Sprint screen (14.1s)
+  ✓   9 tests/e2e/cast.spec.ts:14:1 › a real event publishes a separate preview and revocable public OBS program (7.2s)
+  ✓  10 tests/e2e/cast.spec.ts:106:1 › a pending tournament application needs real approval and preserves editable venue settings (10.4s)
+  ✓  11 tests/e2e/club-boards.spec.ts:26:1 › club boards provide permanent registration QR and live read-only scoring without event signup (25.2s)
+  ✓  12 tests/e2e/club-v17.spec.ts:7:1 › club intake works on a separate phone, keeps answers private, and the owner reviews and brands the club (5.9s)
+[community-real] log in three independent player sessions
+[community-real] create a private club and approve the second player
+[community-real] publish a club post and receive it in the other session
+[community-real] synchronize a like and a reply between both phones
+[community-real] open the existing scoped chat and synchronize a message
+[community-real] retain the chat draft across minimize and reopen
+[community-real] recover an offline phone with its draft and missed message
+[community-real] deny a nonmember both Feed APIs and the club page
+[community-real] revoke membership and clear the visible chat and Feed
+  ✓  13 tests/e2e/community-v17.spec.ts:6:1 › two phone sessions share a private feed, likes, threads and minimized chat, and lose access after leaving (21.5s)
+  ✓  14 tests/e2e/community-v17.spec.ts:30:1 › late feed pages cannot restore revoked data or put replies into a different open thread (1.2s)
+  ✓  15 tests/e2e/community-v17.spec.ts:70:1 › legacy event chat remains participant-only while its public Feed channel stays readable (1.4s)
+  ✓  16 tests/e2e/community-v17.spec.ts:86:71 › the scoped Feed chat launcher leaves the last reply reachable at 390x844 (1.6s)
+  ✓  17 tests/e2e/community-v17.spec.ts:86:71 › the scoped Feed chat launcher leaves the last reply reachable at 360x640 (1.7s)
+  ✓  18 tests/e2e/feed-additions.spec.ts:9:71 › feed audience, filters, preferences and reactions at 1440x900 (817ms)
+  ✓  19 tests/e2e/feed-additions.spec.ts:9:71 › feed audience, filters, preferences and reactions at 390x844 (781ms)
+  ✓  20 tests/e2e/feed-additions.spec.ts:21:1 › share preview shows explicit audience and public share revocation removes the rendered result (711ms)
+  ✓  21 tests/e2e/feed-additions.spec.ts:28:1 › anonymous result route renders only the server share projection and removes a revoked card (384ms)
+  ✓  22 tests/e2e/integrations.spec.ts:3:1 › integration reauthentication keeps its draft in the original tab until an explicit successful save (1.1s)
+  ✓  23 tests/e2e/invitations.spec.ts:27:1 › four-character codes and copied own-origin links open the same invitation, with clear denied and expired feedback (3.9s)
+  ✓  24 tests/e2e/locations-v17.spec.ts:11:1 › independent physical ownership creates home and venue boards, approves a UTC slot and prepares its existing fixture from the fixed QR (14.7s)
+  ✓  25 tests/e2e/oche-cast.spec.ts:94:71 › landscape cast keeps one rotated portrait surface, sharp fixed QR and fullscreen through every state on baanscherm (2.4s)
+  ✓  26 tests/e2e/oche-cast.spec.ts:94:71 › landscape cast keeps one rotated portrait surface, sharp fixed QR and fullscreen through every state on oche-live (2.4s)
+  ✓  27 tests/e2e/oche-device.spec.ts:15:1 › two clean browser tabs reuse one installation; QR survives login, lost redemption retries, own-session scores and revocation (20.3s)
+  ✓  28 tests/e2e/oche-device.spec.ts:36:1 › location selection, shared capacity, central override and above-limit management are enforced in real UI (16.0s)
+  ✓  29 tests/e2e/oche-device.spec.ts:51:1 › generic display keeps full 16:9 and portrait scorecards, read-only warning and private-data clearing (4.6s)
+  ✓  30 tests/e2e/oche-display-v18.spec.ts:19:1 › live scorecard keeps mirrored rows, canonical leg data, stable number fonts and manual scroll across polls and undo (4.9s)
+  ✓  31 tests/e2e/oche-display-v18.spec.ts:46:1 › standby follows one five-ten-fifteen clock, shares both QR targets and restarts only after leaving an eligible free board (677ms)
+  ✓  32 tests/e2e/oche-display-v18.spec.ts:61:1 › paired-capability warning continuation preserves the existing scorecard node, accepted turns and manual scroll (479ms)
+  ✓  33 tests/e2e/oche-live.spec.ts:7:1 › restricted home cast fills the landscape signal and retains its installed board identity (849ms)
+  ✓  34 tests/e2e/oche-live.spec.ts:28:1 › real accepted board actions celebrate once, skip initial/reconnect/undo and preserve the final checkout after release (23.5s)
+  ✓  35 tests/e2e/oche-live.spec.ts:53:1 › legacy token and spectator displays use confirmed event cues without replaying the initial snapshot (15.5s)
+  ✓  36 tests/e2e/oche-statistics.spec.ts:16:99 › Oche historical snapshot stays fixed with live statistics, privacy removal and five rows at 1080x1920 (986ms)
+  ✓  37 tests/e2e/oche-statistics.spec.ts:16:99 › Oche historical snapshot stays fixed with live statistics, privacy removal and five rows at 720x1280 (768ms)
+  ✓  38 tests/e2e/oche-statistics.spec.ts:16:99 › Oche historical snapshot stays fixed with live statistics, privacy removal and five rows at 1920x1080 (909ms)
+  ✓  39 tests/e2e/oche-statistics.spec.ts:32:1 › lobby shows only projected head-to-head and recap yields to next assignment or closed board (996ms)
+  ✓  40 tests/e2e/player-experience.spec.ts:7:1 › mobile Today planning uses current check-in and pause rights without horizontal overflow (478ms)
+  ✓  41 tests/e2e/player-experience.spec.ts:11:1 › board favorites and comparable training goals survive a fresh page load (919ms)
+  ✓  42 tests/e2e/player-experience.spec.ts:14:1 › screen management renders actual paired-device connection and stores the selected board rotation (516ms)
+  ✓  43 tests/e2e/player-experience.spec.ts:17:1 › an accepted creation whose response is lost retries the original immutable request before entering the same training (486ms)
+  ✓  44 tests/e2e/player-experience.spec.ts:22:1 › an incomplete planning response preserves the app and allows a fresh snapshot (359ms)
+  ✓  45 tests/e2e/player-flows.spec.ts:14:1 › mandatory profile completion and two-browser turn input cover home, hybrid and local shared writer (10.9s)
+  ✓  46 tests/e2e/player-pin-ui.spec.ts:11:1 › one-phone PIN form masks leading zero, clears every attempt and retries an uncertain success without changing session (1.1s)
+  ✓  47 tests/e2e/player-pin-ui.spec.ts:45:71 › checkout records one-tap darts and optional double attempts at 390x844 (664ms)
+  ✓  48 tests/e2e/player-pin-ui.spec.ts:45:71 › checkout records one-tap darts and optional double attempts at 360x640 (706ms)
+  ✓  49 tests/e2e/player-profile-ui.spec.ts:14:42 › google login proposal requires confirmed username, display label and PIN before returning to its original lobby (983ms)
+  ✓  50 tests/e2e/player-profile-ui.spec.ts:14:42 › email login proposal requires confirmed username, display label and PIN before returning to its original lobby (999ms)
+  ✓  51 tests/e2e/player-profile-ui.spec.ts:46:1 › PIN settings expose status, clear failed changes and use a fresh own login to reset without showing PIN data (4.0s)
+  ✓  52 tests/e2e/player-profile-ui.spec.ts:83:1 › four profile statistic views paginate at 25, filter rules, search opponents and open their stable-ID history (1.2s)
+  ✓  53 tests/e2e/player-safety.spec.ts:5:1 › player web safety accepts explicit age/rules, reports a real reference and blocks at mobile width (960ms)
+  ✓  54 tests/e2e/player-safety.spec.ts:42:1 › public rules, terms and privacy identify the player app and contact without claiming scanner telemetry (623ms)
+  ✓  55 tests/e2e/pwa.spec.ts:17:1 › fixed board apps retain separate manifests, QR, live/offline state and explicit fallback binding (37.1s)
+  ✓  56 tests/e2e/pwa.spec.ts:65:1 › player start retains login intent, native prompt is used and standalone installation UI is hidden (1.3s)
+  ✓  57 tests/e2e/pwa.spec.ts:81:1 › private board pairing survives reopening, stays board-scoped and revocation clears the screen (2.3s)
+  ✓  58 tests/e2e/pwa.spec.ts:108:1 › browser DOM fullscreen retains board installation, its fallback instructions and a native prompt through exit (1.2s)
+  ✓  59 tests/e2e/pwa.spec.ts:122:1 › fullscreen alone is not an app window while observed standalone, minimal-ui and iOS app windows remain installed (4.6s)
+  ✓  60 tests/e2e/release-help-organizer.spec.ts:3:1 › public FAQ searches the shared source and a direct question works without login (517ms)
+  ✓  61 tests/e2e/release-help-organizer.spec.ts:12:31 › personal organizer has an independent web entry and explicit ownership at 390px (1.9s)
+  ✓  62 tests/e2e/release-help-organizer.spec.ts:12:31 › personal organizer has an independent web entry and explicit ownership at 1440px (1.4s)
+  ✓  63 tests/e2e/release-oche-theme.spec.ts:6:98 › club theme, actual partner names and encounter context remain legible at 540x960 (474ms)
+  ✓  64 tests/e2e/release-oche-theme.spec.ts:6:98 › club theme, actual partner names and encounter context remain legible at 1080x1920 (1.0s)
+  ✓  65 tests/e2e/release-oche-theme.spec.ts:6:98 › club theme, actual partner names and encounter context remain legible at 1920x1080 (1.2s)
+  ✓  66 tests/e2e/score-console.spec.ts:22:1 › solo console fits small portraits, retains draft, and retries a committed lost response exactly once (3.0s)
+  ✓  67 tests/e2e/score-console.spec.ts:53:1 › one fullscreen console follows home and hybrid own turns and local shared-writer takeover with live Sprint (12.5s)
+  ✓  68 tests/e2e/seasons-workspace.spec.ts:32:72 › competition index and national detail keep reference layout and scroll tables at 1440x900 (1.2s)
+  ✓  69 tests/e2e/seasons-workspace.spec.ts:32:72 › competition index and national detail keep reference layout and scroll tables at 390x844 (981ms)
+  ✓  70 tests/e2e/seasons-workspace.spec.ts:40:1 › season wizard preserves focus, validates and safely retries the same failed save (755ms)
+  ✓  71 tests/e2e/seasons-workspace.spec.ts:46:1 › captain submits only own four slots while opponent lineup stays absent and player role hides management (1.0s)
+  ✓  72 tests/e2e/seasons-workspace.spec.ts:53:1 › official assigned player PIN is masked, cleared on every attempt and leaves the writer session intact (813ms)
+  ✓  73 tests/e2e/seasons-workspace.spec.ts:59:1 › ladder UI submits the current challenge and response contract without overflowing mobile (581ms)
+  ✓  74 tests/e2e/seasons-workspace.spec.ts:66:1 › Champions UI derives the source choice then asks the actual entrant to accept (534ms)
+  ✓  75 tests/e2e/seasons-workspace.spec.ts:72:1 › remote fixture UI binds only its authoritative side with the exact physical board and writer (555ms)
+  ✓  76 tests/e2e/seasons-workspace.spec.ts:78:1 › vacancy UI publishes sporting order, previews the server candidate and confirms without a client-selected player (940ms)
+(node:822651) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  77 tests/e2e/camera-switch.spec.ts:65:1 › camera switching changes actual remote frames without replacing audio, peer connection, or match state (4.6s)
+  ✓  78 tests/e2e/camera-switch.spec.ts:118:1 › revoked media access stops both peers and tracks without stopping scoring; transient failures retain the call (11.3s)
+(node:827512) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  79 tests/e2e/pilot.spec.ts:135:1 › two players, an organizer and independent screen complete the authoritative pilot (20.2s)
+  ✓  80 tests/e2e/pilot.spec.ts:492:1 › mobile layouts and authorization boundaries remain usable (5.7s)
+  ✓  81 tests/e2e/pilot.spec.ts:566:1 › v15 marketing and server-backed training preserve their own state (3.8s)
+  ✓  82 tests/e2e/pilot.spec.ts:643:1 › a club membership and room message are shared between separate accounts (10.4s)
+
+  82 passed (6.3m)

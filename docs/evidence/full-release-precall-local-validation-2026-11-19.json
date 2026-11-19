@@ -1,0 +1,63 @@
+{
+  "recordedAt": "2026-11-19T16:24:04.190Z",
+  "scope": "Independent review of media readiness, precalls, encounter projection, neutral event notices and DB/platform integration; two identified precall defects repaired",
+  "environment": "isolated loopback fixture profiles/clubs/events; no DDL or shared pilot fixture changes",
+  "verification": {
+    "command": "npx tsx --test --test-concurrency=1 tests/platform-db.test.ts",
+    "tests": 17,
+    "passed": 17,
+    "failed": 0,
+    "skipped": 0,
+    "artifact": "docs/evidence/full-release-precall-local-2026-11-19.tap.txt",
+    "sha256": "de083a8610a717921de723256e4f5e0a5c9e500aa712b5f6e8246211fcd27987",
+    "typecheck": "npx tsc --noEmit passed after the two narrow fixes",
+    "lint": "npx eslint lib/competition-precalls.ts tests/platform-db.test.ts passed"
+  },
+  "fixes": [
+    "Precall match-point checks require the same side to meet both the current-leg and prior-set victory thresholds; opposite set/leg leaders cannot trigger a premature expectation.",
+    "Creation invokes the existing fixture-scoped primary correction guard and stale circuit qualification guard.",
+    "Public expectation reads use read-only-compatible scoped correction and circuit projections, hiding an invalid dependent fixture while leaving an unrelated held branch visible."
+  ],
+  "tests": [
+    "Actual server precall requests reject opposite set/leg leaders and permit the same-side match point.",
+    "An actual read-only database transaction hides held and stale expectations without attempting FOR SHARE.",
+    "A separate held branch still allows the valid precall, preserving independent boards.",
+    "Existing revision, idempotency, current manager ACL, player availability, explicit public-display choice, revocation and physical assignment assertions remain green."
+  ],
+  "review": {
+    "unresolvedBlockers": [],
+    "camera": "Readiness applies only to required matches and gameplay, after receipt/revision checks; private signaling is restricted to the two assigned media actors.",
+    "seasonDisplay": "Only the already-authorized current encounter totals/names and current component are projected; no hidden lineups or profile identifiers.",
+    "eventNotice": "Only neutral recognition/correction status is projected; private dossier reasons and actors remain private."
+  },
+  "sourceHashes": [
+    {
+      "file": "lib/competition-precalls.ts",
+      "sha256": "e984de53f8e2943fe247ef8b44c5754c2832fba223eec628c11d008519dcebb3"
+    },
+    {
+      "file": "tests/platform-db.test.ts",
+      "sha256": "2ca0d5d2824e0e78ce41703f75774d7b51b61b9b5326ec0a60f892512310e790"
+    },
+    {
+      "file": "lib/media-readiness.ts",
+      "sha256": "9012d15224c02a0ccd449fdceaad8f6430ed0241d6819ce299b5c0f1ea738823"
+    },
+    {
+      "file": "lib/season-display.ts",
+      "sha256": "a0e05ba0125cab82cf291bc9a20f98ab8ed1a0bb2815aa3039c7c2f046fceb0b"
+    },
+    {
+      "file": "lib/event-display-notice.ts",
+      "sha256": "8a7a1be0e95e1a6facbb1adde1f9a173fc2702168227eaf8fcfd73c23455d55f"
+    },
+    {
+      "file": "lib/db.ts",
+      "sha256": "c28ed82905eaf4bcee172e3a594ec1d96000ecd7004b4d80b6706c3e7ef772f0"
+    },
+    {
+      "file": "lib/platform.ts",
+      "sha256": "276f4c360741d6c0381f49ac0081e42cb3b707321da9c58306507bae22fb3349"
+    }
+  ]
+}

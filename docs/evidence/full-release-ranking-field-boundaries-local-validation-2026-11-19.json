@@ -1,0 +1,102 @@
+{
+  "recordedAt": "2026-11-19T16:45:51.034513+00:00",
+  "criterion": "RAT08",
+  "environment": "isolated loopback PostgreSQL; uniquely created fixture actors/events; no DDL, product changes or shared pilot fixture edits",
+  "verification": {
+    "command": "npx tsx --test --test-concurrency=1 tests/ranking-field-boundaries-db.test.ts",
+    "tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "artifact": "docs/evidence/full-release-ranking-field-boundaries-local-2026-11-19.tap.txt",
+    "artifactSha256": "242216f897dc3a5f24254985f184f603676f0c8d459c332e5086662b073ac3f3",
+    "typecheck": "npx tsc --noEmit passed",
+    "lint": "npx eslint tests/ranking-field-boundaries-db.test.ts passed"
+  },
+  "cases": [
+    {
+      "starters": 15,
+      "registrations": 17,
+      "unstartedRegistrations": 2,
+      "realSportingMatches": 14,
+      "actualVisitActorCount": 15,
+      "confirmedByBothPlayers": true,
+      "minimumNationalStarters": 16,
+      "points": "zero for every actual finisher",
+      "totalCircuitPoints": 0
+    },
+    {
+      "starters": 32,
+      "registrations": 34,
+      "unstartedRegistrations": 2,
+      "realSportingMatches": 31,
+      "actualVisitActorCount": 32,
+      "confirmedByBothPlayers": true,
+      "pointBands": [
+        {
+          "place": 1,
+          "players": 1,
+          "pointsEach": 15
+        },
+        {
+          "place": 2,
+          "players": 1,
+          "pointsEach": 10
+        },
+        {
+          "place": 3,
+          "players": 2,
+          "pointsEach": 7
+        },
+        {
+          "place": 5,
+          "players": 4,
+          "pointsEach": 5
+        },
+        {
+          "place": 9,
+          "players": 8,
+          "pointsEach": 3
+        },
+        {
+          "place": 17,
+          "players": 16,
+          "pointsEach": 1
+        }
+      ],
+      "totalCircuitPoints": 99
+    }
+  ],
+  "durability": [
+    "Destination request, current ranking-authority approval and each own participant acceptance precede the first actual sporting start.",
+    "Premature event finalization is rejected and creates no event circuit source.",
+    "Stored actual visit actor identities prove every first throw; registrations and byes are not counted as additional starters.",
+    "Each real starter has one valid revision-one event source and one current generation booking; the two unstarted registrations have no source.",
+    "Identical-request retry and a fresh finalization request preserve the active generation, exact own history, rating row and source count."
+  ],
+  "existingSixteenStarterEvidence": {
+    "testSource": "tests/ranking-service-db.test.ts",
+    "testName": "a complete sixteen-starter event crosses the real national field threshold exactly once",
+    "artifact": "docs/evidence/full-release-ranking-regression-local-2026-11-19.tap.txt",
+    "proven": "16 actual starters, 15 real sporting matches, national winner 10 points, source starter metadata exactly16"
+  },
+  "source": {
+    "path": "tests/ranking-field-boundaries-db.test.ts",
+    "sha256": "7105ee654bd382c3e970feb1fa962ae6c764d59f8aa61b9f7a5c304e066451f7"
+  },
+  "matrix": {
+    "rows": 71,
+    "columns": 21,
+    "originalColumns": 11,
+    "originalColumnsPreservedExactly": true,
+    "changedScenario": "RAT08",
+    "serverStatus": "local-only",
+    "desktopwebStatus": "partial",
+    "nativeAndroidStatus": "partial",
+    "crossDeviceStatus": "partial"
+  },
+  "limits": [
+    "Direct real server-command/read and database coverage; no HTTP browser/native or physical multi-device claim.",
+    "No complete acceptance row or original scenario status is marked passed."
+  ]
+}

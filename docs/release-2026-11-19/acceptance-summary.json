@@ -1,0 +1,27 @@
+{
+  "auditedAt": "2026-11-19T17:40:49.727453+00:00",
+  "scenarioCount": 71,
+  "originalColumnsPreservedExactly": true,
+  "wholeScenarioAccepted": 0,
+  "statusesByPlatform": {
+    "Status server": {
+      "partial": 36,
+      "local-only": 35
+    },
+    "Status desktopweb": {
+      "partial": 69,
+      "external": 2
+    },
+    "Status native Android": {
+      "partial": 68,
+      "external": 3
+    },
+    "Status cross-device / Oche Live": {
+      "partial": 68,
+      "external": 3
+    }
+  },
+  "scope": "Code/contract/test-source traceability plus explicitly named partial local evidence. Not an assertion of complete full-release acceptance.",
+  "matrix": "acceptance-parity.csv",
+  "guide": "acceptance-audit.md"
+}

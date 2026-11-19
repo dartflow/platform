@@ -1,0 +1,56 @@
+{
+  "collectedAt": "2026-11-19T15:13:45.363395+00:00",
+  "status": "local_checks_passed_instrumentation_not_run",
+  "source": "Uncommitted Oche changes in codex/full-release-20261119; final CI source SHA must be recorded by the release manifest.",
+  "gradleCommand": ":app:testStagingDebugUnitTest :app:lintStagingDebug :app:assembleStagingDebug :app:compileStagingDebugAndroidTestKotlin :app:testProductionReleaseUnitTest :app:lintProductionRelease :app:bundleProductionRelease",
+  "gradleResult": "BUILD SUCCESSFUL",
+  "unitTests": {
+    "stagingDebug": {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "productionRelease": {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "playPipelineTests": {
+    "tests": 15,
+    "failures": 0,
+    "errors": 0
+  },
+  "instrumentation": {
+    "compiled": true,
+    "executedLocally": false,
+    "expectedTests": 8,
+    "reason": "No connected Android device, emulator installation or /dev/kvm on this worker; GitHub phone/TV CI remains required."
+  },
+  "physicalPlayUpgradeVerified": false,
+  "artifacts": {
+    "stagingDebugApk": {
+      "path": "android/oche-live/app/build/outputs/apk/staging/debug/app-staging-debug.apk",
+      "bytes": 11949529,
+      "sha256": "c963c612a97d783aa7db3565f311d84c62b813f227b4c08f82fb727a00883d96",
+      "playRelease": false
+    },
+    "productionUnsignedAab": {
+      "path": "android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab",
+      "bytes": 2697512,
+      "sha256": "aacaf79bd3941b05f8dfe12f1222f7a26de7f3ee42c856c37359f41a61de4a7d",
+      "playRelease": false
+    }
+  },
+  "changes": [
+    "Render paused and interrupted match state without a live turn or stale inactivity countdown.",
+    "Distinguish provisional, published and under-review results and show the authoritative winning player.",
+    "Retain encrypted public snapshot across process death and display it as offline until server reauthorization.",
+    "Show actual server checkout advice; keep the completed leg on legacy result snapshots.",
+    "Open the scorecard at the latest five rows and provide a return-to-live control.",
+    "Run the standby carousel only when the projection permits a public board QR.",
+    "Render configured in/out rules and a stable per-side handicap starting row; private home projection retains these settings."
+  ]
+}

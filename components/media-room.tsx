@@ -22,11 +22,13 @@ export function MediaRoom({matchId}:{matchId:string}) {
   const pendingIce=useRef<RTCIceCandidateInit[]>([]),running=useRef(false);
   const generation=useRef(0),cameraOperation=useRef(0),cameraBusy=useRef(false),connecting=useRef(false);
   const cameraAbort=useRef<AbortController|null>(null);
+  const lastReadiness=useRef(0);
   const [preview,setPreview]=useState(false),[active,setActive]=useState(false),[video,setVideo]=useState(true),[audio,setAudio]=useState(true);
   const [status,setStatus]=useState('Test eerst je camera en microfoon. Je score blijft onafhankelijk van de video.'),[error,setError]=useState('');
   const [cameras,setCameras]=useState<MediaDeviceInfo[]>([]),[selectedCamera,setSelectedCamera]=useState(''),[switching,setSwitching]=useState(false),[opening,setOpening]=useState(false),[cameraNotice,setCameraNotice]=useState(''),[recovery,setRecovery]=useState<CameraTarget|null>(null);
 
   useEffect(()=>()=>{
+    if(config.current&&callId.current)void fetch(`/api/platform/matches/${matchId}/signals`,{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({requestId:crypto.randomUUID(),targetId:config.current.peerId,type:'preflight',payload:{purpose:'media-ready',callId:callId.current,video:false,connected:false,peerVideo:false}})}).catch(()=>undefined);
     generation.current++;cameraOperation.current++;cameraBusy.current=false;
     cameraAbort.current?.abort();cameraAbort.current=null;
     running.current=false;
@@ -37,6 +39,7 @@ export function MediaRoom({matchId}:{matchId:string}) {
   },[matchId]);
 
   function releaseMedia(message:string) {
+    void reportReadiness(false);
     generation.current++;cameraOperation.current++;cameraBusy.current=false;connecting.current=false;
     cameraAbort.current?.abort();cameraAbort.current=null;
     running.current=false;if(poll.current)clearTimeout(poll.current);poll.current=null;
@@ -84,6 +87,13 @@ export function MediaRoom({matchId}:{matchId:string}) {
   async function signal(type:string,payload:Record<string,unknown>,version=generation.current) {
     if(!config.current||generation.current!==version)return;
     await request(`/api/platform/matches/${matchId}/signals`,{requestId:crypto.randomUUID(),targetId:config.current.peerId,type,payload:{...payload,callId:callId.current}});
+  }
+  async function reportReadiness(enabled=true) {
+    lastReadiness.current=Date.now();
+    const connection=peer.current;
+    const local=stream.current?.getVideoTracks().some(track=>track.readyState==='live'&&track.enabled)??false;
+    const remote=connection?.getReceivers().some(receiver=>receiver.track.kind==='video'&&receiver.track.readyState==='live'&&!receiver.track.muted)??false;
+    await signal('preflight',{purpose:'media-ready',video:enabled&&local,connected:enabled&&connection?.connectionState==='connected',peerVideo:enabled&&remote}).catch(()=>undefined);
   }
   async function startPreview() {
     setError('');
@@ -152,11 +162,12 @@ export function MediaRoom({matchId}:{matchId:string}) {
       const isCurrent=()=>generation.current===version&&running.current&&peer.current===connection;
       cursor.current=0;pendingIce.current=[];callId.current='';running.current=true;
       for(const track of media.getTracks())connection.addTrack(track,media);
-      connection.ontrack=event=>{if(isCurrent()&&remoteVideo.current)remoteVideo.current.srcObject=event.streams[0] || new MediaStream([event.track]);};
+      connection.ontrack=event=>{if(isCurrent()&&remoteVideo.current){remoteVideo.current.srcObject=event.streams[0] || new MediaStream([event.track]);event.track.onunmute=()=>{if(isCurrent())void reportReadiness();};event.track.onmute=event.track.onended=()=>{if(isCurrent())void reportReadiness(false);};}};
       connection.onicecandidate=event=>{if(isCurrent()&&event.candidate)void signal('ice',{candidate:event.candidate.toJSON()},version).catch(cause=>{if(!stopForAccessLoss(cause,version,connection)&&isCurrent())setStatus('Netwerk onderbroken. Verbind opnieuw; de score blijft bewaard.');});};
       connection.onconnectionstatechange=()=>{
         if(!isCurrent())return;
         const state=connection.connectionState;
+        void reportReadiness(state==='connected');
         setStatus(state==='connected'?'Beeld en geluid verbonden.':['failed','disconnected'].includes(state)?'Beeldverbinding onderbroken. Verbind opnieuw; de score blijft bewaard.':'Wachten op de andere speler…');
       };
       setActive(true);setStatus(config.current.relayConfigured?'Verbinding opzetten; de andere speler moet ook verbinden.':'Directe verbinding opzetten. Een relayserver is nog niet geconfigureerd.');
@@ -164,7 +175,7 @@ export function MediaRoom({matchId}:{matchId:string}) {
       if(!isCurrent())return;
       const synchronize=async()=>{
         if(!isCurrent())return;
-        try{await acceptSignals(connection,false,version);}catch(cause){if(!stopForAccessLoss(cause,version,connection)&&isCurrent())setStatus('Signaalverbinding onderbroken. Er wordt opnieuw gesynchroniseerd.');}
+        try{await acceptSignals(connection,false,version);if(Date.now()-lastReadiness.current>=5000)await reportReadiness();}catch(cause){if(!stopForAccessLoss(cause,version,connection)&&isCurrent())setStatus('Signaalverbinding onderbroken. Er wordt opnieuw gesynchroniseerd.');}
         if(isCurrent())poll.current=setTimeout(synchronize,1000);
       };
       poll.current=setTimeout(synchronize,500);
@@ -178,6 +189,7 @@ export function MediaRoom({matchId}:{matchId:string}) {
   function toggle(kind:'audio'|'video') {
     const tracks=kind==='video'?stream.current?.getVideoTracks():stream.current?.getAudioTracks();
     tracks?.forEach(track=>{track.enabled=!track.enabled;});
+    if(kind==='video')void reportReadiness();
     if(kind==='video')setVideo(Boolean(tracks?.[0]?.enabled));else setAudio(Boolean(tracks?.[0]?.enabled));
   }
   return <section className="media-room" aria-label="Online camera en microfoon">

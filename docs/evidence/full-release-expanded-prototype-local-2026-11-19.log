@@ -1,0 +1,102 @@
+
+> dartflow@0.1.0 test:prototype
+> npm test --prefix prototype-v15
+
+
+> test
+> node --test test-scoring.mjs tests/*.mjs
+
+PASS immutable 180 and player alternation
+PASS impossible totals rejected without mutation
+PASS overthrow and remaining one bust, count darts but no score
+PASS double must be confirmed before commit
+PASS checkout darts validity and maximum
+PASS best of majority finishes match and blocks further input
+PASS undo repeated visits including leg finish restores complete state
+PASS next leg starter alternates independently of finisher
+PASS checkout route examples and bogeys
+PASS fixed eight legs permits a four-all draw and blocks further input
+PASS fixed eight legs records five-three winner regardless of last-leg winner
+PASS fixed legs continues after a majority and alternates the new leg starter
+PASS undo final fixed-leg draw restores live match and extension metadata
+PASS fixed-leg setup validates its limit and seeded score
+PASS 701 games retain normal score validation and alternating turns
+15 scoring scenarios passed.
+✔ test-scoring.mjs (65.345557ms)
+✔ reads of a free board are write-free and only one concurrent player can start (54.457133ms)
+✔ score and handover are serialized across independent players and retries (19.62947ms)
+✔ an online invitation is server-generated and visible only to the host (11.075542ms)
+✔ scheduled results save both player histories atomically after confirmation (9.652696ms)
+✔ the first scanner writes, the second takes over without the first phone and the first loses write rights (3.786766ms)
+✔ the second local scanner must agree, a third scanner cannot join and a delayed score cannot enter a new match (1.216862ms)
+✔ the scorecard resets at the next leg and restores its countdown on undo (0.789411ms)
+✔ solo uses the same scoring, preserves turn after a bust and keeps a personal result (0.79651ms)
+✔ best-of sets progresses correctly and undo can cross the set boundary (1.152994ms)
+✔ remote invitation is private, stale waiting boards expire and an unrelated phone cannot join remote (0.313653ms)
+✔ scheduled result is released only after two independent confirmations (1.441244ms)
+✔ an incoming score does not close the open writer takeover confirmation (6.594519ms)
+✔ Sprint phone keeps the remaining score and locks its keypad during double confirmation (1.905726ms)
+PASS capacity and duplicate membership requests
+PASS approval creates one club membership
+PASS club creation, escaped display and linked private room
+PASS ownership transfer and room access removal
+PASS settings cannot shrink capacity below present members
+5 club scenarios passed.
+PASS club scope entry membership and active scope clear on leave
+PASS club activity links select the event owner scope
+✔ tests/clubs-tests.mjs (76.853489ms)
+PASS 17 community scenarios: privacy, code, ban, capacity, create/invite, join, escaped chat, challenge acceptance, moderation, unban, host transfer, integration API.
+✔ tests/community-tests.mjs (102.178061ms)
+PASS round robin pairs and fixture counts
+PASS seeded standings and markup
+PASS proposed time, simulated accept and reusable room link
+PASS confirmed fixed-leg draw reaches standings
+PASS join reschedules without duplicate IDs
+PASS tournament check-in, room and winner propagation
+PASS explicit round simulation and champion
+PASS nested tournament tabs, embedded pools and reusable community room
+PASS platform/club event filtering, empty scopes and member-only league creation
+9 competition scenarios passed.
+✔ tests/competitions-tests.mjs (100.032064ms)
+✔ every catalog template has a complete accessible HTML and plain text example (4.819543ms)
+✔ untrusted placeholder and edited content cannot become HTML or unsafe CTA links (0.480495ms)
+✔ actual event outbox fails on missing variables and invalid recipients without fixture substitution (1.245612ms)
+✔ published copy inherits platform then club; drafts and cross-club data never affect delivery (0.280919ms)
+✔ idempotency includes event, recipient, template and tenant; sent snapshot survives later template edits (0.595003ms)
+✔ disabled triggers and tenant pause suppress events; auth stays locked and its code is never logged (0.632125ms)
+✔ initialization preserves existing demo mail and domain data (0.15923ms)
+✔ a membership request and decision notify the owning club once (3.697973ms)
+✔ friend acceptance emits once, in global scope even from a club (0.90428ms)
+✔ a room invitation and accepted challenge generate no duplicate match invitation (3.417235ms)
+✔ time proposal informs the opponent, agreement informs both once (3.344244ms)
+✔ venue collector uses new logs, sends promotion and skips guests without addresses (3.81148ms)
+✔ venue calls and terminal results select current state and omit obsolete confirmations (0.625225ms)
+✔ Draft stays separate from event mail until publication and publishes into future snapshots (3.937764ms)
+✔ Reading club editor preserves global inheritance while explicit club publication is isolated (5.804846ms)
+✔ Stale scope forms and player mutations are refused (0.307475ms)
+✔ OTP preview and forged OTP test form do not create any outbox entry (0.810821ms)
+✔ Draft test records the reviewed draft and retry preserves snapshot despite later publication (5.343678ms)
+✔ Outbox stays scoped and failed test with invalid email cannot turn successful on retry (0.985011ms)
+✔ organizer desktop and mobile expose the same workspaces (2.240067ms)
+✔ scope changes preserve the correct role and exit event-specific controls (0.199516ms)
+✔ scoped workspaces do not offer a different club’s event as the default (2.257541ms)
+✔ Vandaag hervat de actieve partij boven de lobby en gebruikt de juiste agenda (1.933183ms)
+✔ agendalinks selecteren het concrete onderdeel binnen de gekozen omgeving (0.298622ms)
+PASS match scope inheritance, explicit global/club override, blocked player gate, multi-club annotated setup
+✔ tests/room-scope-tests.mjs (57.762833ms)
+PASS lobby, turn lock, disconnect, correction consent and local perspective
+PASS double finish, joint result confirmation, idempotence and club room association
+PASS fixed-leg draw completes through shared scoreboard
+PASS legal Dartbot visit and practice-only classification
+✔ tests/room-tests.mjs (55.33025ms)
+✔ an unscored called fixture keeps its venue board reserved for Baanmodus (5.452649ms)
+✔ only a matching confirmed Baanmodus result changes the venue standings once (14.736715ms)
+✔ tests/venue-offline-tests.mjs (45.893021ms)
+ℹ tests 46
+ℹ suites 0
+ℹ pass 46
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 180.879824

@@ -1,0 +1,272 @@
+{
+  "collectedAt": "2026-11-19T14:54:57.134836+00:00",
+  "repository": "dartflow/platform",
+  "integrationBranch": "main",
+  "sourceCheckoutSha": "62ca750738ac5db075b249a0fd5a49e767bdc5ee",
+  "readOnlyAudit": true,
+  "deploymentsPerformedByThisAudit": false,
+  "playMutationsPerformedByThisAudit": false,
+  "web": {
+    "staging": {
+      "origin": "https://staging.dartflow.nl",
+      "checkedAt": "2026-11-19T14:54:57.134836+00:00",
+      "endpoints": {
+        "/api/health": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4a234040109b0c5f1dd8118462a0dea3ae062994",
+            "releaseId": "44413151778-1",
+            "buildConfigId": "staging-2026-11-18-play-safety-1",
+            "runtimeConfigId": "staging-2026-11-18-play-safety-1",
+            "configId": "staging-2026-11-18-play-safety-1"
+          }
+        },
+        "/api/ready": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4a234040109b0c5f1dd8118462a0dea3ae062994",
+            "releaseId": "44413151778-1",
+            "buildConfigId": "staging-2026-11-18-play-safety-1",
+            "runtimeConfigId": "staging-2026-11-18-play-safety-1",
+            "configId": "staging-2026-11-18-play-safety-1"
+          }
+        },
+        "/.well-known/assetlinks.json": {
+          "httpStatus": 200,
+          "body": [
+            {
+              "relation": [
+                "delegate_permission/common.handle_all_urls"
+              ],
+              "target": {
+                "namespace": "android_app",
+                "package_name": "nl.dartflow.app.staging",
+                "sha256_cert_fingerprints": [
+                  "97:C8:A2:78:FF:67:14:BD:E4:F1:BC:B5:4E:BA:15:12:28:D4:2E:83:8F:11:D4:3B:CF:6E:71:C7:DE:08:A0:09"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "production": {
+      "origin": "https://dartflow.nl",
+      "checkedAt": "2026-11-19T14:54:57.134836+00:00",
+      "endpoints": {
+        "/api/health": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "4a234040109b0c5f1dd8118462a0dea3ae062994",
+            "releaseId": "44413713570-1",
+            "buildConfigId": "production-2026-11-18-play-safety-1",
+            "runtimeConfigId": "production-2026-11-18-play-safety-1",
+            "configId": "production-2026-11-18-play-safety-1"
+          }
+        },
+        "/api/ready": {
+          "httpStatus": 200,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "4a234040109b0c5f1dd8118462a0dea3ae062994",
+            "releaseId": "44413713570-1",
+            "buildConfigId": "production-2026-11-18-play-safety-1",
+            "runtimeConfigId": "production-2026-11-18-play-safety-1",
+            "configId": "production-2026-11-18-play-safety-1"
+          }
+        },
+        "/.well-known/assetlinks.json": {
+          "httpStatus": 200,
+          "body": [
+            {
+              "relation": [
+                "delegate_permission/common.handle_all_urls"
+              ],
+              "target": {
+                "namespace": "android_app",
+                "package_name": "nl.dartflow.app",
+                "sha256_cert_fingerprints": [
+                  "97:C8:A2:78:FF:67:14:BD:E4:F1:BC:B5:4E:BA:15:12:28:D4:2E:83:8F:11:D4:3B:CF:6E:71:C7:DE:08:A0:09",
+                  "DE:54:EB:62:ED:D3:10:AA:F9:39:0F:47:6D:AF:73:E2:94:13:75:CE:EE:BE:DC:0B:89:D8:8D:E2:D4:EC:3E:F1"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "runners": [
+    {
+      "name": "dg-nxttrack-01-dartflow-production",
+      "status": "online",
+      "busy": false,
+      "labels": [
+        "self-hosted",
+        "Linux",
+        "X64",
+        "dg-nxttrack-01",
+        "dartflow",
+        "production"
+      ]
+    },
+    {
+      "name": "dg-nxttrack-01-dartflow-staging",
+      "status": "online",
+      "busy": false,
+      "labels": [
+        "self-hosted",
+        "Linux",
+        "X64",
+        "dg-nxttrack-01",
+        "dartflow",
+        "staging"
+      ]
+    }
+  ],
+  "androidReleaseRunner": {
+    "configured": false,
+    "evidence": "Only the two web deployment runners are registered; current Android workflows use ubuntu-24.04 GitHub-hosted jobs."
+  },
+  "oche": {
+    "applicationId": "nl.dartflow.ochelive",
+    "stagingApplicationId": "nl.dartflow.ochelive.staging",
+    "repositoryVariables": {
+      "OCHE_JAVA_VERSION": "17",
+      "OCHE_PLAY_ENABLED": "false",
+      "OCHE_SIGNING_ENABLED": "true",
+      "OCHE_VERSION_CODE_BASE": "1000",
+      "PLAY_PACKAGE_NAME": "nl.dartflow.ochelive"
+    },
+    "playEnvironmentVariables": {
+      "play-internal": [],
+      "play-production": []
+    },
+    "latestVerifiedSignedBuild": {
+      "versionName": "1.0.1",
+      "versionCode": 1014,
+      "sourceSha": "092c8c1e1cca403fbc29ab0679f7efcfc7bb915a",
+      "bundleSha256": "8832dafd2fdffb012b695b5470eef849c66a5600809b8be66a48fd9b47b387dd",
+      "proof": "docs/oche-live-android/builds/1.0.1-1014.json",
+      "releaseUrl": "https://github.com/dartflow/platform/releases/tag/android-2026-11-18",
+      "playUploadProven": false
+    },
+    "currentPlayTracks": null,
+    "currentReviewLifecycle": null,
+    "currentStoreAvailability": null,
+    "historicalPlayClaim": {
+      "versionCode": 1009,
+      "source": "docs/oche-live-android/oplevering.md owner-supplied screenshots",
+      "notFreshConsoleObservation": true
+    },
+    "externalRequirements": [
+      {
+        "actor": "Play Console account owner/admin",
+        "action": "Confirm nl.dartflow.ochelive current highest versionCode, intended mobile/TV track IDs, production access, country targeting, listing, app-content obligations, active reviews and managed publishing state.",
+        "why": "No authenticated current Oche Console or Publisher snapshot is available to this audit."
+      },
+      {
+        "actor": "Play Console account owner/admin",
+        "action": "Provide the actual Play App Signing SHA-256 certificate for nl.dartflow.ochelive and publish it through config/android-app-links.json.",
+        "why": "Both live assetlinks endpoints currently announce only the player app; the Oche upload certificate must not substitute for Play App Signing."
+      },
+      {
+        "actor": "Play Console account owner/admin",
+        "action": "Either upload and promote the verified signed candidate manually, or grant the dedicated Oche release identity appropriate package permissions and configure verified WIF/service-account/track/fingerprint values in the Oche GitHub environments.",
+        "why": "OCHE_PLAY_ENABLED is false, and the Oche Play environments have no variables."
+      },
+      {
+        "actor": "Device tester with Play account",
+        "action": "Install the exact internal Play version on supported phone/tablet/TV hardware, verify package/versionCode, pairing, reboot, offline and in-place upgrade preservation.",
+        "why": "Local APK/JVM/Compose tests do not prove Play delivery, physical D-pad or upgrade behavior."
+      }
+    ],
+    "requirementGapsNotAddressedByBoundedFixes": [
+      {
+        "requirement": "Both DartFlow and Duindorp SV OnzeTrots themes selectable per authorized location with shared native/browser assets and fallback.",
+        "finding": "Current native UI is a fixed DartFlow dark theme, while OcheDisplaySnapshot has no versioned theme/asset selection fields. No club-theme selector is implemented by these bounded fixes.",
+        "sources": [
+          "android/oche-live/app/src/main/java/nl/dartflow/ochelive/MainActivity.kt",
+          "lib/oche-device-types.ts",
+          "lib/platform-types.ts"
+        ]
+      },
+      {
+        "requirement": "Public next-match/pre-call, team encounter/submatch totals, assignment generation and board resumption context on the display.",
+        "finding": "Current public snapshot exposes one match and its legs/sets; it has no typed team-encounter, next-call or assignment-generation projection. Existing player/leg/set display alone is not evidence of these requested flows.",
+        "sources": [
+          "lib/types.ts",
+          "lib/oche-device-types.ts",
+          "lib/oche-device-projection.ts"
+        ]
+      },
+      {
+        "requirement": "Physical phone/TV tests and in-place upgrade of the Play-signed previous version.",
+        "finding": "No Android device is connected and /dev/kvm is absent on this worker. New Compose scenarios can be compiled locally and executed by the existing GitHub phone/TV CI, but neither that nor a local APK proves the physical Play upgrade.",
+        "sources": [
+          ".github/workflows/oche-android-ci.yml"
+        ]
+      }
+    ],
+    "storefrontProbe": {
+      "url": "https://play.google.com/store/apps/details?id=nl.dartflow.ochelive&hl=nl&gl=NL",
+      "result": "Web tool could not access this URL; availability remains unverified.",
+      "checkedDuringAudit": true
+    }
+  },
+  "playerApp": {
+    "applicationId": "nl.dartflow.app",
+    "lastObservedTrackSnapshotAt": "2026-11-18T22:49:58Z",
+    "observationWorkflowUrl": "https://github.com/dartflow/platform/actions/runs/44415166749",
+    "sourceSha": "4a234040109b0c5f1dd8118462a0dea3ae062994",
+    "versionName": "0.1.3",
+    "versionCode": 4,
+    "bundleSha256": "faf386e230345ea5d1c4eccfd36194a55c416f10c53f4f4b49cdb791b37ab251",
+    "tracks": {
+      "alpha": [],
+      "beta": [],
+      "internal": [
+        {
+          "status": "completed",
+          "versionCodes": [
+            "4"
+          ]
+        }
+      ],
+      "production": [
+        {
+          "status": "completed",
+          "versionCodes": [
+            "4"
+          ]
+        }
+      ]
+    },
+    "productionPromotionWorkflowUrl": "https://github.com/dartflow/platform/actions/runs/44415019037",
+    "reviewLifecycle": null,
+    "publicStoreAvailabilityVerified": false,
+    "limitation": "Existing successful Publisher workflow logs prove track status at the recorded time; they do not prove current review lifecycle or storefront availability."
+  },
+  "releaseCommands": {
+    "staging": "gh workflow run deploy-staging.yml --repo dartflow/platform --ref main -f sha=<exact-tested-main-sha> -f config_id=staging-2026-11-18-play-safety-1",
+    "production": "gh workflow run deploy-production.yml --repo dartflow/platform --ref main -f sha=<same-tested-main-sha> -f config_id=production-2026-11-18-play-safety-1",
+    "ocheSigningOnly": "gh workflow run oche-android-ci.yml --repo dartflow/platform --ref main -f signed_bundle=true",
+    "playerPlay": "gh workflow run player-play-release.yml --repo dartflow/platform --ref main -f action=<check-access|upload-internal|promote-production> -f source_sha=<tested-main-sha> -f release_tag=<verified-release-tag> -f bundle_sha256=<exact-aab-sha256> -f version_code=<unused-increasing-code>"
+  },
+  "deploymentLimitations": [
+    "The application deployment broker does not run database migrations; additive schema changes need the existing separate migration route and a verified backup.",
+    "Source-SHA CI and staging checks are required by the release gates.",
+    "No platform-wide acceptance or physical-device completion is claimed by this environment audit."
+  ]
+}

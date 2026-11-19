@@ -1,0 +1,5 @@
+import{test}from'node:test';
+import assert from'node:assert/strict';
+import{parseParticipantCsv}from'../lib/event-participant-import';
+test('participant CSV preserves quoted delimiters, escaped quotes, Unicode and physical source lines',()=>{const parsed=parseParticipantCsv('\uFEFFname;username;type\r\n"Gast; Eén";;guest\r\n"Een ""alias""";actual-user;account\r\n"Twee\nregels";;guest');assert.deepEqual(parsed.headers,['name','username','type']);assert.deepEqual(parsed.rows,[{line:2,cells:['Gast; Eén','','guest']},{line:3,cells:['Een "alias"','actual-user','account']},{line:4,cells:['Twee\nregels','','guest']}]);});
+test('import rejects malformed quoting, duplicate/unknown headers and unbounded work before any roster write',()=>{for(const csv of['name,type\n"unfinished,guest','name,name\nA,A','name,email\nA,a@example.test','name,type\nA"b,guest','name,type\n"A"x,guest','name,type\n'+Array.from({length:501},()=> 'A,guest').join('\n'),'x'.repeat(65537)])assert.throws(()=>parseParticipantCsv(csv),{code:'invalid_import'});});

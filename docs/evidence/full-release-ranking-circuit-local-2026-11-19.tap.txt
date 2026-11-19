@@ -1,0 +1,12 @@
+▶ eight real circuit evenings freeze a tied top-eight boundary, sporting BO5 decides it and a separate actual finale changes no circuit points
+  ✔ qualification waits for all eight genuinely played and finalized designated evenings (32576.190488ms)
+  ✔ the frozen top eight requires the tied ninth player to play, prevents forged/walkover qualification and keeps every original point (5351.053937ms)
+✔ eight real circuit evenings freeze a tied top-eight boundary, sporting BO5 decides it and a separate actual finale changes no circuit points (38176.807131ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 38587.941719

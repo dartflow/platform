@@ -13,13 +13,14 @@ import {assertAccountActive} from './account-removal';
 import {signInPlayReviewer} from './play-review';
 
 const id='[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
-const reads=[/^(?:session|profile|overview|platform|player-statistics|player-experience|locations|feed|seasons|safety|account\/deletion)$/,
- new RegExp(`^matches/${id}(?:/invitation)?$`,'i'),new RegExp(`^trainings/${id}$`,'i'),new RegExp(`^boards/${id}$`,'i'),new RegExp(`^media/${id}$`,'i'),
+const reads=[/^(?:session|profile|overview|platform|player-statistics|player-experience|organizer-planning|organizer-guest-claims|push|locations|feed|seasons|organizer-drafts|faq|faq\/admin|rankings|safety|account\/deletion)$/,
+ new RegExp(`^organizer-participants/${id}$`,'i'),
+ new RegExp(`^matches/${id}(?:/invitation|/corrections)?$`,'i'),new RegExp(`^trainings/${id}$`,'i'),new RegExp(`^boards/${id}$`,'i'),new RegExp(`^media/${id}$`,'i'),
  new RegExp(`^platform/matches/${id}/(?:chat|signals)$`,'i'),new RegExp(`^platform/rooms/${id}/messages$`,'i'),
- new RegExp(`^seasons/${id}$`,'i'),new RegExp(`^feed/(?:result|replies)/${id}$`,'i'),/^community\/feed$/,
+ new RegExp(`^rankings/events/${id}$`,'i'),new RegExp(`^events/${id}/boards$`,'i'),new RegExp(`^seasons/${id}$`,'i'),new RegExp(`^feed/(?:result|replies)/${id}$`,'i'),/^community\/feed$/,
  new RegExp(`^community/chat/(?:club|league|tournament|match)/${id}$`,'i'),/^oche\/v1\/(?:context|devices)$/];
-const writes=[/^(?:profile\/(?:complete|player-pin)|player-pin\/lobby-add|player-experience|platform\/actions|board-activity\/continue|feed\/actions|seasons|seasons\/actions|seasons\/player-pin|account\/deletion|safety\/(?:consent|report|block))$/,
- new RegExp(`^matches/${id}/actions$`,'i'),new RegExp(`^events/${id}/actions$`,'i'),new RegExp(`^boards/${id}/screen-preferences$`,'i'),new RegExp(`^platform/matches/${id}/(?:chat|signals|replay)$`,'i'),/^oche\/v1\/(?:claim|home-session)$/,new RegExp(`^oche/v1/devices/${id}$`,'i')];
+const writes=[/^(?:profile\/(?:complete|player-pin)|player-pin\/lobby-add|player-experience|organizer-participants|push\/actions|platform\/actions|organizer-drafts\/actions|faq\/admin\/actions|rankings\/actions|board-activity\/continue|feed\/actions|seasons|seasons\/actions|seasons\/player-pin|account\/deletion|safety\/(?:consent|report|block))$/,
+ new RegExp(`^matches/${id}/(?:actions|corrections/actions)$`,'i'),new RegExp(`^events/${id}/actions$`,'i'),new RegExp(`^boards/${id}/screen-preferences$`,'i'),new RegExp(`^platform/matches/${id}/(?:chat|signals|replay)$`,'i'),/^oche\/v1\/(?:claim|home-session)$/,new RegExp(`^oche/v1/devices/${id}$`,'i')];
 export function nativePlayerRouteAllowed(path:string,method:string):boolean{
  if(!path||path.length>200||path.includes('%')||path.includes('\\')||path.includes('..'))return false;
  return (method==='GET'?reads:method==='POST'?writes:[]).some(pattern=>pattern.test(path));
@@ -37,7 +38,7 @@ function publicAuth(){
  if(!publishable||url.protocol!=='https:'||url.username||url.password||url.search||url.hash||url.pathname!=='/')throw new DomainError('auth_configuration','Inloggen is tijdelijk niet beschikbaar.',503);
  return {url:url.origin,publishableKey:key};
 }
-export function nativePlayerCapabilities(){const config=appConfig(),client=nativePlayerClientId();return {apiVersion:1,origin:config.origin,environment:nativePlayerEnvironment(),local:config.mode==='local',localUsers:config.mode==='local'?LOCAL_USERS:[],auth:{...publicAuth(),callbackUrl:`${config.origin}/auth/callback?native_client=${client}`,redirectScheme:client,otpLengthMin:6,otpLengthMax:10},pollAfterMs:2000,authentication:'Bearer',permissions:'existing-player-domain-rights',features:['profile','player-pin','matches','scoring','boards','friends','clubs','tournaments','seasons','statistics','practice','feed','chat']};}
+export function nativePlayerCapabilities(){const config=appConfig(),client=nativePlayerClientId();return {apiVersion:1,origin:config.origin,environment:nativePlayerEnvironment(),local:config.mode==='local',localUsers:config.mode==='local'?LOCAL_USERS:[],auth:{...publicAuth(),callbackUrl:`${config.origin}/auth/callback?native_client=${client}`,redirectScheme:client,otpLengthMin:6,otpLengthMax:10},pollAfterMs:2000,authentication:'Bearer',permissions:'existing-player-domain-rights',features:['profile','player-pin','matches','scoring','boards','friends','clubs','tournaments','seasons','statistics','practice','feed','chat','organize','organizer-drafts','rankings','ranking-event-declarations','ranking-management','faq','faq-administration','physical-locations','reservations','cricket','team-scoring','circuit-finals','integrity-dossiers','fixture-precalls','season-vacancies','media-readiness','organizer-participant-import','event-guests','guest-history-claims','hybrid-fixtures','two-clear-cap','tournament-planning','tournament-draw-controls','tournament-phase-rules','tournament-consolation','ranking-publication-pause','offline-score-conflicts','bull-start','notification-inbox','push-registration']};}
 
 function localKey(){const dir=join(process.cwd(),'.local');mkdirSync(dir,{recursive:true,mode:0o700});const path=join(dir,'native-player-session.key');try{writeFileSync(path,randomBytes(32),{flag:'wx',mode:0o600});}catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;}return readFileSync(path);}
 const localSignature=(value:string)=>createHmac('sha256',localKey()).update('dartflow-native-player:').update(value).digest('base64url');
@@ -86,6 +87,7 @@ export async function handleNativePlayerApi(request:NextRequest,parts:string[],d
   if(config.mode==='local'&&!localNativeRequest(request))throw new DomainError('local_only','Lokale gegevens zijn alleen op loopback beschikbaar.',403);
   if(config.secure&&new URL(request.url).protocol!=='https:'&&request.headers.get('x-forwarded-proto')!=='https')throw new DomainError('https_required','Gebruik HTTPS.',400);
   if(path==='capabilities'&&method==='GET')return json(nativePlayerCapabilities());
+  if(path==='faq'&&method==='GET')return delegate(request,['faq'],method);
   if(path==='auth/review'&&method==='POST'){
    if(request.headers.has('origin')||request.headers.get('sec-fetch-site')==='cross-site')throw new DomainError('origin','Open de beoordelaarstoegang vanuit de DartFlow-app.',403);
    return json(await signInPlayReviewer(request,await readLocalBody(request)));

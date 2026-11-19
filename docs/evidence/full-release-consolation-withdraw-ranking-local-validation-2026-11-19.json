@@ -1,0 +1,56 @@
+{
+  "recordedAt": "2026-11-19T17:53:37.581018+00:00",
+  "scope": "Loopback service/database proof; source frozen after final public review-gate regression. No hosted or physical-device claim.",
+  "commands": [
+    "npx tsx --test --test-reporter=tap --test-concurrency=1 tests/tournament-management.test.ts tests/tournament-management-db.test.ts tests/ranking-service-db.test.ts tests/ranking-seasons-db.test.ts tests/tournament-rule-overrides-db.test.ts",
+    "npx tsx --test --test-reporter=tap --test-concurrency=1 tests/tournament-management-db.test.ts",
+    "npx tsc --noEmit",
+    "npx eslint lib/tournament-consolation.ts lib/tournament-management.ts lib/tournament-formats.ts lib/platform-types.ts lib/ranking-seasons.ts components/tournament-management-panel.tsx tests/tournament-management.test.ts tests/tournament-management-db.test.ts tests/ranking-service-db.test.ts tests/ranking-seasons-db.test.ts"
+  ],
+  "results": [
+    {
+      "path": "docs/evidence/full-release-consolation-withdraw-ranking-local-validation-2026-11-19.tap.txt",
+      "sha256": "677585b03b5bfe2e536c57159e6ebbaf5a3b30241a5b84269b7dff7cdad900db",
+      "passed": 33,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "path": "docs/evidence/full-release-consolation-withdraw-ranking-local-validation-2026-11-19.public-hold.tap.txt",
+      "sha256": "a27bec91663e847758032cfd0862cce237a81901ddf09c9cf919b876fd8d804a",
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "typecheck": "passed",
+  "scopedLint": "passed",
+  "proven": [
+    "Optional independently titled consolation KO uses only actual main round-one losses; bye and administrative advances never manufacture defeated players. Seven real entrants produce nine actual main/bronze/consolation matches. Five entrants do not manufacture a title from one defeat.",
+    "Main canonical places are identical with and without consolation. Main bronze retains its own actual third/fourth result.",
+    "A real club-approved event plays three main matches plus one consolation match. Broad declarations book only the three main rating sources; main third remains five circuit points, main winner ten, repeat finalization keeps its generation. Consolation match rating requires its own explicit fixture declaration.",
+    "A real independent source correction holds the played dependent consolation branch, hides public title and places, retains archived old match UUIDs and restores a distinct title only after repair and genuine newly confirmed games.",
+    "A real two-encounter managed season confirms seven actual components, books only recognized singles after both captains, then withdraws a team. The confirmed encounter, all seven canonical match/result snapshots, all official source revisions and the active club rating generation remain exactly unchanged.",
+    "Season ranking management shares the current seasonManager authority helper."
+  ],
+  "limitations": [
+    "The two runs overlap; 33 and 4 are separate run counts, not 37 unique scenarios.",
+    "Web/native controls are integrated, but these logs do not prove an installed-device end-to-end tournament evening.",
+    "No hosted deployment, external distribution or physical Oche acceptance is asserted."
+  ],
+  "sourceDigests": {
+    "lib/tournament-consolation.ts": "a298de15231ef5d6b271d6c593f2b9035412ed3ffb4061bb26980fc493e45749",
+    "lib/tournament-management.ts": "002127c2bb31940f6c9192f0a40896bfe275a4495b49c826ebcad39d8bc8639e",
+    "lib/tournament-formats.ts": "4912a487c699e3f2e950ad6fbabd6093107e8372f920749234cd8728b06aabec",
+    "lib/platform.ts": "ceb1ed362bb6fd9d1a0e32a2584fd9a725edd6d7f19c0e900d209a8479a4fb4d",
+    "lib/platform-store.ts": "db881449d13ce71898486eeb7fc0c0011361fbc4374ceb620747ce3ef65a2fde",
+    "lib/platform-types.ts": "3adf4a95f79bf0f7ab2ff3dde8ced40ef2c60d9a0b95f0f5d62c58543ccf10d1",
+    "lib/ranking-service-domain.ts": "f8f5f69e2373a1d6bf73cd2a6fa506abab914824fb057e11d725cc166e7aa8a9",
+    "lib/ranking-seasons.ts": "776adc12956098cc7d665898801d9d75a6751e2fc8ef6b6c3ef14572012c74cc",
+    "components/tournament-management-panel.tsx": "610fcd64abc877036a75b8e1b789cb054d0734071d079230f52d459fa1ce1eea",
+    "tests/tournament-management.test.ts": "6e7106ef58081d204699ef52a9b5e68d82abace29e3eb5f7e3f523351355e054",
+    "tests/tournament-management-db.test.ts": "514b35293e712e6a38487b0eace642534f8ee6de413aec1809b79634741c15e4",
+    "tests/ranking-service-db.test.ts": "bd7e9e7891ac2175fd565612a2880f67d7d90bcbf107cc710fde49ca1e3d21b7",
+    "tests/ranking-seasons-db.test.ts": "bce58017bd2174abd6d8d4320cc3eec8089caf73038c48bfe76c494f3ea278f6"
+  }
+}

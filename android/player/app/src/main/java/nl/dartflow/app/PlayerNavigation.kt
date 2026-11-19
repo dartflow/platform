@@ -23,18 +23,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-internal enum class PlayerNavIcon { HOME, PLAY, EVENTS, FRIENDS, MORE, BELL, QR, FORWARD }
+internal enum class PlayerNavIcon { HOME, PLAY, EVENTS, COMPETITIONS, FRIENDS, MORE, BELL, QR, FORWARD }
 
 /** Keep a parent tab active while its detail route is open. */
 internal fun playerNavigationSection(screen: PlayerScreen, activeId: String?): PlayerNavIcon = when (screen) {
-    PlayerScreen.HOME, PlayerScreen.FEED -> PlayerNavIcon.HOME
-    PlayerScreen.PLAY, PlayerScreen.BOARDS, PlayerScreen.BOARD, PlayerScreen.LOBBY, PlayerScreen.MATCH, PlayerScreen.TRAINING -> PlayerNavIcon.PLAY
-    PlayerScreen.EVENTS, PlayerScreen.EVENT, PlayerScreen.SEASONS, PlayerScreen.SEASON -> PlayerNavIcon.EVENTS
-    PlayerScreen.FRIENDS -> PlayerNavIcon.FRIENDS
+    PlayerScreen.HOME -> PlayerNavIcon.HOME
+    PlayerScreen.PLAY, PlayerScreen.LOCATIONS, PlayerScreen.BOARDS, PlayerScreen.BOARD, PlayerScreen.LOBBY, PlayerScreen.MATCH, PlayerScreen.TRAINING -> PlayerNavIcon.PLAY
+    PlayerScreen.EVENTS, PlayerScreen.EVENT, PlayerScreen.ORGANIZE, PlayerScreen.DIRECTOR -> PlayerNavIcon.EVENTS
+    PlayerScreen.SEASONS, PlayerScreen.SEASON, PlayerScreen.SEASON_CREATE -> PlayerNavIcon.COMPETITIONS
+    PlayerScreen.FRIENDS -> PlayerNavIcon.MORE
     PlayerScreen.CHAT -> when (activeId?.substringBefore(':')) {
         "match" -> PlayerNavIcon.PLAY
         "club", "tournament", "league" -> PlayerNavIcon.EVENTS
-        else -> PlayerNavIcon.FRIENDS
+        else -> PlayerNavIcon.MORE
     }
     else -> PlayerNavIcon.MORE
 }
@@ -52,7 +53,7 @@ internal fun playerNavigationSection(screen: PlayerScreen, activeId: String?): P
             when (icon) {
                 PlayerNavIcon.HOME -> { path(3f to 10f, 12f to 3f, 21f to 10f); path(5f to 9f, 5f to 21f, 10f to 21f, 10f to 15f, 14f to 15f, 14f to 21f, 19f to 21f, 19f to 9f) }
                 PlayerNavIcon.PLAY -> { listOf(9f, 5f).forEach { drawCircle(color, it, Offset(12f, 12f), style = stroke) }; drawCircle(color, 1.6f, Offset(12f, 12f)); line(16f, 8f, 22f, 2f) }
-                PlayerNavIcon.EVENTS -> { drawRoundRect(color, Offset(3f, 5f), Size(18f, 16f), CornerRadius(2f), style = stroke); line(3f, 10f, 21f, 10f); line(8f, 3f, 8f, 7f); line(16f, 3f, 16f, 7f); listOf(8f to 14f, 13f to 14f, 8f to 18f, 13f to 18f).forEach { drawCircle(color, .8f, Offset(it.first, it.second)) } }
+                PlayerNavIcon.EVENTS, PlayerNavIcon.COMPETITIONS -> { drawRoundRect(color, Offset(3f, 5f), Size(18f, 16f), CornerRadius(2f), style = stroke); line(3f, 10f, 21f, 10f); line(8f, 3f, 8f, 7f); line(16f, 3f, 16f, 7f); listOf(8f to 14f, 13f to 14f, 8f to 18f, 13f to 18f).forEach { drawCircle(color, .8f, Offset(it.first, it.second)) } }
                 PlayerNavIcon.FRIENDS -> { drawCircle(color, 3.2f, Offset(9f, 7f), style = stroke); drawCircle(color, 2.5f, Offset(17f, 9f), style = stroke); drawArc(color, 180f, 180f, false, Offset(2f, 13f), Size(14f, 13f), style = stroke); drawArc(color, 255f, 105f, false, Offset(13f, 15f), Size(9f, 10f), style = stroke) }
                 PlayerNavIcon.MORE -> { line(4f, 6f, 20f, 6f); line(4f, 12f, 20f, 12f); line(4f, 18f, 20f, 18f) }
                 PlayerNavIcon.BELL -> { path(5f to 17f, 7f to 14f, 7f to 9f); drawArc(color, 180f, 180f, false, Offset(7f, 4f), Size(10f, 10f), style = stroke); path(17f to 9f, 17f to 14f, 19f to 17f, 5f to 17f); drawArc(color, 0f, 180f, false, Offset(10f, 18f), Size(4f, 4f), style = stroke); line(12f, 2f, 12f, 4f) }

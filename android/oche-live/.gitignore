@@ -4,3 +4,4 @@
 *.jks
 *.keystore
 *.p12
+/.kotlin/

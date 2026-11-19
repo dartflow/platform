@@ -1,3 +1,9 @@
+import{publicBullStart}from'./bull-start';
+import {matchEventNotice} from './event-display-notice';
+import {readPublicPrecall} from './competition-precalls';
+import {readSeasonDisplay} from './season-display';
+import {assignedBoardMatch} from './board-match-projection';
+import {publicMatchSides,publicMatchVisit,publicMatchSettings,matchParticipants} from './match-sides';
 import {getOcheStatistics} from './player-statistics-db';
 import {calculatePlayerMeasures,currentPlayerProfiles} from './player-statistics';
 import { randomUUID } from 'node:crypto';
@@ -17,7 +23,7 @@ type BoardRow = {board_id:string;club_id:string;event_id:string;name:string;acce
 const boardSelect = `select cb.*,b.name,b.blocked,c.name as club_name,coalesce(ce.state->>'lifecycle','active') as club_lifecycle,ce.owner_id,cm.role,cm.status,core.role as core_role,lb.location_id,lb.closed_at,lb.close_after_session,
  (l.owner_id=$1 or exists(select 1 from dartflow_private.location_members lm where lm.location_id=l.id and lm.user_id=$1)) as physical_manage,
  exists(select 1 from dartflow_private.platform_relationships r where r.kind='block' and ((r.source_id=$1 and r.target_id=ce.owner_id) or(r.target_id=$1 and r.source_id=ce.owner_id))) as owner_blocked,
- (m.id is not null or exists(select 1 from dartflow_private.platform_entities pe where pe.state->>'boardId'=b.id::text and coalesce(pe.state->>'closed','false')<>'true' and (pe.state->>'boardLeaseUntil')::bigint>floor(extract(epoch from now())*1000) and ((pe.kind='lobby' and pe.state->>'matchId' is null) or(pe.kind='training' and pe.state->>'boardHeld'='true')))) as occupied,
+ (m.id is not null or exists(select 1 from dartflow_private.board_activity_links al join dartflow_private.board_activity_sessions ac on ac.id=al.session_id where al.board_id=b.id and ac.status in('active','completed')) or exists(select 1 from dartflow_private.platform_entities pe where pe.state->>'boardId'=b.id::text and coalesce(pe.state->>'closed','false')<>'true' and (pe.state->>'boardLeaseUntil')::bigint>floor(extract(epoch from now())*1000) and ((pe.kind='lobby' and pe.state->>'matchId' is null) or(pe.kind='training' and pe.state->>'boardHeld'='true')))) as occupied,
  m.state from dartflow_private.club_boards cb join dartflow_private.boards b on b.id=cb.board_id and b.event_id=cb.event_id
  join dartflow_private.clubs c on c.id=cb.club_id join dartflow_private.events e on e.id=cb.event_id and e.club_id=cb.club_id
  join dartflow_private.platform_entities ce on ce.id=cb.club_id and ce.kind='club'
@@ -98,28 +104,28 @@ function statsForDisplay(stats:Stats[]):Stats[]{return stats.map(s=>({total:s.to
 export async function getClubBoardScreen(boardId:string,client?:Client):Promise<ClubBoardScreenView>{
  if(!client){const connection=await database().connect();try{await connection.query('begin isolation level repeatable read read only');const result=await getClubBoardScreen(boardId,connection);await connection.query('commit');return result;}catch(error){await connection.query('rollback');throw error;}finally{connection.release();}}
  const id=uuid(boardId);
- const {rows}=await client.query<{name:string;blocked:boolean;access:'all'|'club';club_name:string;state:MatchState|null}>(`select b.name,b.blocked,cb.access,c.name as club_name,m.state from dartflow_private.club_boards cb
+ const {rows}=await client.query<{event_id:string;name:string;blocked:boolean;access:'all'|'club';club_name:string;state:MatchState|null}>(`select b.event_id,b.name,b.blocked,cb.access,c.name as club_name,m.state from dartflow_private.club_boards cb
   join dartflow_private.boards b on b.id=cb.board_id and b.event_id=cb.event_id join dartflow_private.clubs c on c.id=cb.club_id
   left join dartflow_private.matches m on m.board_id=b.id where cb.board_id=$1`,[id]);
  if(!rows.length)throw new DomainError('not_found','Deze verenigingsbaan bestaat niet.',404);
  const rawActivity=await readBoardActivity(client,id);
- if(!rows[0].state&&rawActivity?.sourceKind==='match'&&['active','warning'].includes(rawActivity.phase))rows[0].state=(await client.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[rawActivity.sourceId])).rows[0]?.state??null;
+ rows[0].state=await assignedBoardMatch(client,id);
  const row=rows[0],lease=await boardLease(client,id),occupied=Boolean(row.state||lease),location=await locationScreenContext(client,id,row.state?.id??lease?.id);
  let match:PublicSnapshot['match']=null;
  if(row.state){
-  const labels=await client.query<{id:string;name:string}>('select id,name from dartflow_private.profile_labels where id=any($1::uuid[])',[row.state.players.map(p=>p.id)]);
+  const labels=await client.query<{id:string;name:string}>('select id,name from dartflow_private.profile_labels where id=any($1::uuid[])',[matchParticipants(row.state).map(p=>p.id)]);
   row.state=currentPlayerProfiles(row.state,labels.rows);
   const view=matchView(row.state,'',false);
-  const currentLegVisits=visitsForDisplay(view.currentLegVisits??[]);
-  match={id:`board-${id}`,revision:view.revision,status:view.status,players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:currentLegVisits,currentLegVisits,currentLegStartScore:view.currentLegStartScore??view.settings.startScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:{startScore:view.settings.startScore,bestOfLegs:view.settings.bestOfLegs,bestOfSets:view.settings.bestOfSets,...(view.settings.legLimit===undefined?{}:{legLimit:view.settings.legLimit})},writerId:'',stats:statsForDisplay(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
+  const currentLegVisits=(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit));
+  match={id:`board-${id}`,revision:view.revision,status:view.status,...publicMatchSides(view),...publicBullStart(view),...(view.cricket?{cricket:view.cricket}:{}),players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:currentLegVisits,currentLegVisits,currentLegStartScore:view.currentLegStartScore??view.settings.startScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:publicMatchSettings(view.settings),writerId:'',stats:statsForDisplay(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
  }else if(lease?.kind==='training'){
   const game=lease.state.game as Game;
   const profile=await client.query<{name:string}>('select name from dartflow_private.profile_labels where id=$1',[lease.owner_id]);
   const legNumber=game.legs[0]+(game.status==='finished'?0:1),currentLegVisits=visitsForDisplay(game.visits.filter(v=>v.leg===legNumber));
-  match={id:`board-${id}`,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:currentLegVisits,currentLegVisits,currentLegStartScore:game.startScore,winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},writerId:'',stats:statsForDisplay([{...game.stats[0],average:calculatePlayerMeasures([game],lease.owner_id).average??0}]),legNumber,setNumber:1,paused:false};
+  match={id:`board-${id}`,revision:lease.revision,status:game.status==='finished'?'result':'live',...(game.cricket?{cricket:game.cricket}:{}),players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'&&game.discipline!=='cricket'&&(game.outRule??'double')==='double'?checkout(game.remaining[0]):null,visits:currentLegVisits,currentLegVisits,currentLegStartScore:game.startScore,winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1,...(game.discipline?{discipline:game.discipline}:{}),...(game.cricketMode?{cricketMode:game.cricketMode}:{}),...(game.inRule?{inRule:game.inRule}:{}),...(game.outRule?{outRule:game.outRule}:{}),...(game.sideStartScores?{sideStartScores:game.sideStartScores}:{})},writerId:'',stats:statsForDisplay([{...game.stats[0],average:calculatePlayerMeasures([game],lease.owner_id).average??0}]),legNumber,setNumber:1,paused:false};
  }
  const blocked=row.blocked||Boolean(location?.physical.archived_at);
  const closed=Boolean(location?.physical.closed_at),closePending=Boolean(location?.physical.close_after_session),activity=publicBoardActivity(rawActivity);
  const statistics=await getOcheStatistics(client,{boardId:id,state:row.state,lobbyId:lease?.kind==='lobby'?lease.id:null,allowRecap:!row.state&&!lease&&!blocked&&!closed&&!closePending&&!location?.reservation});
- return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied,closed,closePending,publicScan:row.access==='all'&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:closed?'closed':match?'playing':lease?'waiting':blocked?'blocked':closePending?'closed':location?.reservation?'reserved':'available',snapshot:{board:{id,name:row.name},event:{name:location?.reservation?.label??row.club_name},match,...(statistics?{statistics}:{}),...(activity?{boardActivity:activity}:{}),...await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
+ return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied,closed,closePending,publicScan:row.access==='all'&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:closed?'closed':match?'playing':lease?'waiting':blocked?'blocked':closePending?'closed':location?.reservation?'reserved':'available',snapshot:{board:{id,name:row.name},event:{name:[location?.reservation?.label??row.club_name,await matchEventNotice(client,row.state?.id)].filter(Boolean).join(' · ')},match,...await readSeasonDisplay(client,row.state?.id),...await readPublicPrecall(client,id,row.state?.eventId??row.event_id),...(statistics?{statistics}:{}),...(activity?{boardActivity:activity}:{}),...await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision)},...(location?.reservation?{reservation:location.reservation}:{})};
 }

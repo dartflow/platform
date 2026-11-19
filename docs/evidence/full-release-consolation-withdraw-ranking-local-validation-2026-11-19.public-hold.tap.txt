@@ -1,0 +1,35 @@
+TAP version 13
+# Subtest: tournament draw revisions, sporting pool decisions and bronze use genuine canonical matches
+    # Subtest: random/seeded/manual snapshots preserve exact check-in, seed evidence, meaningful redraw reason and current-role retry ACL
+    ok 1 - random/seeded/manual snapshots preserve exact check-in, seed evidence, meaningful redraw reason and current-role retry ACL
+      ---
+      duration_ms: 3301.48921
+      type: 'test'
+      ...
+    # Subtest: four real pools wait for a three-way mini-table, genuine BO5 pool/KO decisions and explicit round releases
+    ok 2 - four real pools wait for a three-way mini-table, genuine BO5 pool/KO decisions and explicit round releases
+      ---
+      duration_ms: 8957.999527
+      type: 'test'
+      ...
+    # Subtest: deadline acknowledgment is explicit and the post-draw plan contains only the real fixture identities and dependencies
+    ok 3 - deadline acknowledgment is explicit and the post-draw plan contains only the real fixture identities and dependencies
+      ---
+      duration_ms: 140.06289
+      type: 'test'
+      ...
+    1..3
+ok 1 - tournament draw revisions, sporting pool decisions and bronze use genuine canonical matches
+  ---
+  duration_ms: 12557.252581
+  type: 'test'
+  ...
+1..1
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12935.295929

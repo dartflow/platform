@@ -61,6 +61,7 @@ jobs:
           python3 -B android/oche-live/ci/test_play_release.py
           python3 -B android/player/ci/test_check_release_readiness.py
           python3 -B android/player/ci/test_verify_receipt.py
+          python3 -B android/player/ci/test_firebase_config.py
       - run: npm run test:deploy
       - name: Verify privileged bootstrap contracts without host mutations
         run: |

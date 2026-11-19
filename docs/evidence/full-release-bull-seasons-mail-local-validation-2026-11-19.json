@@ -1,0 +1,67 @@
+{
+  "checkedAt": "2026-11-19T17:09:32.296982+00:00",
+  "scope": "Local loopback PostgreSQL, runtime app role service integration, pure engine and mail regression; no hosted deployment or device/store acceptance",
+  "baseCommit": "6b5b108727d955dadcb2c155aecb411b74b870e6",
+  "uncommittedSources": true,
+  "commands": {
+    "tests": "npx tsx --test --test-concurrency=1 tests/bull-start.test.ts tests/domain.test.ts tests/seasons.test.ts tests/seasons-formats-db.test.ts tests/player-pin-db.test.ts tests/integrations.test.ts tests/integrations-db.test.ts",
+    "types": "npx tsc --noEmit --incremental false",
+    "lint": "npx eslint lib/bull-start.ts lib/season-rules.ts lib/season-reminders.ts lib/domain.ts lib/types.ts lib/seasons.ts lib/seasons-domain.ts lib/seasons-types.ts lib/integrations-mail.ts lib/integrations-catalog.ts components/bull-start-panel.tsx components/season-component-rules.tsx components/season-workspace.tsx tests/bull-start.test.ts tests/seasons-formats-db.test.ts tests/player-pin-db.test.ts tests/integrations.test.ts"
+  },
+  "result": {
+    "tests": 96,
+    "passed": 96,
+    "failed": 0,
+    "skipped": 0,
+    "typecheck": "pass",
+    "focusedLint": "pass"
+  },
+  "proved": [
+    "Legacy clients without startProcedure retain existing start behavior. Explicit bull/one-time server lot/home-first are stored canonically.",
+    "DB/SB/outside ranking; ties reverse order. Separate two-side confirmation; no fabricated score visits or darts.",
+    "Real official three-set match with two real rebulls; per-set versus continuous leg opener rule and real score/result signatures.",
+    "Real encrypted PIN verification links local companion; explicit separate companion bull action is limited to its bound local writer, audited and refused to outsiders.",
+    "Real clubboard display projects the canonical bull; public whitelist removes injected future actor/token/evidence fields at nested levels in pure test.",
+    "Internal seven-component team season sends published slot-specific double-in/master-out and 301/701 handicap into an actual double with rotating real throwers and real per-dart finish, outside individual Elo; post-start mutation is rejected.",
+    "National custom in/out/handicap/component rules are refused; classification deciders discard recreational handicap and keep their specific BO5 profile.",
+    "Accepted season times produce one canonical reminder per fixture/time/recipient, not one per projected team slot. Pending proposals do not produce a reminder.",
+    "Competition opt-out suppresses reminders. Planner retry deduplicates. Current source eligibility checks reject changed, canceled, completed and extended-window references.",
+    "Expired windows create a persisted follow-up without automatic sanction; manager and participants are notified; only current management can extend with a reason.",
+    "Existing mail transport regression remains green. Native push receives deduplicated domain events and uses the same fresh source applicability helper."
+  ],
+  "limitations": [
+    "No real-device Android or Oche installation/run claimed.",
+    "No actual hosted authentication/read smoke has run; installed helper remains dormant.",
+    "No external email or FCM delivery is claimed by these tests.",
+    "New browser forms are implemented but this report does not claim a browser UI execution for those new controls."
+  ],
+  "logs": [
+    "full-release-bull-seasons-mail-local-2026-11-19.tap.txt",
+    "full-release-bull-seasons-mail-local-2026-11-19.lint.txt",
+    "full-release-bull-seasons-mail-local-2026-11-19.tsc.txt"
+  ],
+  "sourceSha256": {
+    "lib/bull-start.ts": "1d7434693000df1502d921abeda2c6175d64c23eaf8fb13432669ea6a876c262",
+    "lib/season-rules.ts": "ded2430757682ce4c17f09fecb49a9969929d17c2010ed4341f5a3a66ab7271c",
+    "lib/season-reminders.ts": "c8fa9b38fbf73d7bb1850b26e418802f80e771d5a072ce4337271a844a5ec31f",
+    "lib/domain.ts": "d2ea0c2d1dfc0a0ef3a4f1486ee1074443e0b5d0479eafd18d63612a9bcfa708",
+    "lib/types.ts": "4f791b02fd89135690959fbcae211264c1b85b0f0a4f88784f5e588b7aabd190",
+    "lib/seasons.ts": "298a4bd74e7c7ea4b43a3a030a67079501afcc4c101ada8818cfd630b6e5186d",
+    "lib/seasons-domain.ts": "ab89295c2332418f90d046e62aac63f60c8828885a718cbd91e7f521d13ba562",
+    "lib/seasons-types.ts": "d13859356b5a41eca14cbf678ea861240933e81cc88fc9f684ee1fce1ae08b1e",
+    "lib/integrations-mail.ts": "01f3330cab4a888cd9ada06a819747a7c92d4caf97eb646710940a36b3223b7a",
+    "lib/integrations-catalog.ts": "1f40cd33f5b4cf8445d89e45733cda6f7a02f32d5df073dd2c23b82671146e78",
+    "components/bull-start-panel.tsx": "6937a82a421766f1bae78a30e856364c41937b95d5b10f593dcca2982e73e56a",
+    "components/season-component-rules.tsx": "3cae62b7fc2b96da0598ccad2dc32b5f1b0536265526765b9e8d1f7448501a3d",
+    "components/season-workspace.tsx": "676b2b786857063a9cdbe6df115706a76aa1337dd9246bc7eac631d70297669d",
+    "tests/bull-start.test.ts": "c495cc6bd6341416ad83fed65d2c5b9f536bc112aff50a966b04a431d367f9a4",
+    "tests/seasons-formats-db.test.ts": "9967179cbc7edb0b1e461171acc166160298f625f4954c1505ea4a0b90b8fec1",
+    "tests/player-pin-db.test.ts": "0a9b3b2395273d9ea2e8f5cae176d483ce1289d2df1c9b2a454b5685e7353e49",
+    "tests/integrations.test.ts": "2ea6a4f3308141248d62861b413103c6a5db8b79cc75e701b9e5323098ee4988"
+  },
+  "logSha256": {
+    "full-release-bull-seasons-mail-local-2026-11-19.tap.txt": "21ca82d1bbe5fc6f149d68b811eb73c792605b269ea9f9c4854862e68f86fa67",
+    "full-release-bull-seasons-mail-local-2026-11-19.lint.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "full-release-bull-seasons-mail-local-2026-11-19.tsc.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

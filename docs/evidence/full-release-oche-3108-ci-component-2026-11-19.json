@@ -1,0 +1,60 @@
+{
+  "run": 44579579529,
+  "source": "3108fe55716017f9b77c538803042ac1e0a1cff7",
+  "scope": "branchcomponent; notmainrelease",
+  "ui": [
+    {
+      "target": "google_apis",
+      "jobId": 135760415927,
+      "artifactId": 14559307242,
+      "archiveSha256": "bbdd3322ccb280e0bbde2b224c2471ba0390d26527bca8194d62211d0b38d71d",
+      "githubDigestVerified": true,
+      "report": "google_apis/connected/debug/flavors/staging/index.html",
+      "reportSha256": "6e97c6eab647115f5e403f59a5d071fc4e922f8296e3b5edd402ef7758fce3ca",
+      "metrics": {
+        "tests": 10,
+        "failures": 0,
+        "skipped": 0
+      },
+      "screenshots": [],
+      "jobLogSha256": "f0d19f3a2ce101cd6e5ae5153dc7c08c6c6ea6ec36179c24a77b813f59dd7c42"
+    },
+    {
+      "target": "android-tv",
+      "jobId": 135760415945,
+      "artifactId": 14559985777,
+      "archiveSha256": "0cb999366a0c0c11d15d81c4421f6d2423698a340ddc9a7271dd563683bea983",
+      "githubDigestVerified": true,
+      "report": "android-tv/connected/debug/flavors/staging/index.html",
+      "reportSha256": "c9838ff5c9efed816f9d4eac3e61c275a562cd57757ca6082d2a512e17020ee0",
+      "metrics": {
+        "tests": 10,
+        "failures": 0,
+        "skipped": 0
+      },
+      "screenshots": [],
+      "jobLogSha256": "89a0766140d49e8ef3eadc21d4f095bd978320b24fefbc178cc61cd0256eca81"
+    }
+  ],
+  "collectedAt": "2026-11-19T17:58:31.812035+00:00",
+  "workflowUrl": "https://github.com/dartflow/platform/actions/runs/44579579529",
+  "workflowConclusion": "success",
+  "branch": "codex/full-release-20261119",
+  "releaseEvidence": false,
+  "signingAndPlayJob": "skipped",
+  "buildArtifact": {
+    "id": 14557923303,
+    "name": "oche-android-build-3108fe55716017f9b77c538803042ac1e0a1cff7",
+    "zipSha256": "d404bbfeaab4b23532283093a1dc582dfd314e68c28c3c7e2ea1e782277c1b91",
+    "githubDigestVerified": true,
+    "unsignedBundleSha256": "7b52ceb382892c160b4f291326ce8c3c5241cada548d19027d84f925daac112b",
+    "versionName": "1.1.0",
+    "versionCode": 1015
+  },
+  "verifiedRegressionCoverage": [
+    "alternateRulesShowEachRealStartingScoreInTheMirroredCard",
+    "shortScoreViewportKeepsWinnerAndHandicapsVisibleInBothLayouts",
+    "bullWaitsForActualPhoneConfirmationWithoutShowingAScoreTurn"
+  ],
+  "screenshotsNote": "No screenshots were produced by this workflow; no screenshot or physical-device proof is claimed."
+}

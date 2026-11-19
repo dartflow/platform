@@ -1,0 +1,195 @@
+{
+  "collectedAt": "2026-11-19T16:18:43.388940+00:00",
+  "baselineEvidence": "docs/evidence/full-release-player-local-validation-2026-11-19.json",
+  "status": "local_checks_passed_instrumentation_not_run",
+  "source": {
+    "branch": "codex/full-release-20261119",
+    "baseHead": "62ca750738ac5db075b249a0fd5a49e767bdc5ee",
+    "uncommitted": true,
+    "snapshotMatchesAfterBuild": false,
+    "sha256": {
+      "android/player/app/src/production/AndroidManifest.xml": "7458c1034213c4f6b9e0e4a60fe6fb0a113c24015c88143f604c5e9cd23c762f",
+      "android/player/app/src/main/AndroidManifest.xml": "d22c240470390c1de4f1e1f3906b8f458c0e7e5a6f101b335dd427262e508b87",
+      "android/player/app/src/staging/AndroidManifest.xml": "7458c1034213c4f6b9e0e4a60fe6fb0a113c24015c88143f604c5e9cd23c762f",
+      "android/player/app/src/development/AndroidManifest.xml": "ea9c7b967a45f6d49d79ca8bea010f7b9b15b9d03ad17bad0df4d645757b82c9",
+      "android/player/app/src/test/java/nl/dartflow/app/PlayerMediaReadinessTest.kt": "2f78522f9d8c89c81b5fc262ae0c1dc82a8bf48f67a5cb242c41cdda43109e9b",
+      "android/player/app/src/test/java/nl/dartflow/app/PlayerDataTest.kt": "85e41278841d4931bbdda608630e75a414a06342c4c132172e3fe2ca7934a03f",
+      "android/player/app/src/test/java/nl/dartflow/app/PlayerOrganizerTest.kt": "4dcf4c8173a7cf3a50991541a316b11063c37b31e3f63c4a955a9e0e33115236",
+      "android/player/app/src/test/java/nl/dartflow/app/PlayerScoreSnapshotsTest.kt": "28d61416eb1c955d5bf04afb816608dd1b6fa836048d3737312273aeacd52e9a",
+      "android/player/app/src/test/java/nl/dartflow/app/PlayerHomeFeedTest.kt": "8a38ee2feebd3101bb0ca8093e87c7d7237e6e4726980d1eab8b145d461da3b2",
+      "android/player/app/src/test/java/nl/dartflow/app/PlayerMediaSafetyTest.kt": "bc011c14cdaa7a6e4d1183fa72c86fef115c9cadbb66f775fbef6b8a964d7c6c",
+      "android/player/app/src/test/java/nl/dartflow/app/PlayerSafetyTest.kt": "0ff700ffeeb65dee5ab319d209afb545222d2ce9bb75533b0d5b1b275a56b30a",
+      "android/player/app/src/test/java/nl/dartflow/app/PlayerAuthorizationRaceTest.kt": "796d8ee712db7bc8733ecff68e7041301cc0d143f8717060ae82f238de1ca6c8",
+      "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerReleaseUiTest.kt": "d7ea8db0fdc997b7b8503ded76d2bace0638390b821d55feb88204a11299351d",
+      "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerUiTest.kt": "ebc3ffa57710cbe7b84b1ad47cb8c96ec366702d0ab7808a52893593c3bd5c49",
+      "android/player/app/src/main/res/xml/data_extraction_rules.xml": "4675c7bf08b03d514d0cfb0299ab3d1c44d65aa9dd212857dd595ec825b0efe6",
+      "android/player/app/src/main/res/font/barlow_condensed_800.ttf": "724c9c25952d5f4a2d87185d9767aa006144c5f0d944dc05bf7d5d603551c260",
+      "android/player/app/src/main/res/font/dm_sans_700.ttf": "2a8e7f713ee79fbccdef3cef5c787aff47580299f7da60144961e7db2ec08211",
+      "android/player/app/src/main/res/font/dm_sans_400.ttf": "b0ae3e89a7d3ef2b1838bb4b1ceb0b17cc3435af061eee809d76aa623ff116e9",
+      "android/player/app/src/main/res/drawable/launcher_foreground.png": "6a257fd33feaeea86c7b1a2ec289d4c3a4d5425952b68352622bdd8e06dba893",
+      "android/player/app/src/main/res/drawable/tv_banner.png": "f668222b1f49b2ff3c452f734b42f8f75ae3be8a2d36d0b0cf01b0f51c15a740",
+      "android/player/app/src/main/res/drawable/dartflow_logo.png": "e7ec5e68f3b46df64a89c02623f6898ace6dc1b7996bbee268cb5786dc6d7a65",
+      "android/player/app/src/main/res/drawable/ic_launcher.png": "6a257fd33feaeea86c7b1a2ec289d4c3a4d5425952b68352622bdd8e06dba893",
+      "android/player/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml": "10cde66b01dde7c2b9209683c565e9f872ffff9d369e46f22715b061efc36ba2",
+      "android/player/app/src/main/res/values/strings.xml": "9e00d6ee4573883c93d8448589d2d1dc09335fcfb07a97b708c47ae0d3d3ec37",
+      "android/player/app/src/main/res/values/styles.xml": "c664ee7f357cc61a702bba4aeaab5d9fc62f9c4d3d5bf876a9094d856313584c",
+      "android/player/app/src/main/res/values/colors.xml": "5edd10625195abbb12d340f116cf45b3fa9085d27873200ae7261f9f98bb5202",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerOrganizer.kt": "9bb6c48dbcc9d0603b418b91a5964305552d89bd5f0ab726efd0272d319a266b",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasons.kt": "4b129556ea2039f93b075ca164bdea96d98a2dd88c135dce636e9d3752a03a09",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerRuleFields.kt": "6231c6a56bc1638890ccbb9d787f7c74a5311c6504a91249d6d5692af7b645a4",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerDiscovery.kt": "77bf47e4fc120d7744a6c7c4fa155e8c0784f45b61cabc7faf3deef700d30070",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerPrimaryCorrection.kt": "f123e97c76dddc32bafb3c19b776fbfede41b135bd8fef7092ae9b624d69bd99",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasonRemote.kt": "5b078a9a95b83491ea8666d78671fd21611943f37398e4a37f308720e025ae53",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerRankingManagement.kt": "ce07e8061bc9487e6a17dce43044cec6bbdc7688a611472299dd7eb3ba1c1ff7",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerHomeFeed.kt": "a81665791202502b1dba161db3f87523881a8bdf97e793fd9423f9bdb0b6c0f0",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerScoreSnapshots.kt": "ca2788d4e646a18744a527943ea28d0c8f201c6e6ae7c1b681e12f03bd8eb74f",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasonFormats.kt": "68bd9269d4fbf6f68f43e2c7ae74db57d62c4cc9a2846120ee60ccdd9a5ec4e4",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerLinks.kt": "fdbfb6ea17f7b69f9959d0a1b598eb9c80bd493385da8047ad4440866b5fe0a1",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerLocations.kt": "7dc40055a7f7c57761d2a8a29a60fe2dc1cb29eb1320200ea86cf60391b83a01",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerQrScanner.kt": "d5bd70235ae35855ab2e9c578e210a848c54353035c0afa2b0511bfe3f182073",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerViewModel.kt": "81261ded864aab1ddd3eb6b2b23875f69aafde27b0d03307b54f7dc471686265",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerCircuitQualification.kt": "492d311be9ad224abcbe48d51ba8578053b854fc1f1cbe4c74228573d9840db0",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerFaqAdmin.kt": "915fba335e11ca9ecf1b6bdd0cc70176178be1c0997b33886ae134abf7a6181a",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerRequestAuthorization.kt": "02ad720132283995e4d868a9d44d9ff6bff63b4f964b2cc9dbcb5a478b813861",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerScreens.kt": "99ac83348858284c8abfefc2d5e66788e7fa8140ce86dcbce44eead5b393f8ac",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerQrDecoder.kt": "b33f158a707ee25fc99aad5c8bef1e565dda7ccea5166840e61d62f3820c6c95",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerCloudDrafts.kt": "4afaf237990975c82a1de93a5c3ed5bc6e327cfd8bd99a147c445071421041cf",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerTheme.kt": "25583916fe82d824575830a117a0f24f5fb3fc9dd6a6469b5b2b9eae4f0705ae",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerOrganizerSharing.kt": "0fafe4b2d27632855b822569e35a49c52ddf698e04a4c1e4ce62defa012f20c9",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerReservations.kt": "ed7204edebeebb38a5241a458484b123fc33a40f284ee08636e121a41f19bd74",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerScoreScreen.kt": "1b5b3cab364b50b78f89ac8fd32c26332819202a657c55d91d86cc291b8f4026",
+      "android/player/app/src/main/java/nl/dartflow/app/MainActivity.kt": "ae800d764b0300e74ebf3b845e84fd6b4dcb15538141494b1c899278f9926ec5",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerSessionStore.kt": "78bbb6ceac99f0acb4f14001468e6bc85176a4c985f25aab7440a86bb94e0eb3",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerSafety.kt": "94c0b17d6d9cdcf29c72761ea0e13ebf3eab498c3aa81e7927cb6a97dbf09869",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerApi.kt": "46eb08b35a1872d7cba82de129622bbb3fb6561d84cb9dad4acc9194d8d61069",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasonVacancies.kt": "be092e6409ed8050ea169248655c15fffbe2578cdf5743f0db546b16da40046f",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerModels.kt": "b3013460e0a6bacddce2cc3e52c92304b5e0b7bbcdcbc6fb04b83970f820f40a",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerMediaReadiness.kt": "fdabe944560168265564745277bd72269331449f6b9d5abe3eb01b30b87ac2cd",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerPreCalls.kt": "ce683274c72600e3c7c3358e0e77cb3461c81898abf2fe63abd1fbf7bd2e4d9e",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerNavigation.kt": "91c526627c8bcf049628f551315d458d95a7f23bb6bbf60ae6de157f7b438481",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerDartEntry.kt": "5863060c3f5d11c9b9a3943a43877a39ada32820828dc0995132a935e24b77bf",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerCricket.kt": "e2679be29902e97404e5140e259f699401e70ad9e810214f8add1c2bb23982b5",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerMediaRoom.kt": "0ab9cef2f0ceed07f54b1f243d07b764e164c9b3f7e0a86880c350936672215c",
+      "android/player/app/src/main/assets/licenses/DM-Sans-OFL.txt": "7ec15e79c59bc14b86436a17e5eb7926b46cbcaeb08e1a7e6c110b415e6eb2a2",
+      "android/player/app/src/main/assets/licenses/Barlow-Condensed-OFL.txt": "10b0e6bb43166a50fbe7cde2895bd7f703738a5da843acb5c97c95dc9ea26817",
+      "android/player/app/src/development/res/xml/development_network.xml": "bd3792939342d9260dc069f44446e36c49d7987d2f1d268b6207cb91026d6b99",
+      "android/player/version.properties": "7892f9a72f615e06ca2ba73a94f015e4210bb69855fca7214ff798ae84824e0f",
+      "android/player/app/build.gradle.kts": "5784640ffde2ccc6c51cfb8159d960481791e0db6e8667a0ee13abaf0a4818ac",
+      "lib/native-player.ts": "411373a6c1a1e9d5fc0ea4a2fba1db965d6cad510a250bc40ce6053f87574e50",
+      "tests/native-player.test.ts": "a697d77effeed53ce88ec641a78c3be80027751175fd0fe7a606bc54339323ac"
+    },
+    "postBuildNonfunctionalChanges": [
+      {
+        "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerRankingManagement.kt",
+        "compiledSha256": "c23755c874a1d1c1eb20f7fd1f80f172534689bacb9d32ec0199ba332078efd5",
+        "currentSha256": "ce07e8061bc9487e6a17dce43044cec6bbdc7688a611472299dd7eb3ba1c1ff7",
+        "change": "Removed 1 blank EOF line(s) after successful build; no other byte changes. Parent normalized EOF before staging.",
+        "mechanicallyVerifiedOnlyTrailingNewlinesRemoved": true,
+        "rebuildRequiredForExecutableBehavior": false
+      }
+    ]
+  },
+  "version": {
+    "versionName": "0.2.0",
+    "localDefaultVersionCode": 5,
+    "stagingPackage": "nl.dartflow.app.staging",
+    "productionPackage": "nl.dartflow.app",
+    "signingConfigurationChanged": false
+  },
+  "checks": {
+    "gradleResult": "BUILD SUCCESSFUL in 2m 27s",
+    "gradleTasks": [
+      "lintDevelopmentDebug",
+      "testDevelopmentDebugUnitTest",
+      "assembleDevelopmentDebug",
+      "compileDevelopmentDebugAndroidTestKotlin",
+      "lintStagingDebug",
+      "testStagingDebugUnitTest",
+      "assembleStagingDebug",
+      "lintProductionDebug",
+      "testProductionDebugUnitTest",
+      "bundleProductionRelease"
+    ],
+    "unitTests": {
+      "DevelopmentDebug": {
+        "tests": 85,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "StagingDebug": {
+        "tests": 85,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "ProductionDebug": {
+        "tests": 85,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "lint": "development, staging and production debug lint passed; production release lintVital passed",
+    "nativeApi": {
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "command": "node --import tsx --test tests/native-player.test.ts"
+    },
+    "instrumentation": {
+      "compiled": true,
+      "declaredTests": 52,
+      "executedLocally": false,
+      "reason": "adb reports no connected device and /dev/kvm is absent; actual Android phone CI remains required."
+    }
+  },
+  "artifacts": {
+    "android/player/app/build/outputs/apk/development/debug/app-development-debug.apk": {
+      "sha256": "477f65842294ef283eeb69606d5fd00ceb3f489af9f26aab415195458314fd54",
+      "bytes": 61781790,
+      "signing": "debug"
+    },
+    "android/player/app/build/outputs/apk/staging/debug/app-staging-debug.apk": {
+      "sha256": "0b99c3d71f741bc396f15f2fbf35eef920a19773e1d099051d5712d0f8e5122e",
+      "bytes": 61780619,
+      "signing": "debug"
+    },
+    "android/player/app/build/outputs/bundle/productionRelease/app-production-release.aab": {
+      "sha256": "59fa8970b674f2bcb301c6803479a1a2c8820938dbafa10853f2a427c1b594db",
+      "bytes": 26798654,
+      "signing": "unsigned local validation artifact"
+    }
+  },
+  "contextFileSha256": {
+    "android/player/README.md": "f587f9b91a36d274d9c1d1a72e956776ab56f245040429ae0545896667f54825",
+    "android/player/.gitignore": "42dbc6120f9856c56f91209e44fd71f8d6529c11c5f789dcc58e7928bf7a32d1"
+  },
+  "scope": [
+    "Personal/club/platform tournament wizard, explicit visibility and check-in-only draw",
+    "Swiss and both double-elimination variants, event director and empty copy/coorganizer controls",
+    "Shared public FAQ search, admin publication/history and native Help links",
+    "Account-bound cloud drafts and persistent native navigation/form state",
+    "Rating/circuit list selection, policy/declarations/consent/current destination/history management",
+    "Native seasons: doubles, team seven components, cup, ladder, drop-in, Champions and nomination/reserve/transfer flows",
+    "Divisions, qualification, rating snapshot, promotion plans and rightful vacancy procedures",
+    "Explicit changed-roster consent with displayed own match versions",
+    "Circuit top-eight qualification, true deciders, stale generation protection and separate finale",
+    "Primary-result correction, evidence/moment/response/appeal/closure timeline and repair capabilities",
+    "Physical home/venue locations, managers, boards, precise reservation request/review/cancel and captured revision",
+    "Remote side board/writer assignment and native actual-frame/RTC camera readiness heartbeat",
+    "Canonical side names, partners/current thrower, Cricket marks/points/MPR and separate team contribution statistics",
+    "Optional X01 in/out/handicap and observed per-dart score entry in match/board/solo",
+    "Own precall expectation and director occupied-board precall without replacing the active match",
+    "DartFlow/Onze Trots per-device theme choice"
+  ],
+  "notVerified": [
+    "Instrumentation execution locally",
+    "Real two-device camera/microphone/network acceptance",
+    "Physical QR/App Links/auth/upgrade acceptance",
+    "Play signing, internal or production publication"
+  ],
+  "physicalCameraAcceptance": false,
+  "playPublished": false
+}

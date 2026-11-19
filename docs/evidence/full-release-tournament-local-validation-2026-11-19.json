@@ -1,0 +1,32 @@
+{
+  "collectedAt": "2026-11-19T15:51:19.284354+00:00",
+  "source": "Uncommitted release work; final release manifest must name the tested integration SHA.",
+  "command": "npx tsx --test tests/tournament-formats.test.ts tests/platform-domain.test.ts tests/oche-scorecard.test.ts",
+  "tests": 28,
+  "passed": 28,
+  "failed": 0,
+  "skipped": 0,
+  "executedLocally": true,
+  "completePlatformAcceptance": false,
+  "checks": [
+    "144 complete double-elimination brackets: 2 through 33, 64, 65, 127 and 128 entrants; both final variants and both grand-final winners.",
+    "19 entrants, five complete Swiss rounds, byes without fictional match/legs/opponent.",
+    "Full lexicographic weighted matching compared with exhaustive independent pairings.",
+    "K3,3 history leaves two odd triangles and forces exactly one announced rematch.",
+    "128 entrants fully matched without an exponential solver.",
+    "Frozen round count, duplicate/incomplete rounds, source draw and unrelated source winner fail safely.",
+    "Handicap start scores remain on their own scorecard side when the active player changes."
+  ],
+  "dependencies": {
+    "edmonds-blossom": "1.0.0 (MIT), pinned by package-lock integrity"
+  },
+  "sourceDigests": {
+    "lib/tournament-formats.ts": "edeefb70bbfaa58ea5a68f852f5507690dc0d7d546f4860c2b3727638b58902d",
+    "lib/platform-domain.ts": "e28b238834aa5c80f79077a5b903350cbf28983a40a38c38bc8f871d9be4d202",
+    "lib/platform-types.ts": "cbc14ec8e6bd3338b7c5e0edde9c47102f96878ab954ae3803060b47ee086f9a",
+    "tests/tournament-formats.test.ts": "7fc4e649aae55ab26b02d94676ce61d129557d4ededf4b6294ca13b7c90cd480",
+    "tests/platform-domain.test.ts": "85b382273801c5952ab9fc17755a2242e689cb9a32f445e90489a7c84feb9a81",
+    "tests/oche-scorecard.test.ts": "a3fac3edd9112d2d0eccd92f0f6462ed911dfcbfcb2ded28d3cc8565d154925f"
+  },
+  "logSha256": "5f26ee1502ca8851e728774ce48e49795092c0685e737672bb7717304169e03a"
+}

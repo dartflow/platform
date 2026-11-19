@@ -1,0 +1,212 @@
+TAP version 13
+# Subtest: published national seven-component encounters book selected singles only after captain confirmation and replay season corrections
+    # Subtest: recognition sees the published hidden-lineup template and requires each own participant acceptance before a ranked single starts
+    ok 1 - recognition sees the published hidden-lineup template and requires each own participant acceptance before a ranked single starts
+      ---
+      duration_ms: 1138.61593
+      type: 'test'
+      ...
+    # Subtest: four singles, two doubles and one team game keep zero rating until the second captain then book four sources once per destination
+    ok 2 - four singles, two doubles and one team game keep zero rating until the second captain then book four sources once per destination
+      ---
+      duration_ms: 4386.324155
+      type: 'test'
+      ...
+    # Subtest: captain dispute retracts all encounter books, independent acceptance restores only those sources and manual ranking exclusions remain excluded
+    ok 3 - captain dispute retracts all encounter books, independent acceptance restores only those sources and manual ranking exclusions remain excluded
+      ---
+      duration_ms: 159.507443
+      type: 'test'
+      ...
+    # Subtest: independent season reopening preserves admission, withdraws the encounter and books a changed real winner only after fresh captain signatures
+    ok 4 - independent season reopening preserves admission, withdraws the encounter and books a changed real winner only after fresh captain signatures
+      ---
+      duration_ms: 878.473089
+      type: 'test'
+      ...
+    # Subtest: withdrawing a team keeps every confirmed canonical single and its existing official rating source and generation unchanged
+    ok 5 - withdrawing a team keeps every confirmed canonical single and its existing official rating source and generation unchanged
+      ---
+      duration_ms: 107.345265
+      type: 'test'
+      ...
+    # Subtest: an admitted unthrown reserve keeps the canonical match, archives its proof and requires both actual new players to accept the explicit roster version
+    ok 6 - an admitted unthrown reserve keeps the canonical match, archives its proof and requires both actual new players to accept the explicit roster version
+      ---
+      duration_ms: 985.130203
+      type: 'test'
+      ...
+    1..6
+ok 1 - published national seven-component encounters book selected singles only after captain confirmation and replay season corrections
+  ---
+  duration_ms: 8115.357885
+  type: 'test'
+  ...
+# Subtest: four official destinations use one sport source, immutable admission and atomic correction generations
+    # Subtest: club authority is scoped, personal sources stay excluded, declaration conflicts block publication
+    ok 1 - club authority is scoped, personal sources stay excluded, declaration conflicts block publication
+      ---
+      duration_ms: 680.084229
+      type: 'test'
+      ...
+    # Subtest: one confirmed source books both ratings and both circuits without invented fieldsize points
+    ok 2 - one confirmed source books both ratings and both circuits without invented fieldsize points
+      ---
+      duration_ms: 81.647685
+      type: 'test'
+      ...
+    # Subtest: a correction atomically replays later opponents, retains the old generation and enforces independent review/revisions
+    ok 3 - a correction atomically replays later opponents, retains the old generation and enforces independent review/revisions
+      ---
+      duration_ms: 573.338702
+      type: 'test'
+      ...
+    # Subtest: best five selection is rebuilt from six real events and official rematches do not use the free cap
+    ok 4 - best five selection is rebuilt from six real events and official rematches do not use the free cap
+      ---
+      duration_ms: 2065.881619
+      type: 'test'
+      ...
+    # Subtest: guest winners keep their real placing while club members keep their actual lower place
+    ok 5 - guest winners keep their real placing while club members keep their actual lower place
+      ---
+      duration_ms: 441.055119
+      type: 'test'
+      ...
+    # Subtest: a complete sixteen-starter event crosses the real national field threshold exactly once
+    ok 6 - a complete sixteen-starter event crosses the real national field threshold exactly once
+      ---
+      duration_ms: 5455.834265
+      type: 'test'
+      ...
+    # Subtest: Swiss and both double-elimination final variants publish real completed event circuit places
+    ok 7 - Swiss and both double-elimination final variants publish real completed event circuit places
+      ---
+      duration_ms: 6128.236099
+      type: 'test'
+      ...
+    # Subtest: Cricket club rating books its actual marks game without changing any X01 destination
+    ok 8 - Cricket club rating books its actual marks game without changing any X01 destination
+      ---
+      duration_ms: 400.507347
+      type: 'test'
+      ...
+    # Subtest: an independent primary correction withdraws all destinations, preserves proof and replays the changed actual winner
+    ok 9 - an independent primary correction withdraws all destinations, preserves proof and replays the changed actual winner
+      ---
+      duration_ms: 967.567239
+      type: 'test'
+      ...
+    # Subtest: a played dependent final is held, archived and replayed with canonical participants after independent repair
+    ok 10 - a played dependent final is held, archived and replayed with canonical participants after independent repair
+      ---
+      duration_ms: 1751.253325
+      type: 'test'
+      ...
+    # Subtest: a separate real consolation title preserves main circuit places and does not inherit broad match rating admission
+    ok 11 - a separate real consolation title preserves main circuit places and does not inherit broad match rating admission
+      ---
+      duration_ms: 1628.455416
+      type: 'test'
+      ...
+    # Subtest: event copies contain only empty settings and coorganizers keep one bounded current event scope
+    ok 12 - event copies contain only empty settings and coorganizers keep one bounded current event scope
+      ---
+      duration_ms: 78.942395
+      type: 'test'
+      ...
+    # Subtest: closing a list preserves approved event promises and writes its reason to a private immutable audit
+    ok 13 - closing a list preserves approved event promises and writes its reason to a private immutable audit
+      ---
+      duration_ms: 51.140086
+      type: 'test'
+      ...
+    1..13
+ok 2 - four official destinations use one sport source, immutable admission and atomic correction generations
+  ---
+  duration_ms: 20523.496158
+  type: 'test'
+  ...
+# Subtest: tournament draw revisions, sporting pool decisions and bronze use genuine canonical matches
+    # Subtest: random/seeded/manual snapshots preserve exact check-in, seed evidence, meaningful redraw reason and current-role retry ACL
+    ok 1 - random/seeded/manual snapshots preserve exact check-in, seed evidence, meaningful redraw reason and current-role retry ACL
+      ---
+      duration_ms: 3361.256868
+      type: 'test'
+      ...
+    # Subtest: four real pools wait for a three-way mini-table, genuine BO5 pool/KO decisions and explicit round releases
+    ok 2 - four real pools wait for a three-way mini-table, genuine BO5 pool/KO decisions and explicit round releases
+      ---
+      duration_ms: 8253.538392
+      type: 'test'
+      ...
+    # Subtest: deadline acknowledgment is explicit and the post-draw plan contains only the real fixture identities and dependencies
+    ok 3 - deadline acknowledgment is explicit and the post-draw plan contains only the real fixture identities and dependencies
+      ---
+      duration_ms: 98.769016
+      type: 'test'
+      ...
+    1..3
+ok 3 - tournament draw revisions, sporting pool decisions and bronze use genuine canonical matches
+  ---
+  duration_ms: 11856.944591
+  type: 'test'
+  ...
+# Subtest: club spread reaches the exact feasible minimum while preserving published seed slots
+ok 4 - club spread reaches the exact feasible minimum while preserving published seed slots
+  ---
+  duration_ms: 1.928256
+  type: 'test'
+  ...
+# Subtest: pool mini-table compares the whole remaining tied group only after every mutual game is final
+ok 5 - pool mini-table compares the whole remaining tied group only after every mutual game is final
+  ---
+  duration_ms: 0.622702
+  type: 'test'
+  ...
+# Subtest: seeded seven-player knockout has independent bronze places and never awards a bye loss
+ok 6 - seeded seven-player knockout has independent bronze places and never awards a bye loss
+  ---
+  duration_ms: 1.147206
+  type: 'test'
+  ...
+# Subtest: four-pool crossover keeps each pools qualifiers in opposite bracket halves
+ok 7 - four-pool crossover keeps each pools qualifiers in opposite bracket halves
+  ---
+  duration_ms: 0.479272
+  type: 'test'
+  ...
+# Subtest: a separate consolation title uses only true first-round losses and never changes main places or inherits broad rating rules
+ok 8 - a separate consolation title uses only true first-round losses and never changes main places or inherits broad rating rules
+  ---
+  duration_ms: 1.080534
+  type: 'test'
+  ...
+# Subtest: published phase rules use fresh organizer authority, immutable actual fixture settings and future Swiss rating eligibility
+    # Subtest: one accepted phase-rule request freezes 301/BO7 double-in master-out into the genuine scoring match
+    ok 1 - one accepted phase-rule request freezes 301/BO7 double-in master-out into the genuine scoring match
+      ---
+      duration_ms: 235.978009
+      type: 'test'
+      ...
+    # Subtest: only Swiss round one exists when a future 301 round blocks a 501 destination until explicitly excluded
+    ok 2 - only Swiss round one exists when a future 301 round blocks a 501 destination until explicitly excluded
+      ---
+      duration_ms: 137.651026
+      type: 'test'
+      ...
+    1..2
+ok 9 - published phase rules use fresh organizer authority, immutable actual fixture settings and future Swiss rating eligibility
+  ---
+  duration_ms: 465.060107
+  type: 'test'
+  ...
+1..9
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 42587.39292

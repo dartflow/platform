@@ -1,5 +1,9 @@
+import {publicBullStart} from './bull-start';
+import{resolveEventGuestActor,eventGuestOperators,readEventGuestHistoryActor}from'./event-guests';
+import{registerOfflineConflict,resolveOfflineConflict,offlineConflictPermissions,offlineConflictDetails}from'./offline-score-conflicts';
+import {readSeasonDisplay} from './season-display';
 import pg, { type PoolClient } from 'pg';
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID,randomInt } from 'node:crypto';
 import {assertBoardUnreserved,assertPlayersFree,boardLease,lockPlayingActors}from'./platform-locks';
 import { enqueueEventTransition,enqueueMatchTransition } from './integrations-domain';
 import {clubBoardEventAccess} from './club-boards';
@@ -11,7 +15,13 @@ import {getPlayerPinStatus,playerPinConfigured} from './player-pin';
 import {captureMatchStatistics} from './player-statistics-db';
 import {captureSeasonMatch,assertSeasonMatchCommand,seasonEventAccess} from './seasons';
 import {captureFeedResult} from './feed';
+import {assignedBoardMatch} from './board-match-projection';
+import {recordPrimaryResultVersion,assertPrimaryCorrectionMatchAllowed,preparePrimaryCorrectionResult} from './match-corrections';
+import {assertMatchCameraReady} from './media-readiness';
+import {assertCircuitQualificationMatchAllowed} from './circuit-qualifications';
+import {matchParticipants,matchSideIndex,isMultiPlayerMatch,publicMatchSides,publicMatchVisit,publicMatchSettings} from './match-sides';
 import {finalResultSql} from './result-visibility';
+import {bookMatchRanking,getMatchRankingDestinations,matchRankingEligibility,prepareMatchRanking} from './rankings';
 import {assertPhysicalBoardEvent,locationHomeEventAccess,locationManager,physicalBoard,playerReservationContext} from './location-access';
 import {recordMatchScoreEvent,readBoardScoreEvents} from './score-events';
 import {acceptedMatchBoardActivity,guardMatchBoardActivity,readSourceBoardActivity,readBoardActivity,publicBoardActivity} from './board-activity';
@@ -70,7 +80,7 @@ export async function eventAccess(client: Pick<PoolClient,'query'>, actorId: str
 }
 async function matchAccess(client: PoolClient | pg.Pool, actorId: string, state: MatchState) {
   const access = await eventAccess(client, actorId, state.eventId);
-  if (!access.canManage && !state.players.some(p => p.id === actorId) && state.delegatedWriterId !== actorId) throw new DomainError('forbidden', 'Deze partij hoort bij andere spelers.', 403);
+  if (!access.canManage && matchSideIndex(state,actorId)<0 && state.delegatedWriterId !== actorId && !state.remoteWriterIds?.includes(actorId)) throw new DomainError('forbidden', 'Deze partij hoort bij andere spelers.', 403);
   return access;
 }
 async function audit(client: PoolClient, actorId: string, event: { club_id?: string; clubId?: string; eventId?: string; id?: string }, action: string, detail: unknown = {}, matchId: string | null = null) {
@@ -90,10 +100,13 @@ export async function getMatch(actorId:string,matchId:string,existingClient?:Poo
 async function readMatch(client:PoolClient,actorId: string, matchId: string): Promise<MatchView> {
   const { rows } = await client.query('select state from dartflow_private.matches where id=$1', [assertUuid(matchId)]);
   if (!rows.length) throw new DomainError('not_found', 'Deze partij bestaat niet.', 404);
-  const state: MatchState = rows[0].state, access = await matchAccess(client, actorId, state);
+  const state: MatchState = rows[0].state;let viewer=actorId,canManage=false,claimed=false;
+  try{canManage=(await matchAccess(client,actorId,state)).canManage;}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;const guest=await readEventGuestHistoryActor(client,actorId,state);if(!guest)throw error;viewer=guest;claimed=true;}
   const link=await client.query("select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind='tournament'",[matchId]);
   const boardActivity=await readSourceBoardActivity(client,state.id,actorId);
-  return {...matchView(state, actorId, access.canManage),offlineSupported:Boolean(link.rowCount),...(boardActivity?{boardActivity}:{})};
+  const view=matchView(state,viewer,canManage);
+  if(claimed)view.permissions=Object.fromEntries(Object.keys(view.permissions).map(key=>[key,false]))as MatchView['permissions'];
+  return offlineConflictDetails(client,offlineConflictPermissions({...view,guestOperators:claimed?[]:await eventGuestOperators(client,actorId,state),rankingDestinations:await getMatchRankingDestinations(client,state),rankingEligibility:await matchRankingEligibility(client,state),offlineSupported:!claimed&&Boolean(link.rowCount),...(boardActivity?{boardActivity}:{})}));
 }
 export async function getMatchInvitation(actorId:string,matchId:string):Promise<{code:string;path:string}|null>{
   // Use the normal match access rules and share only with current lobby members.
@@ -115,7 +128,7 @@ export async function getOverview(actorId: string, clubId?: string): Promise<Ove
   const { rows: eventRows } = await database().query<Omit<Overview['events'][number],'canManage'>>(`select e.id,e.club_id as "clubId",e.name,e.date::text,e.capacity from dartflow_private.events e join dartflow_private.club_memberships m on m.club_id=e.club_id and m.user_id=$1 where e.club_id=$2 and not exists(select 1 from dartflow_private.club_boards cb where cb.event_id=e.id) order by e.date,e.id`, [actorId, currentClub.id]);
   const events:Overview['events']=[];for(const event of eventRows){try{const access=await eventAccess(database(),actorId,event.id);events.push({...event,canManage:access.canManage});}catch(error){if(!(error instanceof DomainError&&[403,404].includes(error.status)))throw error;}}
   const { rows: matchRows } = await database().query("select state from dartflow_private.matches where club_id=$1 and state->>'status'<>'abandoned' order by updated_at,id", [currentClub.id]);
-  const matches = matchRows.flatMap(({ state }: { state: MatchState }) => { const manage = events.find(e => e.id === state.eventId)?.canManage === true; return manage || state.players.some(p => p.id === actorId) ? [matchView(state, actorId, manage)] : []; });
+  const matches = matchRows.flatMap(({ state }: { state: MatchState }) => { const manage = events.find(e => e.id === state.eventId)?.canManage === true; return manage || matchSideIndex(state,actorId)>=0 ? [matchView(state, actorId, manage)] : []; });
   const { rows: boardRows } = await database().query(`select b.id,coalesce(r.event_id,b.event_id) as "eventId",b.name,b.blocked,case when m.event_id=coalesce(r.event_id,b.event_id) then m.id else null end as "matchId"
     from dartflow_private.boards b join dartflow_private.events e on e.id=b.event_id left join dartflow_private.matches m on m.board_id=b.id
     left join lateral(select br.event_id from dartflow_private.reservation_boards rb join dartflow_private.board_reservations br on br.id=rb.reservation_id where rb.board_id=b.id and br.club_id=$1 and br.status='accepted' and br.starts_at<=now() and br.ends_at>now() limit 1) r on true
@@ -132,6 +145,8 @@ export async function publishResult(client: PoolClient, state: MatchState) {
   const snapshot: ResultView = { matchId: state.id, players: state.players, legs: view.legs, sets: view.sets, winnerId: state.winnerId, revision: state.resultRevision };
   const result = await client.query('insert into dartflow_private.match_results(match_id,event_id,result_revision,snapshot) values($1,$2,$3,$4) on conflict(match_id) do nothing returning match_id', [state.id, state.eventId, state.resultRevision, JSON.stringify(snapshot)]);
   if (!result.rowCount) return;
+  await recordPrimaryResultVersion(client,state);
+  if(isMultiPlayerMatch(state))return;
   if((await client.query("select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and(e.kind='lobby' or e.state->>'seasonManaged'='true')",[state.id])).rowCount)return;
   // The unique match result is the processing key; standings update in this same transaction.
   for (const player of state.players) {
@@ -143,8 +158,8 @@ export async function executeMatchCommand(actorId: string, command: MatchCommand
   assertUuid(actorId); assertUuid(command?.matchId); assertUuid(command?.requestId);
   if (!Number.isSafeInteger(command.expectedRevision) || command.expectedRevision < 0 || !command.action || typeof command.action.type !== 'string') throw new DomainError('invalid_command', 'Ongeldig partijcommando.');
   if(containsPrivatePinField(command))throw new DomainError('private_field','Gebruik de beveiligde spelerspincodeflow.',400);
-  const payloadHash = hash(canonical({ expectedRevision: command.expectedRevision, action: command.action }));
-  const outcome=await transaction<MatchView|{boardActivityExpired:true}>(async client => {
+  const payloadHash = hash(canonical({ expectedRevision: command.expectedRevision, action: command.action,...(command.guestId===undefined?{}:{guestId:assertUuid(command.guestId)}) }));
+  const outcome=await transaction<MatchView|{boardActivityExpired:true}|{offlineConflictRegistered:true}>(async client => {
     // A shared event lock also serializes assignments on different boards and withdrawals.
     const scope = await client.query('select event_id from dartflow_private.matches where id=$1', [command.matchId]);
     if (!scope.rows.length) throw new DomainError('not_found', 'Deze partij bestaat niet.', 404);
@@ -153,33 +168,41 @@ export async function executeMatchCommand(actorId: string, command: MatchCommand
     if (!rows.length) throw new DomainError('not_found', 'Deze partij bestaat niet.', 404);
     const source: MatchState = rows[0].state;
     const access = await matchAccess(client, actorId, source);
+    const effectiveActor=await resolveEventGuestActor(client,actorId,source,command);
     await assertSeasonMatchCommand(client,actorId,source,command.action);
+    await assertPrimaryCorrectionMatchAllowed(client,source,command.action);
     const activity=source.status==='interrupted'&&command.action.type==='call'?null:await guardMatchBoardActivity(client,source);
     // Commit the release/tombstone before reporting a rejected late score to the caller.
     if(activity&&['released','interrupted'].includes(activity.phase))return {boardActivityExpired:true};
     if(['accept','start','score','take-over'].includes(command.action.type))await requireScoreboardName(client,actorId);
-    if(['call','start'].includes(command.action.type))for(const player of source.players)await requireScoreboardName(client,player.id);
+    if(['call','start'].includes(command.action.type))for(const player of matchParticipants(source))await requireScoreboardName(client,player.id);
     const prior = await client.query('select payload_hash,response from dartflow_private.action_receipts where match_id=$1 and actor_id=$2 and request_id=$3', [source.id, actorId, command.requestId]);
     if (prior.rows.length) {
       if (prior.rows[0].payload_hash !== payloadHash) throw new DomainError('request_reused', 'Dit aanvraag-ID is eerder met andere gegevens gebruikt.', 409);
       return prior.rows[0].response;
     }
-    if (source.revision !== command.expectedRevision) throw new DomainError('revision_conflict', 'De partij is gewijzigd. Vernieuw de stand en probeer opnieuw.', 409);
+    if (source.revision !== command.expectedRevision) {if(await registerOfflineConflict(client,source,actorId,command,effectiveActor))return{offlineConflictRegistered:true};throw new DomainError('revision_conflict', 'De partij is gewijzigd. Vernieuw de stand en probeer opnieuw.', 409);}
+    if(source.offlineConflict?.status==='open'&&command.action.type!=='resolve-offline-conflict')throw new DomainError('offline_conflict_pending','De wedstrijdleiding moet het offline conflict eerst met reden afhandelen.',409);
+    await assertCircuitQualificationMatchAllowed(client,source,command.action);
+    await assertMatchCameraReady(client,source,command.action);
     if (command.action.type === 'call') {
       const board = await client.query('select * from dartflow_private.boards where id=$1 for update', [assertUuid(command.action.boardId)]);
       if (!board.rows.length || board.rows[0].blocked) throw new DomainError('board_unavailable', 'Deze baan is niet beschikbaar voor deze partij.', 409);
       await assertPhysicalBoardEvent(client,command.action.boardId,source.eventId,source.id,true);
       const linked=await client.query('select entity_id,fixture_id from dartflow_private.platform_match_links where match_id=$1',[source.id]);
       await assertBoardUnreserved(client,command.action.boardId,source.eventId,linked.rows[0]?.entity_id??null,linked.rows[0]?.fixture_id);
-      const actors=[...source.players.map(p=>p.id),...(source.delegatedWriterId&&source.writerId===source.delegatedWriterId?[source.delegatedWriterId]:[])];await lockPlayingActors(client,actors);await assertPlayersFree(client,actors,source.id);
+      const actors=[...matchParticipants(source).map(p=>p.id),...(source.delegatedWriterId&&source.writerId===source.delegatedWriterId?[source.delegatedWriterId]:[])];await lockPlayingActors(client,actors);await assertPlayersFree(client,actors,source.id);
       const taken = await client.query('select id from dartflow_private.matches where board_id=$1 and id<>$2', [command.action.boardId, source.id]);
       if (taken.rowCount) throw new DomainError('board_occupied', 'Op deze baan staat al een partij.', 409);
-      const present = await client.query('select user_id from dartflow_private.entries where event_id=$1 and user_id=any($2::uuid[]) and status=$3 and checked_in', [source.eventId, source.players.map(p => p.id), 'registered']);
-      if (present.rowCount !== 2) throw new DomainError('players_absent', 'Beide spelers moeten eerst ingecheckt zijn.', 409);
+      const present = await client.query('select user_id from dartflow_private.entries where event_id=$1 and user_id=any($2::uuid[]) and status=$3 and checked_in', [source.eventId, matchParticipants(source).map(p => p.id), 'registered']);
+      if (present.rowCount !== matchParticipants(source).length) throw new DomainError('players_absent', 'Beide spelers moeten eerst ingecheckt zijn.', 409);
 
     }
     if(['accept','start'].includes(command.action.type)&&source.boardId){await client.query('select id from dartflow_private.boards where id=$1 for update',[source.boardId]);await assertPhysicalBoardEvent(client,source.boardId,source.eventId,source.id);}
-    const next = applyMatchAction(source, actorId, access.canManage, command.action.type==='call'?{...command.action,callRef:command.requestId}:command.action);
+    const next = command.action.type==='resolve-offline-conflict'?await resolveOfflineConflict(client,source,actorId,command,access.canManage):applyMatchAction(source, effectiveActor, command.guestId===undefined&&access.canManage, command.action.type==='call'?{...command.action,callRef:command.requestId}:command.action,command.action.type==='draw-start'?{drawStarter:randomInt(2) as 0|1}:undefined);
+    await preparePrimaryCorrectionResult(client,next);
+    await prepareMatchRanking(client,actorId,source,next,command.action);
+    await bookMatchRanking(client,next);
     await client.query('update dartflow_private.matches set state=$2,revision=$3,board_id=$4,updated_at=now() where id=$1', [next.id, JSON.stringify(next), next.revision, next.boardId]);
     await recordMatchScoreEvent(client,source,next,command);
     await acceptedMatchBoardActivity(client,source,next,command);
@@ -195,15 +218,16 @@ export async function executeMatchCommand(actorId: string, command: MatchCommand
       if(confirmed.length)await client.query('insert into dartflow_private.match_confirmations(match_id,user_id,result_revision) select $1,unnest($2::uuid[]),$3',[next.id,confirmed,next.resultRevision]);
     }
     await publishResult(client, next);
-    await captureSeasonMatch(client,source,next);
+    await captureSeasonMatch(client,source,next,actorId);
     await captureFeedResult(client,next);
-    await audit(client, actorId, next, command.action.type, { requestId: command.requestId, revision: next.revision, action: command.action }, next.id);
+    await audit(client, actorId, next, command.action.type, { requestId: command.requestId, revision: next.revision, action: command.action,...(command.guestId?{actedForGuest:effectiveActor}:{}) }, next.id);
     await enqueueMatchTransition(client,actorId,source,next,command);
     const boardActivity=await readSourceBoardActivity(client,next.id,actorId);
-    const response = {...matchView(next, actorId, access.canManage),...(boardActivity?{boardActivity}:{})};
+    const response = offlineConflictPermissions({...matchView(next, actorId, access.canManage),guestOperators:await eventGuestOperators(client,actorId,next),rankingDestinations:await getMatchRankingDestinations(client,next),rankingEligibility:await matchRankingEligibility(client,next),...(boardActivity?{boardActivity}:{})});
     await client.query('insert into dartflow_private.action_receipts(match_id,actor_id,request_id,payload_hash,response) values($1,$2,$3,$4,$5)', [next.id, actorId, command.requestId, payloadHash, JSON.stringify(response)]);
     return response;
   });
+  if('offlineConflictRegistered'in outcome)throw new DomainError('offline_conflict_pending','Een offline score botst met de geaccepteerde scorekaart. De partij is gepauzeerd tot een bevoegd besluit.',409);
   if('boardActivityExpired' in outcome)throw new DomainError('board_session_expired','De inactiviteitsdeadline is verstreken. De fysieke baan is vrijgegeven; deze actie is niet opgeslagen.',409);
   return outcome;
 }
@@ -284,7 +308,7 @@ async function readPublicSnapshot(client:PoolClient,token: string): Promise<Publ
   if (typeof token !== 'string' || !/^(?:[\w-]{43}|[\w-]{64})$/.test(token)) throw new DomainError('invalid_screen', 'Deze schermkoppeling is ongeldig of verlopen.', 404);
   const { rows } = await client.query('select b.id,b.name,b.event_id,c.created_by,e.name as event_name,m.state from dartflow_private.screen_capabilities c join dartflow_private.boards b on b.id=c.board_id and b.event_id=c.event_id join dartflow_private.events e on e.id=c.event_id left join dartflow_private.matches m on m.board_id=b.id where c.token_hash=$1 and c.revoked_at is null and c.expires_at>now()', [hash(token)]);
   if (!rows.length) throw new DomainError('invalid_screen', 'Deze schermkoppeling is ongeldig of verlopen.', 404);
-  const row = rows[0],lease=await boardLease(client,row.id),boardActivity=publicBoardActivity(await readBoardActivity(client,row.id));
+  const row = rows[0];row.state=await assignedBoardMatch(client,row.id);const lease=await boardLease(client,row.id),boardActivity=publicBoardActivity(await readBoardActivity(client,row.id));
   if(token.length===64){
     try{await eventAccess(client,row.created_by,row.event_id);}catch{throw new DomainError('invalid_screen','Deze schermkoppeling is niet meer beschikbaar.',404);}
     const hex=Buffer.from(token,'base64url').subarray(0,16).toString('hex'),session=`${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
@@ -298,7 +322,7 @@ async function readPublicSnapshot(client:PoolClient,token: string): Promise<Publ
     return {board:{id:row.id,name:row.name},event:{name:row.event_name},...(boardActivity?{boardActivity}:{}),...await readBoardScoreEvents(client,row.id,lease.id,lease.revision),match:{id:lease.id,revision:lease.revision,status:game.status==='finished'?'result':'live',players:[{id:'player-1',name:profile.rows[0]?.name??'Speler'}],remaining:[game.remaining[0]],legs:[game.legs[0]],sets:[0],turn:0,checkout:game.status==='live'?checkout(game.remaining[0]):null,visits:game.visits.map(v=>({...v,player:'player-1',playerIndex:0})),writerId:'player-1',stats:[{...game.stats[0],average:game.stats[0].darts?Math.round(game.stats[0].total/game.stats[0].darts*300)/100:0}],legNumber:Math.max(1,...game.visits.map(v=>v.leg)),setNumber:1,winnerId:game.status==='finished'?'player-1':null,resultPublished:false,settings:{startScore:game.startScore as 301|501|701,bestOfLegs:1,bestOfSets:1},paused:false}};
   }
   const view = row.state ? matchView(row.state, '', false) : null;
-  return { board: { id: row.id, name: row.name }, event: { name: row.event_name },...(boardActivity?{boardActivity}:{}),...await readBoardScoreEvents(client,row.id,row.state?.id??lease?.id,view?.revision), match: view ? { id: view.id, revision: view.revision, status: view.status,scoringMode:view.scoringMode, players: view.players.map((p, i) => ({ id: `player-${i + 1}`, name: p.name })), remaining: view.remaining, legs: view.legs, sets: view.sets, turn: view.turn, checkout: view.checkout,currentLegStartScore:view.currentLegStartScore,currentLegVisits:view.currentLegVisits?.map(v=>({...v,player:`player-${v.playerIndex+1}`})), visits: (row.state as MatchState).game.visits.filter(v=>v.leg===view.legNumber).map(v => ({ ...v, player: `player-${v.playerIndex + 1}` })), writerId:view.players.some(p=>p.id===view.writerId)?`player-${view.players.findIndex(p=>p.id===view.writerId)+1}`:'writer-external',stats:view.stats,legNumber:view.legNumber,setNumber:view.setNumber,winnerId: view.winnerId ? `player-${view.players.findIndex(p => p.id === view.winnerId) + 1}` : null, resultPublished: view.resultPublished, settings: view.settings,paused:view.paused } : null };
+  return { board: { id: row.id, name: row.name }, event: { name: row.event_name },...await readSeasonDisplay(client,row.state?.id),...(boardActivity?{boardActivity}:{}),...await readBoardScoreEvents(client,row.id,row.state?.id??lease?.id,view?.revision), match: view ? { ...publicBullStart(view),id: view.id, revision: view.revision, status: view.status,...(view.cricket?{cricket:view.cricket}:{}),scoringMode:view.scoringMode, ...publicMatchSides(view), players: view.players.map((p, i) => ({ id: `player-${i + 1}`, name: p.name })), remaining: view.remaining, legs: view.legs, sets: view.sets, turn: view.turn, checkout: view.checkout,currentLegStartScore:view.currentLegStartScore,currentLegVisits:view.currentLegVisits?.map(v=>publicMatchVisit(view,v)), visits: (row.state as MatchState).game.visits.filter(v=>v.leg===view.legNumber).map(v => publicMatchVisit(view,v)), writerId:view.players.some(p=>p.id===view.writerId)?`player-${view.players.findIndex(p=>p.id===view.writerId)+1}`:'writer-external',stats:view.stats,legNumber:view.legNumber,setNumber:view.setNumber,winnerId: view.winnerId ? `player-${view.players.findIndex(p => p.id === view.winnerId) + 1}` : null, resultPublished: view.resultPublished, settings: publicMatchSettings(view.settings),paused:view.paused } : null };
 }
 export async function consumeRateLimit(key: string, limit: number, windowSeconds: number): Promise<{ allowed: boolean; retryAfter: number }> {
   const { rows } = await database().query(`insert into dartflow_private.auth_limits(key,count,reset_at) values($1,1,now()+$2*interval '1 second') on conflict(key) do update set count=case when dartflow_private.auth_limits.reset_at<=now() then 1 else dartflow_private.auth_limits.count+1 end, reset_at=case when dartflow_private.auth_limits.reset_at<=now() then now()+$2*interval '1 second' else dartflow_private.auth_limits.reset_at end returning count, greatest(1,ceil(extract(epoch from(reset_at-now()))))::int as retry`, [key, windowSeconds]);
@@ -306,18 +330,19 @@ export async function consumeRateLimit(key: string, limit: number, windowSeconds
 }
 
 export async function checkDatabaseReady(): Promise<{ ready: boolean; schemaVersion: number }> {
-  const { rows } = await database().query("select current_user as role,(select max(version) from dartflow_private.schema_migrations) as version,(select version from dartflow_private.feature_versions where name='v15') as feature_version,(select version from dartflow_private.feature_versions where name='club_boards') as club_boards_version,(select version from dartflow_private.feature_versions where name='short_invitations') as short_invitations_version,(select version from dartflow_private.feature_versions where name='display_names') as display_names_version,(select version from dartflow_private.feature_versions where name='per_player_scoring') as per_player_scoring_version,(select version from dartflow_private.feature_versions where name='board_screen_devices') as board_screen_devices_version,(select version from dartflow_private.feature_versions where name='v17_clubs') as v17_clubs_version,(select version from dartflow_private.feature_versions where name='physical_locations') as physical_locations_version,(select version from dartflow_private.feature_versions where name='v17_community') as v17_community_version,(select version from dartflow_private.feature_versions where name='v17_score_events') as v17_score_events_version,(select version from dartflow_private.feature_versions where name='board_activity') as board_activity_version,(select version from dartflow_private.feature_versions where name='unique_usernames') as unique_usernames_version,(select version from dartflow_private.feature_versions where name='player_pins') as player_pins_version,(select version from dartflow_private.feature_versions where name='player_statistics') as player_statistics_version,(select version from dartflow_private.feature_versions where name='player_profile_identity') as player_profile_identity_version,(select version from dartflow_private.feature_versions where name='competition_seasons') as competition_seasons_version,(select version from dartflow_private.feature_versions where name='feed_channels') as feed_channels_version,(select version from dartflow_private.feature_versions where name='player_experience') as player_experience_version,(select version from dartflow_private.feature_versions where name='oche_display_devices') as oche_display_devices_version");
-  return { ready: rows[0].role === 'dartflow_app' && rows[0].version === 1 && rows[0].feature_version === 15 && rows[0].club_boards_version === 1 && rows[0].short_invitations_version===1 && rows[0].display_names_version===1 && rows[0].per_player_scoring_version===1 && rows[0].board_screen_devices_version===1&&rows[0].v17_clubs_version===1&&rows[0].physical_locations_version===1&&rows[0].v17_community_version===1&&rows[0].v17_score_events_version===1&&rows[0].board_activity_version===1&&rows[0].unique_usernames_version===1&&rows[0].player_pins_version===1&&rows[0].player_statistics_version===1&&rows[0].player_profile_identity_version===1&&rows[0].competition_seasons_version===1&&rows[0].feed_channels_version===1&&rows[0].player_experience_version===1&&rows[0].oche_display_devices_version===1&&playerPinConfigured(), schemaVersion: rows[0].version ?? 0 };
+  const { rows } = await database().query("select current_user as role,(select max(version) from dartflow_private.schema_migrations) as version,(select version from dartflow_private.feature_versions where name='v15') as feature_version,(select version from dartflow_private.feature_versions where name='club_boards') as club_boards_version,(select version from dartflow_private.feature_versions where name='short_invitations') as short_invitations_version,(select version from dartflow_private.feature_versions where name='display_names') as display_names_version,(select version from dartflow_private.feature_versions where name='per_player_scoring') as per_player_scoring_version,(select version from dartflow_private.feature_versions where name='board_screen_devices') as board_screen_devices_version,(select version from dartflow_private.feature_versions where name='v17_clubs') as v17_clubs_version,(select version from dartflow_private.feature_versions where name='physical_locations') as physical_locations_version,(select version from dartflow_private.feature_versions where name='v17_community') as v17_community_version,(select version from dartflow_private.feature_versions where name='v17_score_events') as v17_score_events_version,(select version from dartflow_private.feature_versions where name='board_activity') as board_activity_version,(select version from dartflow_private.feature_versions where name='unique_usernames') as unique_usernames_version,(select version from dartflow_private.feature_versions where name='player_pins') as player_pins_version,(select version from dartflow_private.feature_versions where name='player_statistics') as player_statistics_version,(select version from dartflow_private.feature_versions where name='player_profile_identity') as player_profile_identity_version,(select version from dartflow_private.feature_versions where name='competition_seasons') as competition_seasons_version,(select version from dartflow_private.feature_versions where name='feed_channels') as feed_channels_version,(select version from dartflow_private.feature_versions where name='player_experience') as player_experience_version,(select version from dartflow_private.feature_versions where name='oche_display_devices') as oche_display_devices_version,(select version from dartflow_private.feature_versions where name='national_player_rating') as national_player_rating_version,(select version from dartflow_private.feature_versions where name='ranking_destinations_generations') as ranking_destinations_generations_version,(select version from dartflow_private.feature_versions where name='organizer_drafts') as organizer_drafts_version,(select version from dartflow_private.feature_versions where name='faq_publication') as faq_publication_version,(select version from dartflow_private.feature_versions where name='primary_match_corrections') as primary_match_corrections_version,(select version from dartflow_private.feature_versions where name='ranking_roster_versions') as ranking_roster_versions_version,(select version from dartflow_private.feature_versions where name='oche_theme') as oche_theme_version,(select version from dartflow_private.feature_versions where name='private_correction_cases') as private_correction_cases_version,(select version from dartflow_private.feature_versions where name='ranking_publication_pause')as ranking_publication_pause_version,(select version from dartflow_private.feature_versions where name='offline_score_conflicts')as offline_score_conflicts_version,(select version from dartflow_private.feature_versions where name='native_push')as native_push_version,(select version from dartflow_private.feature_versions where name='event_guests_imports')as event_guests_imports_version");
+  return { ready: rows[0].role === 'dartflow_app' && rows[0].version === 1 && rows[0].feature_version === 15 && rows[0].club_boards_version === 1 && rows[0].short_invitations_version===1 && rows[0].display_names_version===1 && rows[0].per_player_scoring_version===1 && rows[0].board_screen_devices_version===1&&rows[0].v17_clubs_version===1&&rows[0].physical_locations_version===1&&rows[0].v17_community_version===1&&rows[0].v17_score_events_version===1&&rows[0].board_activity_version===1&&rows[0].unique_usernames_version===1&&rows[0].player_pins_version===1&&rows[0].player_statistics_version===1&&rows[0].player_profile_identity_version===1&&rows[0].competition_seasons_version===1&&rows[0].feed_channels_version===1&&rows[0].player_experience_version===1&&rows[0].oche_display_devices_version===1&&rows[0].national_player_rating_version===1&&rows[0].ranking_destinations_generations_version===1&&rows[0].organizer_drafts_version===1&&rows[0].faq_publication_version===1&&rows[0].primary_match_corrections_version===1&&rows[0].ranking_roster_versions_version===1&&rows[0].oche_theme_version===1&&rows[0].private_correction_cases_version===1&&rows[0].ranking_publication_pause_version===1&&rows[0].offline_score_conflicts_version===1&&rows[0].native_push_version===1&&rows[0].event_guests_imports_version===1&&playerPinConfigured(), schemaVersion: rows[0].version ?? 0 };
 }
 
 /** A fixed board UUID resolves its actual event, independently of UI club selection. */
 async function boardForActor(actorId:string,boardId:string):Promise<{board:{id:string;name:string;occupied:boolean;blocked?:boolean;access?:'all'|'club'};event:{id:string;name:string};club?:{id:string;name:string};location?:{id:string;name:string;kind:'home'|'venue';canManage:boolean};reservation?:ReservedBoardContext;matchId?:string;practiceId?:string;pendingLobbyId?:string;ownLobbyId?:string;canStart:boolean}>{
   const {rows}=await database().query<{id:string;name:string;blocked:boolean;event_id:string;state:MatchState|null}>('select b.id,b.name,b.blocked,b.event_id,m.state from dartflow_private.boards b left join dartflow_private.matches m on m.board_id=b.id where b.id=$1',[assertUuid(boardId)]);
   if(!rows.length)throw new DomainError('not_found','Deze baan bestaat niet.',404);
+  rows[0].state=await assignedBoardMatch(database(),boardId);
   const physical=await physicalBoard(database(),boardId);
   if(physical){
     const row=rows[0],reserved=await playerReservationContext(database(),actorId,row.id),manage=await locationManager(database(),actorId,physical.location_id);
-    const ownRunning=Boolean(row.state&&(row.state.players.some(p=>p.id===actorId)||row.state.delegatedWriterId===actorId));
+    const ownRunning=Boolean(row.state&&(matchSideIndex(row.state,actorId)>=0||row.state.delegatedWriterId===actorId||row.state.remoteWriterIds?.includes(actorId)));
     if(reserved&&!reserved.canParticipate&&!ownRunning)return {board:{id:row.id,name:row.name,occupied:Boolean(row.state||await boardLease(database(),row.id)),blocked:row.blocked||Boolean(physical.archived_at)},event:{id:row.event_id,name:reserved.context.label},location:{id:physical.location_id,name:physical.location_name,kind:physical.kind,canManage:manage},reservation:reserved.context,canStart:false};
     const eventId=ownRunning?row.state!.eventId:reserved?.canParticipate?reserved.eventId:row.event_id;
     const event=await eventAccess(database(),actorId,eventId),lease=await boardLease(database(),row.id);

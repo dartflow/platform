@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.Font
@@ -57,11 +58,15 @@ import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.delay
 import java.util.Locale
 
-private val Lime = Color(0xFFB5F52B)
-private val Ink = Color(0xFF101211)
-private val Panel = Color(0xFF172019)
-private val Muted = Color(0xFFB5BDB4)
-private val Outline = Color(0xFF3B4A39)
+private data class OchePalette(val id: String, val primary: Color, val ink: Color, val panel: Color, val muted: Color, val outline: Color)
+private val DartFlowPalette = OchePalette("dartflow", Color(0xFFB5F52B), Color(0xFF101211), Color(0xFF172019), Color(0xFFB5BDB4), Color(0xFF3B4A39))
+private val OnzeTrotsPalette = OchePalette("onzetrots", Color(0xFFA8CEFF), Color(0xFF06182F), Color(0xFF0C2856), Color(0xFFC3D5EE), Color(0xFF335789))
+private val LocalOchePalette = staticCompositionLocalOf { DartFlowPalette }
+private val Lime: Color @Composable get() = LocalOchePalette.current.primary
+private val Ink: Color @Composable get() = LocalOchePalette.current.ink
+private val Panel: Color @Composable get() = LocalOchePalette.current.panel
+private val Muted: Color @Composable get() = LocalOchePalette.current.muted
+private val Outline: Color @Composable get() = LocalOchePalette.current.outline
 private val Barlow = FontFamily(Font(R.font.barlow_condensed_800, FontWeight.ExtraBold))
 private val DmSans = FontFamily(Font(R.font.dm_sans_400), Font(R.font.dm_sans_700, FontWeight.Bold))
 
@@ -96,12 +101,24 @@ class MainActivity : ComponentActivity() {
 @Composable fun OcheApp(connection: ConnectionState, newCode: () -> Unit, isTv: Boolean = false) {
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(Unit) { while (true) { now = SystemClock.elapsedRealtime(); delay(250) } }
+    val theme = (connection.ui as? DisplayUi.Screen)?.snapshot?.theme
+    val palette = if (theme == "onzetrots") OnzeTrotsPalette else DartFlowPalette
+    CompositionLocalProvider(LocalOchePalette provides palette) {
+    MaterialTheme(colorScheme = darkColorScheme(primary = palette.primary, onPrimary = palette.ink, background = palette.ink, surface = palette.panel), typography = MaterialTheme.typography) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Ink).windowInsetsPadding(WindowInsets.safeDrawing)) {
         Rings(Modifier.fillMaxSize())
         val landscape = maxWidth > maxHeight
         val margin = if (isTv) 32.dp else if (maxWidth > 700.dp) 28.dp else 18.dp
         Column(Modifier.fillMaxSize().padding(margin), verticalArrangement = Arrangement.spacedBy(if (landscape) 16.dp else 18.dp)) {
             Header((connection.ui as? DisplayUi.Screen)?.snapshot?.boardName ?: "OCHE LIVE", isTv)
+            (connection.ui as? DisplayUi.Screen)?.snapshot?.encounter?.let { EncounterSummary(it) }
+            (connection.ui as? DisplayUi.Screen)?.snapshot?.pendingCall?.let { call ->
+                Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).border(1.dp, Outline, RoundedCornerShape(8.dp)).padding(10.dp)) {
+                    Text(call.label, color = Lime, fontSize = 12.sp)
+                    Text(call.players.joinToString(" – "), color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    call.writerName?.let { Text("Schrijver: $it", color = Muted, fontSize = 11.sp) }
+                }
+            }
             if (connection.offline) Text("OFFLINE · ${connection.message ?: "Verbinding herstellen…"}", color = Lime, fontSize = 14.sp, modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite })
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (val ui = connection.ui) {
@@ -111,15 +128,24 @@ class MainActivity : ComponentActivity() {
                     is DisplayUi.Screen -> ScreenView(ui, now, landscape, connection.offline)
                 }
             }
-            Text("DARTFLOW · OCHE LIVE", color = Muted, fontSize = 12.sp, letterSpacing = 2.sp)
+            Text(if (theme == "onzetrots") "Powered by DartFlow" else "DARTFLOW · OCHE LIVE", color = Muted, fontSize = 12.sp, letterSpacing = 2.sp)
         }
+    }
+    }
     }
 }
 
+@Composable private fun EncounterSummary(encounter: Encounter) {
+    Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).border(1.dp, Outline, RoundedCornerShape(8.dp)).padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(encounter.name, color = Muted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text("${encounter.homeName}  ${encounter.score.getOrElse(0) { 0 }}–${encounter.score.getOrElse(1) { 0 }}  ${encounter.awayName}", color = Lime, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text("Werkelijke legs ${encounter.legs.getOrElse(0) { 0 }}–${encounter.legs.getOrElse(1) { 0 }} · onderdeel ${encounter.componentIndex + 1}: ${encounter.componentLabel}", color = Muted, fontSize = 12.sp, maxLines = 2)
+    }
+}
 @Composable private fun Header(name: String, isTv: Boolean) {
     var menu by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.width(if (isTv) 190.dp else 145.dp).height(48.dp), contentScale = ContentScale.Fit)
+        OcheBrand(false, Modifier.width(if (isTv) 190.dp else 145.dp).height(48.dp))
         Spacer(Modifier.weight(1f))
         Text(name.uppercase(Locale.ROOT), maxLines = 1, overflow = TextOverflow.Ellipsis, color = Lime, fontSize = 13.sp, modifier = Modifier.weight(1f, false).border(1.dp, Outline, RoundedCornerShape(10.dp)).padding(12.dp, 8.dp))
         Action("Info", { menu = true }, compact = true)
@@ -134,9 +160,17 @@ class MainActivity : ComponentActivity() {
     Button(onClick = onClick, modifier = Modifier.onFocusChanged { focused = it.isFocused }.border(if (focused) 3.dp else 0.dp, if (focused) Color.White else Color.Transparent, RoundedCornerShape(14.dp)).heightIn(min = if (compact) 48.dp else 56.dp), contentPadding = PaddingValues(horizontal = if (compact) 16.dp else 28.dp, vertical = 10.dp)) { Text(label, fontFamily = DmSans, fontWeight = FontWeight.Bold) }
 }
 @Composable private fun Headline(text: String, size: Int = 42) = Text(text, fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, lineHeight = (size + 2).sp, color = Color.White, textAlign = TextAlign.Center)
-@Composable private fun Rings(modifier: Modifier) = Canvas(modifier) {
+@Composable private fun OcheBrand(icon: Boolean, modifier: Modifier) {
+    val club = LocalOchePalette.current.id == "onzetrots"
+    val asset = if (club) { if (icon) R.drawable.duindorp_crest else R.drawable.onzetrots_wordmark_white } else { if (icon) R.drawable.launcher_foreground else R.drawable.dartflow_logo }
+    Image(painterResource(asset), if (club) { if (icon) "S.V. Duindorp" else "Onze Trots" } else "DartFlow", modifier, contentScale = ContentScale.Fit)
+}
+@Composable private fun Rings(modifier: Modifier) {
+    val accent = Lime
+    Canvas(modifier) {
     val center = androidx.compose.ui.geometry.Offset(size.width * .78f, size.height * .38f)
-    for (index in 1..7) drawCircle(Lime.copy(alpha = .045f), radius = size.minDimension * .14f * index, center = center, style = Stroke(2f))
+    for (index in 1..7) drawCircle(accent.copy(alpha = .045f), radius = size.minDimension * .14f * index, center = center, style = Stroke(2f))
+    }
 }
 @Composable private fun PairingView(pair: DisplayUi.Pairing, monotonic: Long, newCode: () -> Unit, landscape: Boolean) {
     val serverTime = pair.serverAtReceipt + monotonic - pair.monotonicAtReceipt
@@ -175,11 +209,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable private fun ScreenView(screen: DisplayUi.Screen, now: Long, landscape: Boolean, offline: Boolean) {
     val snapshot = screen.snapshot
-    val serverTime = screen.serverAtReceipt + now - screen.monotonicAtReceipt
+    val serverTime = screen.serverAtReceipt + if (screen.cached) 0 else now - screen.monotonicAtReceipt
     val activity = snapshot.activity
-    val warning = activity != null && serverTime >= activity.warningAt && snapshot.match != null && snapshot.state in listOf("live", "warning")
+    val warning = !screen.cached && activity != null && serverTime >= activity.warningAt && snapshot.match?.canShowTurn == true && snapshot.state in listOf("live", "warning")
     Box(Modifier.fillMaxSize()) {
-        if (snapshot.match != null) LiveView(snapshot.match, landscape, snapshot.state == "result") else Standby(snapshot, landscape, now)
+        if (snapshot.match != null) LiveView(snapshot.match, landscape, snapshot.match.finished) else Standby(snapshot, landscape, now)
         val cue = screen.cue
         var visibleCue by remember { mutableStateOf<ScoreEvent?>(null) }
         LaunchedEffect(cue?.id, offline) { visibleCue = if (offline) null else cue; if (visibleCue != null) { delay(1_800); visibleCue = null } }
@@ -204,12 +238,12 @@ class MainActivity : ComponentActivity() {
 @Composable private fun Standby(snapshot: DisplaySnapshot, landscape: Boolean, now: Long) {
     var started by remember { mutableLongStateOf(now) }
     LaunchedEffect(snapshot.state, snapshot.boardName) { started = SystemClock.elapsedRealtime() }
-    val free = snapshot.state == "standby"
+    val free = snapshot.publicStandby
     val slide = if (free) standbySlide(now - started) else -1
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
         if (slide == 0) {
-            Image(painterResource(R.drawable.launcher_foreground), "DartFlow beeldmerk", Modifier.size(if (landscape) 190.dp else 170.dp))
-            Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.fillMaxWidth(.8f).height(110.dp), contentScale = ContentScale.Fit)
+            OcheBrand(true, Modifier.size(if (landscape) 190.dp else 170.dp))
+            OcheBrand(false, Modifier.fillMaxWidth(.8f).height(110.dp))
         } else if (free || snapshot.state == "reserved") {
             val title = if (snapshot.state == "reserved") "BAAN GERESERVEERD" else if (slide == 2) "ZO SPEEL JE." else "SCAN EN SPEEL."
             if (landscape) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(32.dp)) {
@@ -234,49 +268,74 @@ class MainActivity : ComponentActivity() {
     } else Text("Begin een oefenpartij, speel samen op locatie of nodig iemand online uit.\nOpen deze baan met je telefoon.", color = Muted, fontSize = 18.sp, textAlign = TextAlign.Center)
 }
 
-@Composable private fun LiveView(match: Match, landscape: Boolean, result: Boolean) {
+@Composable internal fun LiveView(match: Match, landscape: Boolean, result: Boolean) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val small = maxHeight < 560.dp
         val rowHeight = if (small) 21.dp else 34.dp
         if (landscape) Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                MatchHeading(match, result)
-                Players(match, 90)
-                LastVisit(match)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (small) 10.dp else 16.dp)) {
+                MatchHeading(match, result, small)
+                Players(match, if (small) 54 else 90, small)
+                LastVisit(match, small)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) { Scorecard(match, rowHeight, Modifier.weight(1f)); Text("SET ${match.set} · LEG ${match.leg}", color = Muted) }
-        } else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(if (small) 10.dp else 18.dp)) {
-            MatchHeading(match, result)
-            Players(match, if (small) 54 else 80, small)
+        } else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(if (small) 6.dp else 18.dp)) {
+            MatchHeading(match, result, small)
+            if (small) PortraitPlayers(match) else Players(match, 80)
             Scorecard(match, rowHeight, Modifier.weight(1f))
-            LastVisit(match)
+            LastVisit(match, small)
         }
     }
 }
-@Composable private fun MatchHeading(match: Match, result: Boolean) {
+/** Keep the actual scores, all statistics and active thrower within a bounded portrait band.
+ * The scorecard's fixed header and true starting scores need at least 68 dp below it. */
+@Composable private fun PortraitPlayers(match: Match) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        match.players.forEachIndexed { index, player ->
+            val active = match.canShowTurn && index == match.turn
+            Column(Modifier.weight(1f).background(Panel, RoundedCornerShape(8.dp)).border(1.dp, if (active) Lime else Outline, RoundedCornerShape(8.dp)).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(player.name, modifier = Modifier.semantics { contentDescription = (listOf(player.name) + player.partners).distinct().joinToString(" · ") }, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp, lineHeight = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${match.cricket?.points?.getOrNull(index) ?: player.remaining}", color = if (active) Lime else Color.White, fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, lineHeight = 34.sp, maxLines = 1)
+                Text(if (active) match.currentThrowerName?.let { "WERPT: $it" } ?: "AAN DE BEURT" else if (!match.canShowTurn) match.statusLabel.uppercase(Locale.ROOT) else "WACHT", color = if (active) Lime else Muted, fontSize = 9.sp, lineHeight = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                val average = player.average?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–"
+                Text(if (match.cricket != null) "MPR ${match.cricket.mpr.getOrNull(index)?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–"}" else "AVG $average · FIN ${if (player.highestFinish > 0) player.highestFinish else "–"} · 180 ${player.maxima}", color = Muted, fontSize = 9.sp, lineHeight = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+@Composable private fun MatchHeading(match: Match, result: Boolean, compact: Boolean = false) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text("${match.startScore} ${if (result) "EINDSTAND" else "DUBBEL UIT"}", fontFamily = Barlow, fontSize = 29.sp, color = Color.White)
-        Spacer(Modifier.weight(1f)); Text(if (result) "Uitslag" else "● Live", color = Lime, fontSize = 14.sp)
+        Column(Modifier.weight(1f)) {
+            Text("${match.startLabel}${if (result) " EINDSTAND" else ""}", fontFamily = Barlow, fontSize = if (compact) 24.sp else 29.sp, lineHeight = if (compact) 26.sp else 31.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(match.rulesLabel + match.winByTwoLabel, color = Muted, fontSize = 12.sp, lineHeight = if (compact) 16.sp else 24.sp, maxLines = if (compact) 3 else 2)
+        }
+        Text(match.statusLabel, color = Lime, fontSize = 14.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f, false))
     }
 }
 @Composable private fun Players(match: Match, size: Int, compact: Boolean = false) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         match.players.forEachIndexed { index, player ->
-            val active = index == match.turn
+            val active = match.canShowTurn && index == match.turn
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)) {
                 Row(Modifier.fillMaxWidth().border(1.dp, Outline, RoundedCornerShape(10.dp)).padding(if (compact) 4.dp else 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(initials(player.name), color = if (active) Lime else Color.White, fontFamily = Barlow, fontSize = if (compact) 16.sp else 24.sp, modifier = Modifier.background(if (active) Color(0xFF2D4116) else Outline, RoundedCornerShape(6.dp)).padding(if (compact) 2.dp else 7.dp))
-                    Text(player.name, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(initials(player.name), color = if (active) Lime else Color.White, fontFamily = Barlow, fontSize = if (compact) 16.sp else 24.sp, lineHeight = if (compact) 20.sp else 24.sp, modifier = Modifier.background(if (active) Lime.copy(alpha = .16f) else Outline, RoundedCornerShape(6.dp)).padding(if (compact) 2.dp else 7.dp))
+                    Text(player.name, modifier = Modifier.semantics { contentDescription = (listOf(player.name) + player.partners).distinct().joinToString(" · ") }, color = Color.White, fontSize = 17.sp, lineHeight = if (compact) 20.sp else 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Column(Modifier.fillMaxWidth().background(if (active) Color(0xFF263A17) else Panel, RoundedCornerShape(8.dp)).border(1.dp, if (active) Lime else Outline, RoundedCornerShape(8.dp)).padding(vertical = if (compact) 2.dp else 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("RESTEREND", color = Muted, fontSize = if (compact) 9.sp else 10.sp, letterSpacing = 1.sp)
-                    Text("${player.remaining}", fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, lineHeight = (size + 4).sp, color = if (active) Lime else Color.White, maxLines = 1)
-                    Text(if (active) "AAN DE BEURT" else "WACHT", color = if (active) Lime else Muted, fontSize = if (compact) 9.sp else 10.sp)
+                Column(Modifier.fillMaxWidth().background(if (active) Lime.copy(alpha = .12f) else Panel, RoundedCornerShape(8.dp)).border(1.dp, if (active) Lime else Outline, RoundedCornerShape(8.dp)).padding(vertical = if (compact) 2.dp else 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(if (match.cricket != null) "PUNTEN" else "RESTEREND", color = Muted, fontSize = if (compact) 9.sp else 10.sp, lineHeight = if (compact) 12.sp else 24.sp, letterSpacing = 1.sp)
+                    Text("${match.cricket?.points?.getOrNull(index) ?: player.remaining}", fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, lineHeight = (size + 4).sp, color = if (active) Lime else Color.White, maxLines = 1)
+                    Text(if (active) match.currentThrowerName?.let { "WERPT: $it" } ?: "AAN DE BEURT" else if (!match.canShowTurn) match.statusLabel.uppercase(Locale.ROOT) else "WACHT", color = if (active) Lime else Muted, fontSize = if (compact) 9.sp else 10.sp, lineHeight = if (compact) 12.sp else 24.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).padding(if (compact) 2.dp else 6.dp), horizontalArrangement = Arrangement.SpaceAround) {
+                    if (compact) {
+                        val average = player.average?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–"
+                        val summary = if (match.cricket != null) "MPR ${match.cricket.mpr.getOrNull(index)?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–"}" else "AVG $average · FIN ${if (player.highestFinish > 0) player.highestFinish else "–"} · 180 ${player.maxima}"
+                        Text(summary, color = Color.White, fontSize = 9.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    } else if (match.cricket != null) Metric(match.cricket.mpr.getOrNull(index)?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–", "MPR", compact) else {
                     Metric(player.average?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–", "AVG", compact)
                     Metric(if (player.highestFinish > 0) "${player.highestFinish}" else "–", "H. FIN", compact)
                     Metric("${player.maxima}", "180's", compact)
+                    }
                 }
                 if (!compact) Text("Legs ${player.legs} · Sets ${player.sets}", color = Muted, fontSize = 11.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
             }
@@ -284,22 +343,40 @@ class MainActivity : ComponentActivity() {
     }
 }
 @Composable private fun Metric(value: String, title: String, compact: Boolean = false) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(value, fontFamily = Barlow, fontSize = if (compact) 18.sp else 22.sp, color = Color.White); Text(title, fontSize = if (compact) 9.sp else 10.sp, color = Muted) } }
+private fun cricketMark(value: Int) = when (value.coerceIn(0,3)) { 0 -> "–"; 1 -> "/"; 2 -> "X"; else -> "⊗" }
 @Composable private fun Scorecard(match: Match, rowHeight: Dp, modifier: Modifier) {
+    match.cricket?.let { cricket ->
+        Column(modifier.fillMaxWidth().border(1.dp, Outline, RoundedCornerShape(10.dp)).padding(10.dp), verticalArrangement = Arrangement.SpaceEvenly) {
+            Text("MARKS · / één · X twee · ⊗ gesloten", color = Muted, fontSize = 12.sp)
+            listOf(20,19,18,17,16,15,25).forEachIndexed { index, target ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                    Text(cricketMark(cricket.marks.getOrNull(0)?.getOrNull(index) ?: 0), color = Lime, fontSize = 24.sp)
+                    Text(if (target == 25) "BULL" else "$target", color = Color.White, fontSize = 20.sp)
+                    if (match.players.size > 1) Text(cricketMark(cricket.marks.getOrNull(1)?.getOrNull(index) ?: 0), color = Lime, fontSize = 24.sp)
+                }
+            }
+        }
+        return
+    }
     val list = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var focused by remember { mutableStateOf(false) }
     val rows = match.rows()
     var priorCount by remember(match.legKey) { mutableIntStateOf(match.visits.size) }
-    LaunchedEffect(match.legKey) { list.scrollToItem(0) }
+    LaunchedEffect(match.legKey) { list.scrollToItem(maxOf(0, rows.size - 5)) }
     LaunchedEffect(match.revision) {
         val undo = match.events.lastOrNull()?.kind == "undo"
         if (!undo && match.visits.size > priorCount && rows.size > 5) list.animateScrollToItem(rows.size - 5)
         priorCount = match.visits.size
     }
     Column(modifier.fillMaxWidth().border(1.dp, Outline, RoundedCornerShape(10.dp)).clip(RoundedCornerShape(10.dp))) {
-        Row(Modifier.fillMaxWidth().background(Panel).padding(10.dp, 5.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text("SCOREKAART", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold); Text("SET ${match.set} · LEG ${match.leg}", color = Muted, fontSize = 11.sp) }
+        Row(Modifier.fillMaxWidth().background(Panel).padding(10.dp, 5.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("SCOREKAART", color = Color.White, fontSize = 12.sp, lineHeight = if (rowHeight <= 22.dp) 16.sp else 24.sp, fontWeight = FontWeight.Bold)
+            if (rows.size > 5 && list.canScrollForward) TextButton(onClick = { scope.launch { list.animateScrollToItem(rows.size - 5) } }, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(28.dp)) { Text("Terug naar live", color = Lime, fontSize = 11.sp) }
+            else Text("SET ${match.set} · LEG ${match.leg}", color = Muted, fontSize = 11.sp, lineHeight = if (rowHeight <= 22.dp) 16.sp else 24.sp)
+        }
         CardRow(if (match.players.size == 1) listOf("WORP", "REST") else listOf("WORP", "REST", "REST", "WORP"), rowHeight, true)
-        CardRow(if (match.players.size == 1) listOf("–", "${match.startScore}") else listOf("–", "${match.startScore}", "${match.startScore}", "–"), rowHeight)
+        CardRow(match.startRow, rowHeight)
         LazyColumn(state = list, modifier = Modifier.heightIn(max = rowHeight * 5).fillMaxWidth().onFocusChanged { focused = it.isFocused }.border(if (focused) 2.dp else 0.dp, if (focused) Color.White else Color.Transparent).onPreviewKeyEvent { event ->
                 val direction = when (event.key) { Key.DirectionDown -> 1; Key.DirectionUp -> -1; else -> 0 }
                 if (event.type == KeyEventType.KeyDown && direction != 0) {
@@ -316,17 +393,25 @@ class MainActivity : ComponentActivity() {
     }
 }
 @Composable private fun CardRow(values: List<String>, height: Dp, heading: Boolean = false, highlights: Set<Int> = emptySet()) {
-    Row(Modifier.fillMaxWidth().height(height).background(if (heading) Color(0xFF2D3D28) else Panel)) {
+    Row(Modifier.fillMaxWidth().height(height).background(if (heading) Lime.copy(alpha = .12f) else Panel)) {
         values.forEachIndexed { index, value ->
-            Box(Modifier.weight(1f).fillMaxHeight().background(if (index in highlights) Lime.copy(alpha = .23f) else Color.Transparent).border(.5.dp, Outline), contentAlignment = Alignment.Center) { Text(value, color = if (index in highlights) Lime else Color.White, fontFamily = if (heading) DmSans else Barlow, fontWeight = if (heading) FontWeight.Bold else FontWeight.ExtraBold, fontSize = if (heading) 11.sp else if (height <= 22.dp) 20.sp else 23.sp, maxLines = 1, style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")) }
+            Box(Modifier.weight(1f).fillMaxHeight().background(if (index in highlights) Lime.copy(alpha = .23f) else Color.Transparent).border(.5.dp, Outline), contentAlignment = Alignment.Center) { Text(value, color = if (index in highlights) Lime else Color.White, fontFamily = if (heading) DmSans else Barlow, fontWeight = if (heading) FontWeight.Bold else FontWeight.ExtraBold, fontSize = if (heading) 11.sp else if (height <= 22.dp) 20.sp else 23.sp, lineHeight = if (heading) 14.sp else if (height <= 22.dp) 20.sp else 26.sp, maxLines = 1, style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")) }
         }
     }
 }
-@Composable private fun LastVisit(match: Match) {
+@Composable private fun LastVisit(match: Match, compact: Boolean = false) {
     val last = match.visits.lastOrNull()
-    Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).border(1.dp, Outline, RoundedCornerShape(8.dp)).padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text("LAATSTE BEURT", color = Lime, fontSize = 11.sp)
-        Text(last?.let { "${match.players.getOrNull(it.player)?.name ?: ""} · ${if (it.bust) "Bust" else "${it.score} punten"}" } ?: "Nog geen worp", color = Color.White, fontFamily = Barlow, fontSize = 18.sp)
+    val label = when { match.bullPending -> "BULL · GEEN SCORE"; match.finished -> match.statusLabel.uppercase(Locale.ROOT); !match.canShowTurn -> match.statusLabel.uppercase(Locale.ROOT); match.checkout != null -> "FINISHROUTE"; else -> "LAATSTE BEURT" }
+    val value = when {
+        match.bullPending -> match.bullLabel ?: "Volg bullen op de telefoon"
+        match.finished -> match.winnerName?.let { "Winnaar: $it" } ?: "Bekijk de uitslag op je telefoon"
+        !match.canShowTurn -> match.startDecision?.starter?.let { "Beginner: ${match.players.getOrNull(it)?.name ?: "Speler"}" } ?: "Volg de instructies op je telefoon"
+        match.checkout != null -> match.checkout
+        else -> last?.let { "${match.players.getOrNull(it.player)?.name ?: ""} · ${if (it.bust) "Bust" else if (match.cricket != null) "${it.creditedMarks ?: 0} marks · ${it.score} punten" else "${it.score} punten"}" } ?: "Nog geen worp"
+    }
+    Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).border(1.dp, Outline, RoundedCornerShape(8.dp)).padding(if (compact) 6.dp else 10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, color = Lime, fontSize = if (compact) 9.sp else 11.sp, lineHeight = if (compact) 12.sp else 24.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Text(value, color = Color.White, fontFamily = Barlow, fontSize = if (compact) 16.sp else 18.sp, lineHeight = if (compact) 18.sp else 24.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1.5f), maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
     }
 }
 fun formatClock(seconds: Int): String = "%02d:%02d".format(Locale.ROOT, seconds / 60, seconds % 60)

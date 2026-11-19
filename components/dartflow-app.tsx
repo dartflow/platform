@@ -1,4 +1,7 @@
 "use client";
+import GuestMatchControls from './guest-match-controls';
+import BullStartPanel,{StartProcedureFields,readWinByTwo} from './bull-start-panel';
+import OfflineConflictPanel from './offline-conflict-panel';
 
 import {
   useCallback,
@@ -10,6 +13,13 @@ import {
 } from "react";
 import PlatformWorkspace from "./platform-workspace";
 import SeasonWorkspace from './season-workspace';
+import FaqAdminWorkspace from './faq-admin';
+import MatchCorrectionPanel from './match-correction-panel';
+import RankingsWorkspace from './rankings-workspace';
+import DartVisitInput from './dart-visit-input';
+import CricketCard from './cricket-card';
+import {dartValue} from '@/lib/x01-rules';
+import {matchParticipants,matchSideIndex} from '@/lib/match-sides';
 import {FeedWorkspace} from './feed-workspace';
 import PlayerExperienceWorkspace from './player-experience';
 import type {PlayerExperience} from '@/lib/player-experience-types';
@@ -555,6 +565,8 @@ export default function DartflowApp() {
     { href: "/app/play", label: "Spelen", icon: "target" },
     { href: "/app/events", label: "Evenementen", icon: "calendar" },
     { href: "/app/competities", label: "Competities", icon: "club" },
+    { href: "/app/rankings", label: "Rankings", icon: "history" },
+    { href: "/app/hall", label: "Toernooien", icon: "calendar" },
     { href: "/app/friends", label: "Vrienden", icon: "users" },
     { href: "/app/feed", label: "My Feed", icon: "screen" },
     { href: "/app/community", label: "Kamers", icon: "users" },
@@ -567,6 +579,7 @@ export default function DartflowApp() {
     { href: "/app/mymatches", label: "Mijn wedstrijden", icon: "history" },
     { href: "/app/statistics", label: "Mijn profiel", icon: "users" },
     { href: "/app/settings", label: "Instellingen", icon: "sliders" },
+    { href: "/help", label: "Help & FAQ", icon: "shield" },
   ];
   const organizeNav: { href: string; label: string; icon: IconName }[] = [
     { href: "/app/dashboard", label: "Organiseren", icon: "home" },
@@ -581,6 +594,7 @@ export default function DartflowApp() {
     { href: "/app/mail", label: "Mailbeheer", icon: "users" },
     ...(session.data.canManagePlatform
       ? [
+          {href:"/app/help-beheer",label:"Helpbeheer",icon:"shield" as IconName},
           {href:"/app/blog",label:"Blogbeheer",icon:"shield" as IconName},
           {
             href: "/app/platform/integraties",
@@ -783,7 +797,7 @@ export default function DartflowApp() {
             <LegacyEventsPage data={data} refresh={overview.refresh} />
           ) : path === "/historie" ? (
             <LegacyHistoryPage data={scorerOverview} />
-          ) : platformPath === '/app/schermen' ? <OcheDeviceManager/> : platformPath.startsWith('/app/feed') ? <FeedWorkspace path={platformPath} userId={user.id} urgentActions={personal.data?.actions??[]}/> : /^\/app\/competities(?:\/|$)/.test(platformPath)?<SeasonWorkspace id={platformPath.split('/')[3]} user={user}/> : /^\/app\/(?:leagues|competitions)\/[^/]+$/.test(platformPath)?<SeasonCompatibility id={platformPath.split('/')[3]} user={user}><PlatformWorkspace path={platformPath} user={user} overview={data} clubId={clubId}/></SeasonCompatibility> : ['/app/speeldag','/app/baanfavorieten','/app/training-advies','/app/schermbeheer'].includes(platformPath)?<PlayerExperienceWorkspace path={platformPath}/> : platformPath === "/app/baan" ? (
+          ) : platformPath === '/app/help-beheer' ? <FaqAdminWorkspace/> : platformPath === '/app/rankings' ? <RankingsWorkspace/> : platformPath === '/app/schermen' ? <OcheDeviceManager/> : platformPath.startsWith('/app/feed') ? <FeedWorkspace path={platformPath} userId={user.id} urgentActions={personal.data?.actions??[]}/> : /^\/app\/competities(?:\/|$)/.test(platformPath)?<SeasonWorkspace id={platformPath.split('/')[3]} user={user}/> : /^\/app\/(?:leagues|competitions)\/[^/]+$/.test(platformPath)?<SeasonCompatibility id={platformPath.split('/')[3]} user={user}><PlatformWorkspace path={platformPath} user={user} overview={data} clubId={clubId}/></SeasonCompatibility> : ['/app/speeldag','/app/baanfavorieten','/app/training-advies','/app/schermbeheer'].includes(platformPath)?<PlayerExperienceWorkspace path={platformPath}/> : platformPath === "/app/baan" ? (
             data ? (
               <>
                 <Heading
@@ -1100,7 +1114,7 @@ function PlanMatch({
       await request(`/api/events/${event.id}/actions`, {
         type: "plan",
         playerIds: [p1, p2],
-        settings: { startScore, bestOfLegs: legs, bestOfSets: sets },
+        settings: { startScore, bestOfLegs: legs, bestOfSets: sets,...Object.fromEntries(new FormData(e.currentTarget as HTMLFormElement)),...readWinByTwo(new FormData(e.currentTarget as HTMLFormElement)) },
       });
       await refresh();
     } catch (e) {
@@ -1113,6 +1127,7 @@ function PlanMatch({
     <form className="panel plan-panel" onSubmit={submit}>
       <div className="panel-kicker">VOLGENDE AAN DE OCHE</div>
       <h3>Partij klaarzetten</h3>
+      <StartProcedureFields/>
       <p className="muted-copy">
         Kies twee ingecheckte spelers. De server controleert of ze beschikbaar
         zijn.
@@ -1616,10 +1631,12 @@ function BoardPage({
                 mode,
                 startScore: Number(startScore),
                 bestOfLegs: Number(bestOfLegs),
+                ...(mode!=='solo'?{...Object.fromEntries(new FormData(event.currentTarget)),...readWinByTwo(new FormData(event.currentTarget))}:{}),
               });
             }}
           >
             <h2>Vrij spelen op deze baan</h2>
+            {mode!=='solo'&&<StartProcedureFields key={mode} defaultProcedure={mode==='remote'?'server-lot':'bull'}/>}
             <p>
               Deze vaste QR en het gekoppelde Oche Live-scherm blijven bij
               hetzelfde fysieke bord.
@@ -1690,6 +1707,8 @@ function BoardPage({
 }
 
 type PendingAction = {
+  guestId?:string;
+  offline?:boolean;
   requestId: string;
   expectedRevision: number;
   action: MatchAction;
@@ -1763,6 +1782,7 @@ function MatchPage({
         await refreshMatch();
       } catch (e) {
         const status = (e as Error & { status?: number }).status;
+        if(!status){const saved={...command,offline:true};setPending(saved);sessionStorage.setItem(storeKey,JSON.stringify(saved));}
         setConflict(status === 409 || status === 400 || status === 403 || status === 410);
         setActionError(
           e instanceof Error
@@ -1790,11 +1810,13 @@ function MatchPage({
       window.removeEventListener("online", retry);
     };
   }, [pending, conflict, submitPending]);
-  function act(action: MatchAction) {
-    if (!match || pending || sendingRef.current) return;
+  function act(action: MatchAction,guestId?:string) {
+    if (!match || pending&&action.type!=='resolve-offline-conflict' || sendingRef.current) return;
     const command = {
       requestId: crypto.randomUUID(),
       expectedRevision: match.revision,
+      offline:!navigator.onLine,
+      ...(guestId?{guestId}:{}),
       matchId: match.id,
       action,
     };
@@ -1837,10 +1859,11 @@ function MatchPage({
     new URLSearchParams(location.search).get("tablet") === "1" &&
     "offlineSupported" in match &&
     match.offlineSupported === true;
-  const playerIndex = match.players.findIndex((p) => p.id === user.id);
+  const playerIndex = matchSideIndex(match,user.id);
+  const displayPlayers=match.players.map((player,index)=>({...player,name:match.sideNames?.[index]??(match.sideParticipants?.[index].map(member=>member.name).join(" / ")||player.name)}));
   const finish = score !== "" && Number(score) === match.remaining[match.turn];
   const writer =
-    match.players.find((p) => p.id === match.writerId)?.name ||
+    matchParticipants(match).find((p) => p.id === match.writerId)?.name ||
     "Wedstrijdleiding";
   const event =
     actualBoard.data?.event ||
@@ -1853,6 +1876,7 @@ function MatchPage({
   const winner = match.players.find((p) => p.id === match.winnerId);
   const matchControls = <>
             <div className="match-actions">
+              {match.settings.discipline!=='cricket'&&match.permissions.canScore&&match.settings.inRule!=='double'&&(!match.settings.outRule||match.settings.outRule==='double')&&<button type="button" className="button ghost small" disabled={disabled||!live.online} onClick={()=>act({type:'score',score:0,darts:3,bust:true})}>Bust · nul punten</button>}
               {match.permissions.canPause && (
                 <button
                   className="button ghost small"
@@ -1996,25 +2020,30 @@ function MatchPage({
               </div>
             )}
   </>;
-  const activeConsole = consoleOpen && match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore);
+  const detailedScoring=match.settings.discipline==='cricket'||match.settings.inRule==='double'||Boolean(match.settings.outRule&&match.settings.outRule!=='double');
+  const startProcedurePending = Boolean(match.settings.startProcedure && (match.startDecision?.starter === undefined || match.bull && match.bull.status !== 'complete'));
+  const activeConsole = match.offlineConflict?.status!=='open'&&(!match.bull||match.bull.status==='complete')&&!detailedScoring && consoleOpen && match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore);
   return (
     <>
       {!activeConsole&&<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>}
-      {activeConsole && <ScoreConsole activity={<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={match.players.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} message={actionError || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed,...(doubleAttempts==null?{}:{doubleAttempts})})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
-      {match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore) && <button className="button gold full" onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</button>}
+      {activeConsole && <ScoreConsole activity={<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={displayPlayers.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} message={actionError || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed,...(doubleAttempts==null?{}:{doubleAttempts})})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
+      {!detailedScoring&&match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore) && <button className="button gold full" onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</button>}
       <Heading
         kicker={`${event?.name || "BAANMODUS"}${match.boardId ? ` · ${boardName}` : ""}`}
-        title={`${match.players[0].name} — ${match.players[1].name}`}
+        title={`${displayPlayers[0].name} — ${displayPlayers[1].name}`}
         action={
           <Badge live={match.status === "live"}>{labels[match.status]}</Badge>
         }
       >
-        {match.settings.startScore} dubbel uit · best of{" "}
+        {match.settings.startScore} · {match.settings.inRule==='double'?'double in':'open in'} · {match.settings.outRule==='master'?'master out':match.settings.outRule==='straight'?'straight out':'double out'} · best of{" "}
         {match.settings.bestOfLegs} legs
         {match.settings.bestOfSets > 1 &&
           ` · best of ${match.settings.bestOfSets} sets`}
       </Heading>
       <MatchInvitation matchId={match.id} />
+      {(match.status==='confirmed'||match.primaryCorrection)&&<MatchCorrectionPanel matchId={match.id} revision={match.revision} onChange={refreshMatch}/>}
+      {!!match.rankingDestinations?.length&&<section className="panel"><h2>Actuele rankinggevolgen</h2>{match.rankingDestinations.map(destination=><article key={destination.listId}><h3>{destination.name}</h3><p>{destination.kind==='circuit'?'Circuiteindplaats':'Partijrating'} · {destination.status==='booked'?'Geboekt':destination.status==='admitted'?'Vooraf toegelaten':destination.status==='void'?'Ongeldig verklaard':'Uitgesloten'} · {destination.policyVersion}</p>{destination.reason&&<p>{destination.reason}</p>}{destination.before&&destination.after&&<p>{match.players.map((player,index)=>`${player.name}: ${Math.round(destination.before![index])} → ${Math.round(destination.after![index])}`).join(' · ')}</p>}</article>)}<a href="/app/rankings">Stand en mutaties bekijken</a></section>}
+      {(match.rankingEligibility?.eligible||match.ranking)&&<section className="panel" aria-label="Rating voor deze partij"><h2>Spelersrating</h2>{match.ranking?.booking?<p>Oorspronkelijk uitslagbewijs: {match.players.map((player,index)=>`${player.name} ${Math.round(match.ranking!.booking!.before[index])} → ${Math.round(match.ranking!.booking!.after[index])}`).join(' · ')}</p>:<><p>{match.ranking?.status==='reserved'?'Beide spelers kozen voor rating. De definitief bevestigde uitslag wordt één keer geboekt.':'Deze partij telt voor rating als jullie daar allebei vóór de start voor kiezen.'}</p><ul>{match.players.map((player,index)=><li key={player.id}>{player.name}: {match.ranking?.consents[index]?'Akkoord met rating':'Nog geen akkoord met rating'}</li>)}</ul>{playerIndex>=0&&['called','ready'].includes(match.status)&&<button type="button" className="button" disabled={disabled} onClick={()=>act({type:'ranking-consent',consent:!match.ranking?.consents[playerIndex]})}>{match.ranking?.consents[playerIndex]?'Ratingkeuze intrekken':'Ik wil voor rating spelen'}</button>}</>}<a href={`/help?returnTo=${encodeURIComponent(`/wedstrijd/${match.id}`)}`}>Ratingvoorwaarden bekijken</a></section>}
       <div className="match-layout">
         <div>
           <div className="panel scoreboard">
@@ -2026,7 +2055,7 @@ function MatchPage({
               <Connection stale={live.stale} updated={live.updated} />
             </div>
             <div className="score-players">
-              {match.players.map((player, index) => (
+              {displayPlayers.map((player, index) => (
                 <div
                   className={`score-player ${match.turn === index && match.status === "live" ? "active" : ""}`}
                   key={player.id}
@@ -2061,6 +2090,8 @@ function MatchPage({
                 {match.scoringMode==='per-player'?'Iedere speler scoort zelf · Aan de beurt: ':'Schrijver: '}<strong>{writer}</strong>
               </span>
             </div>
+            {match.cricket&&<CricketCard cricket={match.cricket} names={displayPlayers.map(player=>player.name)}/>}
+            {match.currentThrower&&<p className="notice" role="status">Werper: <strong>{match.currentThrower.name}</strong> · vaste volgorde: {match.sideParticipants?.[match.turn].map(player=>player.name).join(" → ")}</p>}
             {match.checkout && match.status === "live" && (
               <div className="checkout">
                 <Icon name="target" />
@@ -2192,7 +2223,7 @@ function MatchPage({
                   </div>
                 )}
               </div>
-            ) : match.permissions.canScore && !tablet ? (
+            ) : detailedScoring&&match.permissions.canScore ? <DartVisitInput key={match.revision} disabled={disabled} onSubmit={hits=>act({type:'score',score:hits.reduce((sum,hit)=>sum+dartValue(hit),0),darts:hits.length,dartHits:hits})}/> : match.permissions.canScore && !tablet ? (
               <form
                 className="score-form"
                 onSubmit={(e) => {
@@ -2209,7 +2240,7 @@ function MatchPage({
               >
                 <label htmlFor="visit-score" className="score-input-label">
                   JOUW BEZOEK{" "}
-                  <span>{match.players[match.turn].name} is aan de beurt</span>
+                  <span>{match.currentThrower?.name??displayPlayers[match.turn].name} is aan de beurt</span>
                 </label>
                 <div className="score-entry">
                   <input
@@ -2357,7 +2388,7 @@ function MatchPage({
                   match.accepted.every(Boolean) && (
                     <button
                       className="button gold"
-                      disabled={disabled}
+                      disabled={disabled || startProcedurePending}
                       onClick={() => act({ type: "start" })}
                     >
                       Wedstrijd starten <Icon name="arrow" />
@@ -2365,6 +2396,8 @@ function MatchPage({
                   )}
               </div>
             )}
+            <BullStartPanel match={match}onAction={act}disabled={disabled}/><GuestMatchControls match={match}busy={disabled}onAction={act}/>
+            <OfflineConflictPanel match={match}onAction={act}disabled={sending}/>
             {matchControls}
             <div className="revision-label">
               Stand bijgewerkt · revisie {match.revision}
@@ -2378,7 +2411,7 @@ function MatchPage({
               enabled={match.permissions.canScore || match.permissions.canUndo}
             />
           )}
-          {playerIndex >= 0 && (
+          {(match.permissions.canMedia??playerIndex>=0) && (
             <>
               <MediaRoom matchId={id} />
               {match.scoringMode==='per-player'&&!activeConsole&&<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat"/>}
@@ -2482,7 +2515,7 @@ function MatchPage({
               {["called", "ready"].includes(match.status) && (
                 <button
                   className="button gold full"
-                  disabled={disabled || !match.accepted.every(Boolean)}
+                  disabled={disabled || !match.accepted.every(Boolean) || startProcedurePending}
                   onClick={() => act({ type: "start" })}
                 >
                   Wedstrijd starten

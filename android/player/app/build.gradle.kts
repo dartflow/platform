@@ -15,7 +15,7 @@ android {
         applicationId = "nl.dartflow.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = providers.gradleProperty("playerVersionCode").orElse("4").get().toInt()
+        versionCode = providers.gradleProperty("playerVersionCode").orElse("5").get().toInt()
         versionName = providers.gradleProperty("playerVersionName").orElse(releaseVersion.getProperty("versionName")).get()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -80,6 +80,11 @@ android {
     lint { abortOnError = true; checkReleaseBuilds = true }
 }
 dependencies {
+    constraints {
+        // FCM's legacy support dependency otherwise selects Fragment 1.0.0,
+        // which predates the Activity Result permission contract.
+        implementation("androidx.fragment:fragment:1.8.9")
+    }
     implementation(platform("androidx.compose:compose-bom:2025.09.01"))
     implementation("androidx.activity:activity-compose:1.11.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
@@ -90,6 +95,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.browser:browser:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("com.google.firebase:firebase-messaging:25.0.1")
     implementation("com.google.zxing:core:3.5.3")
     implementation("io.github.webrtc-sdk:android:144.7559.15")
     debugImplementation("androidx.compose.ui:ui-tooling")

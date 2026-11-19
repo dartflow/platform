@@ -1,3 +1,7 @@
+import{publicBullStart}from'./bull-start';
+import {matchEventNotice} from './event-display-notice';
+import {readSeasonDisplay} from './season-display';
+import {publicMatchSides,publicMatchVisit,publicMatchSettings} from './match-sides';
 import type {PoolClient} from 'pg';
 import {createHash} from 'node:crypto';
 import {getMatch} from './db';
@@ -22,10 +26,10 @@ async function homeProjection(client:PoolClient,device:OcheDeviceRow):Promise<Cl
   title=String(source.state.name??title);boardId=typeof source.state.boardId==='string'?source.state.boardId:null;
   if(typeof source.state.matchId==='string')sourceId=source.state.matchId;
  }
- const ownMatch=(await client.query<{id:string}>(`select m.id from dartflow_private.matches m join dartflow_private.match_players p on p.match_id=m.id and p.user_id=$2 where m.id=$1 and m.state->>'status' not in('abandoned','interrupted')`,[sourceId,device.owner_id])).rows[0];
+ const ownMatch=(await client.query<{id:string}>(`select m.id from dartflow_private.matches m where (exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$2) or m.state->'remoteWriterIds' ? $2::text or jsonb_path_exists(m.state,'$.sideParticipants[*][*] ? (@.id == $actor)',jsonb_build_object('actor',$2::text))) and m.id=$1 and m.state->>'status' not in('abandoned','interrupted')`,[sourceId,device.owner_id])).rows[0];
  if(ownMatch){
   const view=await getMatch(device.owner_id!,ownMatch.id,client);boardId=view.boardId;
-  match={id:`home-${device.id}`,revision:view.revision,status:view.status,players:view.players.map((player,index)=>({id:`player-${index+1}`,name:player.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:visits(view.currentLegVisits??[]),currentLegVisits:visits(view.currentLegVisits??[]),currentLegStartScore:view.currentLegStartScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(player=>player.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:{startScore:view.settings.startScore,bestOfLegs:view.settings.bestOfLegs,bestOfSets:view.settings.bestOfSets,...(view.settings.legLimit===undefined?{}:{legLimit:view.settings.legLimit})},writerId:'',stats:view.stats.map(stat=>({total:stat.total,darts:stat.darts,average:stat.average,oneEighties:stat.oneEighties,highestFinish:stat.highestFinish,measurementComplete:stat.measurementComplete})),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
+  match={id:`home-${device.id}`,revision:view.revision,status:view.status,...(view.cricket?{cricket:view.cricket}:{}),...publicMatchSides(view),...publicBullStart(view),players:view.players.map((player,index)=>({id:`player-${index+1}`,name:player.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit)),currentLegVisits:(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit)),currentLegStartScore:view.currentLegStartScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(player=>player.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:publicMatchSettings(view.settings),writerId:'',stats:view.stats.map(stat=>({total:stat.total,darts:stat.darts,average:stat.average,oneEighties:stat.oneEighties,highestFinish:stat.highestFinish,measurementComplete:stat.measurementComplete})),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
  }else if(source?.kind==='training'&&source.state.game){
   const game=source.state.game as Game;boardId=typeof source.state.boardId==='string'?source.state.boardId:null;
   const name=(await client.query<{name:string}>('select name from dartflow_private.profile_labels where id=$1',[device.owner_id])).rows[0]?.name??'Speler';
@@ -34,7 +38,7 @@ async function homeProjection(client:PoolClient,device:OcheDeviceRow):Promise<Cl
  }else if(!source)return null;
  const activity=await readSourceBoardActivity(client,sourceId);if(activity)activity.canExtend=false;
  const scoreEvents=boardId?await readBoardScoreEvents(client,boardId,sourceId,match?.revision):{sessionKey:opaque(sourceId),scoreEvents:match?await readOcheHomeEvents(client,sourceId,device.owner_id!,ownMatch?'match':'training',match.revision):[]};
- return {board:{id:`home-${device.id}`,name:'Thuis',clubName:title,access:'club',blocked:false,occupied:true,publicScan:false,playUrl:'/app/spelen',screenUrl:'/oche-live'},status:match?'playing':'waiting',snapshot:{board:{id:`home-${device.id}`,name:'Thuis'},event:{name:title},match,...scoreEvents,...(activity?{boardActivity:activity}:{})},screen:{rotation:0,paired:false}};
+ return {board:{id:`home-${device.id}`,name:'Thuis',clubName:title,access:'club',blocked:false,occupied:true,publicScan:false,playUrl:'/app/spelen',screenUrl:'/oche-live'},status:match?'playing':'waiting',snapshot:{board:{id:`home-${device.id}`,name:'Thuis'},event:{name:[title,await matchEventNotice(client,ownMatch?.id)].filter(Boolean).join(' · ')},match,...await readSeasonDisplay(client,ownMatch?.id),...scoreEvents,...(activity?{boardActivity:activity}:{})},screen:{rotation:0,paired:false}};
 }
 export async function getOcheDeviceSnapshot(token:string):Promise<OcheDisplaySnapshot>{
  return ocheTransaction(async client=>{
@@ -42,6 +46,7 @@ export async function getOcheDeviceSnapshot(token:string):Promise<OcheDisplaySna
   const serverNow=Number((await client.query<{now:string}>('select extract(epoch from clock_timestamp())*1000 as now')).rows[0].now);
   const location=device.location_id?(await client.query<{id:string;name:string}>('select id,name from dartflow_private.locations where id=$1',[device.location_id])).rows[0]??null:null;
   const display=device.scope==='home'?await homeProjection(client,device):device.board_id?await projectBoardScreenForDevice(client,device.board_id):null;
+  if(display)display.snapshot.theme={id:device.theme??'dartflow',version:1};
   const activity=display?.snapshot.boardActivity;let state:OcheDisplaySnapshot['state']=display?display.status==='available'?'standby':display.status==='playing'?'live':display.status:'unassigned';
   if(activity?.phase==='warning')state='warning';
   if(display?.snapshot.match&&['result','confirmed','disputed'].includes(display.snapshot.match.status))state='result';

@@ -1,0 +1,545 @@
+{
+  "destination": "/var/backups/dartflow/full-release-production-20261119T155546497Z",
+  "environment": "production",
+  "createdAt": "2026-11-19T15:55:46.513Z",
+  "release": "/srv/sites/dartflow-production/releases/4a234040109b-44413713570-1",
+  "scope": "Runtime-visible private application rows and active runtime/release configuration. Excludes Supabase Auth, owner_bootstrap and external providers.",
+  "files": [
+    {
+      "name": "application.json.gz",
+      "bytes": 337024,
+      "sha256": "e84b4a84da0a1b6ac8f24b1588ee28c23f4757fe17abbd3157f3ccc676550890"
+    },
+    {
+      "name": "runtime.env",
+      "bytes": 797,
+      "sha256": "4dd3c046bd5a6b2b331cb633067b95164c07707b362ec334eb25ee2e6a82201b"
+    },
+    {
+      "name": "release.env",
+      "bytes": 509,
+      "sha256": "820ad5ea638fc61c24b865a453901223e540bbe8f74afbb2c3da58457737d386"
+    }
+  ],
+  "tables": [
+    {
+      "name": "account_deletion_jobs",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "action_receipts",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "audit_events",
+      "count": 2,
+      "sha256": "f54186443a76d54c648e0ec6006655aad88680158ebad78ebdbb4559e48af28f"
+    },
+    {
+      "name": "auth_limits",
+      "count": 96,
+      "sha256": "c6557df4a322a1e6914d940be6ba3ffc782f8622ebf6de992e387efd054f744a"
+    },
+    {
+      "name": "blog_audit",
+      "count": 5,
+      "sha256": "7f634c69d09f323d13b3623d30a9e77c1aad87a8642599c77497f9c34ca238e0"
+    },
+    {
+      "name": "blog_invalidation",
+      "count": 2,
+      "sha256": "9a86470d307fae5a8f2dd5e607b28934460e44fa5db331d9f49111520dbc6722"
+    },
+    {
+      "name": "blog_media",
+      "count": 4,
+      "sha256": "f3b8d3fb22f196da85a2bf939a61c4eb9f0689b4194ad36406ad1a7680a35cc4"
+    },
+    {
+      "name": "blog_posts",
+      "count": 2,
+      "sha256": "d4e685f9f18d6c52b885e687da072c81a6f3fc263f4c1b70c32c7c7073fe7767"
+    },
+    {
+      "name": "blog_receipts",
+      "count": 8,
+      "sha256": "bc3b5cf747f2b573fa2defea4ff51c866278cf7c49a0dbac63244c8fa74f9471"
+    },
+    {
+      "name": "blog_revisions",
+      "count": 2,
+      "sha256": "e861b21f993daa275a0f9fa8ca0c792676eeff88308e6b30a3563562252cb2b4"
+    },
+    {
+      "name": "blog_routes",
+      "count": 2,
+      "sha256": "3676d6e9fba6596ca38b9898666230ea81d3735c9ef26a7d82ab41febacdaa33"
+    },
+    {
+      "name": "blog_tokens",
+      "count": 1,
+      "sha256": "f1f5d371f929b63ed6971bb272fa2134a63ba86dd74daaac96e047098946461e"
+    },
+    {
+      "name": "board_activity_links",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "board_activity_receipts",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "board_activity_sessions",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "board_reservations",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "board_score_events",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "board_screen_devices",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "board_screen_preferences",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "boards",
+      "count": 2,
+      "sha256": "86755c93e70e27326705ec3f0aa8b7171c461396c990d0a25fff155bb4691f48"
+    },
+    {
+      "name": "club_boards",
+      "count": 1,
+      "sha256": "e620fe0428890a571762e7631e223d185fa03b87b2fb7fcfb00967e54f30a034"
+    },
+    {
+      "name": "club_intake_versions",
+      "count": 2,
+      "sha256": "d8cc11eba6c7e44bc990e3ec45170687172bde3fb089a906c1a44317513ddd65"
+    },
+    {
+      "name": "club_invites",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "club_join_requests",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "club_member_roles",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "club_memberships",
+      "count": 3,
+      "sha256": "869f23401f5002bacc57202bbc1f0e301e389a5e70fa6aac33add9933ec402c8"
+    },
+    {
+      "name": "club_roles",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "clubs",
+      "count": 3,
+      "sha256": "a96503286b5d8de9f6e6b0bfb34d72189826b339b423ffdbcfa4baebb118422f"
+    },
+    {
+      "name": "community_likes",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "community_messages",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "community_moderation",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "community_posts",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "competition_seasons",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "entries",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "event_staff",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "events",
+      "count": 2,
+      "sha256": "4828207161ce7503480a316f9e9909029a7c14b61153124a2cc383795597e7ba"
+    },
+    {
+      "name": "feature_versions",
+      "count": 21,
+      "sha256": "81d277b29d865299788933a1cef9bb46ccdf97962cb0704552bae39372d971c2"
+    },
+    {
+      "name": "feed_items",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "feed_likes",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "feed_policies",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "feed_preferences",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "feed_receipts",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "feed_replies",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "feed_shares",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "integration_audit",
+      "count": 3,
+      "sha256": "e32d2878ea74626e8149cc08ccacd4c36b0bd270d5efa4461dba05707b2dcb33"
+    },
+    {
+      "name": "integration_credentials",
+      "count": 2,
+      "sha256": "5bcac1e470753921101db85810f43efea11668c7a8cae45f73d5e2457a355ffa"
+    },
+    {
+      "name": "integration_settings",
+      "count": 1,
+      "sha256": "756b42581efe22cc4cdd0ec2c49b0f1c2f61bf0d46aa3ca9356da0eed2129748"
+    },
+    {
+      "name": "invitation_codes",
+      "count": 2,
+      "sha256": "3c1cdb4e1aaa076fa1d5b6aaddaa53e4b8d6db69b70173de9dbdf3ab38742849"
+    },
+    {
+      "name": "location_accounts",
+      "count": 2,
+      "sha256": "29bcb0faaa187168b6011544e32376b3f080bf440ebca8db4e2ef4e2fb9dacee"
+    },
+    {
+      "name": "location_boards",
+      "count": 2,
+      "sha256": "63eefc6c55069d6cedf583195221db1e155e240fef7cb54a0734b2132f3b5e53"
+    },
+    {
+      "name": "location_members",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "locations",
+      "count": 2,
+      "sha256": "a4f1b5c773b06d534d12ee3f8aa101f86800400b46a4edea463e7ed8b770b381"
+    },
+    {
+      "name": "mail_events",
+      "count": 6,
+      "sha256": "a80c6c94895e4e13980d34b8740aef5e327e33c0d1896c4b0b6f73a98b519a7a"
+    },
+    {
+      "name": "mail_outbox",
+      "count": 7,
+      "sha256": "feaecee2d96c4c6730be0f1c4e55b7a600c7a6967cad44e41c49ab9946c05a61"
+    },
+    {
+      "name": "mail_policies",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "mail_preferences",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "mail_provider_events",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "mail_suppressions",
+      "count": 2,
+      "sha256": "73e6143d4ce5e089433cf0373f876d0ecaae4b5f6a2f6644b2f462f023157943"
+    },
+    {
+      "name": "mail_template_versions",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "mail_templates",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "match_confirmations",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "match_players",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "match_results",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "matches",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "oche_device_audit",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "oche_device_credentials",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "oche_device_receipts",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "oche_devices",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "oche_home_selections",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "oche_installations",
+      "count": 10,
+      "sha256": "5379b50aaff513c1ff8f60e105e23aa906bf5519dfee24afa2d1a09ba8113125"
+    },
+    {
+      "name": "oche_location_limits",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "oche_reservations",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "platform_audit",
+      "count": 20,
+      "sha256": "90ecbd3d32715007f41d2f7273cacbb22605c7d6cddc4f32f39ed720f5066e69"
+    },
+    {
+      "name": "platform_cast_grants",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "platform_entities",
+      "count": 4,
+      "sha256": "1c3a0f8b23e4421aa583fe306fbe01d1f93807457750e19022265207c9b6085b"
+    },
+    {
+      "name": "platform_match_links",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "platform_members",
+      "count": 5,
+      "sha256": "53230fcbe01926bac7c2ca6f93f982160d72f738eb68087995a1744c215114c0"
+    },
+    {
+      "name": "platform_messages",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "platform_preferences",
+      "count": 2,
+      "sha256": "3b6911813804ead2e77c0664775b1a68bf52c491e6258c3988ddcb158ee30236"
+    },
+    {
+      "name": "platform_receipts",
+      "count": 12,
+      "sha256": "be860ab4c99651935b52b36a8fd42edb4bc46656f2c902747d2698852ecedfdb"
+    },
+    {
+      "name": "platform_registrations",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "platform_relationships",
+      "count": 2,
+      "sha256": "58959992969a2f5b489dbeaf776338283eeaa9b4336b863f54aed86c9746f09d"
+    },
+    {
+      "name": "platform_reports",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "platform_roles",
+      "count": 1,
+      "sha256": "74e43ba5f3094e9008ae5f28341cf983cdbfe5de9060953d370cf857305c709a"
+    },
+    {
+      "name": "platform_signals",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "play_review_accounts",
+      "count": 1,
+      "sha256": "a976ebe028ba381e6f9bf8f2d11b91c357135c19e3d7fa9159afd7304db67bf1"
+    },
+    {
+      "name": "player_experience",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "player_match_kickoffs",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "player_pin_kdf_leases",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "player_pin_receipts",
+      "count": 8,
+      "sha256": "650dd65822b08411dceacfb13629a42a559cd2b606101a6098e0f8083c56a622"
+    },
+    {
+      "name": "player_pin_verifiers",
+      "count": 7,
+      "sha256": "10c581fb7fb4935075cf424d559074dd6cbee75a6856fc09fecf9f495f4424b6"
+    },
+    {
+      "name": "player_safety_acceptances",
+      "count": 2,
+      "sha256": "b3a879cab53e3619faf679584071629ae1c57526d29cb699012c78d6f058aad5"
+    },
+    {
+      "name": "profile_setup_receipts",
+      "count": 6,
+      "sha256": "c2d87bb18ca42940546129dc1590783a15676160ba451a455cdf1cdd91280579"
+    },
+    {
+      "name": "profiles",
+      "count": 8,
+      "sha256": "b55a985a4060d2fcf4d84f0a5a48637b3e41c0b0e31691a3dc8f9dc2fb7ef2f3"
+    },
+    {
+      "name": "reservation_boards",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "reservation_matches",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "schema_migrations",
+      "count": 1,
+      "sha256": "30280c694f909deedff831025beba3cdf663f15e85278678a839fac051d389a5"
+    },
+    {
+      "name": "screen_capabilities",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "season_pin_receipts",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "season_receipts",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "season_representations",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "standings",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "name": "visits",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ],
+  "excluded": [
+    "owner_bootstrap"
+  ],
+  "verifiedReadback": true
+}

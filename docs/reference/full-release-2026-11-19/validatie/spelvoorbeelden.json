@@ -1,0 +1,1431 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "gelijke-start",
+      "rule": "elo",
+      "in": {
+        "a": 1500,
+        "b": 1500,
+        "result": 1
+      },
+      "expected": [
+        1516,
+        1484
+      ]
+    },
+    {
+      "id": "underdog",
+      "rule": "elo",
+      "in": {
+        "a": 1400,
+        "b": 1600,
+        "result": 1
+      },
+      "expected": [
+        1424.311901653,
+        1575.688098347
+      ]
+    },
+    {
+      "id": "favoriet",
+      "rule": "elo",
+      "in": {
+        "a": 1600,
+        "b": 1400,
+        "result": 1
+      },
+      "expected": [
+        1607.688098347,
+        1392.311901653
+      ]
+    },
+    {
+      "id": "dubbele-bevestiging",
+      "rule": "replay",
+      "in": {
+        "rows": [
+          [
+            1,
+            "m1",
+            "A",
+            "B",
+            "A"
+          ],
+          [
+            1,
+            "m1",
+            "A",
+            "B",
+            "A"
+          ]
+        ]
+      },
+      "expected": {
+        "A": 1516,
+        "B": 1484
+      }
+    },
+    {
+      "id": "keten-origineel",
+      "rule": "replay",
+      "in": {
+        "rows": [
+          [
+            2,
+            "m2",
+            "A",
+            "C",
+            "A"
+          ],
+          [
+            1,
+            "m1",
+            "A",
+            "B",
+            "A"
+          ]
+        ]
+      },
+      "expected": {
+        "A": 1531.2636932065,
+        "B": 1484,
+        "C": 1484.7363067935
+      }
+    },
+    {
+      "id": "keten-gecorrigeerd",
+      "rule": "replay",
+      "in": {
+        "rows": [
+          [
+            1,
+            "m1",
+            "A",
+            "B",
+            "B"
+          ],
+          [
+            2,
+            "m2",
+            "A",
+            "C",
+            "A"
+          ]
+        ]
+      },
+      "expected": {
+        "A": 1500.7363067935,
+        "B": 1516,
+        "C": 1483.2636932065
+      }
+    },
+    {
+      "id": "keten-ongeldig",
+      "rule": "replay",
+      "in": {
+        "rows": [
+          [
+            1,
+            "m1",
+            "A",
+            "B",
+            null
+          ],
+          [
+            2,
+            "m2",
+            "A",
+            "C",
+            "A"
+          ]
+        ]
+      },
+      "expected": {
+        "A": 1516,
+        "C": 1484
+      }
+    },
+    {
+      "id": "plaatsing-te-weinig-variatie",
+      "rule": "placed",
+      "in": {
+        "matches": 10,
+        "rivals": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "expected": false
+    },
+    {
+      "id": "plaatsing-te-weinig-partijen",
+      "rule": "placed",
+      "in": {
+        "matches": 9,
+        "rivals": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F"
+        ]
+      },
+      "expected": false
+    },
+    {
+      "id": "plaatsing-geldig",
+      "rule": "placed",
+      "in": {
+        "matches": 10,
+        "rivals": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ]
+      },
+      "expected": true
+    },
+    {
+      "id": "actief-voor-grens",
+      "rule": "active",
+      "in": {
+        "hours": 2159
+      },
+      "expected": true
+    },
+    {
+      "id": "inactief-op-grens",
+      "rule": "active",
+      "in": {
+        "hours": 2160
+      },
+      "expected": false
+    },
+    {
+      "id": "rematch-op-grens",
+      "rule": "free_limit",
+      "in": {
+        "hour": 168,
+        "other_starts": [
+          0,
+          24
+        ]
+      },
+      "expected": true
+    },
+    {
+      "id": "rematch-in-venster",
+      "rule": "free_limit",
+      "in": {
+        "hour": 168,
+        "other_starts": [
+          0.01,
+          24
+        ]
+      },
+      "expected": false
+    },
+    {
+      "id": "prive-altijd-ongeklasseerd",
+      "rule": "eligible",
+      "in": {
+        "scope": "personal",
+        "destination": "club_circuit",
+        "verdict": "classified",
+        "national_sanction": true,
+        "club_link": true
+      },
+      "expected": false
+    },
+    {
+      "id": "prive-geen-landelijk",
+      "rule": "eligible",
+      "in": {
+        "scope": "personal",
+        "destination": "national_rating",
+        "verdict": "completed",
+        "national_sanction": true,
+        "club_link": true
+      },
+      "expected": false
+    },
+    {
+      "id": "oefenduel",
+      "rule": "eligible",
+      "in": {
+        "scope": "practice",
+        "destination": "national_rating",
+        "verdict": "completed",
+        "national_sanction": true,
+        "club_link": true
+      },
+      "expected": false
+    },
+    {
+      "id": "historisch-geclaimd",
+      "rule": "eligible",
+      "in": {
+        "scope": "legacy",
+        "destination": "club_rating",
+        "verdict": "completed",
+        "national_sanction": true,
+        "club_link": true
+      },
+      "expected": false
+    },
+    {
+      "id": "vrije-ranking",
+      "rule": "eligible",
+      "in": {
+        "scope": "free",
+        "destination": "national_rating",
+        "verdict": "completed",
+        "national_sanction": false,
+        "club_link": false
+      },
+      "expected": true
+    },
+    {
+      "id": "vrije-weigering",
+      "rule": "eligible",
+      "in": {
+        "scope": "free",
+        "destination": "national_rating",
+        "verdict": "completed",
+        "national_sanction": false,
+        "club_link": false,
+        "consent": false
+      },
+      "expected": false
+    },
+    {
+      "id": "landelijke-forfait",
+      "rule": "eligible",
+      "in": {
+        "scope": "league",
+        "destination": "national_rating",
+        "verdict": "forfeit",
+        "national_sanction": true,
+        "club_link": false
+      },
+      "expected": false
+    },
+    {
+      "id": "club-zonder-erkenning",
+      "rule": "eligible",
+      "in": {
+        "scope": "club",
+        "destination": "national_rating",
+        "verdict": "completed",
+        "national_sanction": false,
+        "club_link": true
+      },
+      "expected": false
+    },
+    {
+      "id": "club-met-erkenning",
+      "rule": "eligible",
+      "in": {
+        "scope": "club",
+        "destination": "national_rating",
+        "verdict": "completed",
+        "national_sanction": true,
+        "club_link": true
+      },
+      "expected": true
+    },
+    {
+      "id": "ongeldig-format",
+      "rule": "eligible",
+      "in": {
+        "scope": "club",
+        "destination": "national_rating",
+        "verdict": "completed",
+        "national_sanction": true,
+        "club_link": true,
+        "format_ok": false
+      },
+      "expected": false
+    },
+    {
+      "id": "gast",
+      "rule": "eligible",
+      "in": {
+        "scope": "platform",
+        "destination": "national_rating",
+        "verdict": "completed",
+        "national_sanction": true,
+        "club_link": false,
+        "verified": false
+      },
+      "expected": false
+    },
+    {
+      "id": "ronde-uitgesloten",
+      "rule": "eligible",
+      "in": {
+        "scope": "platform",
+        "destination": "national_rating",
+        "verdict": "completed",
+        "national_sanction": true,
+        "club_link": false,
+        "official_slot": false
+      },
+      "expected": false
+    },
+    {
+      "id": "clubeigen-circuit",
+      "rule": "eligible",
+      "in": {
+        "scope": "club",
+        "destination": "club_circuit",
+        "verdict": "classified",
+        "national_sanction": false,
+        "club_link": true
+      },
+      "expected": true
+    },
+    {
+      "id": "landelijk-circuit-apart",
+      "rule": "eligible",
+      "in": {
+        "scope": "club",
+        "destination": "national_circuit",
+        "verdict": "classified",
+        "national_sanction": false,
+        "club_link": true
+      },
+      "expected": false
+    },
+    {
+      "id": "niet-definitief",
+      "rule": "eligible",
+      "in": {
+        "scope": "platform",
+        "destination": "national_circuit",
+        "verdict": "pending",
+        "national_sanction": true,
+        "club_link": false
+      },
+      "expected": false
+    },
+    {
+      "id": "normale-beurt",
+      "rule": "visit",
+      "in": {
+        "start": 501,
+        "darts": [
+          "T20",
+          "T20",
+          "T20"
+        ]
+      },
+      "expected": {
+        "left": 321,
+        "opened": true,
+        "status": "turn",
+        "points": 180,
+        "stat_darts": 3
+      }
+    },
+    {
+      "id": "finish-tweede-pijl",
+      "rule": "visit",
+      "in": {
+        "start": 40,
+        "darts": [
+          "S20",
+          "D10"
+        ]
+      },
+      "expected": {
+        "left": 0,
+        "opened": true,
+        "status": "finish",
+        "points": 40,
+        "stat_darts": 2
+      }
+    },
+    {
+      "id": "bust-herstel",
+      "rule": "visit",
+      "in": {
+        "start": 40,
+        "darts": [
+          "S20",
+          "T20"
+        ]
+      },
+      "expected": {
+        "left": 40,
+        "opened": true,
+        "status": "bust",
+        "points": 0,
+        "stat_darts": 3
+      }
+    },
+    {
+      "id": "bust-rest-een",
+      "rule": "visit",
+      "in": {
+        "start": 21,
+        "darts": [
+          "S20"
+        ]
+      },
+      "expected": {
+        "left": 21,
+        "opened": true,
+        "status": "bust",
+        "points": 0,
+        "stat_darts": 3
+      }
+    },
+    {
+      "id": "bust-enkele-nul",
+      "rule": "visit",
+      "in": {
+        "start": 20,
+        "darts": [
+          "S20"
+        ]
+      },
+      "expected": {
+        "left": 20,
+        "opened": true,
+        "status": "bust",
+        "points": 0,
+        "stat_darts": 3
+      }
+    },
+    {
+      "id": "bull-uit",
+      "rule": "visit",
+      "in": {
+        "start": 50,
+        "darts": [
+          "DB"
+        ]
+      },
+      "expected": {
+        "left": 0,
+        "opened": true,
+        "status": "finish",
+        "points": 50,
+        "stat_darts": 1
+      }
+    },
+    {
+      "id": "double-in-eerste-score",
+      "rule": "visit",
+      "in": {
+        "start": 301,
+        "darts": [
+          "S20",
+          "D20",
+          "T20"
+        ],
+        "opened": false
+      },
+      "expected": {
+        "left": 201,
+        "opened": true,
+        "status": "turn",
+        "points": 100,
+        "stat_darts": 3
+      }
+    },
+    {
+      "id": "double-in-bust-opening-herstellen",
+      "rule": "visit",
+      "in": {
+        "start": 32,
+        "darts": [
+          "S20",
+          "D15",
+          "T20"
+        ],
+        "opened": false
+      },
+      "expected": {
+        "left": 32,
+        "opened": false,
+        "status": "bust",
+        "points": 0,
+        "stat_darts": 3
+      }
+    },
+    {
+      "id": "master-uit-triple",
+      "rule": "visit",
+      "in": {
+        "start": 60,
+        "darts": [
+          "T20"
+        ],
+        "out": "master"
+      },
+      "expected": {
+        "left": 0,
+        "opened": true,
+        "status": "finish",
+        "points": 60,
+        "stat_darts": 1
+      }
+    },
+    {
+      "id": "straight-uit-single",
+      "rule": "visit",
+      "in": {
+        "start": 20,
+        "darts": [
+          "S20"
+        ],
+        "out": "straight"
+      },
+      "expected": {
+        "left": 0,
+        "opened": true,
+        "status": "finish",
+        "points": 20,
+        "stat_darts": 1
+      }
+    },
+    {
+      "id": "pijl-na-einde",
+      "rule": "visit",
+      "in": {
+        "start": 40,
+        "darts": [
+          "D20",
+          "MISS"
+        ]
+      },
+      "expected": {
+        "error": "after_end"
+      }
+    },
+    {
+      "id": "onmogelijke-179",
+      "rule": "quick_total",
+      "in": {
+        "start": 501,
+        "total": 179,
+        "count": 3,
+        "finish": false
+      },
+      "expected": false
+    },
+    {
+      "id": "geldige-180",
+      "rule": "quick_total",
+      "in": {
+        "start": 501,
+        "total": 180,
+        "count": 3,
+        "finish": false
+      },
+      "expected": true
+    },
+    {
+      "id": "checkout-170",
+      "rule": "quick_total",
+      "in": {
+        "start": 170,
+        "total": 170,
+        "count": 3,
+        "finish": true
+      },
+      "expected": true
+    },
+    {
+      "id": "onmogelijke-checkout-169",
+      "rule": "quick_total",
+      "in": {
+        "start": 169,
+        "total": 169,
+        "count": 3,
+        "finish": true
+      },
+      "expected": false
+    },
+    {
+      "id": "fout-aantal-pijlen",
+      "rule": "quick_total",
+      "in": {
+        "start": 170,
+        "total": 170,
+        "count": 2,
+        "finish": true
+      },
+      "expected": false
+    },
+    {
+      "id": "setgrens",
+      "rule": "sets",
+      "in": {
+        "legs": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "legs_to_win": 2,
+        "sets_to_win": 2
+      },
+      "expected": {
+        "sets": [
+          1,
+          1
+        ],
+        "legs": [
+          0,
+          0
+        ],
+        "finished": false
+      }
+    },
+    {
+      "id": "setwinnaar",
+      "rule": "sets",
+      "in": {
+        "legs": [
+          0,
+          0,
+          1,
+          1,
+          0,
+          0
+        ],
+        "legs_to_win": 2,
+        "sets_to_win": 2
+      },
+      "expected": {
+        "sets": [
+          2,
+          1
+        ],
+        "legs": [
+          2,
+          0
+        ],
+        "finished": true
+      }
+    },
+    {
+      "id": "na-setwinst",
+      "rule": "sets",
+      "in": {
+        "legs": [
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        "legs_to_win": 2,
+        "sets_to_win": 2
+      },
+      "expected": {
+        "error": "after_end"
+      }
+    },
+    {
+      "id": "league-gelijk",
+      "rule": "team",
+      "in": {
+        "singles": [
+          [
+            3,
+            1
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            1
+          ],
+          [
+            1,
+            3
+          ]
+        ]
+      },
+      "expected": {
+        "parts": [
+          2,
+          2
+        ],
+        "legs": [
+          9,
+          8
+        ],
+        "table": [
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "league-forfait-geen-fictieve-legs",
+      "rule": "team",
+      "in": {
+        "singles": [
+          [
+            "forfeit_home",
+            null
+          ],
+          [
+            "forfeit_home",
+            null
+          ],
+          [
+            "forfeit_home",
+            null
+          ],
+          [
+            "forfeit_home",
+            null
+          ]
+        ]
+      },
+      "expected": {
+        "parts": [
+          0,
+          4
+        ],
+        "legs": [
+          0,
+          0
+        ],
+        "table": [
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "id": "veld-15",
+      "rule": "circuit",
+      "in": {
+        "starters": 15,
+        "rank": 1,
+        "played": true,
+        "completed": true,
+        "disqualified": false
+      },
+      "expected": 0
+    },
+    {
+      "id": "veld-16",
+      "rule": "circuit",
+      "in": {
+        "starters": 16,
+        "rank": 1,
+        "played": true,
+        "completed": true,
+        "disqualified": false
+      },
+      "expected": 10
+    },
+    {
+      "id": "veld-31",
+      "rule": "circuit",
+      "in": {
+        "starters": 31,
+        "rank": 3,
+        "played": true,
+        "completed": true,
+        "disqualified": false
+      },
+      "expected": 5
+    },
+    {
+      "id": "veld-32-gedeeld-derde",
+      "rule": "circuit",
+      "in": {
+        "starters": 32,
+        "rank": 3,
+        "played": true,
+        "completed": true,
+        "disqualified": false
+      },
+      "expected": 7
+    },
+    {
+      "id": "bye-zonder-spelen",
+      "rule": "circuit",
+      "in": {
+        "starters": 32,
+        "rank": 5,
+        "played": false,
+        "completed": true,
+        "disqualified": false
+      },
+      "expected": 0
+    },
+    {
+      "id": "afgelast",
+      "rule": "circuit",
+      "in": {
+        "starters": 32,
+        "rank": 1,
+        "played": true,
+        "completed": false,
+        "disqualified": false
+      },
+      "expected": 0
+    },
+    {
+      "id": "diskwalificatie",
+      "rule": "circuit",
+      "in": {
+        "starters": 32,
+        "rank": 1,
+        "played": true,
+        "completed": true,
+        "disqualified": true
+      },
+      "expected": 0
+    },
+    {
+      "id": "eindplaats-buiten-band",
+      "rule": "circuit",
+      "in": {
+        "starters": 64,
+        "rank": 33,
+        "played": true,
+        "completed": true,
+        "disqualified": false
+      },
+      "expected": 0
+    },
+    {
+      "id": "beste-vijf",
+      "rule": "best_five",
+      "in": {
+        "results": [
+          15,
+          10,
+          7,
+          0,
+          7,
+          5,
+          3,
+          1
+        ]
+      },
+      "expected": 44
+    },
+    {
+      "id": "vijf-poules",
+      "rule": "calendar",
+      "in": {
+        "groups": [
+          10,
+          10,
+          10,
+          10,
+          10
+        ]
+      },
+      "expected": {
+        "fixtures": 225,
+        "rounds": 9
+      }
+    },
+    {
+      "id": "vijftig-samen",
+      "rule": "calendar",
+      "in": {
+        "groups": [
+          50
+        ]
+      },
+      "expected": {
+        "fixtures": 1225,
+        "rounds": 49
+      }
+    },
+    {
+      "id": "zeven-clubs",
+      "rule": "calendar",
+      "in": {
+        "groups": [
+          7
+        ]
+      },
+      "expected": {
+        "fixtures": 21,
+        "rounds": 7
+      }
+    },
+    {
+      "id": "zes-geplaatst",
+      "rule": "seeds",
+      "in": {
+        "size": 6
+      },
+      "expected": [
+        1,
+        null,
+        4,
+        5,
+        2,
+        null,
+        3,
+        6
+      ]
+    },
+    {
+      "id": "zes-deelnemers-plaatsen",
+      "rule": "ko_ranks",
+      "in": {
+        "slots": [
+          1,
+          null,
+          4,
+          5,
+          2,
+          null,
+          3,
+          6
+        ]
+      },
+      "expected": [
+        1,
+        2,
+        3,
+        3,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "geen-reset-nodig",
+      "rule": "grand_final",
+      "in": {
+        "first": "W",
+        "second": null,
+        "reset": true
+      },
+      "expected": {
+        "games": 1,
+        "champion": "W"
+      }
+    },
+    {
+      "id": "reset-nodig",
+      "rule": "grand_final",
+      "in": {
+        "first": "L",
+        "second": null,
+        "reset": true
+      },
+      "expected": {
+        "games": 2,
+        "champion": null
+      }
+    },
+    {
+      "id": "reset-uitgespeeld",
+      "rule": "grand_final",
+      "in": {
+        "first": "L",
+        "second": "L",
+        "reset": true
+      },
+      "expected": {
+        "games": 2,
+        "champion": "L"
+      }
+    },
+    {
+      "id": "enkele-finale",
+      "rule": "grand_final",
+      "in": {
+        "first": "L",
+        "second": null,
+        "reset": false
+      },
+      "expected": {
+        "games": 1,
+        "champion": "L"
+      }
+    },
+    {
+      "id": "zwitsers-openingsronde",
+      "rule": "swiss",
+      "in": {
+        "ordered": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "points": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0
+        },
+        "byes": {},
+        "history": []
+      },
+      "expected": {
+        "bye": null,
+        "pairs": [
+          [
+            "A",
+            "C"
+          ],
+          [
+            "B",
+            "D"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "zwitsers-geen-rematch",
+      "rule": "swiss",
+      "in": {
+        "ordered": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "points": {
+          "A": 2,
+          "B": 2,
+          "C": 0,
+          "D": 0
+        },
+        "byes": {},
+        "history": [
+          [
+            "A",
+            "B"
+          ],
+          [
+            "C",
+            "D"
+          ]
+        ]
+      },
+      "expected": {
+        "bye": null,
+        "pairs": [
+          [
+            "A",
+            "C"
+          ],
+          [
+            "B",
+            "D"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "zwitsers-bye-evenredig",
+      "rule": "swiss",
+      "in": {
+        "ordered": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "points": {
+          "A": 2,
+          "B": 2,
+          "C": 0,
+          "D": 0,
+          "E": 0
+        },
+        "byes": {
+          "E": 1
+        },
+        "history": []
+      },
+      "expected": {
+        "bye": "D",
+        "pairs": [
+          [
+            "A",
+            "B"
+          ],
+          [
+            "C",
+            "E"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "dubbel-schema-2",
+      "rule": "double_bracket",
+      "in": {
+        "size": 2,
+        "upset": false,
+        "reset": true
+      },
+      "expected": {
+        "matches": 2,
+        "rank_ordered_by_seed": [
+          1,
+          2
+        ],
+        "losses_ordered_by_seed": [
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "id": "dubbel-schema-3",
+      "rule": "double_bracket",
+      "in": {
+        "size": 3,
+        "upset": true,
+        "reset": true
+      },
+      "expected": {
+        "matches": 5,
+        "rank_ordered_by_seed": [
+          1,
+          2,
+          3
+        ],
+        "losses_ordered_by_seed": [
+          1,
+          2,
+          2
+        ]
+      }
+    },
+    {
+      "id": "dubbel-schema-5",
+      "rule": "double_bracket",
+      "in": {
+        "size": 5,
+        "upset": false,
+        "reset": true
+      },
+      "expected": {
+        "matches": 8,
+        "rank_ordered_by_seed": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "losses_ordered_by_seed": [
+          0,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
+    },
+    {
+      "id": "dubbel-schema-6",
+      "rule": "double_bracket",
+      "in": {
+        "size": 6,
+        "upset": false,
+        "reset": true
+      },
+      "expected": {
+        "matches": 10,
+        "rank_ordered_by_seed": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          5
+        ],
+        "losses_ordered_by_seed": [
+          0,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
+    },
+    {
+      "id": "dubbel-schema-8",
+      "rule": "double_bracket",
+      "in": {
+        "size": 8,
+        "upset": true,
+        "reset": false
+      },
+      "expected": {
+        "matches": 14,
+        "rank_ordered_by_seed": [
+          2,
+          1,
+          3,
+          4,
+          5,
+          5,
+          7,
+          7
+        ],
+        "losses_ordered_by_seed": [
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
+    },
+    {
+      "id": "cricket-sluiten-en-scoren",
+      "rule": "cricket",
+      "in": {
+        "marks": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          2,
+          3
+        ],
+        "other_marks": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          0,
+          2
+        ],
+        "score": 10,
+        "other_score": 50,
+        "field": 20,
+        "multiplier": 3
+      },
+      "expected": {
+        "marks": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "score": 50,
+        "winner": true
+      }
+    },
+    {
+      "id": "cricket-gesloten-blokkeert",
+      "rule": "cricket",
+      "in": {
+        "marks": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          2,
+          3
+        ],
+        "other_marks": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          2
+        ],
+        "score": 10,
+        "other_score": 50,
+        "field": 20,
+        "multiplier": 3
+      },
+      "expected": {
+        "marks": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "score": 10,
+        "winner": false
+      }
+    },
+    {
+      "id": "cricket-no-score",
+      "rule": "cricket",
+      "in": {
+        "marks": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          1
+        ],
+        "other_marks": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "score": 0,
+        "other_score": 0,
+        "field": 25,
+        "multiplier": 2,
+        "scoring": false
+      },
+      "expected": {
+        "marks": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "score": 0,
+        "winner": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "collectedAt": "2026-11-19T16:17:02.237443+00:00",
+  "source": "Shared uncommitted release integration; final release evidence must bind the final Git SHA.",
+  "environment": "Loopback PostgreSQL with restricted dartflow_app runtime; synthetic isolated identities; no production mutation.",
+  "command": "npx tsx --test --test-concurrency=1 tests/seasons.test.ts tests/seasons-db.test.ts tests/seasons-formats-db.test.ts tests/board-activity-db.test.ts tests/locations.test.ts tests/match-correction-cases-db.test.ts",
+  "tests": 70,
+  "passed": 70,
+  "failed": 0,
+  "skipped": 0,
+  "logSha256": "34195e80f4d4fb987e0b033353fc0123a96376389164b43f56f2bd83e0199e90",
+  "checks": [
+    "Real ladder result, concurrent invitation response, distance and expired server deadline.",
+    "Real drop-in rounds, self-presence, late enrollment and no feasible rematch.",
+    "Two actual completed club-cup sources; Champions reserve accepts, check-in freezes, canonical final completes with one entrant per club.",
+    "Seven actually played official components, true participants/throwers, nonanchor busy exclusion and captain-confirmed 4–3 team table.",
+    "Actual duo reserve before first throw preserves called UUID, resets acceptances and requires new partner check-in; after-result replacement is rejected.",
+    "Actual per-season transfer changes exactly one club representation, records history and rejects an open lineup or expired deadline.",
+    "Home boards created via actual location.enable-home/location.board.create. Own remote-bind grants only bounded approved fixture use; other home ownership and expired physical windows deny start. Both board routes expose the same canonical match. Two reservations and one shared timeout release both physical sides; same UUID resumes at 441 remaining and publishes one result.",
+    "Real ranking generation referenced by division closure; newcomers must choose entry/qualification and later entry is frozen.",
+    "Two original tied division boundaries use actual BO5 classification matches; balanced copied entries preserve the original standings.",
+    "Pure deterministic 50-player/5-group/225-fixture check supplements, and does not replace, actual platform acceptance.",
+    "Copied three-division historical source publishes vacancy priority; full parallel-pool tie uses real BO5; one of two concurrent confirmations wins; prebound qualification is actually played and confirmed; original standings and placement UUIDs survive subsequent planning.",
+    "Seven-component public encounter projection shows exact 4–3 and component without exposing team identifiers.",
+    "Managed-season recognition/captain confirmation/correction replay and versioned prethrow reserve reconfirmation separately passed six actual DB subtests: docs/evidence/full-release-ranking-seasons-local-2026-11-19.tap.txt (ranking owner)."
+  ],
+  "browserTests": {
+    "command": "npx playwright test tests/e2e/seasons-workspace.spec.ts --output=/tmp/dartflow-seasons-browser-artifacts",
+    "passed": 9,
+    "failed": 0,
+    "baseUrl": "http://localhost:3000",
+    "scope": "Local production preview with explicit intercepted API fixtures; interaction/layout only. Separate real DB proofs listed above.",
+    "checks": [
+      "Desktop/mobile layout and scrollable tables",
+      "Wizard focus/validation/same failed request retry",
+      "Captain private lineup and role access",
+      "Masked/cleared official PIN without session takeover",
+      "Ladder challenge/answer payloads",
+      "Champions source selection and actual entrant acceptance payloads",
+      "Remote authoritative own-side board/writer binding payloads",
+      "Published sporting vacancy order, server candidate preview and explicit confirmation with no arbitrary player ID"
+    ],
+    "logSha256": "25cf469374db8e6e79f294dc7f9e92156bbe15728b4eeb772211edbdb6f0d913",
+    "log": "docs/evidence/full-release-seasons-browser-local-2026-11-19.log",
+    "collectedAt": "2026-11-19T16:19:25.280683+00:00"
+  },
+  "open": [
+    "Complete physical web/native/Oche evening and Play installs/upgrades.",
+    "Physical camera-ready streaming and source-bound end-to-end client synchronization.",
+    "Changing already called remote physical sides; independently revising finalized promotion dependencies."
+  ],
+  "wholeAcceptanceRowPassed": false,
+  "sourceDigests": {
+    "lib/seasons.ts": "3f21b73753408e7e76ebc7fedb0faea7923560b4575adb7be8c188392113db36",
+    "lib/seasons-domain.ts": "a3a4a0f2ce03bd50048eb32589b2ad299cb91c4657fc66e8de33f4b719879853",
+    "lib/seasons-types.ts": "0725b94475ba56fc39c6678532a995f09d2684266b8d62d752747c26dd600036",
+    "lib/seasons-formats.ts": "846ed74b0c65dca0003de6555bcb51cd4386148892d89a9638da3b11d6a29d64",
+    "lib/season-divisions.ts": "68216f0251967aa872711f0fa99464d7201305456d78dfdfab5b90e1d48d578c",
+    "lib/board-activity.ts": "46d8f79a226178cea20c68a231278218051e7ccc87ab1d7abebf9568feb168e2",
+    "lib/location-access.ts": "49bbefbe3446dee3e4d85fe6369ca74f749f751375d96014208a90a2f4393936",
+    "lib/platform-locks.ts": "e2fb1354cb608f35b2dd773c805919b0c58152a7d04cf25a26714289e368eb0f",
+    "lib/locations.ts": "8f5fd77d80ed2120101fca13e017f521838ec56f127814c8179dc6f96d2af9fb",
+    "components/season-workspace.tsx": "3d22b2476dd124acac7b8b11ee7c580aba60882fa7322e67539738e1906313b9",
+    "tests/seasons.test.ts": "9ddfb1aa8defb7b0c20d55517c5d8e7b949f2019048336627a3d90e73d7fcdb9",
+    "tests/seasons-db.test.ts": "9d151453addf54b705a0cf9f68ffe62b5a83724df70aa880314d2361a0fa5005",
+    "tests/seasons-formats-db.test.ts": "387c538bfefd492a846245083f60ca67d518e9c091152650a86ce462a9559b0e",
+    "tests/e2e/seasons-workspace.spec.ts": "4d114006e7a2edf55147a351a127c73dff7500f8a1f7ebc8b7dc55ad8a605b37",
+    "supabase/migrations/20261119161328_season_unthrown_reserve.sql": "89ac299957cb79eda9accd0daa7ad12c5df3fc3234115e7e6195c59cf7fd2dc1",
+    "supabase/migrations/20261119163240_remote_reservation_matches.sql": "1584aef1f41eb764ff71bd5204770cef2677fba6095fb3ecb06400581890964f",
+    "lib/season-vacancies.ts": "ef3bff68888c2656127e6599f927f44225dbf070b4e65cb1429c4acc0a47dbff",
+    "lib/match-corrections.ts": "0c04a3451c441b73b4a6af4b5b3f4ada9f7f0e6723168c4aa1aa0ce64576fd73",
+    "lib/match-correction-cases.ts": "63965d5a419387abcb23736bd24ffc5c1964b02541ffda48bc2a4397429f12bb",
+    "lib/match-corrections-types.ts": "96187e7ddc1e3248eadd4634e36f7bbce9bfb4ecb9dd9fa54ddabbd0a3c4bd92",
+    "lib/platform.ts": "276f4c360741d6c0381f49ac0081e42cb3b707321da9c58306507bae22fb3349",
+    "lib/platform-competitions.ts": "c884431ab55a00b51dd81ab815b3e7f3cd5cb89d325aa1e0aed0978d994bb3cf",
+    "tests/match-correction-cases-db.test.ts": "e23612afab0212a2dd377aa87f75bf026798f3041947dacc3cf99d1a8c4ca850",
+    "supabase/migrations/20261119184010_private_correction_cases.sql": "fdd1165a5808ea315e57b1e91671a5bde76f71c04eb397a263945b3995b9bba8"
+  },
+  "latestSourceSnapshotAt": "2026-11-19T16:17:02.237443+00:00",
+  "sourceSnapshotNote": "Current combined local regression70/70 includes private-case4 tests. Managed recognition/reserve bridge separately6/6. Final release SHA and device/browser evidence remain separate.",
+  "log": "docs/evidence/full-release-seasons-cases-local-2026-11-19.log",
+  "caseTestsIncluded": 4,
+  "managedRankingBridge": {
+    "command": "npx tsx --test --test-concurrency=1 tests/ranking-seasons-db.test.ts",
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "log": "docs/evidence/full-release-ranking-seasons-local-2026-11-19.tap.txt",
+    "logSha256": "bec1ccc602732383a09436def6a5771130c9ee3719c3fa968ac195a5a13c8e92"
+  },
+  "latestFocusedCaseRegression": {
+    "collectedAt": "2026-11-19T16:19:25.280683+00:00",
+    "command": "npx tsx --test tests/match-correction-cases-db.test.ts",
+    "tests": 4,
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "log": "docs/evidence/full-release-correction-cases-local-2026-11-19.log",
+    "logSha256": "58b706045388ce0a666548a373bf8c08ec2b8295fd0256d7b61abd83d9b3bd09",
+    "changeAfterCombinedRegression": "Scoped hold IDs now include all transitive unplayed descendants after the original source was reconfirmed. The focused actual-graph test covers this edge.",
+    "sourceDigests": {
+      "lib/match-corrections.ts": "634013ee459246867dceb6ba496d2bece64e3d0f475bba83c917a8425b55263d",
+      "tests/match-correction-cases-db.test.ts": "110caa412acd92dadd027c271ae9c9ebb6e8b771a749f55e7d67a92cef4d2af2"
+    }
+  },
+  "checksAfterFinalCaseChange": {
+    "typecheck": "Earlier source typecheck passed. Latest retry overlapped the release owner Next build replacing generated .next/types and returned TS6053 missing generated files; final build/typecheck remains the release owner check.",
+    "lint": "Focused ESLint on case/season code and browser tests: passed",
+    "diffCheck": "git diff --check: passed"
+  }
+}

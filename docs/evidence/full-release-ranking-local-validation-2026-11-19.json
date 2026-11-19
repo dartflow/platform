@@ -1,0 +1,124 @@
+{
+  "date": "2026-11-19",
+  "environment": "loopback PostgreSQL, restricted dartflow_app runtime; migrations applied by local migration owner",
+  "scope": "four ranking destinations, official season singles, versioned pre-throw reserves, eight-evening top-eight qualification and separate finale, organizer drafts/copy/coorganizers, canonical primary correction/replay and local parallel-confirmation latency",
+  "verification": {
+    "uniqueFunctionalTests": 47,
+    "uniqueFunctionalTestsPassedAfterTargetedCleanupFix": 47,
+    "skipped": 0,
+    "runs": [
+      {
+        "command": "npx tsx --test --test-concurrency=1 tests/ranking-service-db.test.ts tests/ranking-db.test.ts tests/ranking-seasons-db.test.ts tests/circuit-qualifications-db.test.ts tests/organizer-drafts-db.test.ts tests/ranking-service.test.ts tests/ranking.test.ts",
+        "artifact": "docs/evidence/full-release-ranking-regression-local-2026-11-19.tap.txt",
+        "tests": 47,
+        "passed": 46,
+        "failed": 1,
+        "skipped": 0,
+        "sha256": "df9cfb24ed632d044dbe21204c51db658ec62a8575399968728355a1b834b9f4",
+        "sanitization": "Fixture UUIDs replaced; all test statuses and errors retained."
+      },
+      {
+        "command": "npx tsx --test --test-concurrency=1 tests/circuit-qualifications-db.test.ts",
+        "artifact": "docs/evidence/full-release-ranking-circuit-local-2026-11-19.tap.txt",
+        "tests": 3,
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "5e383b534e859a08a7d85068424aefcfa258c600f2be5815eb8f40cc44f0ffc3",
+        "sanitization": "Fixture UUIDs replaced; all test statuses and errors retained."
+      },
+      {
+        "command": "npx tsx --test --test-concurrency=1 tests/ranking-seasons-db.test.ts",
+        "artifact": "docs/evidence/full-release-ranking-seasons-local-2026-11-19.tap.txt",
+        "tests": 6,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "bec1ccc602732383a09436def6a5771130c9ee3719c3fa968ac195a5a13c8e92",
+        "sanitization": "Fixture UUIDs replaced; all test statuses and errors retained."
+      },
+      {
+        "command": "npx tsx --test --test-concurrency=1 tests/ranking-performance-db.test.ts",
+        "artifact": "docs/evidence/full-release-ranking-parallel-local-2026-11-19.tap.txt",
+        "tests": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "ad0978458255a7029fe6c1a844f3b345bdb42ff6af406c287d3796968b874498",
+        "sanitization": "Fixture UUIDs replaced; all test statuses and errors retained."
+      }
+    ],
+    "repairExplanation": "The combined 47-test run passed all functional assertions; its circuit parent cleanup failed on a newly created platform_cast_grants FK. Cleanup now removes only the fixture grants before the fixture entities. The complete affected circuit test reran cleanly (3/3), including public cast assertions. Other 44 tests were unchanged and passed.",
+    "lint": "Focused ESLint on owned domain/ranking/platform-store modules and tests passed.",
+    "typecheck": "Owned module type diagnostics clear. Latest global typecheck was temporarily blocked by a separately owned active E2E theme-test syntax edit; root subsequently reported that edit fixed and owns the final build."
+  },
+  "evidence": [
+    "Real match transactions require separate pre-start participant consent, freeze it at start, enforce the rolling pair window under concurrent starts and book both rating mutations atomically.",
+    "Personal events and automatic PIN companion signatures cannot acquire national rating rights; national policy excludes advanced X01, sets, fixed legs, teams and Cricket.",
+    "Four official destinations derive from existing event/match identities and immutable, approved pre-start declarations and participant admissions. Unauthorized club, later declarations and conflicting equally specific rules are rejected.",
+    "National and club ratings preserve full precision. Correcting an earlier source replays later opponents, atomically switches complete generations and retains the prior generation.",
+    "Circuit results use real starters and canonically completed events: a real sixteen-player/fifteen-match knockout crosses the national field threshold; guest winners preserve actual places; six events rebuild the best five.",
+    "Actual Swiss and both double-elimination final variants publish completed event circuit places. Actual Cricket marks play books a separate club rating without changing X01 destinations.",
+    "Independent primary result review archives the old signed primary version, withdraws every dependent ranking destination and the current result projection, restores only actual recorded visit history, and requires ordinary writer scoring plus both new signatures before rating replay.",
+    "A real played dependent final is withdrawn and held, then independently repaired into a new source-derived fixture with canonical participants. The old primary version and invalid source remain in the journal. The repaired final is actually played and signed before circuit-specific independent recertification.",
+    "Free result correction retains its original reservation, first-throw timestamp, consent and immutable original booking receipt; it does not consume another match slot or create another original booking.",
+    "Drafts enforce private personal ownership, shared current club management scope, optimistic revisions, cross-device conflict preservation, immutable ownership context, credential rejection, size limits and current authorization on receipt retries.",
+    "A personal template can be copied to an authorized club as a new empty event with no inherited entrants, results or official ranking rights. Coorganizers stay within one event, cannot grant further organizers or acquire platform rights, and revoked roles cannot replay old commands.",
+    "A real national seven-component encounter requires pre-start approved policies and each own participant acceptance; four actual singles book national and club Elo only after both encounter captains sign. Two doubles and the team game produce zero individual Elo sources.",
+    "Encounter dispute retracts all affected books; independent season adjudication and changed real primary score reconfirmation replay both destinations, preserve the canonical match/admission, and never restore an independently disqualified source. The generic correction route explicitly directs season-managed matches to their authoritative season procedure.",
+    "An admitted unthrown reserve preserves the match UUID, appends the old admission/state/consent proof, clears only its unused admission and requires both actual new players to accept the exact displayed roster version. Other matches keep their own consent; score followed by undo cannot permit a later reserve.",
+    "Eight genuine nine-player circuit evenings (64 fully played matches) produce a shared eighth place. A separate real BO5 selects the eighth finalist, without changing either player's thirteen circuit points. Seven actual finale matches award a separate title without a ninth circuit event or additional circuit generation. Forged walkovers, entrant changes, unauthorized decisions and stale generations are blocked.",
+    "A source revision makes the old finale title visibly unrecognized: an actual cast.share/getPlatformCast request returns champion null, completed false and the neutral Erkenning herzien notice. The ordinary event view does likewise, while its stored historical sport result remains unchanged.",
+    "Three batches of sixteen parallel actual final confirmations each read their own updated source immediately. The 48 match sources and 96 current player books retain 49 immutable generations including the initial generation; 48 identical retries create no additional generation. See the separate timing report for measured percentiles and scope."
+  ],
+  "limits": [
+    "These tests invoke actual server commands/read services and database transactions. Browser/native device acceptance and hosted deployment remain separate release-owner checks.",
+    "The multi-player boundary procedure supports a real BO5 pool and, if necessary, a pre-drawn repeatable knockout sequence; the dedicated full circuit fixture proves the two-player boundary.",
+    "Primary dependency repair is proven for a real knockout branch; equivalent complete Swiss/double-elimination correction fixtures are not present.",
+    "Generation replay is synchronous over history. The local 3x16 confirmation benchmark excludes hosted HTTP, native/browser rendering, production-size history correction and a 24-hour soak.",
+    "No hosted DDL, commit, push or deployment was performed by the domain implementation agent."
+  ],
+  "recordedAt": "2026-11-19T16:18:37.851Z",
+  "sourceHashes": [
+    {
+      "file": "lib/ranking-rosters.ts",
+      "sha256": "adfd2f084e15e23fe5cb14ee1b5d594146795ab086b83d3e3a03e4dd585d4210"
+    },
+    {
+      "file": "lib/ranking-seasons.ts",
+      "sha256": "acc3252e6f1b18807e436da243b38231e2dca2055f70e3e683f427cea9202b85"
+    },
+    {
+      "file": "lib/circuit-qualifications.ts",
+      "sha256": "19a90e6e5c9f286894da88f5fded3ab5b2bfbafd9c1f8dd791f6ca7d9c10707d"
+    },
+    {
+      "file": "lib/ranking-service.ts",
+      "sha256": "1c3bfa4b0e762e7b26e198f632bea92d13afd055af4f90906d0f0f815917455b"
+    },
+    {
+      "file": "lib/ranking-events.ts",
+      "sha256": "512c6842b0be9c6d2559a33eab756053093f3609cff8b150b9ad9eb0fb345479"
+    },
+    {
+      "file": "lib/ranking-generations.ts",
+      "sha256": "8728068adf4fc81e2b3bd582a2a06e4ceeb1cac82f64278272a4341e8c3be186"
+    },
+    {
+      "file": "lib/rankings.ts",
+      "sha256": "f51a83401d942de98614708dfb4fbbbab41db3ac18f43cba92b7931f2302aa28"
+    },
+    {
+      "file": "tests/ranking-seasons-db.test.ts",
+      "sha256": "bda13a88c04b2468237330e766b32d08588e7bcfebab33eb1e500da0d8eed9bd"
+    },
+    {
+      "file": "tests/circuit-qualifications-db.test.ts",
+      "sha256": "5ad313d40cc9efa7da4032c0c61d489c35ffd5e9629337f826049c9592ea62df"
+    },
+    {
+      "file": "tests/ranking-performance-db.test.ts",
+      "sha256": "a3d9f413f12214af563897f4cf897fd2f3ae65bc5003c3df289d85cd8de32516"
+    }
+  ]
+}

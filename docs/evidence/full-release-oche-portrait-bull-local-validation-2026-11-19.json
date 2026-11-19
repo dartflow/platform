@@ -1,0 +1,81 @@
+{
+  "collectedAt": "2026-11-19T17:37:42.309219+00:00",
+  "scope": "Portrait fixed score band, sanitized bull display, actual two-clear rule caps; awaits actual new CI UI execution",
+  "baseHead": "6b5b108727d955dadcb2c155aecb411b74b870e6",
+  "unitTests": {
+    "production": {
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "staging": {
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "androidUiTests": {
+    "compiled": 10,
+    "executedLocally": false,
+    "tvVerifierExpectedExact": 10
+  },
+  "lint": "2 debug variants passed",
+  "sourceSha256": {
+    "android/oche-live/app/build.gradle.kts": "9bfd2727c8c8e76e9dbdceeff30e37b81ad7313fa85f74f6fc85867df89e1cd1",
+    "android/oche-live/app/src/androidTest/java/nl/dartflow/ochelive/OcheUiTest.kt": "f24660bcb2af9cd7e959f3537d9259e0938ec6b9fcff07ce324e270fdc68bfb2",
+    "android/oche-live/app/src/androidTest/java/nl/dartflow/ochelive/SecureStoreTest.kt": "6f93a97d764e83d8bace01a1b311c8b123a0fb4d3acfdda776803539d131bc4e",
+    "android/oche-live/app/src/main/AndroidManifest.xml": "6cbd33f7e9d02247bbd408e8526dc4d224231eeb78bd10c66042afe5c8e4787f",
+    "android/oche-live/app/src/main/java/nl/dartflow/ochelive/DisplayModel.kt": "a73d20c5538b22494f1131db5fc7f2c7bbbae16c8d0ac7f372df5927dc04e684",
+    "android/oche-live/app/src/main/java/nl/dartflow/ochelive/MainActivity.kt": "04dcaad62fe2c33ff9319380fe46fd0e21bc344fd0f58deaed37e5471255b7f9",
+    "android/oche-live/app/src/main/java/nl/dartflow/ochelive/OcheApi.kt": "465719034c79ffe869a4c471d9850fa4294f5900703f238533d3f5223ac8a506",
+    "android/oche-live/app/src/main/java/nl/dartflow/ochelive/OcheViewModel.kt": "b082fffff30717286ae44c8e4eaa9391892d2fb95677c23cca17c22a00d268e0",
+    "android/oche-live/app/src/main/java/nl/dartflow/ochelive/SecureStore.kt": "259b182ad5cf4cfcb5427f15fb4d239b4d5a83c289827f6b100406d1d6f00b73",
+    "android/oche-live/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml": "10cde66b01dde7c2b9209683c565e9f872ffff9d369e46f22715b061efc36ba2",
+    "android/oche-live/app/src/main/res/values/colors.xml": "5edd10625195abbb12d340f116cf45b3fa9085d27873200ae7261f9f98bb5202",
+    "android/oche-live/app/src/main/res/values/strings.xml": "8ecf90d8117240186ff8f3dbb6ec94d165835f73dab82228c9ac21d3b6b652f7",
+    "android/oche-live/app/src/main/res/values/styles.xml": "b787574d69d389295fa4404ef06e1b74311ba7d2d0d5688c31c55f0fc9f6dcca",
+    "android/oche-live/app/src/main/res/xml/data_extraction_rules.xml": "4675c7bf08b03d514d0cfb0299ab3d1c44d65aa9dd212857dd595ec825b0efe6",
+    "android/oche-live/app/src/test/java/nl/dartflow/ochelive/DisplayModelTest.kt": "17d9761020b88476a891eda4a668bfe240f8fe09ac01569c3992ddcd15225ec9",
+    "android/oche-live/build.gradle.kts": "b7e8343ad7c348e87a1dbdcb0736e92416771bdb70490acd5f543249beba8a70",
+    "android/oche-live/ci/check_release_readiness.py": "2d3bb1aaf6ebf7f0d57a0ddbec58189ad2d4e85c7a5c3c71aea6793b8ad275be",
+    "android/oche-live/ci/play_release.py": "fd2cf36300139187b91ba0623dc8fb125217af972f4417f4eec75bcf231f4436",
+    "android/oche-live/ci/run_tv_ui.sh": "54015d34efa17ea75fb8ad9f0eb7624ee4c637bddb3d758d381ee9abc1afbd58",
+    "android/oche-live/ci/test_play_release.py": "656f2315412837e5ea9bd7bf2a041d0f342186e98c4d1a9fab9c12f6ef199f4a",
+    "android/oche-live/gradle/wrapper/gradle-wrapper.properties": "3b6b8df392b92f86332d907707f3d952a32c8d6e1fedabafe2b5ec3d933a78c4",
+    "android/oche-live/gradle.properties": "16886db9697eede457ce1c577360eca107429f41dd0e4fe165f3296cea68bd69",
+    "android/oche-live/gradlew": "c76f16038b4e70b84ed0b3b9e08e82a8ecaf66ec0efdfdecdece92520fa3cecb",
+    "android/oche-live/gradlew.bat": "0f3ed8f03b50934cb8c48b15a470d5c20a30a5385825e48b55bcc8ea3d8f8e18",
+    "android/oche-live/settings.gradle.kts": "0bce2a67118ef84481715068a23e9c5352dfaf764db0f61d9e372059665ecbe0",
+    "android/oche-live/version.properties": "7712953f21f9015ecb74bad1fb2ddf67871f079a4590bdf917668948871bc5af"
+  },
+  "artifacts": [
+    {
+      "path": "android/oche-live/app/build/outputs/apk/staging/debug/app-staging-debug.apk",
+      "bytes": 12059815,
+      "sha256": "68cd9f686debd2474916d4f8707aef5a32e9c8c42c9e44f6ec4d14a9bdf4115b"
+    },
+    {
+      "path": "android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab",
+      "bytes": 2782465,
+      "sha256": "7b52ceb382892c160b4f291326ce8c3c5241cada548d19027d84f925daac112b",
+      "signed": false
+    },
+    {
+      "path": "android/oche-live/app/build/outputs/apk/androidTest/staging/debug/app-staging-debug-androidTest.apk",
+      "bytes": 1076913,
+      "sha256": "5c6d824a27efaf4372f4e35806e927e9a45e51c0ceb5da1f3b6aca31e3e24803"
+    }
+  ],
+  "priorCiFailures": {
+    "run": 44570550270,
+    "phone": [
+      "alternateRulesShowEachRealStartingScoreInTheMirroredCard:301 not displayed",
+      "shortScoreViewportKeepsWinnerAndHandicapsVisibleInBothLayouts:301 not displayed"
+    ],
+    "tv": "9/9 assertions passed; fixed CI verifier previously expected8"
+  },
+  "validationLogSha256": "b76e122b5effc86233ad6e5427a8f2ef7ed0993078c72ae18a55180fef7e8eea",
+  "independentReview": "Requested domain review of portrait geometry; actual new CI phone and TV runtime still required."
+}

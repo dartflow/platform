@@ -1,3 +1,4 @@
+import {matchParticipants} from './match-sides';
 import {createHash,randomUUID} from 'node:crypto';
 import type {Client} from './platform-store';
 import type {MatchState,MatchCommand,PublicSnapshot,Visit} from './types';
@@ -13,7 +14,7 @@ const allVisits=(match:MatchState):Visit[]=>[...match.previousSets,match.game].f
 export async function recordMatchScoreEvent(client:Client,source:MatchState,next:MatchState,command:MatchCommand):Promise<void>{
  if(command.action.type==='score'){
   const visit=allVisits(next).at(-1);
-  if(visit)await recordScoreEvents(client,next.boardId||source.boardId,next.id,next.revision,'score',[{score:visit.score,checkout:visit.checkout,bust:visit.bust,playerIndex:visit.playerIndex,playerName:next.players[visit.playerIndex]?.name}]);
+  if(visit)await recordScoreEvents(client,next.boardId||source.boardId,next.id,next.revision,'score',[{score:visit.score,checkout:visit.checkout,bust:visit.bust,playerIndex:visit.playerIndex,playerName:matchParticipants(next).find(player=>player.id===(visit.throwerId??visit.player))?.name}]);
  }else if(allVisits(next).length<allVisits(source).length)await recordScoreEvents(client,next.boardId||source.boardId,next.id,next.revision,'undo');
 }
 /** Called only after display authorization. Fresh loads/reconnects baseline these events. */

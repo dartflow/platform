@@ -55,7 +55,7 @@ object PlayerLinks {
         val uri = URI(normalized)
         val base = URI(origin)
         require(uri.scheme == base.scheme && uri.host == base.host && uri.port == base.port && uri.userInfo == null)
-        val path = (uri.fragment?.takeIf { fragment -> listOf("baan-phone/", "match/", "lobby/", "training/").any(fragment::startsWith) }?.let { "/$it" } ?: uri.path).trimEnd('/')
+        val path = (uri.fragment?.takeIf { fragment -> listOf("baan-phone/", "match/", "lobby/", "training/", "tournaments/", "leagues/", "clubs/", "seasons/", "locations", "rankings", "help", "faq").any(fragment::startsWith) }?.let { "/$it" } ?: uri.path).trimEnd('/')
         val parts = path.split('/').filter(String::isNotEmpty).let { if (it.firstOrNull() == "app") it.drop(1) else it }
         val id = parts.getOrNull(1)?.takeIf { it.length in 1..128 && it.all { c -> c.isLetterOrDigit() || c in "-_" } }
         val invitation = query(uri)["code"]?.let { code ->
@@ -68,7 +68,8 @@ object PlayerLinks {
             "baan", "baan-phone" -> id?.let { PlayerDestination(PlayerScreen.BOARD, it) }
             "lobby" -> id?.let { PlayerDestination(PlayerScreen.LOBBY, it, invitation) }
             "training" -> PlayerDestination(PlayerScreen.TRAINING, id)
-            "seasons" -> PlayerDestination(if (id != null) PlayerScreen.SEASON else PlayerScreen.SEASONS, id)
+            "seasons", "competities" -> PlayerDestination(if (id != null) PlayerScreen.SEASON else PlayerScreen.SEASONS, id)
+            "locations" -> PlayerDestination(PlayerScreen.LOCATIONS)
             "feed" -> PlayerDestination(PlayerScreen.FEED)
             "koppel-scherm" -> {
                 val code = query(URI("https://native.invalid/?${uri.rawFragment.orEmpty()}"))["code"].orEmpty().uppercase().replace("-", "")
@@ -76,7 +77,15 @@ object PlayerLinks {
             }
             "profiel" -> PlayerDestination(PlayerScreen.PROFILE)
             "spelen", "speler" -> PlayerDestination(PlayerScreen.PLAY)
-            "evenementen", "toernooien" -> PlayerDestination(PlayerScreen.EVENTS)
+            "evenementen", "toernooien", "tournaments", "leagues" -> PlayerDestination(if (id != null) PlayerScreen.EVENT else PlayerScreen.EVENTS, id, invitation)
+            "rankings" -> PlayerDestination(PlayerScreen.RANKINGS)
+            "help", "faq" -> {
+                val help = query(uri).filter { (key, input) -> key in listOf("q", "category", "id") && input.length <= 200 && input.none { it.code < 32 } }.toMutableMap()
+                if (id != null) help["id"] = id
+                PlayerDestination(PlayerScreen.HELP, help.entries.joinToString("&") { "${it.key}=${encode(it.value)}" }.ifBlank { null })
+            }
+            "verenigingen", "clubs" -> PlayerDestination(if (id != null) PlayerScreen.CLUB else PlayerScreen.CLUBS, id)
+            "organiseren" -> PlayerDestination(PlayerScreen.ORGANIZE)
             "vrienden" -> PlayerDestination(PlayerScreen.FRIENDS)
             "historie" -> PlayerDestination(PlayerScreen.HISTORY)
             else -> null

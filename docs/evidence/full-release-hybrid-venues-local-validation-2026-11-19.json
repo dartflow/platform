@@ -1,0 +1,61 @@
+{
+  "capturedAt": "2026-11-19T17:34:19.372126+00:00",
+  "headAtCapture": "6b5b108727d955dadcb2c155aecb411b74b870e6",
+  "workingTreeUncommitted": true,
+  "scope": "Focused pure tests and real loopback PostgreSQL/services; no hosted, installed Android/Oche or external transport acceptance.",
+  "command": "npx tsx --test --test-concurrency=1 tests/bull-start.test.ts tests/seasons.test.ts tests/seasons-formats-db.test.ts tests/locations.test.ts tests/integrations.test.ts tests/integrations-db.test.ts",
+  "result": {
+    "tests": 82,
+    "pass": 82,
+    "fail": 0,
+    "skip": 0
+  },
+  "checks": {
+    "typeScript": "npx tsc --noEmit passed",
+    "lint": "Focused ESLint over changed modules, components and tests passed"
+  },
+  "proof": {
+    ".tap.txt": {
+      "path": "docs/evidence/full-release-hybrid-venues-local-2026-11-19.tap.txt",
+      "sha256": "16bf440c53cafe2089cb0cc333ec85a501635caea3bffb959a2c5cdfc89e398c"
+    },
+    ".lint.txt": {
+      "path": "docs/evidence/full-release-hybrid-venues-local-2026-11-19.lint.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    ".tsc.txt": {
+      "path": "docs/evidence/full-release-hybrid-venues-local-2026-11-19.tsc.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "newActualProof": [
+    "One hybrid season plays one local encounter and another remote encounter on two real homes provisioned through ordinary location commands; own-side proposal requires actual other-side acceptance, retries do not repeat, absent agreement blocks start, physical binding/call freezes play mode.",
+    "Neutral venue is created by a real owner, organizer requests an exact event reservation and owner accepts. Local match finishes with reservation_match proof while physical board ownership/event remains original. Foreign event, canceled, expired, closed and revoked-organizer reservations cannot start; ordinary player cannot request and national manager can discover actual source without fictitious membership. Time-window cases use explicit local test clock data changes, not hosted state.",
+    "Team role source covers each current roster member; a changed captain invalidates previous role source. Legal reserve sends both captains through existing native inbox and mail source. Same accepted request yields one event per recipient. Season closure respects Competitie opt-out; fresh source validation denies a removed member. No provider credentials or external messages used.",
+    "A real series of scored legs reaches 2-2 under BO3/maximum5, requests rebull only for capped leg5, records two independent confirmations without fake visits, and undo/replayed finish restores the identical signed bull decision."
+  ],
+  "limits": [
+    "Browser test source tests/e2e/release-bull-start.spec.ts is prepared for the new production preview but is not executed by this report.",
+    "No Firebase device receipt/open, physical device, Play install, hosted migration or external mail delivery claimed.",
+    "Per-component two-difference fields are passed to the central validator; complete two-difference engine/DB evidence is owned by root, not included as new whole-platform acceptance here."
+  ],
+  "sourceSha256": {
+    "lib/season-play-mode.ts": "894e7fc8e69d93d34fa1928a927ab28b80326102fc38992613bc67d5c7d5ce4d",
+    "lib/season-venues.ts": "d7d43c58c9e521b2e96d713056065fcb75a9d84e15e93c8e95501fe64d48ac9e",
+    "lib/season-reminders.ts": "88729e90355e13bfe12ad0a20c97434101a3fe44f86675e43db84dae149cc478",
+    "lib/seasons.ts": "ddb2651e8a586fba76f83336ab61cd7ff7d7d3de5016d192c1019bf84f3782bb",
+    "lib/seasons-types.ts": "7c454ec473391607c649011566b51e4b6e8e51847e5fd87dd750de53d657a8d9",
+    "lib/seasons-domain.ts": "4bc0469edbd75ca507913118c7ac66750557a51191e05c4381f6cf55bcbe2ac7",
+    "lib/season-rules.ts": "b282471fb5db705f41c10c6e771ce8a39715dc184da93fb2d60b3c5651d3b1dc",
+    "lib/location-access.ts": "75d447b3cd21ccda61fc0cb6bd77ab03e5ce2b464b10c18c125a24f7e7a75880",
+    "lib/locations.ts": "c026a57567e06e014c319d706496620a3f2646829deac07dd70e2e9ec47f13a0",
+    "lib/integrations-mail.ts": "d895a26eab25686758950cbe1bcb6d33143f1a1e676344330d19346dbebe72cf",
+    "lib/integrations-catalog.ts": "502f915f69f4837dfc308ea5b7d9b824c58894c1504f3c6d7732e239bcd605f2",
+    "components/season-workspace.tsx": "b3b81ce7b543ad48f6758c8034f7585bba531b362e12c6d6d8af37111233a973",
+    "components/season-component-rules.tsx": "1aa2b143ee9052e14db899977493f3c7970743b17a1cdef8c2cd4d7de4d557a1",
+    "tests/seasons-formats-db.test.ts": "5c4ed324807dd795ad7c76b9ae843b02e6962dd033c6bc270047e320639116d8",
+    "tests/bull-start.test.ts": "9cf1196b9b7af5f8b7e26603742b1608d48e49ace70470fe0875d87ed722b1a5",
+    "tests/integrations.test.ts": "0ad7b1fcd5902ad64668084d5397e7f004a595e1c2a5f36da44878036434d210",
+    "tests/e2e/release-bull-start.spec.ts": "572063da99c1e9887f6ac6d545afdc578fccb6985b21a0f184f2a856225558c2"
+  }
+}

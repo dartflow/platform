@@ -187,6 +187,9 @@ test("one physical QR binds persisted solo and two real local players to its rea
   await a
     .getByRole("combobox", { name: "Best of legs", exact: true })
     .selectOption("1");
+  // This case verifies physical-board binding and persistence. The separate
+  // release-bull-start case exercises the two-identity bull procedure.
+  await a.locator('select[name="startProcedure"]').selectOption('home-first');
   await a
     .getByRole("button", { name: "Op deze baan starten", exact: true })
     .click();

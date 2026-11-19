@@ -1,0 +1,223 @@
+{
+  "collectedAt": "2026-11-19T17:48:40.219535+00:00",
+  "scope": "Native organizer draw/pool/phase/consolation/planning, guest/import/claims, hybrid fixtures, bull, two-clear rules, offline conflicts, rankings publication pause and optional push checkpoint",
+  "baseHead": "3108fe55716017f9b77c538803042ac1e0a1cff7",
+  "sourceSha256": {
+    "android/player/app/build.gradle.kts": "b9437bd59850185b4b352b970d3411090fb2cd3948cae44f8b8c80dcdc1b0e2e",
+    "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerControlUiTest.kt": "0f0f91ec824eaebed5df17c09f98b06d3777f0e60419aaaeb2d5963b6e6c8bbc",
+    "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerReleaseUiTest.kt": "d7ea8db0fdc997b7b8503ded76d2bace0638390b821d55feb88204a11299351d",
+    "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerUiTest.kt": "ebc3ffa57710cbe7b84b1ad47cb8c96ec366702d0ab7808a52893593c3bd5c49",
+    "android/player/app/src/development/AndroidManifest.xml": "ea9c7b967a45f6d49d79ca8bea010f7b9b15b9d03ad17bad0df4d645757b82c9",
+    "android/player/app/src/development/res/xml/development_network.xml": "bd3792939342d9260dc069f44446e36c49d7987d2f1d268b6207cb91026d6b99",
+    "android/player/app/src/main/AndroidManifest.xml": "a2a6ac06c8d7fe9378be64ba3cce36bf5879ac3c3e64d6169238b360a3e9072f",
+    "android/player/app/src/main/java/nl/dartflow/app/MainActivity.kt": "23ca30d83e771afa279e1cb2d7d95f170d73bce86a0a685296aa5fd3ec27f3d5",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerApi.kt": "46eb08b35a1872d7cba82de129622bbb3fb6561d84cb9dad4acc9194d8d61069",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerCircuitQualification.kt": "492d311be9ad224abcbe48d51ba8578053b854fc1f1cbe4c74228573d9840db0",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerCloudDrafts.kt": "4afaf237990975c82a1de93a5c3ed5bc6e327cfd8bd99a147c445071421041cf",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerCricket.kt": "e2679be29902e97404e5140e259f699401e70ad9e810214f8add1c2bb23982b5",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerDartEntry.kt": "5863060c3f5d11c9b9a3943a43877a39ada32820828dc0995132a935e24b77bf",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerDiscovery.kt": "074d2ebcd9ac0953d35fb5c09e7c4b699d7e6ac4f569e0808cb7d469c5f257e5",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerFaqAdmin.kt": "915fba335e11ca9ecf1b6bdd0cc70176178be1c0997b33886ae134abf7a6181a",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerHomeFeed.kt": "a81665791202502b1dba161db3f87523881a8bdf97e793fd9423f9bdb0b6c0f0",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerLinks.kt": "fdbfb6ea17f7b69f9959d0a1b598eb9c80bd493385da8047ad4440866b5fe0a1",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerLocations.kt": "7dc40055a7f7c57761d2a8a29a60fe2dc1cb29eb1320200ea86cf60391b83a01",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerMediaReadiness.kt": "fdabe944560168265564745277bd72269331449f6b9d5abe3eb01b30b87ac2cd",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerMediaRoom.kt": "0ab9cef2f0ceed07f54b1f243d07b764e164c9b3f7e0a86880c350936672215c",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerModels.kt": "b67056a9e7c20c0b23652c16984f9c1336db7e736a3d921708c33c0adecc206e",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerNavigation.kt": "91c526627c8bcf049628f551315d458d95a7f23bb6bbf60ae6de157f7b438481",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerOrganizer.kt": "4ad15f36156c3850668a5a312539dc72104a59a119c51b23b95f21e6ab3ddcbc",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerOrganizerParticipants.kt": "d075b7f290070886c1d1e88bed797a8517086938872ea9458e4b2a67fd60233f",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerOrganizerPlanning.kt": "8086c55a78d45c5eb0b3142b094fb0a867854ea0bd48243623302ad08913bf92",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerOrganizerSharing.kt": "0fafe4b2d27632855b822569e35a49c52ddf698e04a4c1e4ce62defa012f20c9",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerPreCalls.kt": "ce683274c72600e3c7c3358e0e77cb3461c81898abf2fe63abd1fbf7bd2e4d9e",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerPrimaryCorrection.kt": "f123e97c76dddc32bafb3c19b776fbfede41b135bd8fef7092ae9b624d69bd99",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerPush.kt": "34b57101cef969594dedb05170a073a8faa3238851bf5c6702362260ee33961a",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerPushControls.kt": "1ae0492355a315fb773c26c4acfb05ce7e711b4dcb433586080b3a5433ec5785",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerQrDecoder.kt": "b33f158a707ee25fc99aad5c8bef1e565dda7ccea5166840e61d62f3820c6c95",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerQrScanner.kt": "d5bd70235ae35855ab2e9c578e210a848c54353035c0afa2b0511bfe3f182073",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerRankingManagement.kt": "994e2838a730dba3e1e4b2f9b46f59b2bcb202378c8148c90b3738ad228239e0",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerRequestAuthorization.kt": "02ad720132283995e4d868a9d44d9ff6bff63b4f964b2cc9dbcb5a478b813861",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerReservations.kt": "ed7204edebeebb38a5241a458484b123fc33a40f284ee08636e121a41f19bd74",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerRuleFields.kt": "00fa2e45bdb1bdf8ca534f7b0accb718e3f61277f698676ce28b8373979375b0",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerSafety.kt": "94c0b17d6d9cdcf29c72761ea0e13ebf3eab498c3aa81e7927cb6a97dbf09869",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerScoreScreen.kt": "1b5b3cab364b50b78f89ac8fd32c26332819202a657c55d91d86cc291b8f4026",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerScoreSnapshots.kt": "003104ca0637ac8a46dc50c03217a4e7963255e4a44c7e0fa3094e4a86d5c2d6",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerScreens.kt": "c426702625082da6fe61010ecb82db567f78c65bb5b19a4cbfc126c07ad771a7",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasonFormats.kt": "68bd9269d4fbf6f68f43e2c7ae74db57d62c4cc9a2846120ee60ccdd9a5ec4e4",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasonPlayMode.kt": "7178260abcd4a2b3a3028abec780aca38ee27b31e557a1e8dbe872ed4f5b514b",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasonRemote.kt": "5b078a9a95b83491ea8666d78671fd21611943f37398e4a37f308720e025ae53",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasonRules.kt": "f6cb4e3ecacdf5702b4e4d04e1e7ac8cc62809bbd2c671b025972dd5fcb3094e",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasonVacancies.kt": "be092e6409ed8050ea169248655c15fffbe2578cdf5743f0db546b16da40046f",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasons.kt": "76dff39877711ed8d2608e374703e3d576700dc5e35e23fb7e67855f7e66f30a",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerSessionStore.kt": "85ad93922c692d6abf375484dd253358959a19990e7835eef8a4690076d76844",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerStartProcedure.kt": "d7319c9e3120c04d9afb0c4db9addb9a4835579fd35d051fb852e2bcb9633c6e",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerTheme.kt": "25583916fe82d824575830a117a0f24f5fb3fc9dd6a6469b5b2b9eae4f0705ae",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerTournamentConsolation.kt": "5ebcd405a6248e143ff88f0003bf4067e574342c04cfc23a603aa8b0fc4d483f",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerTournamentControl.kt": "387aba728fd364d2c1afe4e26db9dea8e9695006711633b363d46b11cfa07481",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerTournamentRules.kt": "9099f73c342a15f4b7e34024e8ae2281d6a38f7202d25860f7d619550fa87cf5",
+    "android/player/app/src/main/java/nl/dartflow/app/PlayerViewModel.kt": "e7da7290bf490e3271ea70603c7f5ab13c302ae7795406d1b93976b4b128d4fd",
+    "android/player/app/src/main/res/drawable/dartflow_logo.png": "e7ec5e68f3b46df64a89c02623f6898ace6dc1b7996bbee268cb5786dc6d7a65",
+    "android/player/app/src/main/res/drawable/ic_launcher.png": "6a257fd33feaeea86c7b1a2ec289d4c3a4d5425952b68352622bdd8e06dba893",
+    "android/player/app/src/main/res/drawable/ic_notification.xml": "6f1c82963dd59a04a6c49f28e93bdf9f14e01cc1b8ac3600c350c779959f9549",
+    "android/player/app/src/main/res/drawable/launcher_foreground.png": "6a257fd33feaeea86c7b1a2ec289d4c3a4d5425952b68352622bdd8e06dba893",
+    "android/player/app/src/main/res/drawable/tv_banner.png": "f668222b1f49b2ff3c452f734b42f8f75ae3be8a2d36d0b0cf01b0f51c15a740",
+    "android/player/app/src/main/res/font/barlow_condensed_800.ttf": "724c9c25952d5f4a2d87185d9767aa006144c5f0d944dc05bf7d5d603551c260",
+    "android/player/app/src/main/res/font/dm_sans_400.ttf": "b0ae3e89a7d3ef2b1838bb4b1ceb0b17cc3435af061eee809d76aa623ff116e9",
+    "android/player/app/src/main/res/font/dm_sans_700.ttf": "2a8e7f713ee79fbccdef3cef5c787aff47580299f7da60144961e7db2ec08211",
+    "android/player/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml": "10cde66b01dde7c2b9209683c565e9f872ffff9d369e46f22715b061efc36ba2",
+    "android/player/app/src/main/res/values/colors.xml": "5edd10625195abbb12d340f116cf45b3fa9085d27873200ae7261f9f98bb5202",
+    "android/player/app/src/main/res/values/strings.xml": "9e00d6ee4573883c93d8448589d2d1dc09335fcfb07a97b708c47ae0d3d3ec37",
+    "android/player/app/src/main/res/values/styles.xml": "c664ee7f357cc61a702bba4aeaab5d9fc62f9c4d3d5bf876a9094d856313584c",
+    "android/player/app/src/main/res/xml/data_extraction_rules.xml": "4675c7bf08b03d514d0cfb0299ab3d1c44d65aa9dd212857dd595ec825b0efe6",
+    "android/player/app/src/production/AndroidManifest.xml": "7458c1034213c4f6b9e0e4a60fe6fb0a113c24015c88143f604c5e9cd23c762f",
+    "android/player/app/src/staging/AndroidManifest.xml": "7458c1034213c4f6b9e0e4a60fe6fb0a113c24015c88143f604c5e9cd23c762f",
+    "android/player/app/src/test/java/nl/dartflow/app/PlayerAuthorizationRaceTest.kt": "796d8ee712db7bc8733ecff68e7041301cc0d143f8717060ae82f238de1ca6c8",
+    "android/player/app/src/test/java/nl/dartflow/app/PlayerDataTest.kt": "85e41278841d4931bbdda608630e75a414a06342c4c132172e3fe2ca7934a03f",
+    "android/player/app/src/test/java/nl/dartflow/app/PlayerHomeFeedTest.kt": "8a38ee2feebd3101bb0ca8093e87c7d7237e6e4726980d1eab8b145d461da3b2",
+    "android/player/app/src/test/java/nl/dartflow/app/PlayerMediaReadinessTest.kt": "2f78522f9d8c89c81b5fc262ae0c1dc82a8bf48f67a5cb242c41cdda43109e9b",
+    "android/player/app/src/test/java/nl/dartflow/app/PlayerMediaSafetyTest.kt": "bc011c14cdaa7a6e4d1183fa72c86fef115c9cadbb66f775fbef6b8a964d7c6c",
+    "android/player/app/src/test/java/nl/dartflow/app/PlayerOrganizerTest.kt": "4dcf4c8173a7cf3a50991541a316b11063c37b31e3f63c4a955a9e0e33115236",
+    "android/player/app/src/test/java/nl/dartflow/app/PlayerReleaseControlTest.kt": "6622e2df3e1d78a0790fafd67e4e809b1984b7ba804d550be0d26efe50eee4d2",
+    "android/player/app/src/test/java/nl/dartflow/app/PlayerSafetyTest.kt": "0ff700ffeeb65dee5ab319d209afb545222d2ce9bb75533b0d5b1b275a56b30a",
+    "android/player/app/src/test/java/nl/dartflow/app/PlayerScoreSnapshotsTest.kt": "28d61416eb1c955d5bf04afb816608dd1b6fa836048d3737312273aeacd52e9a",
+    "android/player/build.gradle.kts": "b7e8343ad7c348e87a1dbdcb0736e92416771bdb70490acd5f543249beba8a70",
+    "android/player/ci/check_release_readiness.py": "c9ec4520e1549bd7bb446b2d2ee759ae9ffe20184af52fa6b89577eb9bb411b5",
+    "android/player/ci/firebase_config.py": "06c5f1a4cc3e39d73a6d13a10043c7305e1617089b5d5ce0f939df7b9029faca",
+    "android/player/ci/run-native-ui-tests.sh": "77e1d8fa3f4d83dcf86f73c956f104e644d4968b8934b43296ba5d589e1329cc",
+    "android/player/ci/test_check_release_readiness.py": "bd57e1106b5a985ff1cce07644887ee93d63ba41da66f11a432dea16f6726931",
+    "android/player/ci/test_firebase_config.py": "b895f6171af9c4ef3ac0ae8210f3faeb741d264e67413f0dd9e14978b95df986",
+    "android/player/ci/test_verify_receipt.py": "f91163df485b8de9398c0393d008ed22b141fb51d78936f61d0113ebc4002c2b",
+    "android/player/ci/verify_receipt.py": "e956421c50e0d5243b905230ce2ad08232e8d6540b7f928de134810ad354be8c",
+    "android/player/gradle/wrapper/gradle-wrapper.properties": "3b6b8df392b92f86332d907707f3d952a32c8d6e1fedabafe2b5ec3d933a78c4",
+    "android/player/gradle.properties": "5fe2571c19a9f9380abbc24cd45851ca41f6877f082c98f007c6f8c71648e34e",
+    "android/player/settings.gradle.kts": "024ad50f5a6bda4548a5f6483acb1c96cfaed41191f09f944ecb05de44e1f211",
+    "android/player/version.properties": "7892f9a72f615e06ca2ba73a94f015e4210bb69855fca7214ff798ae84824e0f",
+    "lib/native-player.ts": "94873eea98146decbf78dde3cbecfa6c7c14f4e1e682a43026ad2c3569e8768d"
+  },
+  "unitTests": {
+    "testDevelopmentDebugUnitTest": {
+      "tests": 98,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "testProductionDebugUnitTest": {
+      "tests": 98,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "testStagingDebugUnitTest": {
+      "tests": 98,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "androidUiTests": {
+    "compiled": 60,
+    "executedLocally": false
+  },
+  "lint": "3 debug variants passed",
+  "build": "3 debug APKs, production unsigned AAB, development instrumentation APK passed",
+  "buildRecovery": {
+    "earlierFailure": "R8 heap exhausted with 2 GB during incremental bundle build",
+    "fix": "Player Gradle heap 3 GB, workers maximum2",
+    "finalResult": "all requested tasks passed in 1m30"
+  },
+  "artifacts": [
+    {
+      "path": "android/player/app/build/outputs/apk/androidTest/development/debug/app-development-debug-androidTest.apk",
+      "bytes": 1241583,
+      "sha256": "4ad674f9b235cba1e3d6dfb2036baf54773bc30d1086aaadc1e4ff7a944df94d"
+    },
+    {
+      "path": "android/player/app/build/outputs/apk/development/debug/app-development-debug.apk",
+      "bytes": 76794231,
+      "sha256": "b94f868a872de9911b375010c11d553cfd8ed20392d357d13f0e07e797811cc5"
+    },
+    {
+      "path": "android/player/app/build/outputs/apk/production/debug/app-production-debug.apk",
+      "bytes": 64871152,
+      "sha256": "207d4bd743221f3e5b1e51c5b52dcb7d6ff90d9b4869a6bbea1a8611ad8bf4e7"
+    },
+    {
+      "path": "android/player/app/build/outputs/apk/staging/debug/app-staging-debug.apk",
+      "bytes": 76794154,
+      "sha256": "e4770473639843ba0536ebd71ed6f1329ccbf131a5a404ac5865dc7ebb9df26b"
+    },
+    {
+      "path": "android/player/app/build/outputs/bundle/productionRelease/app-production-release.aab",
+      "bytes": 27587960,
+      "sha256": "a3a0d5846e0822e465b7dba37a238c111b6c1ed2ce0890bf1b90dbea52b96fea",
+      "signed": false
+    }
+  ],
+  "providerDeliveryTested": false,
+  "firebaseAccessConfirmed": false,
+  "oldPrComponent": {
+    "sourceCommit": "6b5b108727d955dadcb2c155aecb411b74b870e6",
+    "workflowRun": 44570550325,
+    "event": "pull_request",
+    "conclusion": "success",
+    "artifactId": 14555357282,
+    "artifactSha256": "712cd62d28ba175c4cc804fcf2b558ceeccade7aa8cba6e0a8acdb7e03ef08c2",
+    "githubDigestVerified": true,
+    "report": "connected/debug/flavors/development/index.html",
+    "metrics": {
+      "tests": 52,
+      "failures": 0,
+      "skipped": 0
+    },
+    "releaseEvidence": false,
+    "scope": "Earlier PR source; excludes new Firebase/bull/tournament controls"
+  },
+  "checks": {
+    "pythonReleaseHelpers": {
+      "tests": 15,
+      "failures": 0
+    },
+    "nativeBearerAndPush": {
+      "tests": 17,
+      "failures": 0,
+      "skipped": 0,
+      "provider": "simulated HTTP v1, actual local PostgreSQL"
+    },
+    "newEmulatorRuntime": "pending CI; local host has no KVM/device"
+  },
+  "postBaselineChecks": {
+    "collectedAt": "2026-11-19T17:51:48.675756+00:00",
+    "scope": "Narrow season.manager editor gated solely by fresh capabilities.canDelegate and server-projected delegationCandidates; captured revision, reason and explicit confirmation",
+    "unitTests": {
+      "testProductionDebugUnitTest": {
+        "tests": 99,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "testStagingDebugUnitTest": {
+        "tests": 99,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "testDevelopmentDebugUnitTest": {
+        "tests": 99,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "androidUiTestsCompiled": 61,
+    "androidUiTestsExecutedLocally": false,
+    "lint": "developmentDebug passed",
+    "productionBundleRebuilt": false,
+    "note": "The earlier 98-test full build artifacts remain baseline evidence. Latest delegation source has only the stated focused checks and awaits fresh CI artifacts.",
+    "sourceSha256": {
+      "android/player/app/src/test/java/nl/dartflow/app/PlayerReleaseControlTest.kt": "a34be35d787637ecede20bb0f64a9c3f4361ffefc36fe2f5cbece910321de347",
+      "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerControlUiTest.kt": "b5a59c2eb34c1c7b78e4a9ea602060b9417df74562cdf7cb51c28f9a0eb84f00",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasonDelegation.kt": "4ad59bc9ef0979eccf2754b9ce3a9ae26476782158d320c1f6ee0f7537e9e6b4",
+      "android/player/app/src/main/java/nl/dartflow/app/PlayerSeasons.kt": "74ede90b18800a981de1142b0967ba8377feaa77a06b409ced1daea4f285812e"
+    }
+  }
+}

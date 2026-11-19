@@ -25,6 +25,6 @@ export async function mediaConfiguration(actorId:string,matchId:string) {
     const urls=(process.env.DARTFLOW_TURN_URLS || '').split(',').filter(Boolean);
     if(appConfig().mode==='supabase'&&urls.some(url=>!/^turns:[A-Za-z0-9.\[\]:-]+\?transport=tcp$/.test(url)))throw new DomainError('media_transport','De beveiligde videorelay is tijdelijk niet beschikbaar.',503);
     const iceServers=secret && urls.length ? [turnCredentials(actorId,matchId,secret,urls)] : [];
-    return {actorId,peerId:players.find(id=>id!==actorId)!,isInitiator:states[0].first_player===actorId,relayConfigured:iceServers.length>0,iceServers};
+    return {actorId,peerId:players.find(id=>id!==actorId)!,isInitiator:players[0]===actorId,relayConfigured:iceServers.length>0,iceServers};
   });
 }

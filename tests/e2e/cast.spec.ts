@@ -127,6 +127,7 @@ test("a pending tournament application needs real approval and preserves editabl
       }),
     });
   await creation.getByLabel("Naam", { exact: true }).fill(name);
+  await creation.getByRole("combobox", {name:"Zichtbaarheid",exact:true}).selectOption("public");
   await creation.getByLabel("Locatie", { exact: true }).fill("Zaal A");
   await creation.getByLabel("Datum", { exact: true }).fill("2030-02-20");
   await creation

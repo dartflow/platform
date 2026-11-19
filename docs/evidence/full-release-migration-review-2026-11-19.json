@@ -1,0 +1,357 @@
+{
+  "recordedAt": "2026-11-19T16:18:45.923Z",
+  "scope": "read-only review of ten new 20261119 migrations and current loopback catalog; no DDL executed",
+  "files": [
+    {
+      "file": "20261119145211_national_player_rating.sql",
+      "sha256": "54df35547d560093c5a23b665b2cfd6d8432a71da00c4b59b56070369af262a3"
+    },
+    {
+      "file": "20261119150236_ranking_destinations_generations.sql",
+      "sha256": "6502ce7793975eee994bfcd493bcf41e990b8675bfc9f50c0e477b89d5383859"
+    },
+    {
+      "file": "20261119152234_organizer_drafts.sql",
+      "sha256": "5258915908980af97ef4bbc5d294dd4aed1929f1f7ed7480c50a67bb8a770a64"
+    },
+    {
+      "file": "20261119152915_faq_publication.sql",
+      "sha256": "7a0060ede44844f3ecaa4498211f8679f08486097efc7907f90868019fae591c"
+    },
+    {
+      "file": "20261119153249_primary_match_corrections.sql",
+      "sha256": "8fccf407fc462a5b28d0d37f169448e3e42ab0ee2620556a4355207f36ed1c40"
+    },
+    {
+      "file": "20261119155843_versioned_unthrown_ranking_rosters.sql",
+      "sha256": "51d679d5cca175ecfd9b5471109ca849a7506e80f0a9b61a2def952e3d30feac"
+    },
+    {
+      "file": "20261119161328_season_unthrown_reserve.sql",
+      "sha256": "89ac299957cb79eda9accd0daa7ad12c5df3fc3234115e7e6195c59cf7fd2dc1"
+    },
+    {
+      "file": "20261119163240_remote_reservation_matches.sql",
+      "sha256": "1584aef1f41eb764ff71bd5204770cef2677fba6095fb3ecb06400581890964f"
+    },
+    {
+      "file": "20261119171500_oche_theme.sql",
+      "sha256": "a53b6171f79ae2784c68a83d9c366017cf5882de771665571ac9e228f2a35c8c"
+    },
+    {
+      "file": "20261119184010_private_correction_cases.sql",
+      "sha256": "fdd1165a5808ea315e57b1e91671a5bde76f71c04eb397a263945b3995b9bba8"
+    }
+  ],
+  "tables": [
+    {
+      "relname": "faq_commands",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "faq_drafts",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "faq_publications",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "match_correction_case_entries",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "match_correction_decisions",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "match_correction_dependencies",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "match_correction_receipts",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "match_correction_repairs",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "match_correction_requests",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "match_result_versions",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "organizer_draft_receipts",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "organizer_drafts",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": true
+    },
+    {
+      "relname": "ranking_accounts",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_bookings",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_event_confirmations",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_event_declarations",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_generation_accounts",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_generation_bookings",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_generations",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_list_policies",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_lists",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_match_admissions",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_match_roster_confirmations",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_match_roster_versions",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_opponents",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_participant_admissions",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_policies",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": false,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_primary_correction_holds",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_primary_correction_releases",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_reservations",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_service_audit",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_service_receipts",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_source_revisions",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    },
+    {
+      "relname": "ranking_sources",
+      "relrowsecurity": true,
+      "app_select": true,
+      "app_insert": true,
+      "app_table_update": false,
+      "app_delete": false
+    }
+  ],
+  "functions": [
+    {
+      "proname": "purge_expired_correction_evidence",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=pg_catalog, dartflow_private, pg_temp"
+      ],
+      "app_execute": true
+    },
+    {
+      "proname": "reassign_unstarted_season_players",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=pg_catalog, dartflow_private"
+      ],
+      "app_execute": true
+    },
+    {
+      "proname": "revoke_unthrown_season_ranking",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=pg_catalog, dartflow_private"
+      ],
+      "app_execute": true
+    }
+  ],
+  "publicAccess": [],
+  "findings": [
+    "Season reassignment SQL now also rejects every previously committed audit score event, matching the server wrapper even after undo.",
+    "Season reassignment SQL explicitly revokes service_role in addition to PUBLIC, anon and authenticated."
+  ],
+  "conclusion": "Approved by independent read-only review: no data-preservation, privilege/RLS, idempotency or deployment-order blocker found in the ten new migrations. Apply in filename order before code activation and require all readiness markers; release owner repeats isolated restore rehearsals. Local catalog reflects the earlier helper definition until rollout, since this review executes no DDL.",
+  "limitations": [
+    "The custom loopback database does not define anon, authenticated or service_role, so their explicit SQL revocations were reviewed statically; those roles have no local catalog test to execute.",
+    "No fresh replay or hosted DDL was executed as part of this read-only review. The release owner controls isolated restore rehearsal, ordered rollout and readiness."
+  ],
+  "hardeningNotes": []
+}

@@ -11,6 +11,12 @@
             <data android:pathPrefix="/w/"/>
             <data android:pathPrefix="/koppel-scherm"/>
             <data android:pathPrefix="/app/"/>
+            <data android:pathPrefix="/toernooien"/>
+            <data android:pathPrefix="/competities"/>
+            <data android:pathPrefix="/rankings"/>
+            <data android:pathPrefix="/verenigingen"/>
+            <data android:pathPrefix="/faq"/>
+            <data android:pathPrefix="/help"/>
         </intent-filter>
     </activity></application>
 </manifest>

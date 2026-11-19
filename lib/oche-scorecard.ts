@@ -15,6 +15,7 @@ export type OcheScorecard = {
   legNumber: number;
   setNumber: number;
   startScore: number;
+  startScores:number[];
   rows: OcheScorecardRow[];
   columns: Visit[][];
   visitCount: number;
@@ -38,7 +39,7 @@ export function buildOcheScorecard(match: OcheScorecardMatch, sessionKey?: strin
   const lastEvent = events.reduce<OcheScoreEvent | null>((last, event) => !last || event.revision >= last.revision ? event : last, null);
   return {
     legKey: `${sessionKey ?? match.id}:${setNumber}:${legNumber}`,
-    legNumber, setNumber, startScore: match.currentLegStartScore ?? match.settings.startScore,
+    legNumber, setNumber, startScore: match.currentLegStartScore ?? match.settings.startScore,startScores:match.players.map((_,index)=>match.settings.sideStartScores?.[index]??match.currentLegStartScore??match.settings.startScore),
     rows, columns, filledRows, visitCount: columns.reduce((sum, column) => sum + column.length, 0),
     lastVisit: visits.at(-1) ?? null,
     lastEvent: lastEvent ? {id: lastEvent.id, revision: lastEvent.revision, kind: lastEvent.kind} : null,

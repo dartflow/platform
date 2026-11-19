@@ -1,0 +1,28 @@
+# Achtergrondmeldingen voor Player 0.2.0
+
+De kandidaatbron bevat Firebase Messaging 25.0.1, een niet-geëxporteerde Android-service, expliciete toesteltoestemming en de bestaande inbox/gebeurtenissen als bron. Dit document bevestigt geen ontvangen melding op een echt toestel. De huidige Google-configuratie en verzendrechten konden via de bestaande identiteit nog niet worden bevestigd; de app toont dit en vraagt dan geen meldingsrechten.
+
+## Configuratie en bewijs
+
+`android/player/ci/firebase_config.py` doet uitsluitend vaste Firebase Management-GETs voor project `dartflow`. De bestaande WIF-identiteit gebruikt scope `https://www.googleapis.com/auth/firebase.readonly`. Er worden geen apps, IAM-rechten, API's of sleutels aangemaakt. De uitvoer toont alleen package, registratiestatus en configuratiehash. `--config-dir` schrijft uitsluitend de publieke SDK-opties `projectId`, `applicationId`, `senderId`, `apiKey`, `packageName` naar een private map met bestanden van modus 0600.
+
+De backend verwacht `DARTFLOW_FIREBASE_ANDROID_CONFIG` als array met die publieke opties. Productie accepteert uitsluitend `nl.dartflow.app`, staging uitsluitend `nl.dartflow.app.staging`, development uitsluitend `nl.dartflow.app.dev`. SDK-configuratie is geen zendcredential.
+
+Deze implementatie gebruikt voor het vaste HTTP-v1-zendendpoint een reeds bevoegde serveridentiteit in `DARTFLOW_FCM_SERVICE_ACCOUNT_JSON`, uitsluitend in de afgeschermde runtimeconfiguratie. Een serverkey komt nooit in Android, capabilities, logs, SDK-configartifacts of een GitHub-release. Deze wijziging maakt geen key of IAM-binding aan. Een bevoegde projectbeheerder moet de bestaande Firebase-registraties en leesrechten controleren en een bestaande bevoegde verzendidentiteit aan de runtime leveren. Als daarvoor nieuwe accountrechten of credentials nodig zijn, is dat een afzonderlijke externe accountactie. Het ontbreken daarvan blijft een blokkade voor echt ontvangstbewijs. [Firebase Management GET-config](https://firebase.google.com/docs/reference/firebase-management/rest/v1beta1/projects.androidApps/getConfig), [HTTP-v1-serverautorisatie](https://firebase.google.com/docs/cloud-messaging/send/v1-api).
+
+## Gedrag en privacy
+
+- De speler schakelt systeemmeldingen zelf in. Android 13+ vraagt pas daarna `POST_NOTIFICATIONS`; weigeren blokkeert spelen en de inbox niet. Firebase Messaging-auto-init en Analytics-collectie staan standaard uit. De app initialiseert FCM pas na expliciete toestemming; bij een koude herstart alleen voor de actuele versleuteld opgeslagen login en dezelfde appomgeving.
+- De bestaande domeingebeurtenis wordt transactioneel eenmaal vastgelegd. Categorievoorkeuren worden met de bestaande e-mailvoorkeuren gedeeld. Gewijzigde afspraken, ingetrokken oproepen, verlopen gebeurtenissen, actuele clubrechten en accountstatus worden opnieuw gecontroleerd vóór verzending en bij openen.
+- Een push bevat alleen een ondoorzichtige inbox-ID, toestelbinding-ID en vaste categorie. Het vergrendelscherm toont algemene tekst, geen namen, scores of chatinhoud. Tikken voert geen inschrijving, acceptatie of scoreactie uit: de app vraagt na authenticatie de actuele doelroute op. Een verlopen of ingetrokken melding krijgt een begrijpelijke melding.
+- De versleutelde toestelbinding hoort bij account, omgeving, package en installatie. Accountwissel en uitloggen stoppen lokale ontvangst en wissen zichtbare meldingen. Tokenrotatie wordt opnieuw geregistreerd met de actuele login; achtergrondverversing en de UI gebruiken dezelfde verversingsvergrendeling.
+- Een accountverwijderverzoek wist tokenenveloppen, inbox en alle uitstaande/geleasede bezorgingen direct in dezelfde transactie. De bestaande privacyworker raakt dezelfde opruimtrigger. Toestelregistraties verlopen anders na 90 dagen zonder gebruik; verlopen inboxgegevens worden na 30 dagen opgeruimd.
+- De dispatcher verwerkt maximaal drie berichten parallel, met afzonderlijk gecontroleerde claimtokens en leases en begrensde providerverzoeken. Providerherhaling houdt dezelfde inbox-ID; de app onderdrukt al getoonde IDs. Provideracceptatie heet `accepted`; pas de geauthenticeerde toestelbevestiging heet `received` of `opened`.
+
+Firebase Messaging en de transitieve Firebase Installations-SDK verwerken technische installatie-, app- en apparaatgegevens voor bezorging. De nieuwe dependencygraaf bevat daarvoor Firebase/GMS/datatransport; de oude verklaringen voor versie 0.1.x zonder die dependencies gelden niet voor deze kandidaat. De app voegt geen Analytics-, Ads-, Billing- of Crashlytics-SDK toe en exporteert geen bezorggegevens naar BigQuery. Voor publicatie moeten privacybeleid en de werkelijke Play-gegevensverklaring deze optionele meldingsverwerking dekken. [Officiële Android SDK-gegevensverklaring](https://firebase.google.com/docs/android/play-data-disclosure#cloud-messaging).
+
+## Verificatiegrens
+
+De lokale tests gebruiken echte PostgreSQL-transacties en een gesimuleerde HTTP-v1-provider; zij controleren encryptie, scheiding van accounts/packages, deduplicatie, voorkeuren, verlopen meldingen, leaseherstel, afzonderlijke ontvangststatus en accountverwijdering. Ze zijn geen Firebase-bezorgproef.
+
+Vóór een claim van volledige UX06-pariteit zijn nog echte toestelproeven nodig met de ingerichte provider: toestemming verlenen/weigeren, app actief/achtergrond/koud, tokenrotatie, accountwissel/uitloggen, ingetrokken oproep, gewijzigde afspraak, netwerkherstel, dezelfde melding opnieuw aangeboden, openen na sessieverloop en accountverwijdering. Controleer zowel het zichtbare bericht als de opgeslagen `received`/`opened`-status. Leg package, omgeving, bron-SHA en waargenomen uitkomst vast zonder token, privétekst of sleutel.

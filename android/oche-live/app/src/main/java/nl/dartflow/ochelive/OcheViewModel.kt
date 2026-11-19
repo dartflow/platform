@@ -17,7 +17,7 @@ import org.json.JSONObject
 sealed interface DisplayUi {
     data object Loading : DisplayUi
     data class Pairing(val code: String, val url: String, val expiresAt: Long, val serverAtReceipt: Long, val monotonicAtReceipt: Long, val expired: Boolean = false) : DisplayUi
-    data class Screen(val snapshot: DisplaySnapshot, val serverAtReceipt: Long, val monotonicAtReceipt: Long, val cue: ScoreEvent? = null) : DisplayUi
+    data class Screen(val snapshot: DisplaySnapshot, val serverAtReceipt: Long, val monotonicAtReceipt: Long, val cue: ScoreEvent? = null, val cached: Boolean = false) : DisplayUi
     data class Disconnected(val message: String) : DisplayUi
 }
 data class ConnectionState(val ui: DisplayUi = DisplayUi.Loading, val offline: Boolean = false, val message: String? = null)
@@ -25,9 +25,9 @@ data class ConnectionState(val ui: DisplayUi = DisplayUi.Loading, val offline: B
 class OcheViewModel(application: Application) : AndroidViewModel(application) {
     private val store = SecureStore(application)
     private val api = OcheApi()
-    private val state = MutableStateFlow(ConnectionState())
-    val connection = state.asStateFlow()
     private var saved = store.read()
+    private val state = MutableStateFlow(cachedDisplay(saved)?.let { snapshot -> ConnectionState(DisplayUi.Screen(snapshot, snapshot.serverNow, SystemClock.elapsedRealtime(), cached = true), offline = true, message = "Laatst ontvangen stand. De actuele baan en toegang worden gecontroleerd.") } ?: ConnectionState())
+    val connection = state.asStateFlow()
     private var loop: Job? = null
     private var running = false
     private var platform = "android"
@@ -115,7 +115,11 @@ class OcheViewModel(application: Application) : AndroidViewModel(application) {
         // A first/reconnected fetch is an absolute snapshot. Polling authorizes each response,
         // bounding revoke/assignment changes without cached Realtime joins.
         val body = if (forceSnapshot || prior == null || state.value.offline) api.call("/snapshot", token = saved.getString("accessToken")) else api.call("/events?after=${java.net.URLEncoder.encode(prior.snapshot.eventId, "UTF-8")}", token = saved.getString("accessToken"))
-        val snapshot = DisplaySnapshot.parse(body.optJSONObject("snapshot") ?: body)
+        val source = body.optJSONObject("snapshot") ?: body
+        val snapshot = DisplaySnapshot.parse(source)
+        if (saved.optJSONObject("lastSnapshot")?.optString("eventId") != snapshot.eventId) {
+            saved.put("lastSnapshot",source); persist()
+        }
         forceSnapshot = false
         val cue = events.observe(snapshot.match, body.optBoolean("reset"))
         state.value = ConnectionState(DisplayUi.Screen(snapshot, snapshot.serverNow, SystemClock.elapsedRealtime(), cue))

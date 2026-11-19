@@ -1,0 +1,38 @@
+[
+  {
+    "name": "ranking-pause-manager-desktop",
+    "file": "docs/evidence/full-release-controls-web-2026-11-19/ranking-pause-manager-desktop.png",
+    "sha256": "cea5cd2745b59a7da988b1b53d8e663de9a0c02c26cfa27b60c0c206df568962",
+    "test": "club manager pauses and resumes one real ranking while participant sees no private reason"
+  },
+  {
+    "name": "ranking-pause-player-mobile",
+    "file": "docs/evidence/full-release-controls-web-2026-11-19/ranking-pause-player-mobile.png",
+    "sha256": "77bf0bf8c4f068f741262bd127c348a797b950f46a95e91a1b65b6a3f049c6f3",
+    "test": "club manager pauses and resumes one real ranking while participant sees no private reason"
+  },
+  {
+    "name": "offline-conflict-manager-desktop",
+    "file": "docs/evidence/full-release-controls-web-2026-11-19/offline-conflict-manager-desktop.png",
+    "sha256": "b8e24469aa7e610240b6270a8667d82b4d7e7fad2fdc6bca9d17aca17c1b0080",
+    "test": "real tournament offline conflict preserves both readings and the manager resolves it in the web UI"
+  },
+  {
+    "name": "offline-conflict-writer-mobile",
+    "file": "docs/evidence/full-release-controls-web-2026-11-19/offline-conflict-writer-mobile.png",
+    "sha256": "eb7685e9f58666bbcbb552e966ad1e678a1c1f877be88301c47c303442da272f",
+    "test": "real tournament offline conflict preserves both readings and the manager resolves it in the web UI"
+  },
+  {
+    "name": "real-bull-tie-and-first-visit",
+    "file": "docs/evidence/full-release-controls-web-2026-11-19/real-bull-tie-and-first-visit.png",
+    "sha256": "2c2680bb434d98bee34f5a17bc2910edbaa709566ef4762eda0291f6562ed35b",
+    "test": "real HTTP tournament bull ties reverse order, requires two identities and reaches the public Oche scorecard"
+  },
+  {
+    "name": "real-import-preview-and-event-guests",
+    "file": "docs/evidence/full-release-controls-web-2026-11-19/real-import-preview-and-event-guests.png",
+    "sha256": "b3b6165a839a840bb15212f3dfd4b732cfaecfeada77aea23d0ebf99ea052338",
+    "test": "real web import previews without roster writes, applies guests once and preserves organizer authority"
+  }
+]

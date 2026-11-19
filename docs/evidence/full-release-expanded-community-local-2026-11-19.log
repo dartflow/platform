@@ -1,0 +1,25 @@
+
+> dartflow@0.1.0 test:e2e
+> playwright test tests/e2e/community-v17.spec.ts
+
+
+Running 5 tests using 1 worker
+
+(node:2304101) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[community-real] log in three independent player sessions
+[community-real] create a private club and approve the second player
+[community-real] publish a club post and receive it in the other session
+[community-real] synchronize a like and a reply between both phones
+[community-real] open the existing scoped chat and synchronize a message
+[community-real] retain the chat draft across minimize and reopen
+[community-real] recover an offline phone with its draft and missed message
+[community-real] deny a nonmember both Feed APIs and the club page
+[community-real] revoke membership and clear the visible chat and Feed
+  ✓  1 tests/e2e/community-v17.spec.ts:6:1 › two phone sessions share a private feed, likes, threads and minimized chat, and lose access after leaving (22.4s)
+  ✓  2 tests/e2e/community-v17.spec.ts:30:1 › late feed pages cannot restore revoked data or put replies into a different open thread (1.2s)
+  ✓  3 tests/e2e/community-v17.spec.ts:70:1 › legacy event chat remains participant-only while its public Feed channel stays readable (1.6s)
+  ✓  4 tests/e2e/community-v17.spec.ts:86:71 › the scoped Feed chat launcher leaves the last reply reachable at 390x844 (1.7s)
+  ✓  5 tests/e2e/community-v17.spec.ts:86:71 › the scoped Feed chat launcher leaves the last reply reachable at 360x640 (1.7s)
+
+  5 passed (29.3s)
