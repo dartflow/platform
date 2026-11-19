@@ -4,6 +4,8 @@ De kandidaatbron bevat Firebase Messaging 26.0.2, een niet-geëxporteerde Androi
 
 ## Configuratie en bewijs
 
+De [configuratiehandleiding](firebase-configuratie.md) beschrijft Firebase Console, de Androidpackages en de beschermde serverconfiguratie. DartFlow-beheer heeft hiervoor geen invoervelden.
+
 `android/player/ci/firebase_config.py` doet uitsluitend vaste Firebase Management-GETs voor project `dartflow`. De bestaande WIF-identiteit gebruikt scope `https://www.googleapis.com/auth/firebase.readonly`. Er worden geen apps, IAM-rechten, API's of sleutels aangemaakt. De uitvoer toont alleen package, registratiestatus en configuratiehash. `--config-dir` schrijft uitsluitend de publieke SDK-opties `projectId`, `applicationId`, `senderId`, `apiKey`, `packageName` naar een private map met bestanden van modus 0600.
 
 De backend verwacht `DARTFLOW_FIREBASE_ANDROID_CONFIG` als array met die publieke opties. Productie accepteert uitsluitend `nl.dartflow.app`, staging uitsluitend `nl.dartflow.app.staging`, development uitsluitend `nl.dartflow.app.dev`. SDK-configuratie is geen zendcredential.
