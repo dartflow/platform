@@ -1,5 +1,8 @@
 package nl.dartflow.app
 
+import android.os.SystemClock
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -36,7 +39,7 @@ internal fun PlayerMediaRoom(call: PlayerVideoCall) {
     val context = LocalContext.current
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
         if (granted[Manifest.permission.CAMERA] == true && granted[Manifest.permission.RECORD_AUDIO] == true) call.connect()
-        else call.notice = "Sta camera en microfoon toe om beeld te delen. Je kunt blijven scoren."
+        else call.notice = "Sta camera en microfoon toe om beeld te delen." + call.scoringFeedback
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Samen aan de oche", style = MaterialTheme.typography.titleMedium)
@@ -84,6 +87,7 @@ internal class PlayerVideoCall(
     private val api: PlayerApi,
     private val matchId: String,
     private val scope: CoroutineScope,
+    private val cameraRequired: Boolean = false,
 ) {
     var notice by mutableStateOf("Start beeld en geluid wanneer jullie allebei klaar zijn.")
     var open by mutableStateOf(false)
@@ -108,12 +112,37 @@ internal class PlayerVideoCall(
     private var peerId = ""
     private var actorId = ""
     private var callId = ""
-    private var generation = 0
+    @Volatile private var generation = 0
     private var cursor = 0L
     private val pendingIce = mutableListOf<IceCandidate>()
     private val outgoingIce = mutableListOf<IceCandidate>()
     private var descriptionPublished = false
     private var closed = false
+    private val readiness = PlayerMediaReadiness()
+    private val preflightLock = Mutex()
+    private var heartbeat: Job? = null
+    private var localReadinessSink: VideoSink? = null
+    private var remoteReadinessSink: VideoSink? = null
+    val scoringFeedback get() = if (cameraRequired) " De verplichte beeldverbinding moet opnieuw werken voordat deze officiële partij verder kan." else " Je kunt blijven scoren."
+    private fun trackLive(track: VideoTrack?) = runCatching { track != null && track.enabled() && track.state() == MediaStreamTrack.State.LIVE }.getOrDefault(false)
+    private fun preflightNow(expectedGeneration: Int = generation) {
+        if (peerId.isBlank() || callId.isBlank()) return
+        scope.launch { preflightLock.withLock {
+            if (expectedGeneration != generation || peerId.isBlank() || callId.isBlank()) return@withLock
+            val payload = readiness.payload(callId, SystemClock.elapsedRealtime(), trackLive(localTrack), trackLive(remoteTrack))
+            try { signal("preflight", payload) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { if (!handleSignalingFailure(failure, expectedGeneration)) notice = "Camerastatus kan niet worden bevestigd." + scoringFeedback }
+        } }
+    }
+    private fun finalFalse(peer: String, call: String) {
+        if (peer.isBlank() || call.isBlank()) return
+        // Teardown still reports false when the Activity's composition scope is being cancelled.
+        val ending = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        ending.launch { try { preflightLock.withLock { runCatching {
+            api.call("/platform/matches/$matchId/signals", json("requestId" to UUID.randomUUID().toString(), "targetId" to peer, "type" to "preflight", "payload" to json("purpose" to "media-ready", "callId" to call, "video" to false, "connected" to false, "peerVideo" to false)))
+        } } } finally { ending.cancel() } }
+    }
     fun eglContext(): EglBase.Context = requireNotNull(egl).eglBaseContext
 
     fun attach(view: SurfaceViewRenderer, local: Boolean) {
@@ -154,11 +183,13 @@ internal class PlayerVideoCall(
                     override fun onSignalingChange(state: PeerConnection.SignalingState) {}
                     override fun onIceConnectionChange(state: PeerConnection.IceConnectionState) { scope.launch {
                         if (generation != currentGeneration) return@launch
+                        readiness.connected = state in listOf(PeerConnection.IceConnectionState.CONNECTED, PeerConnection.IceConnectionState.COMPLETED)
+                        preflightNow(currentGeneration)
                         notice = when (state) { PeerConnection.IceConnectionState.CONNECTED, PeerConnection.IceConnectionState.COMPLETED -> "Beeld en geluid verbonden."
-                            PeerConnection.IceConnectionState.FAILED, PeerConnection.IceConnectionState.DISCONNECTED -> "Beeldverbinding onderbroken. Verbind opnieuw; de wedstrijd blijft actief."
+                            PeerConnection.IceConnectionState.FAILED, PeerConnection.IceConnectionState.DISCONNECTED -> "Beeldverbinding onderbroken. Verbind opnieuw." + scoringFeedback
                             else -> "Wachten op de andere speler…" }
                     } }
-                    override fun onIceConnectionReceivingChange(receiving: Boolean) {}
+                    override fun onIceConnectionReceivingChange(receiving: Boolean) { scope.launch { if (generation == currentGeneration) { readiness.connected = receiving && peer?.iceConnectionState() in listOf(PeerConnection.IceConnectionState.CONNECTED, PeerConnection.IceConnectionState.COMPLETED); preflightNow(currentGeneration) } } }
                     override fun onIceGatheringChange(state: PeerConnection.IceGatheringState) {}
                     override fun onIceCandidate(candidate: IceCandidate) { scope.launch {
                         if (generation != currentGeneration) return@launch
@@ -171,7 +202,7 @@ internal class PlayerVideoCall(
                     } }
                     override fun onIceCandidatesRemoved(candidates: Array<IceCandidate>) {}
                     override fun onAddStream(stream: MediaStream) {}
-                    override fun onRemoveStream(stream: MediaStream) {}
+                    override fun onRemoveStream(stream: MediaStream) { scope.launch { if (generation == currentGeneration) { readiness.remoteStopped(); preflightNow(currentGeneration) } } }
                     override fun onDataChannel(channel: DataChannel) {}
                     override fun onRenegotiationNeeded() {}
                     override fun onAddTrack(receiver: RtpReceiver, streams: Array<MediaStream>) { attachRemote(receiver.track(), currentGeneration) }
@@ -179,13 +210,23 @@ internal class PlayerVideoCall(
                 }) ?: error("Beeldverbinding kon niet worden aangemaakt.")
                 val enumerator = Camera2Enumerator(context)
                 val cameraName = enumerator.deviceNames.firstOrNull(enumerator::isFrontFacing) ?: enumerator.deviceNames.firstOrNull()
-                    ?: error("Geen camera beschikbaar. Je kunt blijven scoren.")
-                capturer = enumerator.createCapturer(cameraName, null) ?: error("Camera is niet beschikbaar.")
+                    ?: error("Geen camera beschikbaar.")
+                capturer = enumerator.createCapturer(cameraName, object : CameraVideoCapturer.CameraEventsHandler {
+                    private fun stopped() { scope.launch { if (generation == currentGeneration) { readiness.localStopped(); preflightNow(currentGeneration) } } }
+                    override fun onCameraError(error: String) = stopped()
+                    override fun onCameraDisconnected() = stopped()
+                    override fun onCameraFreezed(error: String) = stopped()
+                    override fun onCameraOpening(name: String) = stopped()
+                    override fun onFirstFrameAvailable() {}
+                    override fun onCameraClosed() = stopped()
+                }) ?: error("Camera is niet beschikbaar.")
                 videoSource = factory!!.createVideoSource(false)
                 texture = SurfaceTextureHelper.create("DartFlowCamera", eglContext())
                 capturer!!.initialize(texture, context, videoSource!!.capturerObserver)
                 capturer!!.startCapture(640, 480, 24)
                 localTrack = factory!!.createVideoTrack("dartflow-video", videoSource)
+                localReadinessSink = VideoSink { if (generation == currentGeneration && readiness.localFrame(SystemClock.elapsedRealtime())) preflightNow(currentGeneration) }
+                localReadinessSink?.let { localTrack!!.addSink(it) }
                 audioSource = factory!!.createAudioSource(MediaConstraints())
                 audioTrack = factory!!.createAudioTrack("dartflow-audio", audioSource)
                 localView?.let { localTrack!!.addSink(it) }
@@ -205,6 +246,7 @@ internal class PlayerVideoCall(
                     if (generation != currentGeneration) return@launch
                     publishPendingIce(currentGeneration)
                 }
+                heartbeat = scope.launch { while (isActive && generation == currentGeneration) { preflightNow(currentGeneration); delay(5000) } }
                 polling = scope.launch signalingLoop@ {
                     while (isActive && generation == currentGeneration) {
                         delay(1000)
@@ -217,13 +259,17 @@ internal class PlayerVideoCall(
                     }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { releaseConnection(); notice = "Beeldverbinding niet beschikbaar. Controleer camera- en microfoonrechten en probeer opnieuw. Je kunt blijven scoren." }
+            catch (_: Exception) { releaseConnection(); notice = "Beeldverbinding niet beschikbaar. Controleer camera- en microfoonrechten en probeer opnieuw." + scoringFeedback }
             finally { connecting = false }
         }
     }
     private fun attachRemote(track: MediaStreamTrack?, version: Int) { scope.launch {
         if (generation != version || track !is VideoTrack || remoteTrack === track) return@launch
-        remoteView?.let { remoteTrack?.removeSink(it) }; remoteTrack = track; remoteView?.let(track::addSink)
+        remoteView?.let { remoteTrack?.removeSink(it) }; remoteReadinessSink?.let { remoteTrack?.removeSink(it) }
+        remoteTrack = track; readiness.remoteStopped()
+        remoteReadinessSink = VideoSink { if (generation == version && readiness.remoteFrame(SystemClock.elapsedRealtime())) preflightNow(version) }
+        remoteReadinessSink?.let(track::addSink); remoteView?.let(track::addSink)
+        preflightNow(version)
     } }
     /** Permission loss must stop an already established peer connection as well as polling.
      * Transient signaling loss can recover without interrupting media. An old poll must never
@@ -232,7 +278,7 @@ internal class PlayerVideoCall(
         if (expectedGeneration != generation) return true
         if (failure !is PlayerApiFailure || failure.status !in listOf(401, 403, 404, 410)) return false
         releaseConnection()
-        notice = "De beeldverbinding is gestopt omdat de toegang is gewijzigd of geblokkeerd. Camera en microfoon zijn uit. Je kunt blijven scoren."
+        notice = "De beeldverbinding is gestopt omdat de toegang is gewijzigd of geblokkeerd. Camera en microfoon zijn uit." + scoringFeedback
         return true
     }
     private suspend fun signal(type: String, payload: JSONObject) {
@@ -287,7 +333,7 @@ internal class PlayerVideoCall(
                 val value = payload.optJSONObject("candidate") ?: continue
                 val candidate = IceCandidate(value.optString("sdpMid"), value.optInt("sdpMLineIndex"), value.optString("candidate"))
                 if (connection.remoteDescription != null) connection.addIceCandidate(candidate) else pendingIce += candidate
-            } else if (incoming == callId && type in listOf("leave", "hangup")) notice = "De andere speler heeft de beeldverbinding verlaten."
+            } else if (incoming == callId && type in listOf("leave", "hangup")) { readiness.connected = false; readiness.remoteStopped(); preflightNow(expectedGeneration); notice = "De andere speler heeft de beeldverbinding verlaten." + scoringFeedback }
         }
     }
     private fun drainIce(connection: PeerConnection) { pendingIce.forEach { connection.addIceCandidate(it) }; pendingIce.clear() }
@@ -315,8 +361,8 @@ internal class PlayerVideoCall(
         switching = true
         val currentGeneration = generation
         camera.switchCamera(object : CameraVideoCapturer.CameraSwitchHandler {
-            override fun onCameraSwitchDone(front: Boolean) { scope.launch { if (generation != currentGeneration) return@launch; switching = false; localView?.setMirror(front); notice = "Camera gewisseld. Geluid en score blijven actief." } }
-            override fun onCameraSwitchError(error: String) { scope.launch { if (generation != currentGeneration) return@launch; switching = false; notice = "Camera wisselen mislukt. Je huidige verbinding blijft actief." } }
+            override fun onCameraSwitchDone(front: Boolean) { scope.launch { if (generation != currentGeneration) return@launch; switching = false; localView?.setMirror(front); notice = "Camera gewisseld. Controleer het beeld aan beide zijden." } }
+            override fun onCameraSwitchError(error: String) { scope.launch { if (generation != currentGeneration) return@launch; switching = false; notice = "Camera wisselen mislukt. Controleer het beeld en probeer opnieuw." } }
         })
     }
     fun toggleMicrophone() { microphone = !microphone; audioTrack?.setEnabled(microphone) }
@@ -329,15 +375,17 @@ internal class PlayerVideoCall(
         releaseConnection(); notice = "Camera en microfoon zijn gestopt."
     }
     private fun releaseConnection() {
-        generation++; polling?.cancel(); polling = null
+        finalFalse(peerId, callId)
+        generation++; polling?.cancel(); polling = null; heartbeat?.cancel(); heartbeat = null; readiness.reset()
         runCatching { capturer?.stopCapture() }; capturer?.dispose(); capturer = null
         peer?.close(); peer?.dispose(); peer = null
         localView?.let { localTrack?.removeSink(it) }; remoteView?.let { remoteTrack?.removeSink(it) }
+        localReadinessSink?.let { localTrack?.removeSink(it) }; remoteReadinessSink?.let { remoteTrack?.removeSink(it) }; localReadinessSink = null; remoteReadinessSink = null
         localTrack?.dispose(); localTrack = null; remoteTrack = null
         audioTrack?.dispose(); audioTrack = null; videoSource?.dispose(); videoSource = null
         audioSource?.dispose(); audioSource = null; texture?.dispose(); texture = null
         factory?.dispose(); factory = null; audioDevice?.release(); audioDevice = null
-        pendingIce.clear(); outgoingIce.clear(); descriptionPublished = false; open = false; switching = false
+        pendingIce.clear(); outgoingIce.clear(); descriptionPublished = false; open = false; switching = false; peerId = ""; actorId = ""; callId = ""
     }
     fun close() { closed = true; connectionJob?.cancel(); releaseConnection(); egl?.release(); egl = null }
 }

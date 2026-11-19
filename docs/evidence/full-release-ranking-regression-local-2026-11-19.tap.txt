@@ -1,0 +1,89 @@
+▶ eight real circuit evenings freeze a tied top-eight boundary, sporting BO5 decides it and a separate actual finale changes no circuit points
+  ✔ qualification waits for all eight genuinely played and finalized designated evenings (34260.575411ms)
+  ✔ the frozen top eight requires the tied ninth player to play, prevents forged/walkover qualification and keeps every original point (5410.278073ms)
+✖ eight real circuit evenings freeze a tied top-eight boundary, sporting BO5 decides it and a separate actual finale changes no circuit points (39835.444589ms)
+▶ organizer drafts share current club scope and reconcile cross-device saves without losing another revision
+  ✔ only the owner sees personal values and club managers share their scoped draft (24.468486ms)
+  ✔ concurrent devices accept one revision and return an actionable conflict for the stale save (27.08356ms)
+  ✔ revoked club and platform roles cannot replay or fetch an old authorized draft (86.523264ms)
+  ✔ sensitive fields and oversized forms stay outside durable storage (34.729591ms)
+  ✔ delete has a revision and its identical retry remains idempotent (40.867335ms)
+✔ organizer drafts share current club scope and reconcile cross-device saves without losing another revision (440.731185ms)
+▶ real match transactions require prior separate consent and book both ratings exactly once
+  ✔ personal or event sources and automatic companion signatures cannot obtain ranking rights (137.205313ms)
+  ✔ commands retain revision/idempotency and neither organizer nor a player can sign for an opponent (177.49052ms)
+  ✔ a played, mutually confirmed result updates both players and one durable source atomically (743.206844ms)
+  ✔ reviewed free result correction reuses the original reservation and immutable booking receipt (211.75097ms)
+  ✔ a canceled untouched reservation is refunded but a first throw stays consumed after undo (434.154947ms)
+  ✔ concurrent starts across events cannot exceed the pair window (251.088425ms)
+  ✔ new private storage denies Data API roles and ledger mutation (2.958819ms)
+  ✔ status filters are applied before the Top 50 window and preserve global sporting rank (227.186823ms)
+✔ real match transactions require prior separate consent and book both ratings exactly once (2483.976066ms)
+▶ published national seven-component encounters book selected singles only after captain confirmation and replay season corrections
+  ✔ recognition sees the published hidden-lineup template and requires each own participant acceptance before a ranked single starts (1485.222805ms)
+  ✔ four singles, two doubles and one team game keep zero rating until the second captain then book four sources once per destination (5924.851661ms)
+  ✔ captain dispute retracts all encounter books, independent acceptance restores only those sources and manual ranking exclusions remain excluded (185.245702ms)
+  ✔ independent season reopening preserves admission, withdraws the encounter and books a changed real winner only after fresh captain signatures (1562.394455ms)
+  ✔ an admitted unthrown reserve keeps the canonical match, archives its proof and requires both actual new players to accept the explicit roster version (1919.987759ms)
+✔ published national seven-component encounters book selected singles only after captain confirmation and replay season corrections (12012.043272ms)
+▶ four official destinations use one sport source, immutable admission and atomic correction generations
+  ✔ club authority is scoped, personal sources stay excluded, declaration conflicts block publication (1134.285221ms)
+  ✔ one confirmed source books both ratings and both circuits without invented fieldsize points (103.144648ms)
+  ✔ a correction atomically replays later opponents, retains the old generation and enforces independent review/revisions (593.44106ms)
+  ✔ best five selection is rebuilt from six real events and official rematches do not use the free cap (2629.558597ms)
+  ✔ guest winners keep their real placing while club members keep their actual lower place (374.793661ms)
+  ✔ a complete sixteen-starter event crosses the real national field threshold exactly once (9653.392911ms)
+  ✔ Swiss and both double-elimination final variants publish real completed event circuit places (10424.03039ms)
+  ✔ Cricket club rating books its actual marks game without changing any X01 destination (502.787056ms)
+  ✔ an independent primary correction withdraws all destinations, preserves proof and replays the changed actual winner (1083.766858ms)
+  ✔ a played dependent final is held, archived and replayed with canonical participants after independent repair (2292.859059ms)
+  ✔ event copies contain only empty settings and coorganizers keep one bounded current event scope (113.186729ms)
+  ✔ closing a list preserves approved event promises and writes its reason to a private immutable audit (78.559019ms)
+✔ four official destinations use one sport source, immutable admission and atomic correction generations (29522.490762ms)
+✔ published circuit examples validate real field, sport result and shared placing bands (1.038829ms)
+✔ main knockout placings use the nine real entrants and preserve full tied points (2.252199ms)
+✔ published most-specific rule wins and equal fixture prescriptions block publication (0.64231ms)
+✔ club policy validation binds thresholds and national format excludes handicaps and special outs (0.386565ms)
+✔ published handoff Elo examples keep full precision and equal opposite mutations (1.633573ms)
+✔ corrected source replay follows server sequence and recomputes later opponents (0.386976ms)
+✔ activity and rolling rematch limits use the exact exclusive old boundary (0.224662ms)
+✔ placement requires both ten matches and five opponents; equal unrounded ratings share sporting rank (7.211028ms)
+✔ national format includes every published odd best-of and excludes sets, fixed legs and 301 (0.490249ms)
+✔ each player controls only their own ranking consent and the choice freezes at start (1.814002ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 46
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87148.798216
+
+✖ failing tests:
+
+test at tests/circuit-qualifications-db.test.ts:4:1
+✖ eight real circuit evenings freeze a tied top-eight boundary, sporting BO5 decides it and a separate actual finale changes no circuit points (39835.444589ms)
+  error: update or delete on table "platform_entities" violates foreign key constraint "platform_cast_grants_entity_id_fkey" on table "platform_cast_grants"
+      at /home/codex/repos/dartflow/node_modules/pg/lib/client.js:694:17
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (/home/codex/repos/dartflow/tests/circuit-qualifications-db.test.ts:27:1722)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    length: 397,
+    severity: 'ERROR',
+    code: '23503',
+    detail: 'Key (id)=([fixture-id]) is still referenced from table "platform_cast_grants".',
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: 'dartflow_private',
+    table: 'platform_cast_grants',
+    column: undefined,
+    dataType: undefined,
+    constraint: 'platform_cast_grants_entity_id_fkey',
+    file: 'ri_triggers.c',
+    line: '2621',
+    routine: 'ri_ReportViolation'
+  }

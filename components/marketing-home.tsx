@@ -8,7 +8,7 @@ export default async function MarketingHome({ origin }: { origin: string }) {
   let latest = "";
   try { latest = renderLatestBlog(await liveBlogPosts(), origin); } catch { /* The marketing homepage remains available during database maintenance. */ }
   const withBlog = marketingContent.replace('<section id="veelgestelde-vragen"', latest + '<section id="veelgestelde-vragen"');
-  const withPrivacy = withBlog.replace('<nav aria-label="Footernavigatie">', '<nav aria-label="Footernavigatie"><a href="/privacy">Privacybeleid</a>');
+  const withPrivacy = withBlog.replace('<nav aria-label="Footernavigatie">', '<nav aria-label="Footernavigatie"><a href="/help">Help & FAQ</a><a href="/app/hall">Zelf een toernooi organiseren</a><a href="/privacy">Privacybeleid</a>');
   const content = process.env.DARTFLOW_DATA_MODE === "supabase"
     ? withPrivacy.replace(
         '<nav aria-label="Footernavigatie">',

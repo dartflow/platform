@@ -6,7 +6,7 @@ on:
         description: Eerste publicatie en juridische bevestigingen gebeuren eenmalig in Play Console
         required: true
         type: choice
-        options: [check-access, upload-internal, promote-production]
+        options: [check-access, check-oche-access, upload-internal, promote-production]
       source_sha:
         description: Volledige main-SHA met geslaagde web- en spelersapp-CI
         required: true
@@ -64,7 +64,7 @@ jobs:
           [[ "$BUNDLE_SHA256" =~ ^[a-f0-9]{64}$ ]]
           [[ "$RELEASE_TAG" =~ ^android-player-[0-9]+\.[0-9]+\.[0-9]+-[1-9][0-9]*$ ]]
           [[ "$VERSION_CODE" =~ ^[1-9][0-9]{0,9}$ ]]
-          [[ "$RELEASE_ACTION" == check-access || "$RELEASE_ACTION" == upload-internal || "$RELEASE_ACTION" == promote-production ]]
+          [[ "$RELEASE_ACTION" == check-access || "$RELEASE_ACTION" == check-oche-access || "$RELEASE_ACTION" == upload-internal || "$RELEASE_ACTION" == promote-production ]]
           node --input-type=module <<'JS'
           import {verifyRelease} from './ops/release-gate.mjs';
           await verifyRelease({repository:'dartflow/platform',integrationBranch:'main',sha:process.env.SOURCE_SHA,githubToken:process.env.GH_TOKEN,requiredChecks:[{workflow:'ci.yml',jobs:['Verify'],events:['push']},{workflow:'player-android-ci.yml',jobs:['Spelersapp · lint, unit tests en builds','Spelersapp · native telefoonproeven'],events:['push','workflow_dispatch']}]});
@@ -122,6 +122,8 @@ jobs:
           helper=android/oche-live/ci/play_release.py
           if [[ "$RELEASE_ACTION" == check-access ]]; then
             python3 "$helper" list-tracks --package nl.dartflow.app
+          elif [[ "$RELEASE_ACTION" == check-oche-access ]]; then
+            python3 "$helper" list-tracks --package nl.dartflow.ochelive
           elif [[ "$RELEASE_ACTION" == upload-internal ]]; then
             python3 "$helper" upload-internal --package nl.dartflow.app --bundle player-release/app-production-release.aab --version-code "$VERSION_CODE" --tracks internal --release-name "DartFlow $VERSION_CODE"
           else
@@ -129,4 +131,6 @@ jobs:
           fi
       - name: Leg de uitgevoerde actie vast
         run: |
-          printf 'Package: nl.dartflow.app\nAction: %s\nSource: %s\nBundle SHA-256: %s\nVersionCode: %s\n' "$RELEASE_ACTION" "$SOURCE_SHA" "$BUNDLE_SHA256" "$VERSION_CODE" >> "$GITHUB_STEP_SUMMARY"
+          package=nl.dartflow.app
+          if [[ "$RELEASE_ACTION" == check-oche-access ]]; then package=nl.dartflow.ochelive; fi
+          printf 'Package: %s\nAction: %s\nSource: %s\nBundle SHA-256: %s\nVersionCode: %s\n' "$package" "$RELEASE_ACTION" "$SOURCE_SHA" "$BUNDLE_SHA256" "$VERSION_CODE" >> "$GITHUB_STEP_SUMMARY"

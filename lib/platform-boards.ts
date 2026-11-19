@@ -42,9 +42,9 @@ export async function boardAction(client:PoolClient,actor:string,command:Platfor
  if(board.blocked||assigned.rowCount)throw new DomainError('board_occupied','Deze baan is geblokkeerd of heeft al een partij.',409);
  await assertBoardUnreserved(client,boardId,event.id);
  const mode=String(a.mode??'local');if(!['solo','local','remote'].includes(mode))throw new DomainError('invalid_mode','Kies solo, samen op locatie of op afstand.');
- const settings=validateSettings({startScore:Number(a.startScore??501)as 301|501|701,bestOfLegs:Number(a.bestOfLegs??3)});
+ const settings=validateSettings({...a,startScore:Number(a.startScore??501)as 301|501|701,bestOfLegs:Number(a.bestOfLegs??3)});
  if(mode==='solo'){
-  const id=randomUUID(),state=newTraining(id,actor,{mode:'solo',startScore:settings.startScore});state.boardId=boardId;state.eventId=event.id;state.boardHeld=true;state.boardLeaseUntil=Date.now()+30*60_000;
+  const id=randomUUID(),state=newTraining(id,actor,{...settings,mode:'solo',startScore:settings.startScore});state.boardId=boardId;state.eventId=event.id;state.boardHeld=true;state.boardLeaseUntil=Date.now()+30*60_000;
   const {row}=await createEntity(client,actor,'training',state,'private',null,id);
   const activity=await ensureBoardActivity(client,{sourceId:id,sourceKind:'training',boardIds:[boardId],eventId:event.id,actorIds:[actor]});
   row.state.boardLeaseUntil=activity.deadlineAt;row.state.boardSessionId=activity.sessionId;

@@ -117,6 +117,7 @@ export function boardCallApplicable(state:Pick<MatchState,'callRef'|'boardId'|'s
  const index=state.players.findIndex(player=>player.id===recipientId);return index>=0&&state.accepted[index]!==true;
 }
 export async function processMailBatch() {
+ await database().query('select dartflow_private.purge_expired_correction_evidence(100)');
  const runtime=integrationRuntime();await planMailReminders();const jobs=await integrationTransaction(async client=>{const token=randomUUID();const {rows}=await client.query(`with due as (select id from dartflow_private.mail_outbox where environment=$1 and ((status in ('queued','retry') and available_at<=now()) or (status='processing' and lease_until<now())) order by available_at,id for update skip locked limit 10) update dartflow_private.mail_outbox j set status='processing',claim_token=$2,lease_until=now()+interval '3 minutes',attempts=attempts+1,first_attempt_at=coalesce(first_attempt_at,now()),updated_at=now() from due where j.id=due.id returning j.*`,[runtime.environment,token]);return rows as Job[];});
  for(const job of jobs){let status='failed',error:string|null=null,providerId:string|null=null,retrySeconds=60;try {
   const settings=await senderSettings(),boundary=transportBoundary(job,settings);

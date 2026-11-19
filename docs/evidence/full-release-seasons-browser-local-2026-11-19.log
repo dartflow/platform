@@ -1,0 +1,16 @@
+
+Running 9 tests using 1 worker
+
+(node:459585) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/seasons-workspace.spec.ts:32:72 › competition index and national detail keep reference layout and scroll tables at 1440x900 (1.4s)
+  ✓  2 tests/e2e/seasons-workspace.spec.ts:32:72 › competition index and national detail keep reference layout and scroll tables at 390x844 (1.1s)
+  ✓  3 tests/e2e/seasons-workspace.spec.ts:40:1 › season wizard preserves focus, validates and safely retries the same failed save (836ms)
+  ✓  4 tests/e2e/seasons-workspace.spec.ts:46:1 › captain submits only own four slots while opponent lineup stays absent and player role hides management (988ms)
+  ✓  5 tests/e2e/seasons-workspace.spec.ts:53:1 › official assigned player PIN is masked, cleared on every attempt and leaves the writer session intact (855ms)
+  ✓  6 tests/e2e/seasons-workspace.spec.ts:59:1 › ladder UI submits the current challenge and response contract without overflowing mobile (618ms)
+  ✓  7 tests/e2e/seasons-workspace.spec.ts:66:1 › Champions UI derives the source choice then asks the actual entrant to accept (536ms)
+  ✓  8 tests/e2e/seasons-workspace.spec.ts:72:1 › remote fixture UI binds only its authoritative side with the exact physical board and writer (510ms)
+  ✓  9 tests/e2e/seasons-workspace.spec.ts:78:1 › vacancy UI publishes sporting order, previews the server candidate and confirms without a client-selected player (909ms)
+
+  9 passed (8.4s)

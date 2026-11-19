@@ -1,3 +1,4 @@
+import {matchParticipants,matchSideIndex} from './match-sides';
 import {createHash,randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {database,eventAccess} from './db';
@@ -5,6 +6,7 @@ import {DomainError,newGame} from './domain';
 import {assertPhysicalBoardEvent,locationManager,physicalBoard} from './location-access';
 import {assertBoardUnreserved} from './platform-locks';
 import type {Client,EntityRow} from './platform-store';
+import type {SeasonState} from './seasons-types';
 import type {MatchCommand,MatchState} from './types';
 import {boardActivityClock,type BoardActivityView} from './board-activity-types';
 
@@ -73,7 +75,7 @@ export async function bindBoardActivityMatch(client:Client,lobbyId:string,state:
  const row=await currentSource(client,lobbyId);
  if(!row)return; // Waiting lobbies retain their existing setup lease; T starts at match.start.
  const locked=await lockBoardActivity(client,row.id);if(!locked||locked.row.status!=='active'||locked.now>=millis(locked.row.deadline_at))throw new DomainError('board_session_expired','Deze baanopstelling is verlopen. Scan opnieuw.',409);
- await client.query("update dartflow_private.board_activity_sessions set source_kind='match',source_id=$2,event_id=$3,actor_ids=$4,activity_at=to_timestamp($5::double precision/1000),deadline_at=to_timestamp(($5::double precision+180000)/1000),warning_epoch=$6 where id=$1",[row.id,state.id,state.eventId,state.players.map(p=>p.id),locked.now,randomUUID()]);
+ await client.query("update dartflow_private.board_activity_sessions set source_kind='match',source_id=$2,event_id=$3,actor_ids=$4,activity_at=to_timestamp($5::double precision/1000),deadline_at=to_timestamp(($5::double precision+180000)/1000),warning_epoch=$6 where id=$1",[row.id,state.id,state.eventId,matchParticipants(state).map(p=>p.id),locked.now,randomUUID()]);
 }
 export async function boardDeviceCanExtend(client:Client,boardId:string,token?:string,lock=false):Promise<boolean>{
  if(!token||!/^[A-Za-z0-9_-]{43}$/.test(token))return false;
@@ -106,9 +108,10 @@ async function resetAcceptedScore(client:Client,row:ActivityRow,revision:number)
  await client.query("update dartflow_private.board_activity_sessions set activity_at=to_timestamp($2::double precision/1000),deadline_at=to_timestamp(($2::double precision+180000)/1000),warning_epoch=$3,last_score_revision=$4,status='active' where id=$1",[row.id,now,randomUUID(),revision]);
 }
 export async function guardMatchBoardActivity(client:Client,state:MatchState):Promise<BoardActivityView|null>{
+ if(state.primaryCorrection?.phase==='rescoring'&&!state.boardId)return null;
  if(['abandoned','interrupted'].includes(state.status))throw new DomainError('board_session_expired',state.status==='interrupted'?'Deze officiële partij is onderbroken. De wedstrijdleiding kan hervatten.':'Deze vrije partij is verlopen. Scan de baan opnieuw.',409);
  let row=await currentSource(client,state.id);
- if(!row&&state.boardId&&state.status==='live'){const kind=(await client.query("select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind='lobby'",[state.id])).rowCount?'free':'official';await ensureBoardActivity(client,{sourceId:state.id,sourceKind:'match',boardIds:[state.boardId],eventId:state.eventId,actorIds:state.players.map(p=>p.id),kind});row=await currentSource(client,state.id);}
+ if(!row&&state.boardId&&state.status==='live'){const kind=(await client.query("select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind='lobby'",[state.id])).rowCount?'free':'official';await ensureBoardActivity(client,{sourceId:state.id,sourceKind:'match',boardIds:await matchBoardIds(client,state),eventId:state.eventId,actorIds:[...new Set([...matchParticipants(state).map(p=>p.id),...(state.remoteWriterIds??[])])],kind});row=await currentSource(client,state.id);}
  if(row&&row.status==='interrupted'&&['called','ready'].includes(state.status))return null;
  if(!row)return null;const locked=await lockBoardActivity(client,row.id);if(!locked)return null;
  if(locked.row.status==='active'&&locked.now>=millis(locked.row.deadline_at))return releaseBoardActivity(client,{sessionId:row.id,reason:'timeout'});
@@ -118,12 +121,14 @@ export async function guardMatchBoardActivity(client:Client,state:MatchState):Pr
 async function matchBoardIds(client:Client,state:MatchState):Promise<string[]>{
  const linked=(await client.query<{id:string;state:Record<string,unknown>}>("select e.id,e.state from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind='lobby'",[state.id])).rows[0];
  const ids=[state.boardId],ownersByBoard=new Map<string,Set<string>>();
+ const official=state.remoteBoardIds?(await client.query<{id:string;state:SeasonState}>("select cs.id,cs.state from dartflow_private.platform_match_links l join dartflow_private.competition_seasons cs on cs.id=l.entity_id where l.match_id=$1",[state.id])).rows[0]:undefined;
+ if(state.remoteBoardIds){const fixture=official?.state.fixtures.find(f=>f.slots.some(slot=>slot.matchId===state.id)),bindings=[fixture?.remoteAssignments?.home,fixture?.remoteAssignments?.away];if(!official||!fixture||bindings.some((binding,i)=>!binding||binding.boardId!==state.remoteBoardIds![i]||binding.writerId!==state.remoteWriterIds?.[i])||new Set(state.remoteBoardIds).size!==2)throw new DomainError('remote_board_owner','De officiële fysieke zijden zijn niet actueel toegewezen.',409);for(const binding of bindings){ids.push(binding!.boardId);ownersByBoard.set(binding!.boardId,new Set([binding!.by]));}}
  if(linked){
   ids.push(typeof linked.state.boardId==='string'?linked.state.boardId:null);
   for(const key of ['remoteBoardIds','boardMap']){
    const value=linked.state[key];if(!value||typeof value!=='object')continue;
    for(const [actor,id]of Object.entries(value))if(typeof id==='string'){
-    if(!state.players.some(player=>player.id===actor))throw new DomainError('remote_board_owner','De gekoppelde baan hoort niet bij een deelnemer.',409);
+    if(matchSideIndex(state,actor)<0)throw new DomainError('remote_board_owner','De gekoppelde baan hoort niet bij een deelnemer.',409);
     ids.push(id);const owners=ownersByBoard.get(id)??new Set<string>();owners.add(actor);ownersByBoard.set(id,owners);
    }
   }
@@ -138,9 +143,9 @@ async function matchBoardIds(client:Client,state:MatchState):Promise<string[]>{
   if((await client.query('select 1 from dartflow_private.matches where board_id=$1 and id<>$2',[id,state.id])).rowCount)throw new DomainError('board_occupied','Een gekoppelde fysieke baan heeft al een andere partij.',409);
   // Binding and lobby creation may precede the physical start. Recheck current
   // reservation/leases and the mapped player's rights under the same board locks.
-  const eventId=id===state.boardId?state.eventId:board.event_id;
+  const eventId=official||id===state.boardId?state.eventId:board.event_id;
   await assertPhysicalBoardEvent(client,id,eventId,state.id);
-  if(linked)await assertBoardUnreserved(client,id,eventId,linked.id);
+  if(linked)await assertBoardUnreserved(client,id,eventId,linked.id);if(official)await assertBoardUnreserved(client,id,eventId,state.id);
   for(const actor of ownersByBoard.get(id)??[]){
    await eventAccess(client,actor,board.event_id);
    if(physical?.kind==='home'&&!await locationManager(client,actor,physical.location_id))throw new DomainError('forbidden','De deelnemer heeft geen actuele toegang tot zijn thuisbaan.',403);
@@ -149,8 +154,9 @@ async function matchBoardIds(client:Client,state:MatchState):Promise<string[]>{
  return boards;
 }
 export async function acceptedMatchBoardActivity(client:Client,source:MatchState,next:MatchState,command:MatchCommand):Promise<void>{
+ if(next.primaryCorrection?.phase==='rescoring'&&!next.boardId)return;
  let row=await currentSource(client,next.id);
- if((!row||row.status==='interrupted')&&next.boardId&&next.status==='live'){const linked=(await client.query("select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind='lobby'",[next.id])).rowCount;await ensureBoardActivity(client,{sourceId:next.id,sourceKind:'match',boardIds:await matchBoardIds(client,next),eventId:next.eventId,actorIds:next.players.map(p=>p.id),kind:linked?'free':'official'});row=await currentSource(client,next.id);}
+ if((!row||row.status==='interrupted')&&next.boardId&&next.status==='live'){const linked=(await client.query("select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind='lobby'",[next.id])).rowCount;await ensureBoardActivity(client,{sourceId:next.id,sourceKind:'match',boardIds:await matchBoardIds(client,next),eventId:next.eventId,actorIds:[...new Set([...matchParticipants(next).map(p=>p.id),...(next.remoteWriterIds??[])])],kind:linked?'free':'official'});row=await currentSource(client,next.id);}
  if(!row)return;
  if(command.action.type==='score')await resetAcceptedScore(client,row,next.revision);
  if(['result','confirmed'].includes(next.status))await client.query("update dartflow_private.board_activity_sessions set status='completed' where id=$1 and status in('active','completed')",[row.id]);
@@ -190,7 +196,7 @@ export async function releaseBoardActivity(client:Client,input:{sessionId:string
     const target=(await client.query<{id:string;kind:'league'|'tournament';owner_id:string}>("select e.id,e.kind,e.owner_id from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind in('league','tournament')",[state.id])).rows[0];
     if(target)await client.query('insert into dartflow_private.community_messages(id,scope_kind,scope_id,author_id,body) values($1,$2,$3,$4,$5)',[randomUUID(),target.kind,target.id,target.owner_id,`Oche Live: de fysieke baan van ${state.players.map(p=>p.name).join(' tegen ')} is vrijgegeven wegens ${input.reason==='forced'?'een ingreep van de locatiebeheerder':'inactiviteit'}. De partij is onderbroken; voortgang en speelschema blijven behouden. De wedstrijdleiding kan de partij op een baan hervatten.`]);
    }else if(terminal==='released'){
-    state.status='abandoned';state.game=newGame(state.id,state.players.map(p=>p.id),state.settings);state.previousSets=[];state.winnerId=null;state.resultRevision=null;state.resultPublished=false;state.accepted=[false,false];state.confirmations=[false,false];state.correction=null;state.dispute=null;state.paused=false;state.delegatedWriterId=null;
+    state.status='abandoned';state.game=newGame(state.id,matchParticipants(state).map(p=>p.id),state.settings);state.previousSets=[];state.winnerId=null;state.resultRevision=null;state.resultPublished=false;state.accepted=[false,false];state.confirmations=[false,false];state.correction=null;state.dispute=null;state.paused=false;state.delegatedWriterId=null;
     await client.query('delete from dartflow_private.visits where match_id=$1',[state.id]);await client.query('delete from dartflow_private.match_confirmations where match_id=$1',[state.id]);
    }
    await client.query('update dartflow_private.matches set board_id=null,state=$2,revision=$3,updated_at=clock_timestamp() where id=$1',[state.id,JSON.stringify(state),state.revision]);

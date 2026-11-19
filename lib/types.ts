@@ -2,17 +2,21 @@ export type Role = 'organizer' | 'player';
 export type { ClubBoardView,ClubBoardScreenView } from './platform-types';
 export type Profile = { id: string; name: string; email?: string; role?: Role; displayNameConfirmed?: boolean;username?:string;displayName?:string;pinConfigured?:boolean;showPublicStatistics?:boolean;onboardingComplete?:boolean };
 export type Club = { id: string; name: string; role: Role };
-export type Settings = { startScore: 301 | 501 | 701; bestOfLegs: number; bestOfSets: number; legLimit?: number };
-export type Visit = { player: string; playerIndex: number; score: number; darts: number; remainingBefore: number; remainingAfter: number; bust: boolean; leg: number; checkout: boolean; measurementVersion?:1; doubleAttempts?:number|null };
+export type Settings = { discipline?:'x01'|'cricket';cricketMode?:'standard'|'no-score'; startScore: 301 | 501 | 701; bestOfLegs: number; bestOfSets: number; legLimit?: number;inRule?:'single'|'double';outRule?:'straight'|'double'|'master';sideStartScores?:[number,number] };
+export type Visit = { cricket?:{marksBefore:number[];marksAfter:number[];pointsBefore:number;pointsAfter:number;creditedMarks:number}; player: string; playerIndex: number; throwerId?:string; score: number; darts: number; remainingBefore: number; remainingAfter: number; bust: boolean; leg: number; checkout: boolean; measurementVersion?:1; doubleAttempts?:number|null;dartHits?:string[];observedScore?:number;openedBefore?:boolean;openedAfter?:boolean;endReason?:'turn'|'bust'|'finish' };
 export type Stats = { total: number; darts: number; oneEighties: number; highestFinish: number; legsWon?: number; average?: number;measurementComplete?:boolean;hundredPlus?:number;hundredFortyPlus?:number;firstNine?:number|null;bestLegDarts?:number|null;checkoutPercentage?:number|null };
-export type Game = { id: string; players: string[]; startScore: number; bestOf: number; legLimit?: number; legs: number[]; remaining: number[]; turn: number; legStarter: number; status: 'live' | 'finished'; visits: Visit[]; history: Omit<Game, 'history'>[]; stats: Stats[]; winner?: string | null; draw?: boolean };
+export type Game = { discipline?:Settings['discipline'];cricketMode?:Settings['cricketMode'];cricket?:import('./cricket').CricketState; id: string; players: string[]; sidePlayers?:[string[],string[]]; legOffset?:number; startScore: number; bestOf: number; legLimit?: number; legs: number[]; remaining: number[]; turn: number; legStarter: number; status: 'live' | 'finished'; visits: Visit[]; history: Omit<Game, 'history'>[]; stats: Stats[]; winner?: string | null; draw?: boolean;inRule?:Settings['inRule'];outRule?:Settings['outRule'];sideStartScores?:[number,number];opened?:[boolean,boolean] };
 export type MatchState = {
   id: string; clubId: string; eventId: string; boardId: string | null; revision: number;
   status: 'planned' | 'called' | 'ready' | 'live' | 'result' | 'confirmed' | 'disputed' | 'abandoned' | 'interrupted';
   players: Profile[]; writerId: string; settings: Settings; accepted: boolean[];
+  sideParticipants?:[Profile[],Profile[]]; sideNames?:[string,string];
   scoringMode?: 'shared-writer' | 'per-player';
+  remoteBoardIds?:[string,string];remoteWriterIds?:[string,string];cameraRequired?:boolean;
   delegatedWriterId?: string | null;
   localCompanion?:{playerId:string;writerId:string;lobbyId:string};
+  ranking?:import('./ranking-types').MatchRanking;
+  primaryCorrection?:{requestId:string;originalResultRevision:number;phase:'rescoring'|'confirmed'};
   callRef?:string|null;
   paused?:boolean;pausedBy?:string|null;scoringRevision?:number;
   correction?:{id:string;requestedBy:string;reason:string;undoCount:number;visitCount:number;scoringRevision:number}|null;
@@ -22,22 +26,26 @@ export type MatchState = {
   winnerId: string | null; resultPublished: boolean; dispute: string | null;
 };
 export type MatchView = Omit<MatchState, 'game' | 'previousSets'> & {
+  currentThrower?:Profile;cricket?:import('./cricket').CricketState;
+  rankingDestinations?:import('./ranking-types').MatchRankingDestination[];
+  rankingEligibility?:import('./ranking-types').RankingEligibility;
   offlineSupported?: boolean;
   boardActivity?:import('./board-activity-types').BoardActivityView;
   currentLegVisits?:Visit[];
   currentLegStartScore?:number;
   remaining: number[]; legs: number[]; sets: number[]; turn: number; checkout: string | null;
   visits: Visit[]; stats: Stats[]; legNumber: number; setNumber: number;
-  permissions: { canScore: boolean; canWrite: boolean; canManage: boolean; canAccept: boolean; canConfirm: boolean; canTakeOver: boolean; canUndo: boolean;canPause:boolean;canResume:boolean;canRequestCorrection:boolean;canAnswerCorrection:boolean;canCancelCorrection:boolean };
+  permissions: { canMedia?:boolean;canScore: boolean; canWrite: boolean; canManage: boolean; canAccept: boolean; canConfirm: boolean; canTakeOver: boolean; canUndo: boolean;canPause:boolean;canResume:boolean;canRequestCorrection:boolean;canAnswerCorrection:boolean;canCancelCorrection:boolean };
 };
 export type MatchAction =
   | { type: 'call'; boardId: string;callRef?:string }
   | { type: 'accept' | 'start' | 'undo' | 'take-over' | 'confirm' | 'release' | 'recover' }
   | {type:'pause';reason?:string}
   | {type:'resume'}
+  | {type:'ranking-consent';consent:boolean}
   | {type:'request-correction';reason:string}
   | {type:'approve-correction'|'reject-correction'|'cancel-correction';correctionId:string}
-  | { type: 'score'; score: number; darts?: number; doubleConfirmed?: boolean;doubleAttempts?:number|null }
+  | { type: 'score'; score: number; darts?: number; doubleConfirmed?: boolean;doubleAttempts?:number|null;dartHits?:string[];bust?:boolean }
   | { type: 'dispute'; reason: string }
   | { type: 'resolve'; reason: string; decision: 'resume' | 'accept' };
 export type MatchCommand = { requestId: string; matchId: string; expectedRevision: number; action: MatchAction };
@@ -53,4 +61,7 @@ export type Overview = {
   standings: { playerId: string; name: string; played: number; won: number; drawn: number; points: number }[];
   permissions: { canManage: boolean };
 };
-export type PublicSnapshot = { statistics?:import('./player-statistics-types').OcheHistoricalStatistics;sessionKey?:string;scoreEvents?:import('./score-events').ScoreEvent[];boardActivity?:import('./board-activity-types').BoardActivityView; board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'currentLegVisits' | 'currentLegStartScore' | 'winnerId' | 'resultPublished' | 'settings' | 'writerId' | 'scoringMode' | 'stats' | 'legNumber' | 'setNumber' | 'paused'> };
+export type PublicSnapshot = {
+ pendingCall?:{label:string;players:[string,string];writerName?:string};
+ encounter?:{name:string;homeName:string;awayName:string;score:[number,number];legs:[number,number];component:{index:number;label:string}};
+ theme?:{id:'dartflow'|'onzetrots';version:1}; statistics?:import('./player-statistics-types').OcheHistoricalStatistics;sessionKey?:string;scoreEvents?:import('./score-events').ScoreEvent[];boardActivity?:import('./board-activity-types').BoardActivityView; board: { id: string; name: string }; event: { name: string }; match: null | Pick<MatchView, 'id' | 'revision' | 'status' | 'players' | 'remaining' | 'legs' | 'sets' | 'turn' | 'checkout' | 'visits' | 'currentLegVisits' | 'currentLegStartScore' | 'winnerId' | 'resultPublished' | 'settings' | 'writerId' | 'scoringMode' | 'stats' | 'legNumber' | 'setNumber' | 'paused' | 'sideParticipants' | 'sideNames' | 'currentThrower' | 'cricket'> };

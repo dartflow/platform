@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +57,7 @@ import java.util.UUID
 /** UI owns only ephemeral form values; all identity, permissions and accepted scores come from the server. */
 class PlayerActions(
     val navigate: (PlayerScreen, String?) -> Unit = { _, _ -> },
+    val back: () -> Unit = {}, val saveOrganizerDraft: (JSONObject) -> Unit = {},
     val refresh: () -> Unit = {}, val requestOtp: (String) -> Unit = {}, val verifyOtp: (String) -> Unit = {},
     val google: () -> Unit = {}, val localLogin: (String) -> Unit = {}, val logout: () -> Unit = {},
     val reviewLogin: (String, String) -> Unit = { _, _ -> },
@@ -80,13 +82,22 @@ internal fun validPlayerUsername(value: String) = PlayerValidation.validUsername
 internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
 
 @Composable fun PlayerApp(state: PlayerUiState, actions: PlayerActions, media: @Composable (String) -> Unit = {}) {
+    val destinations = rememberSaveableStateHolder()
     val profile = state.profile
     var fullScore by remember(state.match?.id) { mutableStateOf(true) }
     var more by remember { mutableStateOf(false) }
     val navigationSection = playerNavigationSection(state.screen, state.activeId)
     val activeMatch = state.screen == PlayerScreen.MATCH && state.match != null
-    BackHandler(enabled = state.session != null && state.screen != PlayerScreen.HOME) {
-        if (activeMatch && fullScore) fullScore = false else actions.navigate(PlayerScreen.HOME, null)
+    BackHandler(enabled = (state.session != null || state.screen == PlayerScreen.HELP) && state.screen != PlayerScreen.HOME) {
+        if (activeMatch && fullScore) fullScore = false else actions.back()
+    }
+    if (state.session == null && state.screen == PlayerScreen.HELP) {
+        Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (state.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+            state.error?.let { Notice(it, true, actions.refresh) }
+            PlayerHelpScreen(state, actions)
+        }
+        return
     }
     if (state.session == null) {
         LoginScreen(state, actions)
@@ -100,13 +111,13 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         val match = state.match!!
         PlayerScoreConsole(
             title = "Set ${match.setNumber} · Leg ${match.legNumber}",
-            players = match.players.mapIndexed { i, p -> ScorePlayer(p.id, p.displayName.ifBlank { p.name }, match.remaining.getOrElse(i) { 0 }) },
+            players = match.players.mapIndexed { i, p -> ScorePlayer(p.id, match.sideName(i), if (playerIsCricket(match)) match.raw.obj("cricket").optJSONArray("points")?.optInt(i) ?: 0 else match.remaining.getOrElse(i) { 0 }) },
             active = match.turn, canScore = match.permissions.optBoolean("canScore"), busy = state.busy,
             offline = !state.online, checkout = match.checkout, message = state.error,
-            scoreKey = "${match.id}:${match.revision}", onSubmit = actions.score,
+            scoreKey = "${match.id}:${match.revision}", onSubmit = actions.score, scoreLabel = if (playerIsCricket(match)) "punten" else "restscore", currentThrowerName = match.currentThrower?.let { it.displayName.ifBlank { it.name } },
             onBack = { fullScore = false }, onRetry = actions.retry, pending = state.hasPendingCommand,
             activity = match.raw.obj("boardActivity"), onExtend = { extendActivity(match.raw.obj("boardActivity"), actions) },
-            options = { state.notice?.let { Notice(it, retry = actions.dismiss) }; MatchOptions(match, actions, state) }, media = if (match.raw.text("scoringMode") == "per-player") { { media(match.id) } } else null)
+            options = { state.notice?.let { Notice(it, retry = actions.dismiss) }; MatchOptions(match, actions, state) }, dartEntry = if (playerNeedsDartDetail(match.raw.obj("settings"))) { { PlayerDartScoreEntry(match, state, actions) } } else null, media = if (playerCanMedia(match, state.profile?.id)) { { media(match.id) } } else null)
         return
     }
     if (state.screen == PlayerScreen.TRAINING && state.activeId != null && (entityFor(state, "trainings").obj("state").has("game") || entityFor(state, "trainings").obj("state").text("mode") == "around")) {
@@ -131,7 +142,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
             Column(Modifier.background(PlayerInk).navigationBarsPadding()) {
                 HorizontalDivider(color = PlayerBorder)
                 Row(Modifier.fillMaxWidth().selectableGroup()) {
-                    listOf(Triple(PlayerScreen.HOME, PlayerNavIcon.HOME, "Vandaag"), Triple(PlayerScreen.PLAY, PlayerNavIcon.PLAY, "Spelen"), Triple(PlayerScreen.EVENTS, PlayerNavIcon.EVENTS, "Evenementen"), Triple(PlayerScreen.FRIENDS, PlayerNavIcon.FRIENDS, "Vrienden")).forEach { (route, icon, label) ->
+                    listOf(Triple(PlayerScreen.HOME, PlayerNavIcon.HOME, "Vandaag"), Triple(PlayerScreen.PLAY, PlayerNavIcon.PLAY, "Spelen"), Triple(PlayerScreen.SEASONS, PlayerNavIcon.COMPETITIONS, "Competities"), Triple(PlayerScreen.EVENTS, PlayerNavIcon.EVENTS, "Toernooien")).forEach { (route, icon, label) ->
                         PlayerNavigationItem(label, icon, !more && navigationSection == icon, Modifier.weight(1f)) { actions.navigate(route, null) }
                     }
                     PlayerNavigationItem("Meer", PlayerNavIcon.MORE, more || navigationSection == PlayerNavIcon.MORE, Modifier.weight(1f)) { more = true }
@@ -141,6 +152,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     ) { inset ->
         Box(Modifier.fillMaxSize().padding(inset)) {
             PlayerRings(Modifier.fillMaxSize())
+            destinations.SaveableStateProvider("${state.session.userId}:${state.screen}:${state.activeId.orEmpty()}") {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (!state.online) Notice("Geen verbinding. De laatst ontvangen gegevens blijven zichtbaar.", true)
                 state.error?.takeIf { it.isNotBlank() }?.let { Notice(it, true, actions.retry) }
@@ -157,7 +169,8 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
                     PlayerScreen.EVENTS -> EventsScreen(state, actions)
                     PlayerScreen.EVENT -> EventScreen(state, actions)
                     PlayerScreen.SEASONS -> SeasonsScreen(state, actions)
-                    PlayerScreen.SEASON -> SeasonScreen(state, actions)
+                    PlayerScreen.SEASON -> PlayerSeasonDetail(state, actions)
+                    PlayerScreen.SEASON_CREATE -> PlayerSeasonCreateScreen(state, actions)
                     PlayerScreen.FRIENDS -> FriendsScreen(state, actions)
                     PlayerScreen.FEED -> FeedScreen(state, actions)
                     PlayerScreen.CHAT -> ChatScreen(state, actions)
@@ -166,8 +179,18 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
                     PlayerScreen.PROFILE -> ProfileScreen(state, actions)
                     PlayerScreen.NOTIFICATIONS -> NotificationsScreen(state, actions)
                     PlayerScreen.SCREENS -> ScreensScreen(state, actions)
+                    PlayerScreen.ORGANIZE -> PlayerOrganizerScreen(state, actions)
+                    PlayerScreen.DIRECTOR -> PlayerDirectorScreen(state, actions)
+                    PlayerScreen.HELP -> PlayerHelpScreen(state, actions)
+                    PlayerScreen.FAQ_ADMIN -> PlayerFaqAdminScreen(state, actions)
+                    PlayerScreen.LOCATIONS -> PlayerLocationsScreen(state, actions)
+                    PlayerScreen.RANKING_EVENT -> PlayerEventRankingsScreen(state, actions)
+                    PlayerScreen.RANKINGS -> PlayerRankingsScreen(state, actions)
+                    PlayerScreen.CLUBS -> PlayerClubsScreen(state, actions)
+                    PlayerScreen.CLUB -> PlayerClubScreen(state, actions)
                 }
                 Spacer(Modifier.height(8.dp))
+            }
             }
         }
     }
@@ -175,10 +198,10 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         Column(Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Heading("Jouw DartFlow", "MEER")
             listOf(
-                "Spelen & voortgang" to listOf(PlayerScreen.BOARDS to "Banen & favorieten", PlayerScreen.TRAINING to "Training", PlayerScreen.HISTORY to "Wedstrijdhistorie", PlayerScreen.STATISTICS to "Statistieken"),
-                "Community & evenementen" to listOf(PlayerScreen.FEED to "Community", PlayerScreen.FRIENDS to "Vrienden & spelerskamers", PlayerScreen.SEASONS to "Competities"),
+                "Spelen & voortgang" to listOf(PlayerScreen.BOARDS to "Banen & favorieten", PlayerScreen.LOCATIONS to "Mijn locaties & reserveringen", PlayerScreen.TRAINING to "Training", PlayerScreen.HISTORY to "Wedstrijdhistorie", PlayerScreen.STATISTICS to "Statistieken"),
+                "Community & evenementen" to listOf(PlayerScreen.RANKINGS to "Rankings", PlayerScreen.FEED to "Mijn feed", PlayerScreen.CLUBS to "Verenigingen", PlayerScreen.FRIENDS to "Vrienden & spelerskamers", PlayerScreen.ORGANIZE to "Toernooi organiseren"),
                 "Schermbeheer" to listOf(PlayerScreen.SCREENS to "Oche Live-schermen"),
-                "Jouw account" to listOf(PlayerScreen.PROFILE to "Profiel & instellingen", PlayerScreen.NOTIFICATIONS to "Meldingen"),
+                "Jouw account" to listOf(PlayerScreen.PROFILE to "Profiel & instellingen", PlayerScreen.NOTIFICATIONS to "Meldingen", PlayerScreen.HELP to "Help & FAQ"),
             ).forEach { (group, entries) ->
                 Text(group.uppercase(Locale.ROOT), Modifier.padding(top = 10.dp, start = 12.dp), color = PlayerMuted, fontSize = 10.sp, letterSpacing = 1.sp)
                 entries.forEach { (route, label) -> TextButton(onClick = { more = false; actions.navigate(route, null) }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
@@ -284,6 +307,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
             Action("Inloggen voor appbeoordeling", !state.busy && reviewEmail.contains('@') && reviewPassword.isNotBlank(), modifier = Modifier.fillMaxWidth()) { actions.reviewLogin(reviewEmail.trim(), reviewPassword); reviewPassword = "" }
             TextButton(onClick = { review = false; reviewPassword = "" }) { Text("Terug naar gewone aanmelding") }
         }
+        Action("Help & FAQ", primary = false) { actions.navigate(PlayerScreen.HELP, null) }
         SafetyLink("Privacybeleid", "/privacy")
         SafetyLink("Account en gegevens verwijderen", "/account-verwijderen")
         SafetyLink("Communityregels", "/communityregels")
@@ -338,6 +362,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
             PlayerIcon(PlayerNavIcon.PLAY, PlayerLime, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Vrij spelen")
         }
     }
+    PlayerOwnPreCalls(state, actions)
     experience.rows("fixtures").firstOrNull()?.let { FixtureCard(it, actions, state.busy) }
     // Community is the main home content, using the exact same server posts and
     // actions as the standalone feed. Keep the first page compact on startup.
@@ -404,7 +429,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     }
 }
 @Composable internal fun Stat(label: String, value: String) { Column { Text(value, color = PlayerLime, fontFamily = PlayerBarlow, fontSize = 30.sp); Text(label, color = PlayerMuted, fontSize = 11.sp) } }
-internal fun statusLabel(value: String): String = mapOf("live" to "Live", "planned" to "Gepland", "registered" to "Ingeschreven", "completed" to "Afgerond", "confirmed" to "Bevestigd", "result" to "Uitslag", "interrupted" to "Onderbroken", "ready" to "Gereed", "closed" to "Gesloten", "scheduled" to "Gepland", "registration" to "Inschrijving open", "active" to "Actief", "waitlisted" to "Wachtlijst")[value] ?: value
+internal fun statusLabel(value: String): String = mapOf("live" to "Live", "planned" to "Gepland", "registered" to "Ingeschreven", "completed" to "Afgerond", "confirmed" to "Bevestigd", "result" to "Uitslag", "interrupted" to "Onderbroken", "ready" to "Gereed", "closed" to "Gesloten", "scheduled" to "Gepland", "registration" to "Inschrijving open", "active" to "Actief", "waitlisted" to "Wachtlijst", "bye" to "Vrijgesteld", "void" to "Niet nodig", "proposed" to "Tijdvoorstel", "provisional" to "Voorlopig", "disputed" to "Betwist", "administrative" to "Administratief", "draft" to "Concept", "archived" to "Archief", "pending" to "In behandeling", "withdrawn" to "Teruggetrokken", "canceled" to "Geannuleerd")[value] ?: value
 
 @Composable private fun PlayScreen(state: PlayerUiState, actions: PlayerActions) {
     var setup by rememberSaveable { mutableStateOf("solo") }
@@ -416,10 +441,11 @@ internal fun statusLabel(value: String): String = mapOf("live" to "Live", "plann
         Choice("Spelvorm", setup, listOf("solo" to "Solo trainen", "bot" to "Tegen de bot", "localone" to "Lokaal · één schrijver", "localtwo" to "Lokaal · twee borden", "remote" to "Beide thuis", "hybrid" to "Hybride"), { setup = it }, !state.busy)
         Choice("Startscore", score, listOf("301" to "301", "501" to "501", "701" to "701"), { score = it }, !state.busy)
         if (setup !in listOf("solo", "bot")) Choice("Best of legs", legs, listOf(1,3,5,7,9).map { "$it" to "$it legs" }, { legs = it }, !state.busy)
+        val extraRules = if (setup != "bot") PlayerRuleFields(!state.busy) else JSONObject()
         Text(when(setup) { "solo" -> "Jouw worpen en voortgang worden bewaard."; "bot" -> "Oefen tegen de DartFlow-bot."; "remote", "hybrid" -> "Iedere speler scoort de eigen beurt op het eigen toestel. Open video tijdens de wedstrijd om de camera te verbinden."; else -> "Eén schrijver voert de worpen in. Je tegenstander kan zelf de baan-QR scannen." }, color = PlayerMuted)
         Action("${if (setup in listOf("solo", "bot")) "Start training" else "Open wedstrijdlobby"}", !state.busy, modifier = Modifier.fillMaxWidth()) {
-            if (setup in listOf("solo", "bot")) actions.platformAction(json("type" to "training.create", "mode" to setup, "startScore" to score.toInt(), "botAverage" to 45))
-            else actions.platformAction(json("type" to "lobby.create", "name" to "Vrije wedstrijd", "setup" to setup, "startScore" to score.toInt(), "bestOfLegs" to legs.toInt()))
+            if (setup in listOf("solo", "bot")) actions.platformAction(playerWithSettings(json("type" to "training.create", "mode" to setup, "startScore" to score.toInt(), "botAverage" to 45), extraRules))
+            else actions.platformAction(playerWithSettings(json("type" to "lobby.create", "name" to "Vrije wedstrijd", "setup" to setup, "startScore" to score.toInt(), "bestOfLegs" to legs.toInt()), extraRules))
         }
     }
     PlayerCard("Ik heb een uitnodiging") {
@@ -436,6 +462,7 @@ internal fun statusLabel(value: String): String = mapOf("live" to "Live", "plann
 @Composable private fun BoardsScreen(state: PlayerUiState, actions: PlayerActions) {
     var filter by rememberSaveable { mutableStateOf("") }
     Heading("Jouw vaste banen", "BANEN & LOCATIES", "De baan-QR en je favoriete instellingen blijven bij hetzelfde bord.")
+    Action("Beheer mijn locaties en reserveringen", primary = false) { actions.navigate(PlayerScreen.LOCATIONS, null) }
     Action("Scan baan-QR", modifier = Modifier.fillMaxWidth(), onClick = actions.scan)
     Field("Zoek baan of locatie", filter, { filter = it })
     val boards = state.resource.rows("boards").filter { filter.isBlank() || "${it.text("name")} ${it.text("locationName")}".contains(filter, true) }.sortedByDescending { it.optBoolean("favorite") }
@@ -468,7 +495,8 @@ internal fun statusLabel(value: String): String = mapOf("live" to "Live", "plann
         Choice("Spelvorm", mode, listOf("solo" to "Solo trainen", "local" to "Samen op locatie", "remote" to "Tegenstander op afstand"), { mode = it }, !state.busy)
         Choice("Startscore", score, listOf("301" to "301", "501" to "501", "701" to "701"), { score = it }, !state.busy)
         if (mode != "solo") Choice("Best of legs", legs, listOf(1,3,5,7,9).map { "$it" to "$it" }, { legs = it }, !state.busy)
-        Action("Op deze baan starten", !state.busy, modifier = Modifier.fillMaxWidth()) { actions.platformAction(json("type" to "board.start", "boardId" to boardId, "mode" to mode, "startScore" to score.toInt(), "bestOfLegs" to legs.toInt())) }
+        val extraRules = PlayerRuleFields(!state.busy)
+        Action("Op deze baan starten", !state.busy, modifier = Modifier.fillMaxWidth()) { actions.platformAction(playerWithSettings(json("type" to "board.start", "boardId" to boardId, "mode" to mode, "startScore" to score.toInt(), "bestOfLegs" to legs.toInt()), extraRules)) }
     } else PlayerCard(if (board.optBoolean("occupied")) "Baan bezet" else "Wacht op je baanoproep") { Text("Een ingeplande of gereserveerde partij krijgt voorrang. Deze vaste baanlink blijft naar hetzelfde bord verwijzen.", color = PlayerMuted) }
 }
 
@@ -477,7 +505,7 @@ private fun entityFor(state: PlayerUiState, key: String): JSONObject {
     if (state.resource.has("state") && state.resource.has("id")) return state.resource
     return state.platform.rows(key).find { it.text("id") == state.activeId } ?: state.resource.rows(key).find { it.text("id") == state.activeId } ?: JSONObject()
 }
-private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JSONObject) { actions.command("/platform/actions", json("expectedRevision" to entity.optInt("revision"), "action" to action)) }
+internal fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JSONObject) { actions.command("/platform/actions", json("expectedRevision" to entity.optInt("revision"), "action" to action)) }
 
 @Composable private fun LobbyScreen(state: PlayerUiState, actions: PlayerActions) {
     val entity = entityFor(state, "lobbies")
@@ -525,7 +553,7 @@ private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JS
         val boards = state.platform.rows("clubBoards").filter { !it.optBoolean("occupied") && !it.optBoolean("blocked") && !it.optBoolean("closed") }
         if (boards.isNotEmpty()) PlayerCard("Mijn fysieke baan") { Choice("Koppel een baan (optioneel)", body.obj("remoteBoardIds").text(mine), listOf("" to "Thuis zonder baanscherm") + boards.map { it.text("id") to it.text("name") }, { if (it.isNotBlank()) entityCommand(actions, entity, json("type" to "lobby.board.bind", "id" to id, "boardId" to it)) }, !state.busy) }
     }
-    PlayerCard("Jullie opstelling") { Text(mapOf("localone" to "Samen aan één bord", "localtwo" to "Twee borden op locatie", "remote" to "Beide thuis", "hybrid" to "Hybride")[body.text("setup")] ?: "Vrij spelen"); Text("${body.obj("settings").optInt("startScore", 501)} · dubbel uit · best of ${body.obj("settings").optInt("bestOfLegs", 3)}", color = PlayerMuted) }
+    PlayerCard("Jullie opstelling") { Text(mapOf("localone" to "Samen aan één bord", "localtwo" to "Twee borden op locatie", "remote" to "Beide thuis", "hybrid" to "Hybride")[body.text("setup")] ?: "Vrij spelen"); Text("${playerRuleLabel(body.obj("settings"))} · best of ${body.obj("settings").optInt("bestOfLegs", 3)}", color = PlayerMuted) }
     if (owner && !closed && matchId.isBlank()) Action("Lobby sluiten en baan vrijgeven", !state.busy, false) { entityCommand(actions, entity, json("type" to "lobby.cancel", "id" to id)) }
 }
 @Composable private fun ShareButton(url: String) {
@@ -541,6 +569,7 @@ private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JS
 
 @Composable private fun TrainingScreen(state: PlayerUiState, actions: PlayerActions) {
     val e = entityFor(state, "trainings"); val s = e.obj("state"); val game = s.obj("game"); val id = e.text("id")
+    val trainingMatch = playerTrainingMatch(e, state.profile)
     var console by remember(id) { mutableStateOf(true) }
     BackHandler { if (console) console = false else actions.navigate(PlayerScreen.TRAINING, null) }
     if (s.text("mode") == "around") {
@@ -549,8 +578,9 @@ private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JS
     }
     if (console && !s.optBoolean("completed") && game.text("status") != "finished") {
         val remaining = game.optJSONArray("remaining").ints(); val players = listOf(state.profile?.displayName?.ifBlank { state.profile.name } ?: "Speler") + if (s.text("mode") == "bot") listOf("Dartbot") else emptyList()
-        PlayerScoreConsole(title = e.text("name", "Solo ${game.optInt("startScore", 501)}"), players = players.mapIndexed { i, p -> ScorePlayer("$i", p, remaining.getOrElse(i) { 501 }) }, active = game.optInt("turn"), canScore = e.optBoolean("canManage"), busy = state.busy, offline = !state.online,
-            checkout = null, message = state.error, scoreKey = "$id:${e.optInt("revision")}", onSubmit = { score, darts, double, attempts -> entityCommand(actions, e, json("type" to "training.score", "id" to id, "score" to score, "darts" to darts, "doubleConfirmed" to double, "doubleAttempts" to attempts)) }, onBack = { console = false }, onRetry = actions.retry, pending = state.hasPendingCommand,
+        PlayerScoreConsole(title = e.text("name", "Solo ${game.optInt("startScore", 501)}"), players = players.mapIndexed { i, p -> ScorePlayer("$i", p, if (playerIsCricket(trainingMatch)) game.obj("cricket").optJSONArray("points")?.optInt(i) ?: 0 else remaining.getOrElse(i) { 501 }) }, active = game.optInt("turn"), canScore = e.optBoolean("canManage"), busy = state.busy, offline = !state.online,
+            scoreLabel = if (playerIsCricket(trainingMatch)) "punten" else "restscore", checkout = null, message = state.error, scoreKey = "$id:${e.optInt("revision")}", onSubmit = { score, darts, double, attempts -> entityCommand(actions, e, json("type" to "training.score", "id" to id, "score" to score, "darts" to darts, "doubleConfirmed" to double, "doubleAttempts" to attempts)) }, onBack = { console = false }, onRetry = actions.retry, pending = state.hasPendingCommand,
+            dartEntry = if (playerNeedsDartDetail(trainingMatch.raw.obj("settings"))) { { PlayerDartScoreEntry(trainingMatch, state, PlayerActions(matchAction = { _, fields -> entityCommand(actions, e, JSONObject(fields.toString()).put("type", "training.score").put("id", id)) })) } } else null,
             activity = e.obj("boardActivity"), onExtend = { extendActivity(e.obj("boardActivity"), actions) }, options = {
                 Action("Laatste beurt terug", !state.busy && s.optInt("undoCount", s.optJSONArray("undo")?.length() ?: 0) > 0, false) { entityCommand(actions, e, json("type" to "training.undo", "id" to id)) }
                 Action("Training bewaren en beëindigen", !state.busy, false) { entityCommand(actions, e, json("type" to "training.finish", "id" to id)) }
@@ -560,27 +590,29 @@ private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JS
         game.optJSONArray("remaining")?.let { Text(it.strings().joinToString(" – "), fontFamily = PlayerBarlow, fontSize = 64.sp, color = PlayerLime) }
         if (!s.optBoolean("completed") && game.text("status") != "finished") Action("Open score-invoer", modifier = Modifier.fillMaxWidth()) { console = true }
         if (game.text("status") == "finished" && !s.optBoolean("completed")) Action("Training bewaren", !state.busy) { entityCommand(actions, e, json("type" to "training.finish", "id" to id)) }
-        ScoreCardView(game.rows("visits").filter { s.text("mode") == "bot" || it.optInt("playerIndex") == 0 }, game.optInt("startScore", 501), listOf(state.profile?.displayName?.ifBlank { state.profile.name } ?: "Speler") + if (s.text("mode") == "bot") listOf("Dartbot") else emptyList())
+        if (playerIsCricket(trainingMatch)) PlayerCricketTable(trainingMatch) else ScoreCardView(game.rows("visits").filter { s.text("mode") == "bot" || it.optInt("playerIndex") == 0 }, game.optInt("startScore", 501), listOf(state.profile?.displayName?.ifBlank { state.profile.name } ?: "Speler") + if (s.text("mode") == "bot") listOf("Dartbot") else emptyList())
         Action("Terug naar trainingen", primary = false) { actions.navigate(PlayerScreen.TRAINING, null) }
     }
 }
 
 @Composable private fun MatchDetail(match: PlayerMatch, state: PlayerUiState, actions: PlayerActions, openConsole: () -> Unit, media: @Composable (String) -> Unit) {
-    Heading(match.players.joinToString(" – ") { it.displayName.ifBlank { it.name } }, "${statusLabel(match.status)} · WEDSTRIJD", "Set ${match.setNumber} · Leg ${match.legNumber}")
+    Heading(match.players.indices.joinToString(" – ") { match.sideName(it) }, "${statusLabel(match.status)} · WEDSTRIJD", "Set ${match.setNumber} · Leg ${match.legNumber}")
     PlayerCard {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { match.players.forEachIndexed { index, p -> Column(Modifier.weight(1f)) { Text(p.displayName.ifBlank { p.name }, fontWeight = FontWeight.Bold); Text("${match.remaining.getOrElse(index) { 0 }}", fontFamily = PlayerBarlow, fontSize = 56.sp, color = if (index == match.turn) PlayerLime else Color.White); Text(if (index == match.turn) "Aan de beurt" else "Wacht", color = PlayerMuted, fontSize = 12.sp) } } }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { match.players.forEachIndexed { index, p -> Column(Modifier.weight(1f)) { Text(match.sideName(index), fontWeight = FontWeight.Bold); if (match.sides.getOrNull(index).orEmpty().size > 1) Text(match.sides[index].joinToString(" · ") { it.displayName.ifBlank { it.name } }, color = PlayerMuted, fontSize = 12.sp); Text("${if (playerIsCricket(match)) match.raw.obj("cricket").optJSONArray("points")?.optInt(index) ?: 0 else match.remaining.getOrElse(index) { 0 }}", fontFamily = PlayerBarlow, fontSize = 56.sp, color = if (index == match.turn) PlayerLime else Color.White); Text(if (index == match.turn) match.currentThrower?.let { "Werpt: ${it.displayName.ifBlank { it.name }}" } ?: "Aan de beurt" else "Wacht", color = PlayerMuted, fontSize = 12.sp) } } }
         Text("Legs ${match.raw.optJSONArray("legs")?.strings()?.joinToString(" – ") ?: ""} · Sets ${match.raw.optJSONArray("sets")?.strings()?.joinToString(" – ") ?: ""}", color = PlayerMuted)
         if (match.status == "live") Action("Open score-invoer", modifier = Modifier.fillMaxWidth(), onClick = openConsole)
         if (match.permissions.optBoolean("canAccept")) Action("Ik ben aanwezig", !state.busy) { actions.matchAction("accept", JSONObject()) }
-        if (match.status == "ready" && (match.players.any { it.id == state.profile?.id } || match.permissions.optBoolean("canManage"))) Action("Start de wedstrijd", !state.busy) { actions.matchAction("start", JSONObject()) }
+        if (match.status == "ready" && (match.participants.any { it.id == state.profile?.id } || match.permissions.optBoolean("canManage"))) Action("Start de wedstrijd", !state.busy) { actions.matchAction("start", JSONObject()) }
         if (match.permissions.optBoolean("canConfirm")) Action("Uitslag bevestigen", !state.busy) { actions.matchAction("confirm", JSONObject()) }
     }
+    PlayerMatchRanking(match, state, actions)
+    if (match.status == "confirmed" || match.raw.has("primaryCorrection")) PlayerPrimaryCorrectionPanel(match, state, actions)
     BoardActivityBanner(match.raw.obj("boardActivity"), state.online, state.busy) { extendActivity(match.raw.obj("boardActivity"), actions) }
     val invites = state.resource.obj("invitation")
     invites.text("code").takeIf { it.isNotBlank() }?.let { code -> PlayerCard("Wedstrijdcode") { Text(code, fontFamily = PlayerBarlow, fontSize = 46.sp, color = PlayerLime); ShareButton("${BuildConfig.API_ORIGIN}/w/$code") } }
-    ScoreCardView(match.raw.rows("currentLegVisits").ifEmpty { match.raw.rows("visits").filter { it.optInt("leg") == match.legNumber } }, match.raw.optInt("currentLegStartScore", match.raw.obj("settings").optInt("startScore", 501)), match.players.map { it.displayName.ifBlank { it.name } })
-    PlayerCard("Wedstrijdcijfers") { match.players.forEachIndexed { i, p -> val s = match.raw.rows("stats").getOrNull(i) ?: JSONObject(); Text(p.displayName.ifBlank { p.name }, fontWeight = FontWeight.Bold); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Stat("AVG", if (s.optInt("darts") > 0) number(3.0 * s.optInt("total") / s.optInt("darts")) else "—"); Stat("Hoogste finish", s.text("highestFinish", "0")); Stat("180's", s.text("oneEighties", "0")) } } }
-    if (match.raw.text("scoringMode") == "per-player") PlayerMediaPanel(match.id, media)
+    if (playerIsCricket(match)) PlayerCricketTable(match) else ScoreCardView(match.raw.rows("currentLegVisits").ifEmpty { match.raw.rows("visits").filter { it.optInt("leg") == match.legNumber } }, match.raw.optInt("currentLegStartScore", match.raw.obj("settings").optInt("startScore", 501)), match.players.indices.map { match.sideName(it) }, match.raw.obj("settings").optJSONArray("sideStartScores").ints())
+    PlayerCard("Wedstrijdcijfers") { match.players.forEachIndexed { i, p -> val s = match.raw.rows("stats").getOrNull(i) ?: JSONObject(); Text(match.sideName(i), fontWeight = FontWeight.Bold); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { if (playerIsCricket(match)) { Stat("MPR", playerCricketMpr(match.raw.rows("visits"), i)?.let(::number) ?: "—"); Stat("Punten", match.raw.obj("cricket").optJSONArray("points")?.optInt(i)?.toString() ?: "0") } else { Stat("AVG", if (s.optInt("darts") > 0) number(3.0 * s.optInt("total") / s.optInt("darts")) else "—"); Stat("Hoogste finish", s.text("highestFinish", "0")); Stat("180's", s.text("oneEighties", "0")) } } } }
+    if (playerCanMedia(match, state.profile?.id)) PlayerMediaPanel(match.id, media)
     Action("Wedstrijdchat", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.CHAT, "match:${match.id}") }
     PlayerCard("Wedstrijdopties") { MatchOptions(match, actions, state) }
 }
@@ -588,6 +620,7 @@ private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JS
 @Composable private fun MatchOptions(match: PlayerMatch, actions: PlayerActions, state: PlayerUiState) {
     var reason by remember(match.id) { mutableStateOf("") }
     val p = match.permissions
+    if (p.optBoolean("canScore") && !playerNeedsDartDetail(match.raw.obj("settings"))) Action("Bust · nul punten registreren", !state.busy && state.online && !state.hasPendingCommand, false) { actions.matchAction("score", json("score" to 0, "darts" to 3, "bust" to true)) }
     if (p.optBoolean("canTakeOver")) Action("Schrijver overnemen", primary = false) { actions.matchAction("take-over", JSONObject()) }
     if (p.optBoolean("canUndo")) Action("Laatste beurt corrigeren", primary = false) { actions.matchAction("undo", JSONObject()) }
     if (p.optBoolean("canPause")) Action("Wedstrijd pauzeren", primary = false) { actions.matchAction("pause", JSONObject()) }
@@ -596,11 +629,11 @@ private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JS
     val correction = match.raw.obj("correction")
     if (p.optBoolean("canAnswerCorrection")) { Text("Correctieverzoek: ${correction.text("reason")}", color = PlayerMuted); Action("Correctie goedkeuren", primary = false) { actions.matchAction("approve-correction", json("correctionId" to correction.text("id"))) }; Action("Correctie afwijzen", primary = false) { actions.matchAction("reject-correction", json("correctionId" to correction.text("id"))) } }
     if (p.optBoolean("canCancelCorrection")) Action("Correctieverzoek intrekken", primary = false) { actions.matchAction("cancel-correction", json("correctionId" to correction.text("id"))) }
-    match.players.filter { it.id != state.profile?.id }.forEach { player -> PlayerSafetyControls(state, actions, player.id, player.displayName.ifBlank { player.name }, blocked = state.platform.rows("blocked").any { it.text("id") == player.id }) }
+    match.participants.filter { it.id != state.profile?.id }.forEach { player -> PlayerSafetyControls(state, actions, player.id, player.displayName.ifBlank { player.name }, blocked = state.platform.rows("blocked").any { it.text("id") == player.id }) }
 }
 
 /** Mirror scorecard: each side uses its own visit ordinal, never the other player's global sequence. */
-@Composable internal fun ScoreCardView(visits: List<JSONObject>, start: Int, names: List<String>) {
+@Composable internal fun ScoreCardView(visits: List<JSONObject>, start: Int, names: List<String>, sideStarts: List<Int> = emptyList()) {
     val solo = names.size <= 1
     val left = visits.filter { it.optInt("playerIndex") == 0 }; val right = visits.filter { it.optInt("playerIndex") == 1 }
     val rows = maxOf(left.size, right.size)
@@ -609,7 +642,7 @@ private fun entityCommand(actions: PlayerActions, entity: JSONObject, action: JS
     LaunchedEffect(latest) { if (visits.isNotEmpty()) { delay(50); scroll.animateScrollTo(scroll.maxValue) } }
     PlayerCard("Scorekaart · huidige leg") {
         Row { listOfNotNull("Worp", "Rest", if (!solo) "Rest" else null, if (!solo) "Worp" else null).forEach { Text(it, Modifier.weight(1f), color = PlayerMuted, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center) } }
-        ScoreRow(listOfNotNull("–", "$start", if (!solo) "$start" else null, if (!solo) "–" else null), false)
+        ScoreRow(listOfNotNull("–", "${sideStarts.getOrElse(0) { start }}", if (!solo) "${sideStarts.getOrElse(1) { start }}" else null, if (!solo) "–" else null), false)
         Column(Modifier.height(170.dp).verticalScroll(scroll).testTag("scorecard-visits")) {
             repeat(maxOf(5, rows)) { index ->
                 val l = left.getOrNull(index); val r = right.getOrNull(index)
@@ -640,7 +673,8 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
 }
 
 @Composable private fun EventsScreen(state: PlayerUiState, actions: PlayerActions) {
-    Heading("Samen aan de oche", "EVENEMENTEN", "Jouw toernooien, competities en verenigingen.")
+    Heading("Samen aan de oche", "TOERNOOIEN", "Jouw toernooien, competities en verenigingen.")
+    Action("Toernooi organiseren", !state.busy, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.ORGANIZE, null) }
     Action("Competities & speeldagen", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.SEASONS, null) }
     val events = state.platform.rows("tournaments") + state.platform.rows("leagues")
     val additional = state.overview.rows("events").filter { event -> events.none { it.text("id") == event.text("id") } }
@@ -675,45 +709,42 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     Heading(e.text("name", coreEvent?.text("name") ?: "Evenement"), if (e.text("kind") == "league") "COMPETITIE" else "TOERNOOI")
     e.obj("state").text("description").takeIf { it.isNotBlank() }?.let { Text(it, color = PlayerMuted) }
     val member = e.rows("members").find { it.text("id") == state.profile?.id }
+    val invitation = state.invitation.takeIf { it.text("id") == id }
+    if (e.length() == 0 && coreEvent == null && invitation != null) {
+        PlayerCard("Uitnodiging voor ${invitation.text("name", "toernooi")}") {
+            Text("Je kunt met deze uitnodiging deelname aanvragen. Na acceptatie toont DartFlow de gegevens die je mag openen.", color = PlayerMuted)
+            Action("Inschrijven met deze uitnodiging", !state.busy && state.online) { actions.platformAction(json("type" to "competition.register", "id" to id, "code" to invitation.text("code"))) }
+            Action("Naar toernooien", primary = false) { actions.navigate(PlayerScreen.EVENTS, null) }
+        }
+        return
+    }
     PlayerCard("Jouw deelname") {
         Text(member?.text("status")?.let(::statusLabel) ?: "Nog niet ingeschreven", color = PlayerLime)
         if (e.length() > 0) {
-            val prefix = if (e.text("kind") == "league") "league" else "tournament"
-            if (member == null) Action("Inschrijven", !state.busy) { entityCommand(actions, e, json("type" to "competition.register", "id" to id)) }
+            if (member == null || !member.obj("attributes").optBoolean("registered")) Action("Inschrijven", !state.busy) { entityCommand(actions, e, json("type" to "competition.register", "id" to id, "code" to invitation?.text("code"))) }
             else { Action("Check in", !state.busy, false) { entityCommand(actions, e, json("type" to "competition.checkin", "id" to id, "checkedIn" to true)) }; if (member.text("status") != "withdrawn") Action("Uitschrijven", !state.busy, false) { entityCommand(actions, e, json("type" to "competition.withdraw", "id" to id)) } }
         } else if (coreEvent != null) {
             Action("Inschrijven", !state.busy) { actions.command("/events/$id/actions", json("type" to "register")) }
             Action("Check in", !state.busy, false) { actions.command("/events/$id/actions", json("type" to "check-in")) }
         }
     }
-    e.obj("state").rows("fixtures").forEach { f -> PlayerCard("Ronde ${f.optInt("round")}") { Text(f.optJSONArray("players")?.strings()?.joinToString(" – ") { p -> e.rows("members").find { it.text("id") == p }?.text("name") ?: "Volgt" } ?: ""); Text(statusLabel(f.text("status")), color = PlayerMuted); if (f.text("matchId").isNotBlank()) Action("Open wedstrijd", primary = false) { actions.navigate(PlayerScreen.MATCH, f.text("matchId")) } } }
+    if (e.length() > 0) Action("Rankinggevolgen en erkenning", primary = false) { actions.navigate(PlayerScreen.RANKING_EVENT, id) }
+    if (e.optBoolean("canManage")) Action("Open wedstrijdleiding", !state.busy, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.DIRECTOR, id) }
+    Action("Hulp bij toernooien", primary = false) { actions.navigate(PlayerScreen.HELP, "category=Toernooien") }
+    PlayerTournamentStandings(e)
+    e.obj("state").rows("fixtures").forEach { f -> PlayerCard("Ronde ${f.optInt("round")} · ${playerTournamentPhaseLabel(f.text("phase"))}") { Text(f.optJSONArray("players")?.strings()?.joinToString(" – ") { p -> e.rows("members").find { it.text("id") == p }?.text("name") ?: "Volgt" } ?: ""); Text(statusLabel(f.text("status")), color = PlayerMuted); if (f.text("matchId").isNotBlank()) Action("Open wedstrijd", primary = false) { actions.navigate(PlayerScreen.MATCH, f.text("matchId")) } else if (e.text("kind") == "league" && !e.obj("state").optBoolean("seasonManaged") && f.text("status") == "scheduled" && f.optJSONArray("players")?.strings()?.contains(state.profile?.id) == true) Action("Open mijn geplande competitiepartij", !state.busy && state.online && !e.obj("state").optBoolean("paused") && !e.obj("state").optBoolean("closed")) { entityCommand(actions, e, json("type" to "fixture.start", "id" to id, "fixtureId" to f.text("id"))) } } }
     state.overview.rows("matches").filter { it.text("eventId") == id }.forEach { m -> MatchRow(m, actions) }
     PlayerCard("Deelnemers") { e.rows("members").forEach { Text(name(it) + " · " + statusLabel(it.text("status"))) }; state.overview.rows("participants").filter { it.text("eventId") == id }.forEach { Text(name(it) + if (it.optBoolean("checkedIn")) " · Ingecheckt" else "") } }
     Action("Evenementchat", primary = false) { actions.navigate(PlayerScreen.CHAT, "${if (e.text("kind") == "league") "league" else "tournament"}:$id") }
 }
 @Composable private fun SeasonsScreen(state: PlayerUiState, actions: PlayerActions) {
     Heading("Jouw competitie", "COMPETITIES", "Planning, check-in, teams en officiële uitslagen.")
+    if (state.resource.optBoolean("canCreateNational") || state.resource.rows("clubs").any { it.optBoolean("canManage") }) Action("Competitie maken", !state.busy) { actions.navigate(PlayerScreen.SEASON_CREATE, null) }
+    Action("Landelijke spelersrating", primary = false) { actions.navigate(PlayerScreen.RANKINGS, null) }
     val seasons = state.resource.rows("seasons")
     seasons.forEach { s -> PlayerCard(s.text("name")) { Text(statusLabel(s.text("status")), color = PlayerLime); Text(s.text("format"), color = PlayerMuted); Action("Open competitie", primary = false) { actions.navigate(PlayerScreen.SEASON, s.text("id")) } } }
     if (seasons.isEmpty() && !state.loading) Text("Geen toegankelijke competities gevonden.", color = PlayerMuted)
 }
-@Composable private fun SeasonScreen(state: PlayerUiState, actions: PlayerActions) {
-    val season = state.resource.optJSONObject("season") ?: state.resource
-    val id = season.text("id", state.activeId ?: "")
-    Heading(season.text("name", "Competitie"), statusLabel(season.text("status")))
-    val capabilities = season.obj("capabilities")
-    if (capabilities.optBoolean("canEnroll")) Action("Inschrijven", !state.busy) { actions.command("/seasons/actions", json("expectedRevision" to season.optInt("revision"), "action" to json("type" to "season.enroll", "seasonId" to id))) }
-    val people = season.rows("participants") + season.rows("teams")
-    season.rows("fixtures").forEach { f -> PlayerCard("Ronde ${f.optInt("round")}") {
-        val home = people.find { it.text("id") == f.text("homeId") }?.text("name") ?: "Thuis"; val away = people.find { it.text("id") == f.text("awayId") }?.text("name") ?: "Uit"
-        Text("$home – $away", fontWeight = FontWeight.Bold); Text("${statusLabel(f.text("status"))} · ${shortDate(f.text("startsAt", f.text("windowStart")))}", color = PlayerMuted)
-        if (f.obj("capabilities").optBoolean("canCheckIn")) Action("Check in", !state.busy, false) { actions.command("/seasons/actions", json("expectedRevision" to season.optInt("revision"), "action" to json("type" to "season.check-in", "seasonId" to id, "fixtureId" to f.text("id"), "present" to true))) }
-        f.rows("slots").forEach { slot -> Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("Partij ${slot.optInt("index") + 1} · ${statusLabel(slot.text("status"))}", Modifier.weight(1f), fontSize = 13.sp); if (slot.text("matchId").isNotBlank()) TextButton(onClick = { actions.navigate(PlayerScreen.MATCH, slot.text("matchId")) }) { Text("Open") } } }
-        if (f.obj("capabilities").optBoolean("canConfirm")) Action("Uitslag bevestigen", !state.busy) { actions.command("/seasons/actions", json("expectedRevision" to season.optInt("revision"), "action" to json("type" to "season.confirm", "seasonId" to id, "fixtureId" to f.text("id")))) }
-    } }
-    PlayerCard("Stand") { season.rows("standings").forEach { row -> Row(Modifier.fillMaxWidth()) { Text("${row.optInt("position")}. ${row.text("name")}", Modifier.weight(1f)); Text("${row.optInt("points")} p · ${row.optInt("legsFor")}–${row.optInt("legsAgainst")}", color = PlayerLime) } } }
-}
-
 @Composable private fun FriendsScreen(state: PlayerUiState, actions: PlayerActions) {
     var search by rememberSaveable { mutableStateOf("") }
     Heading("Samen is beter", "VRIENDEN", "Vind spelers, beheer uitnodigingen en overleg in de chat.")
@@ -816,7 +847,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     Heading(data.obj("scope").text("name", if (kind == "match") "Wedstrijdchat" else "Chat"), "SAMEN SPELEN")
     CommunityConsent(state, actions)
     val messages = data.rows("messages")
-    val canWrite = if (kind == "room") state.platform.rows("rooms").find { it.text("id") == id }?.rows("members")?.any { it.text("id") == state.profile?.id && it.text("status") == "active" } == true else if (kind == "match") state.match?.id == id && state.match.players.any { it.id == state.profile?.id } || state.overview.rows("matches").any { it.text("id") == id && it.rows("players").any { p -> p.text("id") == state.profile?.id } } else data.obj("scope").optBoolean("canWrite")
+    val canWrite = if (kind == "room") state.platform.rows("rooms").find { it.text("id") == id }?.rows("members")?.any { it.text("id") == state.profile?.id && it.text("status") == "active" } == true else if (kind == "match") state.match?.id == id && state.match.participants.any { it.id == state.profile?.id } || state.overview.rows("matches").any { it.text("id") == id && PlayerMatch.parse(it).participants.any { p -> p.id == state.profile?.id } } else data.obj("scope").optBoolean("canWrite")
     messages.forEach { message -> PlayerCard {
         Row(Modifier.fillMaxWidth()) { Text(message.text("authorName"), Modifier.weight(1f), fontWeight = FontWeight.Bold); Text(shortDate(message.text("createdAt")), fontSize = 10.sp, color = PlayerMuted) }
         Text(if (message.optBoolean("deleted")) "Bericht verwijderd." else message.text("body"))
@@ -846,7 +877,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
 @Composable private fun MatchRow(row: JSONObject, actions: PlayerActions) {
     PlayerCard {
         Text(row.obj("opponent").text("name", row.rows("players").joinToString(" – ") { name(it) }.ifBlank { "Wedstrijd" }), style = MaterialTheme.typography.titleMedium)
-        Text("${shortDate(row.text("completedAt"))} · ${row.optInt("startScore", 501)} dubbel uit", color = PlayerMuted, fontSize = 12.sp)
+        Text("${shortDate(row.text("completedAt"))} · ${playerRuleLabel(row)}", color = PlayerMuted, fontSize = 12.sp)
         Text("${row.text("result")} ${row.optJSONArray("legs")?.strings()?.joinToString(" – ") ?: ""}", color = PlayerLime, fontFamily = PlayerBarlow, fontSize = 30.sp)
         row.obj("competition").text("name").takeIf { it.isNotBlank() }?.let { Text(it, color = PlayerMuted) }
         Action("Open scorekaart", primary = false) { actions.navigate(PlayerScreen.MATCH, row.text("id", row.text("matchId"))) }
@@ -865,8 +896,12 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     var score by rememberSaveable { mutableStateOf(runCatching { PlayerLinks.query(java.net.URI("https://native.invalid/?${state.activeId.orEmpty()}"))["startScore"] }.getOrNull() ?: "501") }
     val data = state.resource; val summary = data.obj("summary"); val measures = summary.obj("measures")
     Heading("Jouw spelersprofiel", "STATISTIEKEN", "Berekeningen op basis van geaccepteerde worpen en definitieve uitslagen.")
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("matches" to "Wedstrijden", "opponents" to "Tegenstanders", "tournaments" to "Toernooien", "practice" to "Oefenen").forEach { (id, label) -> FilterChip(selected = view == id, onClick = { view = id }, label = { Text(label) }) } }
-    Choice("Speltype", score, listOf("301" to "301 dubbel uit", "501" to "501 dubbel uit", "701" to "701 dubbel uit"), { score = it; actions.navigate(PlayerScreen.STATISTICS, updatedQuery(state.activeId, "startScore", it)) })
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("matches" to "Wedstrijden", "opponents" to "Tegenstanders", "tournaments" to "Toernooien", "practice" to "Oefenen", "team" to "Eigen teambijdrage", "cricket" to "Cricket").forEach { (id, label) -> FilterChip(selected = view == id, onClick = { view = id }, label = { Text(label) }) } }
+    val ruleFilters = runCatching { PlayerLinks.query(java.net.URI("https://native.invalid/?${state.activeId.orEmpty()}")) }.getOrDefault(emptyMap())
+    Choice("Startscore", score, listOf("301" to "301", "501" to "501", "701" to "701"), { score = it; actions.navigate(PlayerScreen.STATISTICS, updatedQuery(state.activeId, "startScore", it)) })
+    Choice("Uitregel", ruleFilters["outRule"] ?: "double-out", listOf("double-out" to "Dubbel uit", "straight-out" to "Straight uit", "master-out" to "Master uit"), { actions.navigate(PlayerScreen.STATISTICS, updatedQuery(state.activeId, "outRule", it)) })
+    Choice("Openingsregel", ruleFilters["inRule"] ?: "single", listOf("single" to "Single in", "double" to "Dubbel in"), { actions.navigate(PlayerScreen.STATISTICS, updatedQuery(state.activeId, "inRule", it)) })
+    PlayerToggle("Alleen partijen met handicap", ruleFilters["handicap"] == "true", !state.busy) { actions.navigate(PlayerScreen.STATISTICS, updatedQuery(state.activeId, "handicap", it.toString())) }
     when(view) {
         "matches" -> {
             PlayerCard("Wedstrijdcijfers") {
@@ -894,6 +929,25 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
                 if (finishes.isEmpty()) Text("Nog geen betrouwbare legwinnende finishes.", color = PlayerMuted)
             }
             Action("Volledige wedstrijdhistorie", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.HISTORY, null) }
+        }
+        "cricket" -> PlayerCard("Cricket · eigen statistieken") {
+            val cricket = data.obj("cricket")
+            Text("${cricket.optInt("matches")} wedstrijden · ${cricket.optInt("won")} gewonnen", color = PlayerLime)
+            Text("${cricket.optInt("points")} punten · ${cricket.optInt("darts")} darts · ${cricket.optInt("creditedMarks")} gecrediteerde marks")
+            Stat("MPR", cricket.optDouble("marksPerRound", Double.NaN).takeIf { it.isFinite() }?.let(::number) ?: "—")
+            Text("Marks per ronde gebruikt alleen de eigen geregistreerde darts en gecrediteerde marks.", color = PlayerMuted)
+        }
+        "team" -> {
+            Text("Alleen jouw werkelijk geregistreerde worpen in dubbels en teams. Deze bijdrage staat apart van individuele X01-cijfers.", color = PlayerMuted)
+            data.rows("teamContributions").forEach { row -> PlayerCard(row.text("sideName", "Teampartij")) {
+                Text("${shortDate(row.text("completedAt"))} · partners ${row.optJSONArray("partners")?.strings()?.joinToString(" · ").orEmpty()}", color = PlayerMuted)
+                val own = row.obj("measures")
+                Text("${own.optInt("visits")} beurten · ${own.optInt("darts")} darts · ${own.optInt("points")} punten")
+                if (row.text("discipline") == "cricket") Stat("Eigen MPR", own.optDouble("marksPerRound", Double.NaN).takeIf { it.isFinite() }?.let(::number) ?: "—")
+                else { Stat("Eigen AVG", own.optDouble("average", Double.NaN).takeIf { it.isFinite() }?.let(::number) ?: "—"); Text("${own.optInt("oneEighties")} ×180 · hoogste finish ${own.optInt("highestFinish")}") }
+                Action("Open teampartij", primary = false) { actions.navigate(PlayerScreen.MATCH, row.text("matchId")) }
+            } }
+            if (data.rows("teamContributions").isEmpty()) Text("Nog geen teampartijen met eigen geregistreerde worpen.", color = PlayerMuted)
         }
         "opponents" -> {
             var search by rememberSaveable { mutableStateOf("") }
@@ -1028,6 +1082,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
             Text(if (device.text("scope") == "home") "Eigen geselecteerde sessie" else device.text("boardName", "Geen baan toegewezen"), color = PlayerMuted)
             if (!device.optBoolean("revoked")) {
                 Field("Schermnaam", newName, { newName = it }, !state.busy, max = 80)
+                Choice("Huisstijl", device.text("theme", "dartflow"), listOf("dartflow" to "DartFlow", "onzetrots" to "Onze Trots"), { actions.command("/oche/v1/devices/${device.text("id")}", json("action" to "theme", "theme" to it)) }, !state.busy)
                 Action("Naam opslaan", !state.busy && newName.isNotBlank() && newName.trim() != device.text("name"), false) { actions.command("/oche/v1/devices/${device.text("id")}", json("action" to "rename", "name" to newName.trim())) }
                 if (device.text("scope") == "location") Choice("Toegewezen baan", device.text("boardId"), listOf("" to "Geen baan") + (locations.find { it.text("locationId") == device.text("locationId") }?.rows("boards") ?: emptyList()).map { it.text("id") to it.text("name") }, { actions.command("/oche/v1/devices/${device.text("id")}", json("action" to "assign", "boardId" to it.ifBlank { null })) }, !state.busy)
             }

@@ -1,12 +1,15 @@
+import {readPublicPrecall} from '../lib/competition-precalls';
 import {beginFixtureCleanup} from './helpers/cleanup-v17';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
-import { closeDatabase, executeMatchCommand, getBoardForActor, getMatch, getPublicSnapshot } from '../lib/db';
+import { closeDatabase, database, executeMatchCommand, getBoardForActor, getMatch, getPublicSnapshot } from '../lib/db';
 import { executePlatformCommand, getPlatformTraining, getMatchSignals, getPlatformCast, getPlatformMessages, getPlatformOverview, reconcilePlatformCalls, reconcilePlatformResults, replayMatchCommands, exportPlatformCsv, sendMatchChat, getMatchChat, sendMatchSignal } from '../lib/platform';
 import {mediaConfiguration}from'../lib/media';
-import type { MatchAction } from '../lib/types';
+import {getEventBoards} from '../lib/event-boards';
+import {getPlayerStatistics} from '../lib/player-statistics-db';
+import type { MatchAction,MatchState } from '../lib/types';
 import type { PlatformCommand } from '../lib/platform-types';
 try { process.loadEnvFile('.env.local'); } catch { /* CI provides loopback credentials. */ }
 const local = (v: string | undefined) => { try { return Boolean(v && ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(v).hostname)); } catch { return false; } };
@@ -51,6 +54,93 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
       const started=await run(alice,{type:'lobby.start',id:local.id});let match=await getMatch(alice,started.matchId!);assert.equal(match.boardId,board);assert.equal(match.status,'called');
       const send=async(actor:string,action:MatchAction)=>{match=await executeMatchCommand(actor,{requestId:randomUUID(),matchId:match.id,expectedRevision:match.revision,action});};await send(alice,{type:'accept'});await send(bob,{type:'accept'});await send(bob,{type:'start'});await send(alice,{type:'score',score:180});await send(alice,{type:'score',score:0});await send(alice,{type:'score',score:121,doubleConfirmed:true});await send(alice,{type:'confirm'});await send(bob,{type:'confirm'});await reconcilePlatformResults();assert.equal((await getBoardForActor(alice,board)).canStart,true);await assert.rejects(getPublicSnapshot(String(local.screenUrl).split('/').at(-1)!),{status:404});
       const remote=await run(alice,{type:'board.start',boardId:board,mode:'remote'});await assert.rejects(run(bob,{type:'lobby.join',id:remote.id,boardId:board}),{code:'invite_required'});await owner.query("update dartflow_private.platform_entities set state=jsonb_set(state,'{boardLeaseUntil}','0') where id=$1",[remote.id]);const replacement=await run(bob,{type:'board.start',boardId:board,mode:'solo'});await assert.rejects(run(alice,{type:'lobby.ready',id:remote.id}),{code:'board_session_expired'});await assert.rejects(run(bob,{type:'lobby.join',id:remote.id,code:remote.code}),{code:'board_session_expired'});await run(bob,{type:'training.finish',id:replacement.id},replacement.entity!.revision);
+    });
+    await t.test('personal organizers need no club and keep private invitations, ownership and official destinations enforced',async()=>{
+      const requestId=randomUUID(),action={type:'tournament.create',ownership:'personal',name:'Platform fixture personal',format:'knockout',capacity:4,boards:2,requireWriter:false};
+      const made=await run(outsider,action,undefined,requestId),again=await run(outsider,action,undefined,requestId);
+      assert.equal(made.id,again.id);assert.equal(made.entity!.clubId,null);assert.equal(made.entity!.state.ownership,'personal');assert.equal(made.entity!.visibility,'private');assert.deepEqual(made.entity!.state.rankingDestinations,[]);
+      assert.equal((await getPlatformOverview(outsider)).tournaments.find(e=>e.id===made.id)?.canManage,true);
+      assert.equal((await getPlatformOverview(bob)).tournaments.some(e=>e.id===made.id),false);
+      await run(outsider,{type:'competition.settings',id:made.id,eligibility:'code'});
+      await run(outsider,{type:'competition.settings',id:made.id,eligibility:'all'});
+      assert.equal((await getPlatformOverview(outsider)).tournaments.find(e=>e.id===made.id)?.visibility,'private');
+      assert.equal((await getPlatformOverview(bob)).tournaments.some(e=>e.id===made.id),false);
+      assert.equal((await getEventBoards(outsider,made.entity!.state.eventId!)).boards.length,2);
+      await assert.rejects(getEventBoards(bob,made.entity!.state.eventId!),{status:403});
+      await assert.rejects(run(bob,{type:'competition.register',id:made.id}),{code:'invite_required'});
+      await assert.rejects(run(outsider,{...action,ownership:'platform'}),{status:403});
+      await assert.rejects(run(outsider,{...action,ownership:'club',clubId:club}),{status:403});
+      await assert.rejects(run(outsider,{...action,clubId:club}),{code:'invalid_ownership'});
+      await assert.rejects(run(outsider,{...action,rankingDestinations:['national-rating']}),{code:'ranking_not_authorized'});
+      await assert.rejects(run(outsider,{type:'competition.settings',id:made.id,ownership:'club',clubId:club}),{code:'ownership_locked'});
+      await assert.rejects(run(alice,{type:'competition.plan',id:made.id}),{status:403});
+      for(const actor of [outsider,bob]){await run(actor,{type:'competition.register',id:made.id,code:made.code});await run(actor,{type:'competition.checkin',id:made.id});}
+      await run(outsider,{type:'competition.plan',id:made.id});
+      const planned=(await getPlatformOverview(outsider)).tournaments.find(e=>e.id===made.id)!;
+      assert.equal(planned.state.fixtures?.length,1);assert.deepEqual(planned.state.rankingDestinations,[]);
+      await assert.rejects(getEventBoards(bob,made.entity!.state.eventId!),{status:403});
+    });
+    await t.test('nonstandard rules use the same persisted native/web match actions and distinct statistics',async()=>{
+      const made=await run(alice,{type:'lobby.create',name:'Platform fixture double in master handicap',setup:'remote',startScore:301,bestOfLegs:1,inRule:'double',outRule:'master',sideStartScores:[60,101]});
+      await run(bob,{type:'lobby.join',id:made.id,code:made.code});await run(alice,{type:'lobby.ready',id:made.id});await run(bob,{type:'lobby.ready',id:made.id});
+      const started=await run(alice,{type:'lobby.start',id:made.id});let match=await getMatch(alice,started.matchId!);
+      const send=async(actor:string,action:MatchAction)=>{match=await executeMatchCommand(actor,{requestId:randomUUID(),matchId:match.id,expectedRevision:match.revision,action});};
+      await send(alice,{type:'accept'});await send(bob,{type:'accept'});await send(alice,{type:'start'});
+      await assert.rejects(send(alice,{type:'score',score:40,darts:1}),{code:'dart_detail_required'});
+      await send(alice,{type:'score',score:40,darts:1,dartHits:['D20']});assert.deepEqual(match.remaining,[20,101]);
+      await send(bob,{type:'score',score:0,darts:1,dartHits:['MISS']});await send(alice,{type:'score',score:20,darts:1,dartHits:['D10']});
+      assert.equal(match.status,'result');assert.equal(match.rankingEligibility?.eligible,false);await send(alice,{type:'confirm'});await send(bob,{type:'confirm'});
+      const ordinary=await getPlayerStatistics(alice,{startScore:301}),special=await getPlayerStatistics(alice,{startScore:301,outRule:'master-out',inRule:'double',handicap:true});
+      assert.equal(ordinary.matches.some(row=>row.id===match.id),false);assert.equal(special.matches.filter(row=>row.id===match.id).length,1);assert.equal(special.matches.find(row=>row.id===match.id)?.outRule,'master-out');
+    });
+    await t.test('Swiss and both double-elimination variants finish real persisted matches through the existing command service',async()=>{
+      for(const format of ['swiss','double-elimination-reset','double-elimination-single']){
+        const created=await run(admin,{type:'tournament.create',ownership:'personal',name:`Platform fixture ${format}`,format,startScore:301,bestOfLegs:1,capacity:4,boards:1,requireWriter:false,swissRounds:2});
+        const players=[alice,bob,carol,outsider];for(const actor of players){await run(actor,{type:'competition.register',id:created.id,code:created.code});await run(actor,{type:'competition.checkin',id:created.id});}
+        await run(admin,{type:'competition.settings',id:created.id,restSeconds:0,cooldownSeconds:0});await run(admin,{type:'competition.plan',id:created.id});
+        let completed=false,resetPlayed=false;
+        for(let guard=0;guard<40;guard++){
+          const event=(await getPlatformOverview(admin)).tournaments.find(row=>row.id===created.id)!;
+          if(event.state.completed){completed=true;assert.equal((event.state.placings as unknown[]).length,4);break;}
+          const fixture=event.state.fixtures!.find(f=>f.status==='scheduled'&&f.players.every(Boolean));
+          if(!fixture){assert.equal(format,'swiss');await run(admin,{type:'competition.next-round',id:event.id},event.revision);continue;}
+          const started=await run(fixture.players[0]!,{type:'fixture.start',id:event.id,fixtureId:fixture.id});let match=await getMatch(fixture.players[0]!,started.matchId!);
+          const send=async(actor:string,action:MatchAction)=>{match=await executeMatchCommand(actor,{requestId:randomUUID(),matchId:match.id,expectedRevision:match.revision,action});};
+          const a=match.players[0].id,b=match.players[1].id;await send(a,{type:'accept'});await send(b,{type:'accept'});await send(a,{type:'start'});
+          const secondWins=fixture.phase==='final'&&format==='double-elimination-reset';
+          if(secondWins)await send(a,{type:'score',score:0});await send(a,{type:'score',score:180});await send(a,{type:'score',score:0});await send(a,{type:'score',score:121,doubleConfirmed:true});
+          await send(a,{type:'confirm'});await send(b,{type:'confirm'});resetPlayed||=fixture.phase==='reset';
+        }
+        assert.equal(completed,true,`${format} must complete within its finite graph`);if(format==='double-elimination-reset')assert.equal(resetPlayed,true);
+      }
+    });
+    await t.test('a match-point precall is a revocable expectation and never replaces the active board assignment',async()=>{
+      const created=await run(admin,{type:'tournament.create',ownership:'personal',name:'Platform fixture precall',format:'knockout',capacity:4,boards:1,requireWriter:false,startScore:301,bestOfLegs:1});
+      for(const actor of [alice,bob,carol,outsider]){await run(actor,{type:'competition.register',id:created.id,code:created.code});await run(actor,{type:'competition.checkin',id:created.id});}
+      await run(admin,{type:'competition.settings',id:created.id,restSeconds:0,cooldownSeconds:0,autoSchedule:false});await run(admin,{type:'competition.plan',id:created.id});
+      let event=(await getPlatformOverview(admin)).tournaments.find(event=>event.id===created.id)!;
+      const first=event.state.fixtures!.find(f=>f.status==='scheduled'&&f.players.every(Boolean))!,physical=(await owner.query('select id from dartflow_private.boards where event_id=$1',[event.state.eventId])).rows[0].id,started=await run(admin,{type:'fixture.assign',id:event.id,fixtureId:first.id,boardId:physical});let match=await getMatch(admin,started.matchId!);
+      const send=async(actor:string,action:MatchAction)=>{match=await executeMatchCommand(actor,{requestId:randomUUID(),matchId:match.id,expectedRevision:match.revision,action});};
+      await send(match.players[0].id,{type:'accept'});await send(match.players[1].id,{type:'accept'});await send(match.players[0].id,{type:'start'});
+      event=(await getPlatformOverview(admin)).tournaments.find(event=>event.id===created.id)!;const next=event.state.fixtures!.find(f=>f.status==='scheduled'&&f.players.every(Boolean))!,boardId=match.boardId!,action={type:'fixture.precall',id:event.id,boardId,fixtureId:next.id,showOnDisplay:true},requestId=randomUUID();
+      await assert.rejects(run(outsider,action,event.revision),{status:403});
+      // Only one side satisfying both thresholds can finish this current leg's match.
+      const original=(await owner.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[match.id])).rows[0].state,opposed=structuredClone(original);opposed.settings.bestOfLegs=5;opposed.settings.bestOfSets=3;opposed.game.legs=[0,2];opposed.previousSets=[{...structuredClone(opposed.game),winner:opposed.players[0].id,status:'finished'}];
+      await owner.query('update dartflow_private.matches set state=$2 where id=$1',[match.id,JSON.stringify(opposed)]);await assert.rejects(run(admin,action),{code:'precall_too_early'});opposed.game.legs=[2,0];await owner.query('update dartflow_private.matches set state=$2 where id=$1',[match.id,JSON.stringify(opposed)]);await run(admin,action);await owner.query('update dartflow_private.matches set state=$2 where id=$1',[match.id,JSON.stringify(original)]);
+      event=(await getPlatformOverview(admin)).tournaments.find(event=>event.id===created.id)!;
+
+      await run(admin,action,event.revision,requestId);await run(admin,action,event.revision,requestId);
+      const projection=await readPublicPrecall(database(),boardId,match.eventId);assert.equal(projection.pendingCall?.players.length,2);assert.equal(JSON.stringify(projection).includes(next.players[0]!),false);
+      assert.equal((await owner.query('select id from dartflow_private.matches where board_id=$1',[boardId])).rows[0].id,match.id);
+      // A public read remains safe in an actual read-only transaction, without lock errors.
+      const readOnly=async()=>{const connection=await database().connect();try{await connection.query('begin read only');const value=await readPublicPrecall(connection,boardId,match.eventId);await connection.query('commit');return value;}finally{await connection.query('rollback');connection.release();}};
+      await owner.query("update dartflow_private.platform_entities set state=jsonb_set(state,'{primaryCorrectionHold}',$2::jsonb)where id=$1",[event.id,JSON.stringify({requestId:randomUUID(),matchId:match.id,downstreamFixtureIds:[next.id]})]);await assert.rejects(run(admin,action),{code:'primary_correction_dependency_hold'});assert.deepEqual(await readOnly(),{});
+      await owner.query("update dartflow_private.platform_entities set state=jsonb_set(state,'{primaryCorrectionHold}',$2::jsonb)where id=$1",[event.id,JSON.stringify({requestId:randomUUID(),matchId:match.id,downstreamFixtureIds:[first.id]})]);await run(admin,action);assert.equal((await readOnly()).pendingCall?.players.length,2,'a different held branch does not suppress this valid expectation');
+      await owner.query("update dartflow_private.platform_entities set state=(state-'primaryCorrectionHold')||$2::jsonb where id=$1",[event.id,JSON.stringify({circuitQualification:{listId:'10000000-0000-4000-8000-000000000002',sourceGeneration:randomUUID(),proofs:[]}})]);await assert.rejects(run(admin,action),{code:'circuit_qualification_stale'});assert.deepEqual(await readOnly(),{});await owner.query("update dartflow_private.platform_entities set state=state-'circuitQualification' where id=$1",[event.id]);assert.equal((await readOnly()).pendingCall?.players.length,2);
+
+      await run(next.players[0]!,{type:'competition.available',id:event.id,available:false});assert.deepEqual(await readPublicPrecall(database(),boardId,match.eventId),{});
+      await run(next.players[0]!,{type:'competition.available',id:event.id,available:true});await run(admin,{type:'fixture.precall',id:event.id,boardId,enabled:false});assert.deepEqual(await readPublicPrecall(database(),boardId,match.eventId),{});
+      await send(match.writerId,{type:'score',score:180});await send(match.writerId,{type:'score',score:0});await send(match.writerId,{type:'score',score:121,doubleConfirmed:true});await send(match.players[0].id,{type:'confirm'});await send(match.players[1].id,{type:'confirm'});assert.equal(match.status,'confirmed');
     });
     await t.test('different events cannot simultaneously call the same real players onto two boards',async()=>{
       const prepared:{matchId:string;boardId:string}[]=[];
@@ -222,6 +312,10 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
       await assert.rejects(executeMatchCommand(writer,{matchId:match.id,expectedRevision:match.revision,requestId:randomUUID(),action:{type:'confirm'}}),{status:403});
       match=await executeMatchCommand(fixture.players[0]!,{matchId:match.id,expectedRevision:match.revision,requestId:randomUUID(),action:{type:'take-over'}});
       await assert.rejects(executeMatchCommand(writer,{matchId:match.id,expectedRevision:match.revision,requestId:randomUUID(),action:{type:'score',score:60}}),{code:'not_writer'});
+      // End this synthetic writer fixture before later subtests reuse its actors.
+      // A real randomized draw can choose any pair; no subsequent test may rely
+      // on the historical registration-order pairing keeping Alice free.
+      await owner.query("update dartflow_private.matches set board_id=null,state=jsonb_set(jsonb_set(state,'{boardId}','null'),'{status}','\"abandoned\"') where id=$1",[match.id]);
       const walk=(await run(admin,{type:'tournament.create',name:'Platform fixture walkover',clubId:club,format:'knockout',capacity:2,boards:1})).id!;
       await run(alice,{type:'competition.register',id:walk});await run(bob,{type:'competition.register',id:walk});await run(admin,{type:'competition.plan',id:walk});const scheduled=(await getPlatformOverview(admin)).tournaments.find(e=>e.id===walk)!.state.fixtures![0];
       const decision={requestId:randomUUID(),action:{type:'fixture.walkover',id:walk,fixtureId:scheduled.id,winnerId:alice,reason:'Afwezigheid geverifieerd'}};

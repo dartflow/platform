@@ -59,3 +59,9 @@ test('new leg, new set and new match reset the card identity and show a fresh ca
 test('display initials use two username letters or two name initials without changing the saved name',()=>{
  assert.equal(ochePlayerInitials('Danny'),'DA');assert.equal(ochePlayerInitials('Rick'),'RI');assert.equal(ochePlayerInitials('  Danny Goldenbelt  '),'DG');assert.equal(ochePlayerInitials('Éva'),'ÉV');assert.equal(ochePlayerInitials('Q'),'Q');
 });
+test('a handicap keeps each sides actual starting row when the active player changes',()=>{
+ const configured=match([],{settings:{startScore:501,bestOfLegs:3,bestOfSets:1,inRule:'double',outRule:'master',sideStartScores:[301,701]},currentLegStartScore:301});
+ assert.deepEqual(buildOcheScorecard(configured).startScores,[301,701]);
+ assert.deepEqual(buildOcheScorecard({...configured,turn:1,currentLegStartScore:701}).startScores,[301,701]);
+ assert.deepEqual(buildOcheScorecard(match()).startScores,[501,501]);
+});

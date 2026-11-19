@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
                 }
                 val actions = remember {
                     PlayerActions(
-                        navigate = model::navigate, refresh = model::refresh, requestOtp = model::requestOtp,
+                        navigate = model::navigate, back = model::back, saveOrganizerDraft = model::saveOrganizerDraft, refresh = model::refresh, requestOtp = model::requestOtp,
                         verifyOtp = model::verifyOtp, google = model::startGoogle, localLogin = model::localLogin,
                         reviewLogin = model::reviewLogin,
                         logout = model::signOut, completeProfile = model::completeProfile, changePin = model::changePin,
@@ -53,8 +53,8 @@ class MainActivity : ComponentActivity() {
                         scan = { scanning = true }, dismiss = model::dismissMessage)
                 }
                 val mediaScope = rememberCoroutineScope()
-                val mediaId = state.match?.takeIf { state.screen == PlayerScreen.MATCH && it.status == "live" && it.raw.optString("scoringMode") == "per-player" }?.id
-                val call = remember(mediaId) { mediaId?.let { PlayerVideoCall(applicationContext, model.api, it, mediaScope) } }
+                val mediaId = state.match?.takeIf { state.screen == PlayerScreen.MATCH && it.status in listOf("called", "ready", "live", "result", "disputed") && playerCanMedia(it, state.profile?.id) }?.id
+                val call = remember(mediaId) { mediaId?.let { PlayerVideoCall(applicationContext, model.api, it, mediaScope, state.match?.raw?.optBoolean("cameraRequired") == true) } }
                 val lifecycle = LocalLifecycleOwner.current.lifecycle
                 DisposableEffect(call, lifecycle) {
                     val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) call?.disconnect() }

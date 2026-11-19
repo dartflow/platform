@@ -1,0 +1,1287 @@
+[
+  {
+    "id": "start-wedstrijd",
+    "category": "Aan de slag",
+    "question": "Waar vind ik mijn volgende wedstrijd?",
+    "answer": "Open Spelen. Je volgende afspraak toont je tegenstander, de starttijd en je eerstvolgende actie. Vóór de wedstrijd kun je bijvoorbeeld inchecken. Na de baantoewijzing zie je naar welke baan je moet. Open de afspraak voor de locatie of de instructies om op afstand te spelen.",
+    "keywords": [
+      "spelen",
+      "agenda",
+      "programma",
+      "baan",
+      "oproep",
+      "eerstvolgende",
+      "inchecken"
+    ]
+  },
+  {
+    "id": "start-punten",
+    "category": "Aan de slag",
+    "question": "Waar zie ik waarvoor een wedstrijd meetelt?",
+    "answer": "Open het wedstrijdformulier vóór de eerste pijl. Daar zie je het format en de gekoppelde klassementen, bijvoorbeeld de teamstand, je spelersrating of een clubcircuit. Na de bevestiging toont het uitslagenscherm wat je werkelijk hebt verdiend. Circuitpunten voor je eindplaats verschijnen zodra het toernooi definitief is.",
+    "keywords": [
+      "meetellen",
+      "puntentelling",
+      "rankingbestemming",
+      "klassement",
+      "punten",
+      "uitslag"
+    ]
+  },
+  {
+    "id": "start-zonderclub",
+    "category": "Aan de slag",
+    "question": "Wat kan ik doen als ik geen lid ben van een vereniging?",
+    "answer": "Met je eigen account kun je oefenen, een geldige losse rankingpartij spelen en zelf een toernooi organiseren. Je kunt ook meedoen aan evenementen en individuele divisies die openstaan voor spelers zonder club. Voor een team in de landelijke verenigingscompetitie moet je op de speelgerechtigde clubselectie staan.",
+    "keywords": [
+      "clubloos",
+      "lidmaatschap",
+      "persoonlijk",
+      "particulier",
+      "ranking",
+      "vrienden",
+      "gast"
+    ]
+  },
+  {
+    "id": "sport-501",
+    "category": "Spelregels",
+    "question": "Hoe win ik een leg bij 501 open-in en dubbel-uit?",
+    "answer": "Je begint op 501. Vanaf je eerste geldige worp trek je de gescoorde punten af. Een beurt bestaat uit maximaal drie pijlen. Je wint de leg zodra je precies op nul uitkomt met een dubbel. Met 40 over kun je bijvoorbeeld direct uitgooien via dubbel 20.",
+    "keywords": [
+      "501",
+      "open-in",
+      "double-out",
+      "finish",
+      "checkout",
+      "dubbel",
+      "uitgooien",
+      "darts"
+    ]
+  },
+  {
+    "id": "sport-bust",
+    "category": "Spelregels",
+    "question": "Waarom springt mijn resterende score terug na een worp?",
+    "answer": "Bij 501 dubbel-uit is je beurt ongeldig als je onder nul uitkomt, één punt overhoudt of nul bereikt zonder een dubbel als laatste pijl. Je beurt stopt en je krijgt de score van vóór die beurt terug. Sta je op 32 en gooi je eerst 20 en daarna 20, dan begin je je volgende beurt weer op 32.",
+    "keywords": [
+      "bust",
+      "dood",
+      "dubbel",
+      "restscore",
+      "1",
+      "over",
+      "beurt",
+      "nul"
+    ]
+  },
+  {
+    "id": "sport-legset",
+    "category": "Spelregels",
+    "question": "Wat betekenen leg, set en best-of-five?",
+    "answer": "Een leg is één spel vanaf de startscore tot een geldige finish. Bij ‘best-of-five legs’ wint de eerste speler met drie gewonnen legs. Bij sets bepaalt het reglement eerst hoeveel legs een set beslissen en daarna hoeveel sets je moet winnen. Op het wedstrijdformulier staat welke telling voor jouw partij geldt.",
+    "keywords": [
+      "leg",
+      "set",
+      "legs",
+      "sets",
+      "best",
+      "five",
+      "BO5",
+      "first",
+      "to",
+      "drie"
+    ]
+  },
+  {
+    "id": "sport-openingsworp",
+    "category": "Spelregels",
+    "question": "Wie mag beginnen en wat gebeurt er bij een gelijkspel?",
+    "answer": "Lees bij Spelregels de openingsworp, het begin van de beslissende leg en de gekozen wedstrijdlengte. Bij ‘eerste tot 3 legs’ wordt doorgespeeld tot iemand drie legs heeft. Een club kan ook een vast aantal legs afspreken waarbij een gelijkspel is toegestaan. De landelijke singlesrating vereist een winnaar.",
+    "keywords": [
+      "bull",
+      "start",
+      "worp",
+      "beginnen",
+      "tiebreak",
+      "beslissende",
+      "leg",
+      "gelijkspel",
+      "vaste",
+      "lengte"
+    ]
+  },
+  {
+    "id": "rating-start",
+    "category": "Spelersrating",
+    "question": "Met hoeveel punten begin ik en wanneer is mijn rating gevestigd?",
+    "answer": "Je begint op 1500. Je rating verandert al tijdens je plaatsingspartijen. De status ‘voorlopig’ vervalt zodra je minstens tien geldige rankingpartijen hebt gespeeld tegen minstens vijf verschillende tegenstanders. Tien partijen tegen vier mensen zijn dus nog onvoldoende. Je profiel toont je voortgang.",
+    "keywords": [
+      "1500",
+      "voorlopig",
+      "plaatsing",
+      "beginnende",
+      "rating",
+      "tien",
+      "vijf",
+      "tegenstanders"
+    ]
+  },
+  {
+    "id": "rating-elo",
+    "category": "Spelersrating",
+    "question": "Hoeveel rating win of verlies ik na een single?",
+    "answer": "DartFlow berekent je winstkans uit beide ratings met Elo, factor 32 en schaal 400. Twee spelers van 1500 spelen om 16 punten. Wint iemand met 1400 van iemand met 1600, dan krijgt de winnaar ongeveer 24,3 punten. Bij winst voor de favoriet is dat ongeveer 7,7. De verliezer levert hetzelfde aantal in. De weergave is afgerond.",
+    "keywords": [
+      "Elo",
+      "berekening",
+      "puntenverschil",
+      "favoriet",
+      "16",
+      "24,3",
+      "7,7",
+      "gemiddelde"
+    ]
+  },
+  {
+    "id": "rating-per-partij",
+    "category": "Spelersrating",
+    "question": "Levert 3–0 meer rating op dan 3–2?",
+    "answer": "Bij dezelfde twee startratings levert een gewonnen single met 3–0 dezelfde wijziging op als een overwinning met 3–2. DartFlow boekt één keer per volledig gespeelde en bevestigde partij. Het legsaldo kan wel verschil maken voor de competitie. Hoge finishes, 180’ers en je driepijlgemiddelde vind je in de statistieken.",
+    "keywords": [
+      "3-0",
+      "3-2",
+      "legpunten",
+      "rating",
+      "DartsPoint",
+      "180",
+      "gemiddelde",
+      "finish",
+      "statistieken"
+    ]
+  },
+  {
+    "id": "rating-formats",
+    "category": "Spelersrating",
+    "question": "Welke spelvormen kwalificeren voor de landelijke spelersrating?",
+    "answer": "De landelijke standaard geldt voor een aangewezen single van 501 open-in, dubbel-uit tussen twee geïdentificeerde spelers. De toegestane lengtes zijn best-of-5, 7, 9, 11, 13, 15, 17 en 19 legs. Bij best-of-7 wint bijvoorbeeld de eerste speler met vier legs. De partij moet regulier zijn uitgespeeld, met een winnaar en de vereiste bevestigingen. Sets, koppels en handicaps kunnen een eigen competitiestand hebben.",
+    "keywords": [
+      "landelijk",
+      "formaten",
+      "501",
+      "dubbel-uit",
+      "BO5",
+      "handicap",
+      "koppels",
+      "selecteren"
+    ]
+  },
+  {
+    "id": "rating-oefenen",
+    "category": "Spelersrating",
+    "question": "Hoe kies ik tussen oefenen en een losse rankingpartij?",
+    "answer": "Ga naar Spelen. Met ‘Oefenen’ speel je zonder gevolgen voor rankings. Kies ‘Voor rating spelen’ als jullie voor de landelijke spelersrating willen uitkomen. Beide spelers zien vooraf het format, de tegenstander en de verwachte wijziging bij winst of verlies. Beiden moeten vóór de start instemmen. Een oefenpartij kan na de eerste pijl niet worden opgewaardeerd.",
+    "keywords": [
+      "vrij",
+      "spelen",
+      "ranked",
+      "oefenduel",
+      "uitnodigen",
+      "toestemming",
+      "vóór",
+      "start",
+      "achteraf"
+    ]
+  },
+  {
+    "id": "rating-rematch",
+    "category": "Spelersrating",
+    "question": "Waarom kan ik een revanche alleen als oefenpartij starten?",
+    "answer": "In de standaardregeling tellen maximaal twee vrije rankingpartijen tussen hetzelfde duo binnen zeven dagen. DartFlow laat vóór de start zien of een revanche nog voor de rating kan tellen. Daarna kun je gewoon blijven oefenen. Geplande wedstrijden in een erkende competitie of een erkend toernooi volgen de eigen kalender.",
+    "keywords": [
+      "rematch",
+      "revanche",
+      "terugwedstrijd",
+      "zeven",
+      "dagen",
+      "7",
+      "limiet",
+      "duo"
+    ]
+  },
+  {
+    "id": "rating-inactiviteit",
+    "category": "Spelersrating",
+    "question": "Wat gebeurt er met mijn rating na een pauze of een nieuw seizoen?",
+    "answer": "Je spelersrating loopt door bij de seizoenswisseling. De standaardgrens voor de actieve lijst is 90 dagen zonder geldige single. Je vindt je bestaande rating dan via het filter Inactief. De eerstvolgende geldige en bevestigde single activeert je positie weer. Je kunt je eerdere partijen in je profiel terugzien.",
+    "keywords": [
+      "inactief",
+      "90",
+      "dagen",
+      "pauze",
+      "seizoen",
+      "reset",
+      "verdwenen",
+      "positie"
+    ]
+  },
+  {
+    "id": "rating-top50",
+    "category": "Divisies",
+    "question": "Is de Top 50 hetzelfde als een divisie van vijftig spelers?",
+    "answer": "De Top 50 laat de hoogst gerangschikte spelers zien. Via ‘Rond mijn positie’ bekijk je wie dicht bij jouw rating staat. Een divisie is een afzonderlijke seizoenscompetitie met eigen poules, een kalender en een eindstand. Je divisiepositie en je landelijke rating kunnen tegelijk op je profiel staan.",
+    "keywords": [
+      "top",
+      "50",
+      "ladder",
+      "divisies",
+      "positie",
+      "ranglijst",
+      "poule",
+      "wereldwijd"
+    ]
+  },
+  {
+    "id": "divisie-indeling",
+    "category": "Divisies",
+    "question": "Hoe worden spelers in een divisie of poule ingedeeld?",
+    "answer": "De organisator publiceert de grootte en het niveau van de poules. Bij de eerste indeling kan de rating op de peildatum bij sluiting van de inschrijving worden gebruikt. Nieuwe of voorlopige spelers kunnen starten in een instapklasse of kwalificatieavond. Gelijkwaardige parallelpoules worden evenwichtig gevuld. Vijf poules van tien geven iedere speler bij één ontmoeting per tegenstander negen wedstrijden.",
+    "keywords": [
+      "indeling",
+      "plaatsing",
+      "peildatum",
+      "poules",
+      "50",
+      "kwalificatie",
+      "parallel",
+      "seeding"
+    ]
+  },
+  {
+    "id": "divisie-promotie",
+    "category": "Divisies",
+    "question": "Wanneer promoveer of degradeer ik?",
+    "answer": "Kijk op je divisiepagina naar je plaats, het aantal resterende speelronden en de grens voor promotie. Het gepubliceerde reglement bepaalt hoeveel spelers na het seizoen wisselen. Bij twee aangrenzende poules van tien kan dat bijvoorbeeld twee omhoog en twee omlaag zijn. Bij gelijke stand op de grens gelden de aangekondigde tiebreaks en eventuele beslissingswedstrijd.",
+    "keywords": [
+      "promotie",
+      "degradatie",
+      "klasse",
+      "playoff",
+      "divisie",
+      "hoger",
+      "lager",
+      "seizoen",
+      "grens"
+    ]
+  },
+  {
+    "id": "league-selectie",
+    "category": "DartFlow Leagues",
+    "question": "Hoe ziet een team in de landelijke League eruit?",
+    "answer": "In het korte League-format schrijven zes tot acht clubs per klasse elk één team in. De seizoensselectie bestaat uit vier tot acht spelers. Per ontmoeting kiest de captain vier spelers voor vier singles. Een speler vertegenwoordigt in dit competitieseizoen één landelijke club. Op de clubpagina zie je je selectie en de geldige speeldata.",
+    "keywords": [
+      "team",
+      "selectie",
+      "captain",
+      "clubs",
+      "landelijke",
+      "competitie",
+      "interclub",
+      "vier",
+      "spelers"
+    ]
+  },
+  {
+    "id": "league-teamduel",
+    "category": "DartFlow Leagues",
+    "question": "Hoe kan een teamwedstrijd 2–2 eindigen terwijl wij meer legs wonnen?",
+    "answer": "Bij het korte format spelen de vier koppelingen elk een single 501, eerste tot drie legs. Elke gewonnen single levert één partijpunt op. Met 3–1, 2–3, 3–1 en 1–3 win je negen legs tegen acht, maar elk team wint twee singles. Het teamduel eindigt 2–2 en elk team krijgt één competitiepunt. Alle vier de singles worden gespeeld.",
+    "keywords": [
+      "teamstand",
+      "2-2",
+      "9-8",
+      "legs",
+      "partijpunten",
+      "competitiepunt",
+      "gelijkspel"
+    ]
+  },
+  {
+    "id": "league-stand",
+    "category": "DartFlow Leagues",
+    "question": "Hoe wordt de teamstand berekend?",
+    "answer": "In het korte League-format levert winst twee competitiepunten op, gelijkspel één en verlies nul. Bij gelijke punten telt vervolgens het partijpuntensaldo, daarna het onderlinge resultaat binnen de gelijke groep en ten slotte het legsaldo uit daadwerkelijk gespeelde partijen. Als een beslissende plaats dan nog gedeeld is, volgt de gepubliceerde beslissingsprocedure.",
+    "keywords": [
+      "stand",
+      "rangorde",
+      "2",
+      "1",
+      "0",
+      "saldo",
+      "tiebreak",
+      "teamstatistieken"
+    ]
+  },
+  {
+    "id": "league-opstelling",
+    "category": "DartFlow Leagues",
+    "question": "Wanneer ziet de andere captain mijn opstelling?",
+    "answer": "Dien je eigen vier spelers vóór de opstellingsdeadline in. De tegenpartij ziet de opstelling pas wanneer beide captains hebben ingestuurd. DartFlow onthult dan alle koppelingen tegelijk. Een opgegeven reserve mag volgens het reglement vóór de start van het betreffende onderdeel invallen. Een vervanging waarvoor toestemming nodig is gaat met reden naar de competitieleider.",
+    "keywords": [
+      "opstelling",
+      "blind",
+      "geheim",
+      "wissel",
+      "reserve",
+      "vervanger",
+      "captain",
+      "wedstrijdformulier"
+    ]
+  },
+  {
+    "id": "league-verplaatsen",
+    "category": "DartFlow Leagues",
+    "question": "Hoe verplaatsen we als captains een teamwedstrijd?",
+    "answer": "Open de ontmoeting en dien samen met de andere captain een verzoek in met de voorgestelde datum. Controleer baanbeschikbaarheid, de agenda van de teams en de inhaalweek. Bij een conflict beslist de competitieleider volgens het reglement. Controleer na verwerking de kalender voor de nieuwe datum en vorm, lokaal of op afstand.",
+    "keywords": [
+      "afzeggen",
+      "verplaatsen",
+      "uitstel",
+      "inhaalweek",
+      "kalender",
+      "thuis",
+      "uit",
+      "remote"
+    ]
+  },
+  {
+    "id": "club-keuze",
+    "category": "Verenigingen",
+    "question": "Welke competities kan ik binnen mijn vereniging maken?",
+    "answer": "Kies op de clubpagina onder Competities een sjabloon. Er zijn individuele competities, flexcompetities, interne teamcompetities, rankingavonden met een finale, een uitdaagladder, koppelcompetities en bekers of beginnersavonden. In een flexcompetitie plannen spelers zelf binnen hun speelvenster. Op een ladder spreken de deelnemers een tegenstander hoger op de lijst aan.",
+    "keywords": [
+      "clubcompetitie",
+      "sjabloon",
+      "ladder",
+      "flex",
+      "beker",
+      "koppel",
+      "team",
+      "beginnersavond"
+    ]
+  },
+  {
+    "id": "club-instellen",
+    "category": "Verenigingen",
+    "question": "Hoe stel ik sets, legs en de punten voor de clubstand in?",
+    "answer": "Open bij het maken van de competitie ‘Spelregels en stand’. Kies per competitie of fase de startscore, in- en uitregel, speelduur in legs of sets, openingsworp en beslissingsregel. Kies vervolgens de punten voor winst, gelijkspel en verlies of per gewonnen onderdeel. De proefuitslag toont welke score en tabelvolgorde je keuzes opleveren. Publiceer deze regels vóór de inschrijving.",
+    "keywords": [
+      "instellen",
+      "format",
+      "301",
+      "501",
+      "BO5",
+      "sets",
+      "legs",
+      "puntentelling",
+      "winst",
+      "gelijk",
+      "verlies"
+    ]
+  },
+  {
+    "id": "club-ranking",
+    "category": "Verenigingen",
+    "question": "Hoe zet ik de verenigingsranking aan of uit?",
+    "answer": "Activeer als clubbeheerder de clubrating voor singles, het clubcircuit voor eindplaatsen of beide. De bevoegde organisator kiest vóór publicatie welke bestemming bij zijn evenement hoort. Kies bij uitschakelen de ingangsdatum. Bestaande uitslagen zijn nog te raadplegen. Een al gepubliceerde wedstrijd volgt het aangekondigde reglement, tenzij het evenement vóór de start via het wijzigingsproces wordt ingetrokken.",
+    "keywords": [
+      "schakelaar",
+      "inschakelen",
+      "uitschakelen",
+      "clubrating",
+      "clubcircuit",
+      "beheren",
+      "historie"
+    ]
+  },
+  {
+    "id": "club-erkenning",
+    "category": "Verenigingen",
+    "question": "Hoe laat ik een clubwedstrijd meetellen voor de landelijke ranking?",
+    "answer": "Vraag vóór het evenement of seizoen erkenning aan bij het platform. Leg format, score-invoer, bevestiging en de verantwoordelijke wedstrijdleider vast. Na toekenning kun je de toegestane singles vooraf aanwijzen voor de landelijke rating. Voor landelijke circuitpunten is afzonderlijke toelating nodig. Controleer in de publicatiepreview welke bestemmingen daadwerkelijk zijn gekoppeld.",
+    "keywords": [
+      "erkenning",
+      "toelating",
+      "toestemming",
+      "sanctionering",
+      "platform",
+      "landelijk",
+      "ranking",
+      "club"
+    ]
+  },
+  {
+    "id": "club-gasten",
+    "category": "Verenigingen",
+    "question": "Kan een gast onze clubavond winnen en wie krijgt de clubpunten?",
+    "answer": "Een gast mag een open clubavond winnen. Het gepubliceerde clubreglement bepaalt of gasten ook in het clubklassement komen. Wanneer alleen leden meetellen, houdt een lid standaard zijn werkelijke eindplaats. Wint een gast en wordt een lid tweede, dan krijgt het lid in dat geval de punten voor plaats twee.",
+    "keywords": [
+      "gast",
+      "niet-lid",
+      "open",
+      "avond",
+      "clubpunten",
+      "eindplaats",
+      "uitnodigen"
+    ]
+  },
+  {
+    "id": "club-lidmaatschap",
+    "category": "Verenigingen",
+    "question": "Kan ik bij verschillende clubs spelen met hetzelfde account?",
+    "answer": "Je gebruikt één spelersprofiel. Per club worden je lidmaatschap en de geldigheid van je teamselectie bijgehouden. Op je clubpagina zie je aan welke interne evenementen je mag deelnemen. Voor de landelijke League geldt één vertegenwoordigende club per competitieseizoen. Een losse rankingpartij kun je ook zonder club spelen.",
+    "keywords": [
+      "meerdere",
+      "clubs",
+      "lid",
+      "wisselen",
+      "account",
+      "spelersprofiel",
+      "speelgerechtigd",
+      "team"
+    ]
+  },
+  {
+    "id": "circuit-telling",
+    "category": "Circuits",
+    "question": "Hoe wordt mijn eindplaats omgezet in circuitpunten?",
+    "answer": "Het circuit publiceert een puntentabel voor het aantal werkelijk gestarte spelers. De landelijke standaard vanaf 32 starters geeft 15 punten voor winst, 10 voor de finalist, 7 voor gedeeld derde, 5 voor gedeeld vijfde, 3 voor gedeeld negende en 1 voor gedeeld zeventiende. Twee verloren halvefinalisten krijgen dus ieder 7. Je moet minstens één partij daadwerkelijk hebben gespeeld.",
+    "keywords": [
+      "eindranking",
+      "circuitranking",
+      "punten",
+      "plaatsing",
+      "kampioen",
+      "finalist",
+      "gedeeld",
+      "derde",
+      "15",
+      "10",
+      "7"
+    ]
+  },
+  {
+    "id": "circuit-starters",
+    "category": "Circuits",
+    "question": "Waarom kan het aantal starters de circuitpunten veranderen?",
+    "answer": "Tel de spelers die daadwerkelijk starten. De standaard voor het landelijke circuit is minimaal 16 starters. Bij 16 tot en met 31 verdienen de eindplaatsen 1, 2, gedeeld 3, 5 en 9 respectievelijk 10, 7, 5, 3 en 1 punt. Vanaf 32 geldt de grotere tabel. Zijn 16 spelers ingeschreven en starten er 15, dan vervallen de landelijke circuitpunten. Controleer bij een clubserie de eigen gepubliceerde puntentabel.",
+    "keywords": [
+      "16",
+      "deelnemers",
+      "minimum",
+      "ondergrens",
+      "veldgrootte",
+      "no",
+      "show",
+      "afmelding",
+      "kleiner",
+      "veld"
+    ]
+  },
+  {
+    "id": "circuit-beste",
+    "category": "Circuits",
+    "question": "Waarom tel ik na acht speeldagen maar vijf resultaten mee?",
+    "answer": "De standaardreeks bestaat uit acht aangewezen speeldagen waarvan je beste vijf meetellen. Behaal je later een betere uitslag, dan vervangt die de laagste tellende uitslag. Bij tellende scores van 15, 10, 7, 5 en 3 maakt een nieuwe 7 je totaal 44 in plaats van 40. De circuitstand laat zien welke resultaten worden gebruikt.",
+    "keywords": [
+      "beste",
+      "vijf",
+      "van",
+      "acht",
+      "schrapresultaat",
+      "weekend",
+      "rankingavonden",
+      "slotavond"
+    ]
+  },
+  {
+    "id": "circuit-gelijk",
+    "category": "Circuits",
+    "question": "Hoe beslist een circuit tussen gelijke seizoenstotalen?",
+    "answer": "Volgens de standaardregel worden de tellende resultaten van hoog naar laag vergeleken. Bij een gelijk totaal kan iemand met een toernooizege hierdoor hoger eindigen. Blijft een kwalificatieplaats gedeeld, dan geldt de aangekondigde beslissingswedstrijd. Bekijk het circuitreglement voor de precieze procedure van jouw serie.",
+    "keywords": [
+      "gelijkstand",
+      "gelijk",
+      "ex",
+      "aequo",
+      "countback",
+      "punten",
+      "kwalificatie",
+      "beslissingswedstrijd"
+    ]
+  },
+  {
+    "id": "circuit-beide",
+    "category": "Circuits",
+    "question": "Kan één partij bijdragen aan mijn rating én aan een circuit?",
+    "answer": "Ja, als het evenement daarvoor is toegelaten en beide bestemmingen vooraf zijn aangekondigd. De single levert een wijziging van de spelersrating op. Je definitieve eindplaats in het toernooi levert afzonderlijk circuitpunten op. In een finale tussen twee spelers van 1500 kan de winnaar zo 16 ratingpunten krijgen en bij een veld van 32 ook 15 circuitpunten voor de titel.",
+    "keywords": [
+      "dubbel",
+      "tellen",
+      "eindplaats",
+      "beide",
+      "bestemmingen",
+      "finale",
+      "16",
+      "15",
+      "apart"
+    ]
+  },
+  {
+    "id": "event-eigenaar",
+    "category": "Toernooien",
+    "question": "Hoe maak ik als particulier een toernooi voor vrienden?",
+    "answer": "Open Toernooien, kies Zelf organiseren en selecteer Persoonlijk. Kies de spelvorm, stel het schema en de banen in en deel de inschrijflink of voeg gasten ter plekke toe. Je krijgt ook loting, plaatsing, baanplanning, Oche Live, uitslagen en export. De resultaten blijven bij dit evenement en leveren geen landelijke of verenigingspunten op.",
+    "keywords": [
+      "privé",
+      "prive",
+      "particulier",
+      "persoonlijk",
+      "vrienden",
+      "hobby",
+      "geen",
+      "vereniging",
+      "eigen",
+      "toernooi"
+    ]
+  },
+  {
+    "id": "event-wizard",
+    "category": "Toernooien",
+    "question": "Welke stappen doorloop ik bij het maken van een toernooi?",
+    "answer": "Kies eerst voor wie je organiseert en welke vorm je wilt spelen. Stel daarna de opzet, spelregels en rangschikking in. Plan deelnemers, banen en pauzes. Controleer als laatste waarvoor het toernooi meetelt, wie de uitslagen bevestigt en wat deelnemers te zien krijgen. Na iedere stap wordt je concept bewaard. Kopiëren maakt een nieuw concept met een lege inschrijflijst.",
+    "keywords": [
+      "wizard",
+      "concept",
+      "dupliceren",
+      "opslaan",
+      "publiceren",
+      "organisator",
+      "planner"
+    ]
+  },
+  {
+    "id": "event-scope",
+    "category": "Toernooien",
+    "question": "Kan ik alleen de knock-out laten meetellen voor rating?",
+    "answer": "Ja, bij een daarvoor erkend evenement kun je de bestemming vooraf per fase, ronde of aangewezen partij instellen. Richt bijvoorbeeld een korte poulefase in zonder rating en een knock-outfase met toegelaten singles. Deelnemers zien de gevolgen voor de start. Gespeelde persoonlijke toernooien en al begonnen oefenpartijen kun je nooit achteraf in rankingwedstrijden veranderen.",
+    "keywords": [
+      "knockout",
+      "fases",
+      "rankingfase",
+      "oefenen",
+      "poule",
+      "officieel",
+      "achteraf",
+      "omzetten"
+    ]
+  },
+  {
+    "id": "event-inschrijving",
+    "category": "Toernooien",
+    "question": "Hoe regel ik uitnodigingen, gasten en een wachtlijst?",
+    "answer": "Kies bij Deelnemers tussen een gesloten uitnodiging en open inschrijving. Stel het maximum en de wachtlijst in, deel de link of QR-code en voeg gasten toe met een herkenbare naam. Je kunt ook een spelerslijst importeren, koppels inschrijven en een medebeheerder aanwijzen. Sluit op de speeldag de check-in voordat je de definitieve loting publiceert.",
+    "keywords": [
+      "inschrijven",
+      "deelnemers",
+      "importeren",
+      "koppels",
+      "aanmelden",
+      "wachtlijst",
+      "uitnodigingslink",
+      "gasten",
+      "QR"
+    ]
+  },
+  {
+    "id": "event-loting",
+    "category": "Toernooien",
+    "question": "Kan ik willekeurig loten, spelers plaatsen of de indeling zelf bepalen?",
+    "answer": "Sluit de check-in en controleer de aanwezige spelers. Kies een willekeurige loting, geplaatste spelers met loting van de overige plaatsen of een handmatige indeling. Voor plaatsing geldt de aangekondigde ratingpeildatum. Je kunt clubgenoten laten spreiden waar het schema dat toelaat. Controleer byes en beperkingen in de preview voordat je publiceert.",
+    "keywords": [
+      "loting",
+      "seeding",
+      "seed",
+      "handmatig",
+      "spreiden",
+      "clubgenoten",
+      "poules",
+      "bracket"
+    ]
+  },
+  {
+    "id": "event-herloten",
+    "category": "Toernooien",
+    "question": "Wat doe ik als iemand na de loting maar vóór de eerste wedstrijd afzegt?",
+    "answer": "Werk eerst de aanwezigheid bij. Controleer of het gepubliceerde reglement een vervanger, vrije plaats of nieuwe loting toestaat. Bij herloting vóór aanvang geef je de reden op. De herziene indeling blijft herkenbaar als nieuwe versie. De betrokken spelers zien hun gewijzigde baan of starttijd. Bij al gespeelde wedstrijden beoordeelt de wedstrijdleiding de gevolgen voor het schema.",
+    "keywords": [
+      "herloten",
+      "afzegging",
+      "na",
+      "loting",
+      "reserve",
+      "herindelen",
+      "revisie",
+      "no-show"
+    ]
+  },
+  {
+    "id": "event-bye",
+    "category": "Toernooien",
+    "question": "Krijg ik rating of circuitpunten voor een bye?",
+    "answer": "Met een bye ga je volgens het schema door zonder tegenstander. Er is geen gespeelde single en dus geen persoonlijke ratingwijziging. Circuitpunten volgen pas uit een definitieve eindplaats, met minstens één daadwerkelijk gespeelde partij. Een schema kan je dus wel naar de volgende ronde brengen terwijl je rating gelijk blijft.",
+    "keywords": [
+      "bye",
+      "vrijloting",
+      "vrijgesteld",
+      "automatisch",
+      "door",
+      "walkover",
+      "bracket"
+    ]
+  },
+  {
+    "id": "event-poule",
+    "category": "Toernooien",
+    "question": "Waarom gaat iemand met evenveel gewonnen poulepartijen toch door?",
+    "answer": "Open de poulestand en bekijk de aangekondigde volgorde van de tiebreaks. Een mogelijke volgorde is gewonnen partijen, legsaldo, gewonnen legs en onderling resultaat. Bij drie gelijke spelers kan een afgesproken onderlinge minipoule beslissen. Bij een onbesliste doorgangsplaats geldt de aangekondigde beslissingsleg of extra partij. De rangschikking vermeldt de beslissende regel.",
+    "keywords": [
+      "poulestand",
+      "tiebreak",
+      "minipoule",
+      "legsaldo",
+      "gelijke",
+      "stand",
+      "doorgang",
+      "onderling"
+    ]
+  },
+  {
+    "id": "event-dubbel",
+    "category": "Toernooien",
+    "question": "Hoe werken het verliezersschema en de tweede finale bij dubbele eliminatie?",
+    "answer": "Na je eerste nederlaag ga je naar het verliezersschema. In de zuivere vorm ben je pas na twee nederlagen uitgeschakeld. Wint de winnaar van het verliezersschema de eerste grote finale, dan hebben beide finalisten één keer verloren en volgt een beslissende tweede finale. Het reglement kan vooraf ook één finale voorschrijven. Dan beslist die finale direct de titel.",
+    "keywords": [
+      "double",
+      "elimination",
+      "losers",
+      "bracket",
+      "winners",
+      "reset",
+      "grand",
+      "final",
+      "herkansing",
+      "verliezersronde"
+    ]
+  },
+  {
+    "id": "event-zwitsers",
+    "category": "Toernooien",
+    "question": "Hoe werkt een Zwitsers toernooi?",
+    "answer": "Bij Zwitsers speel je een vooraf vastgelegd aantal ronden. Na een ronde worden de volgende tegenstanders op basis van de tussenstand en het gepubliceerde reglement gekoppeld. Eén nederlaag betekent dat je in het toernooi blijft. De organisator publiceert vooraf hoe herhaalde koppelingen, een oneven veld, een bye en gedeelde eindscores worden behandeld.",
+    "keywords": [
+      "swiss",
+      "Zwitsers",
+      "systeem",
+      "ronde",
+      "koppeling",
+      "tegenstander",
+      "aantal",
+      "ronden"
+    ]
+  },
+  {
+    "id": "event-duur",
+    "category": "Toernooien",
+    "question": "Hoe schat ik in of mijn toernooi in één avond past?",
+    "answer": "Vul de banen en je verwachte speeltijd per partij in. Zestien spelers in vier poules van vier spelen 24 poulepartijen. Een knock-out met acht spelers voegt er zeven toe. Bij vier banen en gemiddeld twintig minuten per partij is 155 minuten de theoretische ondergrens. De planner houdt ook rekening met opeenvolgende ronden, rust, wissels en de finale.",
+    "keywords": [
+      "duur",
+      "capaciteit",
+      "tijdschema",
+      "eindtijd",
+      "banen",
+      "avond",
+      "planning",
+      "inschatting"
+    ]
+  },
+  {
+    "id": "event-stopt",
+    "category": "Toernooien",
+    "question": "Wat gebeurt er als een toernooi voortijdig wordt afgelast?",
+    "answer": "De wedstrijdleiding registreert de afgelasting en reden. Reeds bevestigde, vooraf aangewezen singles kunnen hun persoonlijke ratingbijdrage behouden. Bij een halverwege afgelast toernooi kent de standaardregeling geen circuitpunten voor eindplaatsen toe. Reeds gespeelde onderdelen blijven zichtbaar in de wedstrijdhistorie.",
+    "keywords": [
+      "afgelast",
+      "afgebroken",
+      "gestaakt",
+      "annulering",
+      "circuit",
+      "eindplaatsen",
+      "noodstop"
+    ]
+  },
+  {
+    "id": "event-deel",
+    "category": "Toernooien",
+    "question": "Welke resultaten kan ik delen of exporteren?",
+    "answer": "Bekijk in de publicatie-instellingen of de evenementuitslagen openbaar gedeeld mogen worden. Deel vanuit een uitslag de kaart met de gekozen schermnaam, het type partij en het juiste resultaat. De organisator kan de evenementuitslagen exporteren. Op de openbare weergave verschijnen de daarvoor ingestelde gegevens. Privéverslagen van bezwaren, e-mailadressen en pincodes horen daar niet bij.",
+    "keywords": [
+      "delen",
+      "export",
+      "feed",
+      "social",
+      "publiek",
+      "uitslagen",
+      "kaart",
+      "screenshot",
+      "privacy"
+    ]
+  },
+  {
+    "id": "baan-qrcode",
+    "category": "Oche Live en Android",
+    "question": "Hoe start ik de juiste partij op een baan?",
+    "answer": "Scan met je telefoon de QR-code op het Oche Live-baanscherm, bevestig je identiteit en controleer baan, spelers en toegewezen partij. De wedstrijd kan beginnen zodra de baan is vrijgegeven en de vereiste spelers en eventuele schrijver beschikbaar zijn. Bij een foutieve toewijzing laat je de wedstrijdleiding eerst de juiste partij koppelen.",
+    "keywords": [
+      "QR-code",
+      "baanscherm",
+      "scannen",
+      "Android",
+      "start",
+      "match",
+      "verkeerde",
+      "baan",
+      "Oche",
+      "Live"
+    ]
+  },
+  {
+    "id": "baan-tablet",
+    "category": "Oche Live en Android",
+    "question": "Kunnen twee spelers met één telefoon of clubtablet spelen?",
+    "answer": "Ja. Gebruik het gedeelde toestel voor de score-invoer. De tweede speler identificeert zich voor een rankingpartij met de eigen gebruikersnaam en zescijferige pincode. Iedere speler bevestigt namens het eigen account. Zonder bevestigde tweede identiteit kun je oefenen. De baanweergave toont alleen de wedstrijdinformatie.",
+    "keywords": [
+      "gedeeld",
+      "apparaat",
+      "tweede",
+      "speler",
+      "geen",
+      "telefoon",
+      "tablet",
+      "PIN",
+      "zescijferig",
+      "identiteit"
+    ]
+  },
+  {
+    "id": "baan-kaart",
+    "category": "Oche Live en Android",
+    "question": "Waar gebruik ik de spelersapp voor en wat toont Oche Live?",
+    "answer": "Op je telefoon of tablet kun je inchecken, je partij openen en als aangewezen schrijver scoren. Oche Live is de weergave bij de baan. Daar zie je wie speelt, de actuele score en de scorekaart met de opeenvolgende beurten. Toeschouwers volgen dezelfde wedstrijd op het gekoppelde scherm. Voor een wijziging gebruik je het toestel met schrijfrechten.",
+    "keywords": [
+      "Android",
+      "scorebord",
+      "player",
+      "display",
+      "cast",
+      "mobiel",
+      "beurt",
+      "scorekaart",
+      "scherm",
+      "schrijver"
+    ]
+  },
+  {
+    "id": "baan-remote",
+    "category": "Oche Live en Android",
+    "question": "Wat doe ik bij een verbroken verbinding tijdens remote darten?",
+    "answer": "Open dezelfde partij opnieuw en controleer de laatst geaccepteerde beurt. Iedere speler voert bij remote spelen de eigen beurt in. Hervat binnen het gepubliceerde hervattingsvenster. Als jullie verschillende scores zien, pauzeer dan en vraag de wedstrijdleider welke invoer geldt. Zo kan dezelfde partij hervatten zonder een dubbele uitslag.",
+    "keywords": [
+      "remote",
+      "online",
+      "internet",
+      "disconnect",
+      "afgebroken",
+      "opnieuw",
+      "verbinden",
+      "verbindingsverlies",
+      "hervatten"
+    ]
+  },
+  {
+    "id": "baan-offline",
+    "category": "Oche Live en Android",
+    "question": "Waarom loopt het baanscherm achter op mijn Android-telefoon?",
+    "answer": "Controleer de synchronisatiestatus van de partij. Bij verbindingsverlies bewaart de app de laatst geaccepteerde beurt en de nog te verzenden invoer op het toestel. Houd dezelfde partij open en herstel de verbinding. Na controle van de volgorde werken de schermen bij. Zie je tegenstrijdige scores, laat de wedstrijdleiding dan eerst de laatste geaccepteerde beurt controleren.",
+    "keywords": [
+      "offline",
+      "telefoon",
+      "tablet",
+      "wachtrij",
+      "sync",
+      "achterstand",
+      "scores",
+      "ongelijk",
+      "reconnect"
+    ]
+  },
+  {
+    "id": "baan-oproep",
+    "category": "Wedstrijdleiding",
+    "question": "Waarom worden de volgende spelers al opgeroepen tijdens de laatste leg?",
+    "answer": "De planner kan alvast aangeven welke spelers zich bij de baan mogen melden. De lopende partij houdt de baan tot vrijgave. Voor de volgende partij zijn ook de spelers en een eventuele schrijver nodig. Staat iemand op pauze of speelt die op een andere baan, dan schuift de planning tijdelijk door naar de eerstvolgende haalbare partij.",
+    "keywords": [
+      "slimme",
+      "bordplaatsing",
+      "standby",
+      "bord",
+      "baan",
+      "oproep",
+      "wachtrij",
+      "rust",
+      "schrijver"
+    ]
+  },
+  {
+    "id": "baan-pauze",
+    "category": "Wedstrijdleiding",
+    "question": "Hoe pauzeer ik een speler of reserveer ik een baan?",
+    "answer": "Gebruik in de wedstrijdleiding de betreffende speler of baan. Markeer de speler tijdelijk als gepauzeerd of reserveer de baan en bekijk de aangepaste wachtrij. Na terugkeer bepaalt de wachtrijregel wanneer de speler weer aan de beurt is. Een bezette baan moet expliciet worden vrijgegeven voordat een nieuwe partij kan starten.",
+    "keywords": [
+      "pauze",
+      "verplaatsen",
+      "bord",
+      "reserveren",
+      "bordbeheer",
+      "queue",
+      "terugkomst"
+    ]
+  },
+  {
+    "id": "baan-ronde",
+    "category": "Wedstrijdleiding",
+    "question": "Waarom start de volgende ronde niet terwijl er een baan vrij is?",
+    "answer": "Na de laatste poulewedstrijd of aan het einde van een geblokkeerde ronde wacht het systeem op vrijgave door de wedstrijdleiding. Controleer de uitslagen, de berekende stand, eventuele tiebreaks en openstaande bezwaren. Open daarna de vervolgronde. Een vrije baan alleen is onvoldoende om een nog onbesliste koppeling te starten.",
+    "keywords": [
+      "ronde",
+      "doordrukken",
+      "vrijgeven",
+      "geblokkeerde",
+      "bracket",
+      "poule",
+      "klaar",
+      "vrije",
+      "baan"
+    ]
+  },
+  {
+    "id": "uitslag-bevestigen",
+    "category": "Uitslagen en hulp",
+    "question": "Wie moet een uitslag bevestigen?",
+    "answer": "Bij een vrije rankingpartij bevestigen beide spelers de uitslag. Bij een teamontmoeting bevestigen beide captains het formulier. Bij een toernooi kunnen een vooraf aangewezen onafhankelijke schrijver en de wedstrijdleider bevestigen volgens het reglement. Tot de vereiste bevestigingen binnen zijn zie je de status ‘Te bevestigen’.",
+    "keywords": [
+      "uitslag",
+      "bevestiging",
+      "beide",
+      "spelers",
+      "captain",
+      "schrijver",
+      "akkoord",
+      "definitief",
+      "wachten"
+    ]
+  },
+  {
+    "id": "uitslag-verwerking",
+    "category": "Uitslagen en hulp",
+    "question": "Mijn uitslag is bevestigd. Waarom staat mijn nieuwe rating er nog niet?",
+    "answer": "Open de uitslag en kijk of deze partij voor de betrokken rating was aangewezen. Bij ‘Uitslag bevestigd · ranking wordt bijgewerkt’ wordt de officiële wijziging verwerkt. Open je ratinghistorie opnieuw nadat de verwerking is afgerond. Blijft een aangewezen resultaat ontbreken, meld dan de betreffende partij aan de wedstrijdleiding. Opnieuw een partij invoeren is overbodig.",
+    "keywords": [
+      "ontbrekende",
+      "punten",
+      "herladen",
+      "pending",
+      "verwerking",
+      "live",
+      "ratinghistory",
+      "resultaat",
+      "Android"
+    ]
+  },
+  {
+    "id": "uitslag-forfait",
+    "category": "Uitslagen en hulp",
+    "question": "Levert een no-show, forfait of gestaakte partij rating op?",
+    "answer": "Een reglement kan bij afwezigheid of opgave team- of competitiepunten toekennen. De wedstrijdleiding noteert de administratieve beslissing en reden apart. Zonder een volledig gespeelde, bevestigde single volgt geen landelijke ratingwijziging. Bij een gestaakte match kunnen de echte gespeelde legs zichtbaar blijven en kan dezelfde partij volgens het reglement worden hervat.",
+    "keywords": [
+      "walkover",
+      "forfait",
+      "no-show",
+      "opgave",
+      "staking",
+      "terugtrekken",
+      "administratief",
+      "verlies"
+    ]
+  },
+  {
+    "id": "hulp-bezwaar",
+    "category": "Uitslagen en hulp",
+    "question": "Hoe maak ik bezwaar tegen een verkeerde score of uitslag?",
+    "answer": "Open je eigen wedstrijd, kies de bezwaaractie en wijs de betwiste beurt of einduitslag aan. Beschrijf wat volgens jou werd gegooid, op welke baan en wat er op het scherm stond. De tegenpartij krijgt gelegenheid te reageren. De bevoegde beoordelaar ziet de wedstrijdhistorie. De betrokken rankingboeking en afhankelijke eindstand kunnen op de beoordeling wachten.",
+    "keywords": [
+      "bezwaar",
+      "protest",
+      "betwisten",
+      "verkeerde",
+      "score",
+      "melden",
+      "dispute",
+      "uitslag",
+      "fout",
+      "correctie"
+    ]
+  },
+  {
+    "id": "hulp-correctie",
+    "category": "Uitslagen en hulp",
+    "question": "Waarom kan een correctie ook mijn rating van een latere partij wijzigen?",
+    "answer": "Bij Elo hangt de wijziging af van de startratings van beide spelers. Als een eerdere winnaar verandert, kunnen ook de startratings en wijzigingen van latere partijen veranderen. DartFlow berekent de getroffen reeks opnieuw in de officiële volgorde. Je ziet de correctiereden en je aangepaste historie. De wedstrijdleiding beoordeelt afzonderlijk wat dit betekent voor al gespeelde vervolgronden.",
+    "keywords": [
+      "herberekenen",
+      "correctie",
+      "revisie",
+      "oude",
+      "match",
+      "rating",
+      "achteraf",
+      "tegenstanders",
+      "bracket"
+    ]
+  },
+  {
+    "id": "moderatie-signaal",
+    "category": "Eerlijk spelen",
+    "question": "Hoe beoordeelt DartFlow signalen van mogelijk valsspelen?",
+    "answer": "De score-invoer controleert of de worp, de checkout en het aantal gebruikte pijlen mogelijk zijn. Bij een vermoeden van misbruik bekijken bevoegde beoordelaars de partijhistorie en de omstandigheden. Een gedeelde clubtablet, hetzelfde netwerk of een onverwacht hoge score kunnen bij normaal spel voorkomen. Een speler kan via de eigen wedstrijd een concreet voorval melden.",
+    "keywords": [
+      "valsspelen",
+      "fraude",
+      "smurf",
+      "boosting",
+      "180",
+      "dubbel",
+      "account",
+      "gedeeld",
+      "netwerk",
+      "anti-cheat"
+    ]
+  },
+  {
+    "id": "moderatie-beoordeling",
+    "category": "Eerlijk spelen",
+    "question": "Wat doet een moderator met een betwiste wedstrijd?",
+    "answer": "De moderator bekijkt de betwiste beurt, de herkomst van de invoer, wijzigingen en de reacties van deelnemers. Bij een eigen partij of eigen team beoordeelt een tweede bevoegde persoon het geschil. Het oordeel kan de uitslag bevestigen, corrigeren of ongeldig verklaren. De betrokken spelers krijgen de reden, de gevolgen en de mogelijkheid om herbeoordeling te vragen.",
+    "keywords": [
+      "moderator",
+      "onderzoek",
+      "klacht",
+      "sanctie",
+      "belangenconflict",
+      "beroep",
+      "herbeoordeling",
+      "beheer"
+    ]
+  },
+  {
+    "id": "moderatie-camera",
+    "category": "Eerlijk spelen",
+    "question": "Moet mijn camera aan bij een wedstrijd op afstand?",
+    "answer": "Kijk bij de gepubliceerde regels van jouw evenement. Bij bepaalde finales of controles kan live zicht op het bord of een onafhankelijke schrijver zijn vereist. Meld onvoldoende zicht of een technische storing tijdens de partij aan de wedstrijdleiding. Standaard worden videobeelden niet permanent bewaard. Het evenement vermeldt vooraf welke controles en zichtbaarheid gelden.",
+    "keywords": [
+      "camera",
+      "bordzicht",
+      "online",
+      "verificatie",
+      "privacy",
+      "opnames",
+      "live",
+      "video"
+    ]
+  },
+  {
+    "id": "hulp-rechten",
+    "category": "Uitslagen en hulp",
+    "question": "Waarom zie ik een beheerknop op het ene scherm wel en op het andere niet?",
+    "answer": "Controleer eerst in welk account, bij welke vereniging en in welk evenement je werkt. Een captain beheert de eigen opstelling, een schrijver de toegewezen baan en een organisator het eigen evenement. Werkt iemand tegelijk voor twee clubs, kies dan de juiste club. Vraag zo nodig de bevoegde beheerder om je rol voor precies die club of dat evenement te controleren.",
+    "keywords": [
+      "rechten",
+      "rollen",
+      "toegang",
+      "ontbreekt",
+      "knop",
+      "Android",
+      "desktop",
+      "beheer",
+      "captain",
+      "scorer"
+    ]
+  },
+  {
+    "id": "hulp-gastprofiel",
+    "category": "Uitslagen en hulp",
+    "question": "Kan ik mijn wedstrijden als gast later aan mijn profiel koppelen?",
+    "answer": "Maak een eigen account en laat je gastdeelname aan het evenement bevestigen. De betreffende organisator kan de koppeling van je evenementenhistorie laten controleren. Je eerdere resultaat houdt de betekenis die vóór de wedstrijd gold. Een persoonlijke vrijdagcup die je als gast hebt gewonnen, blijft zo zichtbaar als toernooiwinst zonder extra ratingpunten.",
+    "keywords": [
+      "gastaccount",
+      "profiel",
+      "koppelen",
+      "historische",
+      "resultaten",
+      "dubbele",
+      "naam",
+      "account",
+      "aanmaken"
+    ]
+  },
+  {
+    "id": "hulp-toegankelijk",
+    "category": "Oche Live en Android",
+    "question": "Hoe volg ik mijn partij als ik kleur of animatie lastig kan onderscheiden?",
+    "answer": "Lees naast de kleur ook de status en de tekst bij elke actie, zoals ‘Inchecken’, ‘Te bevestigen’ of ‘Definitief’. De actuele score en scorekaart blijven als tekst beschikbaar. Gebruik op je toestel hoog contrast, een schermlezer of verminderde beweging. Aan de baan kun je de wedstrijd ook op een liggend of staand Oche Live-scherm volgen.",
+    "keywords": [
+      "toegankelijkheid",
+      "toegankelijk",
+      "kleurblind",
+      "contrast",
+      "schermlezer",
+      "TalkBack",
+      "animatie",
+      "liggend",
+      "staand"
+    ]
+  },
+  {
+    "id": "hulp-zoeken",
+    "category": "Uitslagen en hulp",
+    "question": "Hoe vind ik snel uitleg in DartFlow op mijn telefoon of computer?",
+    "answer": "Open Help of Veelgestelde vragen. Zoek op een woord dat op je scherm staat, bijvoorbeeld ‘bye’, ‘voorlopig’ of ‘Te bevestigen’. Met de categorie Oche Live en Android vind je vragen over de baan, QR-code en synchronisatie. Voor een beslissing over een specifieke uitslag open je de betreffende wedstrijd. Daar staat het formulier waarop de wedstrijdleiding kan reageren.",
+    "keywords": [
+      "FAQ",
+      "veelgestelde",
+      "hulp",
+      "Android",
+      "desktop",
+      "helpcentrum",
+      "zoeken",
+      "ondersteuning"
+    ]
+  },
+  {
+    "id": "league-lang",
+    "category": "DartFlow Leagues",
+    "question": "Hoe werkt een langere teamavond met dubbels en een teamgame?",
+    "answer": "Het lange teamformat bundelt vier singles, twee koppels en één teamgame tot één ontmoeting. Controleer op het formulier de speelvolgorde, toegestane opstelling en het aantal legs per onderdeel. Koppels en de teamgame dragen volgens het wedstrijdreglement bij aan de teamuitslag. Alleen vooraf aangewezen, geldige singles kunnen persoonlijke landelijke rating opleveren.",
+    "keywords": [
+      "lange",
+      "avond",
+      "teamgame",
+      "teamwedstrijd",
+      "koppels",
+      "dubbels",
+      "teamformat",
+      "landelijk"
+    ]
+  },
+  {
+    "id": "club-ladder",
+    "category": "Verenigingen",
+    "question": "Hoe daag ik iemand uit op de clubladder?",
+    "answer": "Open de uitdaagladder van je vereniging. Kijk wie binnen het toegestane bereik boven je staat en stuur een uitdaging. De standaard voor een nieuwe ladder is maximaal drie plaatsen omhoog. De club bepaalt de antwoordtermijn en de gevolgen van een gespeelde uitdaging. Op de ladderpagina zie je voor je speelt om welke positie het gaat.",
+    "keywords": [
+      "uitdagen",
+      "ladder",
+      "uitdaging",
+      "challenge",
+      "drie",
+      "plaatsen",
+      "stijgen",
+      "club"
+    ]
+  },
+  {
+    "id": "club-kwalificatie",
+    "category": "Verenigingen",
+    "question": "Moet ik elke rankingavond aanwezig zijn om de clubfinale te halen?",
+    "answer": "De club publiceert hoeveel avonden meetellen en hoeveel spelers doorgaan. Het sjabloon met een slotavond heeft acht rankingavonden, laat de beste vijf resultaten meetellen en plaatst de beste acht voor de finale. Bekijk eventuele aanvullende deelname-eisen bij jouw clubserie. Je mag je per avond inschrijven als die vorm is gekozen.",
+    "keywords": [
+      "slotavond",
+      "beste",
+      "acht",
+      "finale",
+      "vijf",
+      "aanwezigheid",
+      "inschrijven",
+      "rankingavond"
+    ]
+  },
+  {
+    "id": "event-toernooirol",
+    "category": "Toernooien",
+    "question": "Kan een medebeheerder een persoonlijk toernooi officieel maken?",
+    "answer": "Een medebeheerder kan binnen de toegekende rol helpen met deelnemers en wedstrijdleiding. De oorspronkelijke organisatorcontext blijft leidend. Een persoonlijk toernooi verdient nooit club- of landelijke rankingpunten. Wil je dezelfde opzet namens een club gebruiken, kopieer het evenement naar een nieuw concept, start met een lege deelnemerslijst en publiceer de erkenning vóór de nieuwe wedstrijden.",
+    "keywords": [
+      "kopiëren",
+      "dupliceren",
+      "rechten",
+      "persoonlijk",
+      "omzetten",
+      "scope",
+      "organisatorcontext",
+      "medeorganisator"
+    ]
+  },
+  {
+    "id": "moderatie-herstel",
+    "category": "Eerlijk spelen",
+    "question": "Wat gebeurt er als dezelfde laatste beurt twee keer wordt ingestuurd?",
+    "answer": "Beide schermen blijven dezelfde partij gebruiken. DartFlow koppelt de bevestigde beurt en uitslag aan die partij en kent per bestemming één wijziging toe. Controleer de definitieve scorekaart en de ratinghistorie. Is de inhoud van beide inzendingen verschillend, dan wordt de laatste geaccepteerde beurt gecontroleerd voordat het spel verdergaat.",
+    "keywords": [
+      "dubbele",
+      "inzending",
+      "gebeurtenis",
+      "offline",
+      "laatste",
+      "beurt",
+      "score",
+      "dubbel",
+      "geboekt",
+      "synchronisatie"
+    ]
+  },
+  {
+    "id": "oche-koppelen",
+    "category": "Oche Live en Android",
+    "question": "Hoe koppel ik de televisie in de kantine aan onze baan?",
+    "answer": "Open Oche Live op de televisie. Open in je bevoegde DartFlow-account de schermen van de locatie en kies Scherm toevoegen. Scan de koppel-QR of voer de getoonde schermcode in, selecteer de baan en bevestig. Zodra de televisie de koppeling heeft ontvangen, zie je dezelfde baan in het schermbeheer. De vaste QR waarmee spelers aan die baan inchecken heeft een ander doel.",
+    "keywords": [
+      "televisie",
+      "tv",
+      "koppelen",
+      "code",
+      "schermcode",
+      "locatie",
+      "kantine"
+    ]
+  },
+  {
+    "id": "oche-vervangen",
+    "category": "Oche Live en Android",
+    "question": "Hoe vervang ik mijn oude scherm als ik het maximum bereik?",
+    "answer": "Open Mijn schermen voor een thuisscherm of de schermen van de locatie voor een clubbaan. Kies het oude apparaat en gebruik Vervangen om de nieuwe installatie te koppelen. Thuis is de standaard één scherm, op een locatie twee. Platformbeheer kan de locatielimiet aanpassen. Een offline toestel kan nog gekoppeld zijn.",
+    "keywords": [
+      "limiet",
+      "schermmaximum",
+      "vervangen",
+      "thuis",
+      "beheer",
+      "apparaat"
+    ]
+  },
+  {
+    "id": "oche-inactiviteit",
+    "category": "Oche Live en Android",
+    "question": "Waarom vraagt Oche Live of onze vrije baan nog in gebruik is?",
+    "answer": "Na twee minuten zonder relevante spelactiviteit waarschuwt de vrije sessie dat de baan over één minuut vrijkomt. Gebruik de verlengactie in DartFlow als je verder speelt. Je kunt dit twee keer doen. Bij een officiële toewijzing bewaart DartFlow de partij en kan de wedstrijdleiding het spelen hervatten.",
+    "keywords": [
+      "120",
+      "60",
+      "inactiviteit",
+      "verlengen",
+      "pauze",
+      "vrijgeven",
+      "timer"
+    ]
+  },
+  {
+    "id": "profiel-gemiddelde",
+    "category": "Uitslagen en hulp",
+    "question": "Hoe berekent DartFlow mijn driepijlgemiddelde?",
+    "answer": "DartFlow vermenigvuldigt je afgeboekte punten met drie en deelt dit door het aantal telpijlen. Een gewone beurt en een bust tellen voor drie telpijlen. Een bust levert nul punten op. Bij een finish tellen de daadwerkelijk gebruikte pijlen. Bekijk bij een filter hoeveel partijen volledige gegevens hebben.",
+    "keywords": [
+      "driepijlgemiddelde",
+      "gemiddelde",
+      "bust",
+      "statistiek",
+      "darts"
+    ]
+  },
+  {
+    "id": "profiel-historie",
+    "category": "Uitslagen en hulp",
+    "question": "Waar vind ik mijn resultaten tegen dezelfde tegenstander?",
+    "answer": "Open je spelersprofiel en kies de onderlinge historie bij je tegenstander. Selecteer bijvoorbeeld competitie, toernooi of oefenen en open een resultaat om de scorekaart te zien. Dezelfde single staat daar één keer, ook wanneer hij voor zowel clubrating als landelijke rating telt.",
+    "keywords": [
+      "onderling",
+      "headtohead",
+      "tegenstander",
+      "historie",
+      "profiel",
+      "filters"
+    ]
+  },
+  {
+    "id": "play-versie",
+    "category": "Oche Live en Android",
+    "question": "Welke app installeer ik op mijn telefoon en welke op het baanscherm?",
+    "answer": "Open de officiële DartFlow-downloadlink van de website op je telefoon voor spelen en organiseren. Gebruik op het baanscherm de link voor DartFlow Oche Live. Open de winkelvermelding van de betreffende app om een beschikbare update te installeren. Je gekoppelde scherm is terug te vinden onder Schermen.",
+    "keywords": [
+      "download",
+      "installeren",
+      "play",
+      "store",
+      "update",
+      "android",
+      "tv"
+    ]
+  },
+  {
+    "id": "help-rolwissel",
+    "category": "Aan de slag",
+    "question": "Hoe organiseer ik namens mijn club als ik ook eigen toernooien organiseer?",
+    "answer": "Open de club en start de wizard vanuit het clubbeheer. Controleer in de eerste stap wie als organisator vermeld staat. Voor je eigen vriendenavond kies je Persoonlijk. Heb je geen clubrol om te organiseren, dan kan de clubbeheerder je de juiste bevoegdheid geven.",
+    "keywords": [
+      "rol",
+      "wisselen",
+      "namens",
+      "club",
+      "eigen",
+      "organisator"
+    ]
+  },
+  {
+    "id": "help-privacy",
+    "category": "Uitslagen en hulp",
+    "question": "Waarom kan een vriend mijn gedeelde uitslag niet openen?",
+    "answer": "De toegang tot een gedeelde kaart volgt de zichtbaarheid van de wedstrijd en de geldigheid van de link. Een besloten clubwedstrijd kan om lidmaatschap en inloggen vragen. Controleer bij het delen de getoonde doelgroep. Bij een ingetrokken link kan de eigenaar, als de zichtbaarheid het toestaat, opnieuw delen.",
+    "keywords": [
+      "privacy",
+      "zichtbaarheid",
+      "delen",
+      "gast",
+      "privé",
+      "link"
+    ]
+  }
+]

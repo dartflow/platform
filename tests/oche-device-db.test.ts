@@ -30,6 +30,17 @@ test('persistent Oche device grants enforce scopes, quotas, retries, rotation an
   await admin.query("insert into dartflow_private.clubs(id,name) values($1,'Oche testclub')",[club]);
   for(const id of [owner,player])await admin.query('insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,$3)',[club,id,id===owner?'organizer':'player']);
   await admin.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'admin')",[central]);
+  await t.test('only the current screen manager selects a catalogued theme; snapshots update without score or account authority',async()=>{
+   const locationId=await venue(),physical=await board(locationId),device=await start();
+   await claim(device,{scope:'location',locationId,boardId:physical});const session=await redeem(device);
+   const before=await getOcheDeviceSnapshot(session.accessToken!);assert.equal(before.display?.snapshot.theme?.id,'dartflow');
+   await assert.rejects(manageOcheDevice(outsider,session.deviceId,{action:'theme',theme:'onzetrots',requestId:request()}),{status:403});
+   await assert.rejects(manageOcheDevice(owner,session.deviceId,{action:'theme',theme:'https://untrusted.invalid/a',requestId:request()}),{code:'invalid_theme'});
+   const input={action:'theme' as const,theme:'onzetrots',requestId:request()};await manageOcheDevice(owner,session.deviceId,input);assert.deepEqual(await manageOcheDevice(owner,session.deviceId,input),{ok:true});
+   const changed=await pollOcheDeviceEvents(session.accessToken!,before.eventId);assert.equal(changed.snapshot.display?.snapshot.theme?.id,'onzetrots');assert.notEqual(changed.snapshot.eventId,before.eventId);assert.equal(changed.snapshot.permissions.score,false);
+   assert.equal((await getOcheManagement(owner)).devices.find(row=>row.id===session.deviceId)?.theme,'onzetrots');
+   await revoke(session.deviceId);
+  });
   await t.test('start is recoverable; code and 256-bit installation secret stay out of plaintext storage',async()=>{
    const requestId=request(),first=await startOcheInstallation({platform:'android-tv',requestId});installations.push(first.installationId);
    assert.deepEqual(await startOcheInstallation({platform:'android-tv',requestId}),first);assert.equal(Buffer.from(first.installationSecret,'base64url').length,32);assert.match(first.code,/^[0-9A-HJKMNP-TV-Z]{4}–[0-9A-HJKMNP-TV-Z]{4}$/);
@@ -236,6 +247,10 @@ test('persistent Oche device grants enforce scopes, quotas, retries, rotation an
   });
  }finally{
   await admin.query('rollback');await admin.query('delete from dartflow_private.oche_device_receipts where request_id=any($1::uuid[])',[requests]);
+  // Full-suite reconciliation can enqueue mail for this fixture's owners.
+  // Remove their outbox children before profiles, preserving all other users.
+  await admin.query('delete from dartflow_private.mail_provider_events where job_id in(select id from dartflow_private.mail_outbox where recipient_id=any($1::uuid[]))',[people]);
+  await admin.query('delete from dartflow_private.mail_outbox where recipient_id=any($1::uuid[])',[people]);
   await admin.query('delete from dartflow_private.oche_device_audit where actor_id=any($1::uuid[])',[people]);
   await admin.query('delete from dartflow_private.oche_reservations where created_by=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.oche_devices where created_by=any($1::uuid[])',[people]);
   await admin.query('delete from dartflow_private.oche_installations where id=any($1::uuid[])',[installations]);await admin.query('delete from dartflow_private.oche_home_selections where owner_id=any($1::uuid[])',[people]);

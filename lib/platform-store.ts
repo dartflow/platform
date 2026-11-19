@@ -1,3 +1,4 @@
+import{decorateCircuitQualificationState}from'./circuit-qualifications';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import {assertPlayersFree,lockPlayingActors}from'./platform-locks';
@@ -72,7 +73,7 @@ export async function view(client: Client, row: EntityRow, actor: string,cachedM
   const own = row.owner_id === actor, self = members.find(m => m.id === actor);
   const canManage = row.club_id&&['league','tournament'].includes(row.kind)?await clubPermission(client,row.club_id,actor,row.kind==='league'?'competitions.manage':'tournaments.manage'):own || self?.status === 'active' && ['owner', 'admin', 'moderator'].includes(self.role);
   const full = own || self?.status === 'active';
-  const state = structuredClone(row.state);
+  const state = (await decorateCircuitQualificationState(client,row)).state;
   if (!full) { delete state.game; delete state.undo; delete state.ready; delete state.coreClubId; }
   const visibleMembers = full ? members.filter(m => canManage || ['active', 'waitlisted'].includes(m.status) || m.id === actor) : members.filter(m => m.id === actor);
   return { id: row.id, kind: row.kind, name: state.name, ownerId: row.owner_id, clubId: row.club_id, visibility: row.visibility, revision: row.revision, state, members: visibleMembers, canManage: Boolean(canManage),...(full&&self?.status!=='banned'&&invitationCodeAccepted(row,row.invitation_code)?{inviteCode:row.invitation_code!}:{}) };

@@ -5,12 +5,15 @@ export type ClubBoardScreenView = {board:Omit<ClubBoardView,'clubId'|'canManage'
 
 export type PlatformKind = 'training' | 'club' | 'room' | 'lobby' | 'league' | 'tournament';
 export type PlatformMember = { id: string; name: string; role: string; status: string; attributes: Record<string, unknown> };
-export type Fixture = { id: string; players: (string | null)[]; round: number; phase: 'pool' | 'knockout' | 'league'; pool?: string; sources?: { fixtureId?: string; pool?: string; position?: number }[]; status: 'scheduled' | 'proposed' | 'live' | 'confirmed' | 'bye'; matchId?: string; winnerId?: string | null; score?: number[]; proposedBy?: string; proposedTime?: string; time?: string };
+export type FixtureSource = { fixtureId?: string; outcome?: 'winner'|'loser'; pool?: string; position?: number };
+export type Fixture = { id: string; players: (string | null)[]; round: number; phase: 'pool' | 'knockout' | 'league' | 'winners' | 'losers' | 'final' | 'reset' | 'swiss'; pool?: string; sources?: FixtureSource[]; status: 'scheduled' | 'proposed' | 'live' | 'confirmed' | 'bye' | 'void'; matchId?: string; winnerId?: string | null; score?: number[]; proposedBy?: string; proposedTime?: string; time?: string; resetOf?: string; pairingNotice?: string; started?: boolean; administrative?: boolean };
+export type TournamentRules = {algorithmVersion:string;seedOrder:string[];drawSeed:string;swissRounds?:number;finalVariant?:'reset'|'single'};
 export type PlatformState = {
   name: string; description?: string; capacity?: number; mode?: 'solo' | 'bot' | 'around' | '170';
   game?: Game; rounds?: number[]; completed?: boolean; botAverage?: number; undo?: Game[];
   settings?: Settings; setup?: string; ready?: Record<string, boolean>; matchId?: string;
   eventId?: string; coreClubId?: string; fixtures?: Fixture[]; format?: string; poolCount?: number;
+  tournamentRules?: TournamentRules; swissRounds?: number;
   cast?: { scene: string; boardId?: string; preview?: string; updatedAt: string }; closed?: boolean;
   [key: string]: unknown;
 };

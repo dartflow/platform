@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-19T15:19:39.424541+00:00",
+  "scope": "Local player Android baseline before extended season and team formats",
+  "source": {
+    "baseCommit": "62ca750738ac5db075b249a0fd5a49e767bdc5ee",
+    "workingTree": "uncommitted changes; this is not a published release identity",
+    "nativeSourceSha256": "ab9dc83f28a8547718c5fd0f6d3b2c8d8bfd7512ff1a73730ac901b7e497e7ff",
+    "nativeSourceFileCount": 46
+  },
+  "gradle": {
+    "result": "BUILD SUCCESSFUL",
+    "elapsed": "2m 14s",
+    "tasks": [
+      "lintDevelopmentDebug",
+      "testDevelopmentDebugUnitTest",
+      "assembleDevelopmentDebug",
+      "assembleDevelopmentDebugAndroidTest",
+      "lintStagingDebug",
+      "testStagingDebugUnitTest",
+      "assembleStagingDebug",
+      "lintProductionDebug",
+      "testProductionDebugUnitTest",
+      "bundleProductionRelease"
+    ],
+    "unitTests": [
+      {
+        "variant": "developmentDebug",
+        "task": ":app:testDevelopmentDebugUnitTest",
+        "tests": 70,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reports": "android/player/app/build/test-results/testDevelopmentDebugUnitTest"
+      },
+      {
+        "variant": "stagingDebug",
+        "task": ":app:testStagingDebugUnitTest",
+        "tests": 70,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reports": "android/player/app/build/test-results/testStagingDebugUnitTest"
+      },
+      {
+        "variant": "productionDebug",
+        "task": ":app:testProductionDebugUnitTest",
+        "tests": 70,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reports": "android/player/app/build/test-results/testProductionDebugUnitTest"
+      }
+    ],
+    "lint": {
+      "developmentDebug": "passed",
+      "stagingDebug": "passed",
+      "productionDebug": "passed",
+      "productionReleaseVital": "passed"
+    },
+    "instrumentation": {
+      "declaredTestMethods": 35,
+      "compiled": "developmentDebug AndroidTest APK",
+      "executed": false,
+      "reason": "No connected device; usable API26+ emulator runtime not available in local environment"
+    },
+    "productionBundle": {
+      "built": true,
+      "signing": "unsigned local artifact; verified with jarsigner",
+      "published": false
+    }
+  },
+  "nativeApiContract": {
+    "command": "node --import tsx --test tests/native-player.test.ts",
+    "passed": 9,
+    "failed": 0
+  },
+  "artifacts": [
+    {
+      "path": "android/player/app/build/outputs/apk/development/debug/app-development-debug.apk",
+      "bytes": 61073983,
+      "sha256": "24131831302684b9560fb0959f8469445904dae8670607e9ef3f89cfe7044668"
+    },
+    {
+      "path": "android/player/app/build/outputs/apk/staging/debug/app-staging-debug.apk",
+      "bytes": 61154548,
+      "sha256": "dd9227769a4ad3781ee7b20692d89e2583b1b4660968f903f0ec8d186b459894"
+    },
+    {
+      "path": "android/player/app/build/outputs/apk/androidTest/development/debug/app-development-debug-androidTest.apk",
+      "bytes": 1198946,
+      "sha256": "f4c6ffaea8203ddcd1c3981be95ec61196f64e2446def850a7489568fb3c2a1c"
+    },
+    {
+      "path": "android/player/app/build/outputs/bundle/productionRelease/app-production-release.aab",
+      "bytes": 26538302,
+      "sha256": "af0c1e7ad00b7c28eb1c2009fe3b7f3ef46fd0dd959eebd7c7e35f612a1ee9aa"
+    }
+  ],
+  "limitations": [
+    "No physical-device UI acceptance executed",
+    "No Play-track installation or device-link acceptance established by this local check",
+    "Staging and production application deployment owned by release coordinator",
+    "Extended season formats and team throwing-order additions follow this baseline"
+  ]
+}

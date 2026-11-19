@@ -1,0 +1,469 @@
+{
+  "format": "dartflow-restore-validation-v1",
+  "createdAt": "2026-11-19T16:19:27.956Z",
+  "environment": "production",
+  "backupDigest": "e84b4a84da0a1b6ac8f24b1588ee28c23f4757fe17abbd3157f3ccc676550890",
+  "scope": "Runtime-visible private application rows and active runtime/release configuration. Excludes Supabase Auth, owner_bootstrap and external providers.",
+  "isolatedLoopbackDatabase": true,
+  "restoredTables": [
+    {
+      "name": "account_deletion_jobs",
+      "count": 0
+    },
+    {
+      "name": "action_receipts",
+      "count": 0
+    },
+    {
+      "name": "audit_events",
+      "count": 2
+    },
+    {
+      "name": "auth_limits",
+      "count": 96
+    },
+    {
+      "name": "blog_audit",
+      "count": 5
+    },
+    {
+      "name": "blog_invalidation",
+      "count": 2
+    },
+    {
+      "name": "blog_media",
+      "count": 4
+    },
+    {
+      "name": "blog_posts",
+      "count": 2
+    },
+    {
+      "name": "blog_receipts",
+      "count": 8
+    },
+    {
+      "name": "blog_revisions",
+      "count": 2
+    },
+    {
+      "name": "blog_routes",
+      "count": 2
+    },
+    {
+      "name": "blog_tokens",
+      "count": 1
+    },
+    {
+      "name": "board_activity_links",
+      "count": 0
+    },
+    {
+      "name": "board_activity_receipts",
+      "count": 0
+    },
+    {
+      "name": "board_activity_sessions",
+      "count": 0
+    },
+    {
+      "name": "board_reservations",
+      "count": 0
+    },
+    {
+      "name": "board_score_events",
+      "count": 0
+    },
+    {
+      "name": "board_screen_devices",
+      "count": 0
+    },
+    {
+      "name": "board_screen_preferences",
+      "count": 0
+    },
+    {
+      "name": "boards",
+      "count": 2
+    },
+    {
+      "name": "club_boards",
+      "count": 1
+    },
+    {
+      "name": "club_intake_versions",
+      "count": 2
+    },
+    {
+      "name": "club_invites",
+      "count": 0
+    },
+    {
+      "name": "club_join_requests",
+      "count": 0
+    },
+    {
+      "name": "club_member_roles",
+      "count": 0
+    },
+    {
+      "name": "club_memberships",
+      "count": 3
+    },
+    {
+      "name": "club_roles",
+      "count": 0
+    },
+    {
+      "name": "clubs",
+      "count": 3
+    },
+    {
+      "name": "community_likes",
+      "count": 0
+    },
+    {
+      "name": "community_messages",
+      "count": 0
+    },
+    {
+      "name": "community_moderation",
+      "count": 0
+    },
+    {
+      "name": "community_posts",
+      "count": 0
+    },
+    {
+      "name": "competition_seasons",
+      "count": 0
+    },
+    {
+      "name": "entries",
+      "count": 0
+    },
+    {
+      "name": "event_staff",
+      "count": 0
+    },
+    {
+      "name": "events",
+      "count": 2
+    },
+    {
+      "name": "feature_versions",
+      "count": 21
+    },
+    {
+      "name": "feed_items",
+      "count": 0
+    },
+    {
+      "name": "feed_likes",
+      "count": 0
+    },
+    {
+      "name": "feed_policies",
+      "count": 0
+    },
+    {
+      "name": "feed_preferences",
+      "count": 0
+    },
+    {
+      "name": "feed_receipts",
+      "count": 0
+    },
+    {
+      "name": "feed_replies",
+      "count": 0
+    },
+    {
+      "name": "feed_shares",
+      "count": 0
+    },
+    {
+      "name": "integration_audit",
+      "count": 3
+    },
+    {
+      "name": "integration_credentials",
+      "count": 2
+    },
+    {
+      "name": "integration_settings",
+      "count": 1
+    },
+    {
+      "name": "invitation_codes",
+      "count": 2
+    },
+    {
+      "name": "location_accounts",
+      "count": 2
+    },
+    {
+      "name": "location_boards",
+      "count": 2
+    },
+    {
+      "name": "location_members",
+      "count": 0
+    },
+    {
+      "name": "locations",
+      "count": 2
+    },
+    {
+      "name": "mail_events",
+      "count": 6
+    },
+    {
+      "name": "mail_outbox",
+      "count": 7
+    },
+    {
+      "name": "mail_policies",
+      "count": 0
+    },
+    {
+      "name": "mail_preferences",
+      "count": 0
+    },
+    {
+      "name": "mail_provider_events",
+      "count": 0
+    },
+    {
+      "name": "mail_suppressions",
+      "count": 2
+    },
+    {
+      "name": "mail_template_versions",
+      "count": 0
+    },
+    {
+      "name": "mail_templates",
+      "count": 0
+    },
+    {
+      "name": "match_confirmations",
+      "count": 0
+    },
+    {
+      "name": "match_players",
+      "count": 0
+    },
+    {
+      "name": "match_results",
+      "count": 0
+    },
+    {
+      "name": "matches",
+      "count": 0
+    },
+    {
+      "name": "oche_device_audit",
+      "count": 0
+    },
+    {
+      "name": "oche_device_credentials",
+      "count": 0
+    },
+    {
+      "name": "oche_device_receipts",
+      "count": 0
+    },
+    {
+      "name": "oche_devices",
+      "count": 0
+    },
+    {
+      "name": "oche_home_selections",
+      "count": 0
+    },
+    {
+      "name": "oche_installations",
+      "count": 10
+    },
+    {
+      "name": "oche_location_limits",
+      "count": 0
+    },
+    {
+      "name": "oche_reservations",
+      "count": 0
+    },
+    {
+      "name": "platform_audit",
+      "count": 20
+    },
+    {
+      "name": "platform_cast_grants",
+      "count": 0
+    },
+    {
+      "name": "platform_entities",
+      "count": 4
+    },
+    {
+      "name": "platform_match_links",
+      "count": 0
+    },
+    {
+      "name": "platform_members",
+      "count": 5
+    },
+    {
+      "name": "platform_messages",
+      "count": 0
+    },
+    {
+      "name": "platform_preferences",
+      "count": 2
+    },
+    {
+      "name": "platform_receipts",
+      "count": 12
+    },
+    {
+      "name": "platform_registrations",
+      "count": 0
+    },
+    {
+      "name": "platform_relationships",
+      "count": 2
+    },
+    {
+      "name": "platform_reports",
+      "count": 0
+    },
+    {
+      "name": "platform_roles",
+      "count": 1
+    },
+    {
+      "name": "platform_signals",
+      "count": 0
+    },
+    {
+      "name": "play_review_accounts",
+      "count": 1
+    },
+    {
+      "name": "player_experience",
+      "count": 0
+    },
+    {
+      "name": "player_match_kickoffs",
+      "count": 0
+    },
+    {
+      "name": "player_pin_kdf_leases",
+      "count": 0
+    },
+    {
+      "name": "player_pin_receipts",
+      "count": 8
+    },
+    {
+      "name": "player_pin_verifiers",
+      "count": 7
+    },
+    {
+      "name": "player_safety_acceptances",
+      "count": 2
+    },
+    {
+      "name": "profile_setup_receipts",
+      "count": 6
+    },
+    {
+      "name": "profiles",
+      "count": 8
+    },
+    {
+      "name": "reservation_boards",
+      "count": 0
+    },
+    {
+      "name": "reservation_matches",
+      "count": 0
+    },
+    {
+      "name": "schema_migrations",
+      "count": 1
+    },
+    {
+      "name": "screen_capabilities",
+      "count": 0
+    },
+    {
+      "name": "season_pin_receipts",
+      "count": 0
+    },
+    {
+      "name": "season_receipts",
+      "count": 0
+    },
+    {
+      "name": "season_representations",
+      "count": 0
+    },
+    {
+      "name": "standings",
+      "count": 0
+    },
+    {
+      "name": "visits",
+      "count": 0
+    }
+  ],
+  "foreignKeysChecked": 234,
+  "rows": 276,
+  "candidateMigrations": [
+    {
+      "name": "20261119145211_national_player_rating.sql",
+      "sha256": "54df35547d560093c5a23b665b2cfd6d8432a71da00c4b59b56070369af262a3"
+    },
+    {
+      "name": "20261119150236_ranking_destinations_generations.sql",
+      "sha256": "6502ce7793975eee994bfcd493bcf41e990b8675bfc9f50c0e477b89d5383859"
+    },
+    {
+      "name": "20261119152234_organizer_drafts.sql",
+      "sha256": "5258915908980af97ef4bbc5d294dd4aed1929f1f7ed7480c50a67bb8a770a64"
+    },
+    {
+      "name": "20261119152915_faq_publication.sql",
+      "sha256": "7a0060ede44844f3ecaa4498211f8679f08486097efc7907f90868019fae591c"
+    },
+    {
+      "name": "20261119153249_primary_match_corrections.sql",
+      "sha256": "8fccf407fc462a5b28d0d37f169448e3e42ab0ee2620556a4355207f36ed1c40"
+    },
+    {
+      "name": "20261119155843_versioned_unthrown_ranking_rosters.sql",
+      "sha256": "51d679d5cca175ecfd9b5471109ca849a7506e80f0a9b61a2def952e3d30feac"
+    },
+    {
+      "name": "20261119161328_season_unthrown_reserve.sql",
+      "sha256": "89ac299957cb79eda9accd0daa7ad12c5df3fc3234115e7e6195c59cf7fd2dc1"
+    },
+    {
+      "name": "20261119163240_remote_reservation_matches.sql",
+      "sha256": "1584aef1f41eb764ff71bd5204770cef2677fba6095fb3ecb06400581890964f"
+    },
+    {
+      "name": "20261119171500_oche_theme.sql",
+      "sha256": "a53b6171f79ae2784c68a83d9c366017cf5882de771665571ac9e228f2a35c8c"
+    },
+    {
+      "name": "20261119184010_private_correction_cases.sql",
+      "sha256": "fdd1165a5808ea315e57b1e91671a5bde76f71c04eb397a263945b3995b9bba8"
+    }
+  ],
+  "migrationPasses": 2,
+  "historicalRowsUnchanged": true,
+  "result": "passed"
+}

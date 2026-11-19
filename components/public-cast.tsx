@@ -15,10 +15,12 @@ type CastBoard = {
   };
 };
 type Snapshot = {
-  event: { id: string; name: string; revision: number; date: string };
+  event: { id: string; name: string; revision: number; date: string;format?:string };
   cast: { scene: string; boardId?: string; updatedAt?: string };
   paused: boolean;
   champion?: string;
+  notice?:string|null;
+  underReview?:boolean;
   boards: CastBoard[];
   fixtures: {
     id: string;
@@ -29,13 +31,19 @@ type Snapshot = {
     pool?: string;
     score?: number[];
     winner?: string;
+    pairingNotice?: string;
+    ready?:boolean;
   }[];
   standings: {
     name: string;
     played: number;
     won: number;
     drawn: number;
-    points: number;
+    points: number|null;
+    position?:number;
+    shared?:boolean;
+    buchholz?:number;
+    byes?:number;
     legsFor: number;
     legsAgainst: number;
   }[];
@@ -114,6 +122,7 @@ export default function PublicCast({
         <img src="/assets/dartflow-logo.svg" alt="DartFlow" />
         <div>
           <h1>{data?.event.name || "DartFlow"}</h1>
+          {data?.notice&&<p role="status">{data.notice}</p>}
           {!obs && (
             <span
               className={`connection ${error ? "offline" : ""}`}
@@ -161,7 +170,7 @@ export default function PublicCast({
         <section className="cast-fixtures">
           <h2>Volgende partijen</h2>
           {data.fixtures
-            .filter((f) => !["confirmed", "finished"].includes(f.status))
+            .filter((f) => f.ready??!["confirmed", "finished", "bye", "void"].includes(f.status))
             .slice(0, 6)
             .map((f) => (
               <div key={f.id}>
@@ -169,6 +178,7 @@ export default function PublicCast({
                 <span>
                   {f.phase} · Ronde {f.round}
                 </span>
+                {f.pairingNotice&&<small>{f.pairingNotice}</small>}
               </div>
             ))}
         </section>
@@ -224,13 +234,13 @@ export default function PublicCast({
           </section>
           {!obs && data.standings.length > 0 && (
             <section className="cast-standings">
-              <h2>Stand</h2>
+              <h2>{data.event.format?.startsWith('double-elimination')?'Eindplaatsen':'Stand'}</h2>
               {data.standings.slice(0, 8).map((s, i) => (
                 <div key={s.name}>
-                  <span>{i + 1}</span>
+                  <span>{s.position??i+1}{s.shared?' =':''}</span>
                   <strong>{s.name}</strong>
                   <span>{s.played} gespeeld</span>
-                  <b>{s.points} pt</b>
+                  <b>{s.points===null?`Plaats ${s.position??i+1}${s.shared?' =':''}`:`${s.points} pt${s.buchholz===undefined?'':` · BH ${s.buchholz}`}`}</b>
                 </div>
               ))}
             </section>

@@ -1,0 +1,60 @@
+# Wedstrijdleiding, spelersprofiel en beheer
+
+## Wie beslist en wat de speler ziet
+
+Maak beheer bereikbaar vanuit het object dat de gebruiker bekijkt. Een clubbeheerder opent op web of telefoon de club, kiest Competities en kan daar een seizoen publiceren. Dezelfde gebruiker kan vanuit zijn persoonlijke profiel een toernooi voor vrienden organiseren. Toon in de kop steeds de actuele eigenaar, actuele rol en geselecteerde vereniging. Bij scopes wisselen wordt de lijst opnieuw opgehaald. Iemand die ook platformbeheerder is, organiseert in persoonlijke context nog steeds een persoonlijk evenement.
+
+| Rol | Werkhandelingen | Grenzen |
+|---|---|---|
+| Bezoeker of supporter | Publieke home, zoekbare FAQ, publieke agenda/uitslagen, stand, delen of kijken volgens publicatiekeuze | Afgeschermde opstellingen, contacten en scores schrijven vereisen de passende rol |
+| Speler | Inschrijven, tijd voorstellen, check-in, pauze, spelen, eigen uitslag bevestigen/betwisten, eigen statistieken en rechten instellen | Gast of nog onbevestigde tweede identiteit krijgt alleen geschikte recreatieve routes |
+| Persoonlijke organisator | Medeorganisator kiezen, gasten of koppels beheren, import/loting, banen, schrijvers, ronde vrijgeven, eindstand en exports | Landelijk en clubranking altijd uit. Toevoegen van een platformbeheerder als collega verandert dit niet |
+| Captain of plaatsvervanger | Alleen eigen tijdvoorstel, teamroster binnen speelgerechtigdheid, afgeschermde opstelling, reserves, bevestiging/bezwaar | Wissels na onthulling worden volgens het seizoensreglement gelogd en aan beide captains gemeld |
+| Schrijver | Actuele beurt registreren, herstel van invoer volgens actieve revisie en rechten, einde melden | Benoeming per partij of baan. Een kijklink, TV-koppelcode of pushbericht verleent geen schrijfrecht |
+| Clubbeheer en gedelegeerde leiding | Ledenrollen, seizoenen, sjablonen, interne ranglijsten, wedstrijden, toelating, clubteams en clubinstellingen | Alleen binnen toegewezen organisatie. Een persoonlijke betrokkenheid bij een protest gaat naar een onafhankelijke behandelaar |
+| Landelijke competitieleider | Landelijke kalender en klassen, regels, toelating, registratie van teams, play-offs, sportieve besluiten | Werk met toegekende bevoegdheden per seizoen of circuit, onderscheid sportieve besluiten en technische platformtoegang |
+| Platformbeheer of moderator | Officiële erkenning, spelprofielen, publicatiebeleid, incidenten/beroep en controle van systeemverwerking | Bescherm private dossiers afzonderlijk en log inzage en besluiten. Een zichtbare ranglijst bevat geen beschuldigingen |
+
+## Voorkom botsingen op de wedstrijdavond
+
+Gebruik per partij één definitieve opdracht met verwijzing naar baan, schrijver en spelers. De stand van de wachtrij is vanaf telefoon en desktop gelijk. Een baan kan voor een volgende partij **een vooroproep** uitsturen terwijl de vorige partij nog bezig is. De leiding ziet ‘opgeroepen’, ‘aanwezig’ en ‘baan vrij’ als afzonderlijke feiten. Dat voorkomt dat de eerste scan van een wachtende speler de lopende partij overneemt.
+
+1. Bepaal welke partijen daadwerkelijk vrijgegeven zijn. Vereiste uitslagen, check-in, deelnemers, schrijvers, rusttermijn en fase moeten kloppen. Een definitieve baanreservering is exclusief. Een toekomstig tijdslot kan nog wel in het conceptprogramma staan.
+2. Kies uit de speelbare kandidaten volgens de gepubliceerde rondeprioriteit en de wachtrij. Behoud wachttijd bij een tijdelijke blokkade. Toon aan de leiding waarom een hoger geplaatste partij even niet speelbaar is. Sta een gemotiveerde handmatige wijziging toe.
+3. Reserveer de volgende oproep atomair, met een herhaalbare sleutel en geldigheid. Twee banen die tegelijkertijd de laatste leg bereiken, roepen verschillende beschikbare partijen op. Dezelfde persoon mag ondertussen nergens anders spelen, schrijven of vast ingepland staan.
+4. Corrigeert iemand de score, eindigt een baan later of vraagt een speler pauze, herbereken dan de oproep. Stuur alleen een wijziging aan betrokkenen. Wacht op bevrijding van de actieve baan en vrijgave van beide spelers en de schrijver voordat de nieuwe partij start.
+5. Na een baanwissel blijft de partij-ID gelijk. Laat beide spelers bij de nieuwe baan aankomen, invalideer oude schrijftoegang en werk cast, oproep, app, standby en desktop bij. Bevestig de oude scorekaart en laatste beurt zichtbaar aan de nieuwe schrijver.
+6. Na de laatste partij van een ronde bekijkt de leiding onvolledige partijen, onderlinge beslissingen, byes en eventuele loting. Ondersteun handmatige doorgang en expliciet vooraf gekozen automatische doorgang als het schema volledig en definitief is. Een bezwaar of beslissende gelijke stand houdt de afhankelijke tak tegen. Maak bij parallelle groepen de relevante blokkade zichtbaar.
+
+Voor dubbel verlies en Zwitsers moet het vrijgeven een complete geldige koppeling of doelpositie opleveren. Bij één baan en een schrijver die ook in de volgende partij speelt, blijft de vooroproep zichtbaar terwijl de rusttermijn nog loopt. Maak annuleren, een vervangende schrijver en opnieuw oproepen bereikbaar zonder de hele avond te herstarten.
+
+## Cluborganisatie en bijzondere formats
+
+- **Meerdere teams van één club.** Bewaar het team waarvoor iemand in het landelijke seizoen staat ingeschreven en de historie van reglementair toegestane transfers. Definieer vóór publicatie maximaal aantal teams, mogelijkheid tot clubsamenloop in een klasse en de reserve-/transfertermijn. Toon bij opstellen dezelfde mens achter aliassen, clubwissels en teamlabels.
+- **DartFlow Champions Cup.** Maak het als sjabloon voor kwalificatie via een clubkampioenschap. Elke club nomineert de kampioen en één reserve volgens vooraf ingestelde doorschuifregels. Leg de bron-eindstand en aanvaarding vast; trek bij afzegging een kandidaat terug met reden. De reserve bezet pas na bevestiging één plaats in de definitieve loting. Rankingbestemmingen volgen dezelfde regels als andere officiële toernooien.
+- **Speelkalender.** Bied thuis/uit, neutrale locatie, remote en hybride seizoensbeleid, speelvrije data, beschikbaarheid, tijdvoorstellen, tegenvoorstel, bevestiging, inhaalweek en herplanning. Bij voorstellen loopt de reservering via dezelfde baanbeschikbaarheid als toernooien. Een agenda-export en deep link blijven na verplaatsen naar dezelfde partij wijzen. Controleer na verplaatsen de deadlines voor opstelling, check-in en bezwaar.
+- **Instuif en vrij spelen.** Laat leden en gasten per avond aansluiten en vertrekken binnen het vooraf ingestelde model. Bepaal wie vrij is en op welke baan iemand kan spelen. Alleen passende vooraf aangewezen officiële singles binnen een erkend event kunnen rating krijgen. Wie laat binnenkomt ziet expliciet wat nog speelbaar is.
+- **Seizoensafsluiting.** Toon openstaande bezwaren, administratieve uitslagen, onbesliste plaatsen, promotie en deelnemers die afhaken. Bevestig vervolgens de nieuwe indeling. Archiveer reglement, historische stand en resultaten op vaste links. Bij kopiëren naar nieuw seizoen ontstaat een leeg programma met eigen inschrijving.
+
+## Spelerstatistieken en feed
+
+Bewaar het bestaande onderscheid tussen oefenen, vrije rankingpartijen, competitie en toernooi. Gebruik één herkomst plus een aparte set rankingbestemmingen. Hiermee verschijnt een single uit een clubtoernooi eenmaal in de persoonlijke historie, ook wanneer deze voor twee ratings meetelt. Toon lokaal/remote, tegenstander, seizoenen, clubs, driepijlgemiddelde en zorg voor dezelfde filters op web en native.
+
+| Weergave | Definitie en uitzonderingen |
+|---|---|
+| 3-dartgemiddelde en laatste 50 partijen | Drie maal de som van werkelijk afgeboekte punten gedeeld door de bijbehorende telpijlen. Een gewone beurt en een bust tellen voor drie telpijlen; een bust levert nul punten op. Bij een finish tellen de werkelijk gebruikte darts. Publiceer telwijze en dekking. Gebruik een gewogen berekening over de geselecteerde periode. Bij ontbrekende detailgegevens geef je een zichtbaar onvolledig resultaat of ‘onvoldoende gegevens’. |
+| First 9, finish en beste leg | Gebruik de eerste negen werkelijk geregistreerde darts per leg volgens de bestaande overeengekomen statistiekdefinitie. Respecteer vroeg afgemaakte legs. Top tien finishes gebruikt de werkelijke uitgooibeurt, beste leg het werkelijk benodigde aantal darts; administratieve beslissingen tellen niet. |
+| Checkouts en dubbelpogingen | Een geldige checkout is controleerbaar uit de eindbeurt. Checkoutpercentage op dubbelpogingen vereist de werkelijk geregistreerde pogingen. Een gemeld beurttotaal levert geen verzonnen gemiste dubbels. Toon definitie bij de metriek. |
+| 180, 140+, 100+ | Tel valide bezoeken uit het log. Toon in een cumulatieve weergave dat één 180 ook onder 140+ en 100+ valt. Gebruik bij exclusieve vakken eenduidige labels zoals 100–139 en 140–179. |
+| Onderlinge historie, laatste vorm en records | Filter op dezelfde gekozen wedstrijdsoort en tijdspanne. Toon uit welke bevestigde resultaten de vormreeks en het record bestaan. Een correctie herbouwt de betrokken data en werkt bestaande kaarten bij. |
+| Koppel of team | Teamresultaat en individuele worpbijdrage hebben aparte weergaven. Ken individuele details alleen toe als de daadwerkelijke werper gemeld is. Deel de punten van een koppel nooit automatisch over twee spelersstatistieken. |
+
+Mijn feed heeft een persoonlijke tijdlijn en Ontdekken. Bovenaan staan hooguit twee urgente acties, bijvoorbeeld een baanoproep en een aflopende check-in. Gebruik de bestaande filters voor uitslagen, evenementen en berichten. Bied volgen zonder inschrijven, dempen per kanaal, clubberichten, pinnen met vervaldatum, likes en reacties binnen het toegestane publiek. De bestaande publiciteitsinstelling bepaalt de zichtbaarheid van gedeelde wedstrijdkaarten. Toon een preview met score, tegenstander, toegelaten hoogtepunten en herroepbare kijklink. Een revanche maakt een nieuwe partij; rankingvoorwaarden en eventueel beide toestemmingen worden opnieuw vastgelegd. Vanuit het profiel kunnen spelers favoriete banen openen en vanuit First 9 of uitgooistatistieken de passende beschikbare oefenvorm starten.
+
+## Berichtgeving, hulp en privacy
+
+Gebruik de bestaande inbox, notificatievoorkeuren en mailtemplates. Ondersteun uitnodiging/acceptatie, teamrol of vervanging, wijziging van starttijd, check-in, vooroproep, definitieve baan, vervallen oproep, bevestigingsverzoek, bezwaar, besluit en seizoensafsluiting. Gebruik in-app dezelfde actie op beide clients; Android-push en web- of e-mailkanaal volgen toestemming en voorkeur. De actuele wedstrijdstatus bij het openen bepaalt of die actie nog geldig is. Volgende ronde vrijgegeven nadat het bericht verstuurd werd? Open de huidige ronde. Bij verlopen actie toon de reden en de beschikbare vervolgstap. Houd privé-informatie en redenen van sancties buiten pushvoorbeelden op het vergrendelscherm.
+
+Gebruik de FAQ als meeleverbare Nederlandstalige content, doorzoekbaar op vraag, antwoord en synoniemen als scorekaart, scorebord, koppelen en baan. Elke categorie en vraag krijgt een deelbare route en terugactie. Contextuele hulp bij rating, opstelling, loting, QR, ondertekening en probleem melden komt uit diezelfde bron. Zet bij deze onderwerpen een link naar het daadwerkelijke gepubliceerde reglement of relevante eigen partij. Toon op beide platforms inhoudsversie en datum van het toepasselijke reglement; wijzig de FAQ en tests mee wanneer een sportregel verandert.
+
+Moderatie werkt vanuit de specifieke partij. Laat deelnemers het omstreden moment in de scorekaart, categorie, toelichting en eventuele vrijwillige bijlage selecteren. Waarschuw de behandelaar als die zelf meedeed. Leg vast wie de onafhankelijke opvolger is. Beperk de gegevens tot de betrokken partij en de overeengekomen bewaartermijn. Een gedeeld clubnetwerk of een ongebruikelijk hoog gemiddelde alleen leidt niet tot een automatische straf. Geef aan wie een besluit mag herzien, welke ranglijstverwerking tijdelijk wacht en hoe een gecorrigeerd eindresultaat aan alle clients wordt doorgegeven.

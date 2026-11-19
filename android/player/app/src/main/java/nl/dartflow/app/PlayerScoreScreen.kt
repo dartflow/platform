@@ -31,6 +31,7 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
     onSubmit: (Int, Int, Boolean, Int?) -> Unit, onBack: () -> Unit, onRetry: () -> Unit,
     activity: JSONObject = JSONObject(), onExtend: () -> Unit = {}, pending: Boolean = false,
     options: @Composable () -> Unit = {}, media: (@Composable () -> Unit)? = null,
+    dartEntry: (@Composable () -> Unit)? = null, currentThrowerName: String? = null, scoreLabel: String = "restscore",
 ) {
     val matchIdentity = scoreKey.substringBefore(':')
     var score by remember(matchIdentity) { mutableStateOf("") }
@@ -72,13 +73,17 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
                 players.forEachIndexed { index, player ->
                     Column(Modifier.weight(1f).fillMaxHeight().testTag("score-player-card-$index").border(if (index == active) 2.dp else 1.dp, if (index == active) PlayerLime else PlayerBorder, RoundedCornerShape(12.dp)).background(if (index == active) PlayerLime.copy(alpha = .08f) else PlayerPanel, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp, vertical = if (compact) 4.dp else 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         Text(player.name, modifier = Modifier.fillMaxWidth().testTag("score-player-name-$index"), textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = if (compact) 12.sp else 14.sp, lineHeight = if (compact) 16.sp else 18.sp, fontWeight = FontWeight.Bold)
-                        Text("${player.remaining}", fontFamily = PlayerBarlow, fontSize = if (compact) 43.sp else 56.sp, lineHeight = if (compact) 44.sp else 58.sp, maxLines = 1, textAlign = TextAlign.Center, color = if (index == active) PlayerLime else Color.White, modifier = Modifier.fillMaxWidth().testTag("score-player-remaining-$index").semantics { contentDescription = "${player.name}, restscore ${player.remaining}${if (index == active) ", aan de beurt" else ""}" })
-                        Text(if (index == active) "AAN DE BEURT" else "WACHT", modifier = Modifier.fillMaxWidth().testTag("score-player-status-$index"), textAlign = TextAlign.Center, color = if (index == active) PlayerLime else PlayerMuted, fontSize = 8.sp, lineHeight = 11.sp, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
+                        Text("${player.remaining}", fontFamily = PlayerBarlow, fontSize = if (compact) 43.sp else 56.sp, lineHeight = if (compact) 44.sp else 58.sp, maxLines = 1, textAlign = TextAlign.Center, color = if (index == active) PlayerLime else Color.White, modifier = Modifier.fillMaxWidth().testTag("score-player-remaining-$index").semantics { contentDescription = "${player.name}, $scoreLabel ${player.remaining}${if (index == active) ", aan de beurt" else ""}" })
+                        Text(if (index == active) currentThrowerName?.let { "WERPT: $it" } ?: "AAN DE BEURT" else "WACHT", modifier = Modifier.fillMaxWidth().testTag("score-player-status-$index"), textAlign = TextAlign.Center, color = if (index == active) PlayerLime else PlayerMuted, fontSize = 8.sp, lineHeight = 11.sp, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
                     }
                 }
             }
+            if (dartEntry != null) {
+                currentThrowerName?.let { Text("Worp van $it", Modifier.fillMaxWidth().testTag("current-thrower"), color = PlayerLime) }
+                Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) { dartEntry() }
+            } else {
             Row(Modifier.fillMaxWidth().height(if (compact) 50.dp else 66.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(Modifier.weight(1f)) { Text("WORP VAN", color = PlayerMuted, fontSize = 9.sp, letterSpacing = 1.sp); Text(players.getOrNull(active)?.name ?: "Speler", maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp) }
+                Column(Modifier.weight(1f)) { Text("WORP VAN", color = PlayerMuted, fontSize = 9.sp, letterSpacing = 1.sp); Text(currentThrowerName ?: players.getOrNull(active)?.name ?: "Speler", maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp) }
                 Text(score.ifEmpty { "0" }, fontFamily = PlayerBarlow, fontSize = if (compact) 44.sp else 58.sp, color = if (invalid) PlayerError else PlayerLime, modifier = Modifier.testTag("entered-score").semantics { contentDescription = "Ingevoerde score ${score.ifEmpty { "0" }}" })
             }
             Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 8.dp)) {
@@ -95,8 +100,9 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
             val feedback = when { offline -> "Geen verbinding · herstel voor je verzendt."; message != null -> message; pending -> "Je vorige worp wacht op bevestiging. Controleer dezelfde actie."; invalid -> "Voer een worp van 0 tot en met 180 in."; !canScore -> "Wacht op de beurt van je tegenstander."; busy -> "Worp wordt bevestigd…"; checkout != null -> "Finish: $checkout"; warning -> if (warningSeconds == 0L) "Baansessie verlopen · actuele status ophalen…" else "Scoor of tik op Doorspelen. $extensions verlengingen over."; else -> "Voer jouw worptotaal in." }
             Text(feedback, Modifier.fillMaxWidth().heightIn(min = if (compact) 26.dp else 34.dp).semantics { liveRegion = LiveRegionMode.Polite }, fontSize = if (compact) 11.sp else 13.sp, color = if (offline || message != null || invalid) PlayerError else PlayerMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Button(onClick = { if (finish) finishDialog = true else score.toIntOrNull()?.let { onSubmit(it, darts, false, attempts) } }, enabled = !locked && score.isNotEmpty() && !invalid, modifier = Modifier.fillMaxWidth().height(if (compact) 48.dp else 56.dp).testTag("confirm-score"), shape = RoundedCornerShape(12.dp)) { Text(if (busy) "Verzenden…" else if (finish) "Finish bevestigen" else "Bevestigen", fontWeight = FontWeight.Bold) }
+            }
             Row(Modifier.fillMaxWidth().height(if (compact) 36.dp else 42.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                if (media != null) TextButton(onClick = { video = true }, contentPadding = PaddingValues(4.dp)) { Text("Video", fontSize = 11.sp) } else Text("$darts darts", color = PlayerMuted, fontSize = 11.sp)
+                if (media != null) TextButton(onClick = { video = true }, contentPadding = PaddingValues(4.dp)) { Text("Video", fontSize = 11.sp) } else Text(if (dartEntry == null) "$darts darts" else "Pijl voor pijl", color = PlayerMuted, fontSize = 11.sp)
                 if (message != null || pending) TextButton(onClick = onRetry, contentPadding = PaddingValues(4.dp)) { Text("Opnieuw", fontSize = 11.sp) }
                 TextButton(onClick = { settings = true }, contentPadding = PaddingValues(4.dp)) { Text("Darts & correctie", fontSize = 11.sp) }
             }
@@ -110,9 +116,11 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
     }, confirmButton = {}, dismissButton = { TextButton(onClick = { finishDialog = false }) { Text("Nog geen finish") } })
     if (settings) AlertDialog(onDismissRequest = { settings = false }, title = { Text("Darts & correctie") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (dartEntry == null) {
             Choice("Gegooide darts", "$darts", listOf("1" to "1", "2" to "2", "3" to "3"), { darts = it.toInt(); if ((attempts ?: 0) > darts) attempts = null }, !locked)
             Choice("Darts op uitgooidubbel", attempts?.toString() ?: "", listOf("" to "Niet bijgehouden") + (0..darts).map { "$it" to "$it" }, { attempts = it.toIntOrNull() }, !locked)
             Text("Onbekende dubbelpogingen blijven onbekend. De succesvolle dubbel telt mee bij een finish.", color = PlayerMuted, fontSize = 12.sp)
+            }
             options()
         }
     }, confirmButton = { TextButton(onClick = { settings = false }) { Text("Gereed") } })

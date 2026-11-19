@@ -41,4 +41,14 @@ class PlayerMediaSafetyTest {
         assertTrue(call.handleSignalingFailure(PlayerApiFailure(403, "blocked", "Late old response"), expectedGeneration = 0))
         assertTrue("A stale poll must terminate itself without affecting the current call", call.open)
     }
+    @Test fun cameraRequiredFeedbackExplainsThatScoringNeedsRecovery() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val call = PlayerVideoCall(Application(), PlayerApi("https://dartflow.nl"), "synthetic-match", scope, cameraRequired = true)
+        try {
+            assertTrue(call.handleSignalingFailure(PlayerApiFailure(403, "blocked", "Access denied")))
+            assertTrue(call.notice.contains("verplichte beeldverbinding"))
+            assertFalse(call.notice.contains("blijven scoren"))
+        } finally { call.close(); scope.cancel() }
+    }
+
 }

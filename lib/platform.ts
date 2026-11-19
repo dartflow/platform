@@ -1,3 +1,6 @@
+import {decorateCircuitQualificationState} from './circuit-qualifications';
+import {primaryCorrectionBlockedFixtureIds} from './match-corrections';
+import {matchMediaActors} from './match-sides';
 import {getPlayerStatisticsSummary} from './player-statistics-db';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { consumeRateLimit, database, eventAccess, executeMatchCommand, getMatch, getProfile } from './db';
@@ -12,9 +15,10 @@ import {recordScoreEvents} from './score-events';
 import {acceptedTrainingBoardActivity,guardTrainingBoardActivity,readSourceBoardActivity,releaseBoardActivity} from './board-activity';
 import {locationAction,revalidateLocationCommand} from './locations';
 import {revalidateClubCommand} from './club-domain';
-import { autoAssign, competitionAction } from './platform-competitions';
+import { autoAssign, competitionAction,revalidateCompetitionManagementCommand } from './platform-competitions';
 import { advanceFixtures, newTraining, standings, trainingAction } from './platform-domain';
 import { socialAction } from './platform-social';
+import {precallAction,precallAccess} from './competition-precalls';
 import { blocked, canonical, createEntity, entity, hash, isClubMember, member, requireAccess, save, transaction, uuid, view } from './platform-store';
 import type { EntityRow, Client } from './platform-store';
 import type { PlatformCommand, PlatformMember, PlatformMessage, PlatformOverview, PlatformResponse } from './platform-types';
@@ -22,6 +26,7 @@ import type { MatchState, Profile, ResultView } from './types';
 import {containsPrivatePinField} from './private-pin-fields';
 import {rememberBoardGame} from './player-experience-store';
 import {finalResultSql} from './result-visibility';
+import {tournamentOutcome,tournamentTable} from './tournament-formats';
 export type { PlatformCommand, PlatformEntity, PlatformOverview, PlatformResponse } from './platform-types';
 
 export async function executePlatformCommand(actorId: string, input: unknown): Promise<PlatformResponse> {
@@ -61,6 +66,7 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
       await revalidateCommunityCommand(client,actor,command);
       await revalidateLocationCommand(client,actor,command,response);
       await revalidateClubCommand(client,actor,command,response);
+      await revalidateCompetitionManagementCommand(client,actor,command);await precallAccess(client,actor,command);
       if(['board.start','board.screen'].includes(command.action.type)){
         const scope=await client.query('select event_id from dartflow_private.boards where id=$1',[uuid(command.action.boardId)]);
         if(!scope.rows.length)throw new DomainError('not_found','Deze baan bestaat niet.',404);
@@ -139,7 +145,7 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
       if(activity&&row.state.boardHeld===true){row.state.boardLeaseUntil=activity.deadlineAt;await client.query('update dartflow_private.platform_entities set state=$2 where id=$1',[row.id,JSON.stringify(row.state)]);}
       result = { ok: true, id: row.id, entity: await view(client, row, actor) };
       if(activity)result.entity!.boardActivity=activity;
-    } else result = await socialAction(client, actor, command) ?? await competitionAction(client, actor, command);
+    } else result = await precallAction(client,actor,command) ?? await socialAction(client, actor, command) ?? await competitionAction(client, actor, command);
     if (!result) throw new DomainError('invalid_action', 'Onbekende platformactie.');
     if(action.type==='board.start')await rememberBoardGame(client,actor,uuid(action.boardId),{mode:action.mode??'local',startScore:action.startScore??501,bestOfLegs:action.bestOfLegs??3});
     await client.query('insert into dartflow_private.platform_receipts(actor_id,request_id,payload_hash,response) values($1,$2,$3,$4)', [actor, command.requestId, payloadHash, JSON.stringify(result)]);
@@ -159,6 +165,7 @@ export async function reconcilePlatformResults(): Promise<void> {
       const fixture = row.state.fixtures?.find(f => f.id === item.fixture_id);
       if (fixture) {
         fixture.status = 'confirmed'; fixture.winnerId = item.snapshot.winnerId;
+        const played=(await client.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[item.match_id])).rows[0]?.state;if(played?.primaryCorrection?.phase==='confirmed'&&(row.state.primaryCorrectionOpen as {matchId?:string}|undefined)?.matchId===item.match_id)delete row.state.primaryCorrectionOpen;fixture.administrative=Boolean(played?.administrativeDecision);fixture.started=Boolean(played&&[...played.previousSets,played.game].some(game=>game.visits.length>0));
         fixture.score = fixture.players.map(p => item.snapshot.legs[item.snapshot.players.findIndex(player => player.id === p)] ?? 0);
         for (const p of fixture.players) await client.query("update dartflow_private.platform_members set attributes=jsonb_set(attributes,'{restUntil}',to_jsonb($3::bigint)) where entity_id=$1 and user_id=$2", [row.id, p, Date.now() + Number(row.state.restSeconds ?? 90) * 1000]);
       }
@@ -177,12 +184,20 @@ export async function reconcilePlatformResults(): Promise<void> {
         if(activity)await releaseBoardActivity(client,{sessionId:activity.sessionId,reason:'completed'});
       }
     }
-    if (row.state.fixtures) {
-      advanceFixtures(row.state.fixtures);
-      const final = row.state.fixtures.filter(f => f.phase === 'knockout').at(-1);
-      if (final?.status === 'confirmed') {row.state.championId = final.winnerId;row.state.autoSchedule=false;}
-      const players = [...new Set(row.state.fixtures.flatMap(f => f.players).filter((p): p is string => p !== null))];
-      row.state.standings = standings(row.state.fixtures.filter(f => f.phase !== 'knockout'), players);
+    const correctionBlocked=await primaryCorrectionBlockedFixtureIds(client,row);
+    if(row.state.fixtures)advanceFixtures(row.state.fixtures.filter(f=>!correctionBlocked.has(f.id)));
+    if(correctionBlocked.size){row.state.completed=false;delete row.state.championId;delete row.state.placings;row.state.autoSchedule=false;}
+    if (row.state.fixtures&&!correctionBlocked.size) {
+      const players = row.state.tournamentRules?.seedOrder??[...new Set(row.state.fixtures.flatMap(f => f.players).filter((p): p is string => p !== null))];
+      if(['swiss','double-elimination-reset','double-elimination-single'].includes(String(row.state.format))){
+        const outcome=tournamentOutcome(row.state.fixtures,String(row.state.format),players,row.state.tournamentRules?.swissRounds);
+        row.state.completed=outcome.completed;row.state.championId=outcome.championId;row.state.placings=outcome.placings;if(outcome.standings)row.state.standings=outcome.standings;
+        if(outcome.completed)row.state.autoSchedule=false;
+      }else{
+        const final = row.state.fixtures.filter(f => f.phase === 'knockout').at(-1);
+        if (final?.status === 'confirmed') {row.state.championId = final.winnerId;row.state.autoSchedule=false;row.state.completed=true;}
+        row.state.standings = standings(row.state.fixtures.filter(f => f.phase !== 'knockout'), players);
+      }
     }
     await save(client, row);
   });
@@ -263,8 +278,14 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
   const roomMessages=await client.query<PlatformMessage&{roomId:string}>(`select * from (select m.room_id as "roomId",m.id,m.author_id as "authorId",p.name as "authorName",m.body,m.created_at as "createdAt",row_number() over(partition by m.room_id order by m.created_at desc,m.id desc) as rn from dartflow_private.platform_messages m join dartflow_private.profile_labels p on p.id=m.author_id where m.room_id=any($1::uuid[]) and not m.deleted and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$2 and b.target_id=m.author_id) or(b.target_id=$2 and b.source_id=m.author_id)))) recent where rn<=100 order by "createdAt",id`,[roomIds,actor]);
   for(const id of roomIds){messages[id]=roomMessages.rows.filter(m=>m.roomId===id).map(({roomId,...message})=>{void roomId;return message;});const projection=list.find(e=>e.id===id);if(projection)projection.state.messages=messages[id];}
   const competitions=list.filter(e=>['league','tournament'].includes(e.kind));
-  const allBoards=await client.query('select b.id,b.event_id as "eventId",b.name,b.blocked,m.id as "matchId" from dartflow_private.boards b left join dartflow_private.matches m on m.board_id=b.id where b.event_id=any($1::uuid[]) order by b.name,b.id',[competitions.map(e=>e.state.eventId)]);
-  for(const item of competitions){item.state.boards=allBoards.rows.filter(b=>b.eventId===item.state.eventId);const playerIds=item.members.filter(m=>m.status==='active'&&m.attributes.registered===true).map(m=>m.id);item.state.standings=standings((item.state.fixtures??[]).filter(f=>f.phase!=='knockout'),playerIds).map(s=>({...s,playerId:s.id,name:item.members.find(m=>m.id===s.id)?.name??'Speler'}));}
+  const allBoards=await client.query('select b.id,b.event_id as "eventId",b.name,b.blocked,case when m.event_id=b.event_id then m.id end as "matchId" from dartflow_private.boards b left join dartflow_private.matches m on m.board_id=b.id where b.event_id=any($1::uuid[]) order by b.name,b.id',[competitions.map(e=>e.state.eventId)]);
+  for(const item of competitions){
+    item.state.boards=allBoards.rows.filter(b=>b.eventId===item.state.eventId);
+    const playerIds=item.state.tournamentRules?.seedOrder??item.members.filter(m=>m.status==='active'&&m.attributes.registered===true).map(m=>m.id),fixtures=item.state.fixtures??[],format=String(item.state.format);
+    const projected=tournamentTable(fixtures,format,playerIds,item.state.tournamentRules?.swissRounds);
+    item.state.standings=(projected??standings(fixtures.filter(f=>f.phase!=='knockout'),playerIds)).map(s=>({...s,playerId:s.id,name:item.members.find(m=>m.id===s.id)?.name??'Speler'}));
+    if(projected!==null){const outcome=tournamentOutcome(fixtures,format,playerIds,item.state.tournamentRules?.swissRounds);item.state.completed=outcome.completed;item.state.championId=outcome.championId;item.state.placings=outcome.placings;}
+  }
   const canManageRegistrations=Boolean((await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')",[actor])).rowCount);
   const {rows:registrations}=await client.query('select r.user_id as "userId",p.name,r.status,r.reason from dartflow_private.platform_registrations r join dartflow_private.profile_labels p on p.id=r.user_id where $2::boolean or r.user_id=$1 order by r.created_at,r.user_id',[actor,canManageRegistrations]);
   const {rows:reports}=await client.query(`select r.id,r.reporter_id as "reporterId",p.name as "reporterName",r.target_id as "targetId",r.room_id as "roomId",coalesce(e.state->>'name','DartFlow') as "roomName",r.reason,r.status,r.decision,r.category,r.target_type as "targetType",r.content_id as "contentId",r.scope_kind as "scopeKind",r.scope_id as "scopeId",
@@ -275,7 +296,7 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
     (c.role='organizer' and exists(select 1 from dartflow_private.event_staff s where s.event_id=m.event_id and s.user_id=$1)) as can_manage,
     exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and e.kind='tournament') as offline_supported
     from dartflow_private.matches m left join dartflow_private.club_memberships c on c.club_id=m.club_id and c.user_id=$1
-    where m.state->>'status'<>'abandoned' and (exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$1) or m.state->>'delegatedWriterId'=$1::text)
+    where m.state->>'status'<>'abandoned' and (exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$1) or m.state->>'delegatedWriterId'=$1::text or m.state->'remoteWriterIds' ? $1::text or jsonb_path_exists(m.state,'$.sideParticipants[*][*] ? (@.id == $actor)',jsonb_build_object('actor',$1::text)))
     and (exists(select 1 from dartflow_private.club_boards cb where cb.event_id=m.event_id) or c.user_id is not null or (exists(select 1 from dartflow_private.entries x where x.event_id=m.event_id and x.user_id=$1 and x.status='registered') and exists(select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=m.id and ((e.kind='lobby' and e.state->>'boardId' is null) or (e.kind in ('league','tournament') and (e.club_id is null or e.state->>'eligibility' in ('all','code'))))))) order by m.updated_at desc,m.id limit 200`,[actor]);
   const matches=[];for(const row of ownMatchRows){try{const access=await eventAccess(client,actor,row.state.eventId);matches.push({...matchView(row.state,actor,access.canManage),offlineSupported:row.offline_supported});}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}}
   const clubBoards=await listClubBoards(client,actor,list.filter(e=>e.kind==='club').map(e=>e.id));
@@ -285,12 +306,12 @@ export async function getPlatformOverview(actorId: string): Promise<PlatformOver
   return { profile,matches,history,clubBoards, players: people, clubs: list.filter(e => e.kind === 'club'), rooms: list.filter(e => e.kind === 'room'), trainings: list.filter(e => e.kind === 'training'), leagues: list.filter(e => e.kind === 'league'), tournaments: list.filter(e => e.kind === 'tournament'), lobbies: list.filter(e => e.kind === 'lobby'), friends, blocked: relationships.filter(r => r.kind === 'block' && r.source_id === actor).map(r => ({ id: r.target_id, name: r.name })), preferences: prefs[0] ?? { discoverable: true, allowRequests: true }, messages,registrations,reports,canManageRegistrations,statistics };
 }
 export async function signalAccess(client: Client, actor: string, matchId: string): Promise<string[]> {
-  const { rows } = await client.query<{ user_id: string;event_id:string }>(`select mp.user_id,m.event_id from dartflow_private.match_players mp join dartflow_private.matches m on m.id=mp.match_id
-    where m.id=$1 and exists(select 1 from dartflow_private.match_players own where own.match_id=m.id and own.user_id=$2)`, [uuid(matchId), uuid(actor)]);
-  if (rows.length !== 2) throw new DomainError('forbidden', 'Alleen de twee spelers hebben toegang tot deze wedstrijdverbinding.', 403);
-  await eventAccess(client,actor,rows[0].event_id);
-  const players=rows.map(r => r.user_id);
-  if(await blocked(client,players[0],players[1]))throw new DomainError('blocked','Deze verbinding is geblokkeerd.',403);
+  const state=(await client.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[uuid(matchId)])).rows[0]?.state;
+  const players=state?matchMediaActors(state):[];
+  if(!state||players.length!==2||new Set(players).size!==2||!players.includes(uuid(actor)))throw new DomainError('forbidden','Alleen de twee aangewezen verbindingsdeelnemers hebben toegang.',403);
+  for(const player of players)await eventAccess(client,player,state.eventId);
+  if((await client.query('select id from dartflow_private.profiles where id=any($1::uuid[]) and deletion_requested_at is null and deleted_at is null',[players])).rowCount!==2)throw new DomainError('forbidden','Een verbindingsdeelnemer is niet meer beschikbaar.',403);
+  if(await blocked(client,players[0],players[1])||await blocked(client,state.players[0].id,state.players[1].id))throw new DomainError('blocked','Deze verbinding is geblokkeerd.',403);
   return players;
 }
 export type MatchSignal = { id: number; actorId: string; senderId: string; targetId: string | null; type: string; payload: unknown; createdAt: string };
@@ -331,14 +352,17 @@ export async function getPlatformCast(token: string): Promise<Record<string, unk
   if (typeof token !== 'string' || !/^[\w-]{43}$/.test(token)) throw new DomainError('invalid_cast', 'Deze schermlink is ongeldig of verlopen.', 404);
   const { rows } = await database().query<EntityRow>('select e.* from dartflow_private.platform_cast_grants g join dartflow_private.platform_entities e on e.id=g.entity_id where g.token_hash=$1 and g.revoked_at is null and g.expires_at>now()', [hash(token)]);
   if (!rows.length) throw new DomainError('invalid_cast', 'Deze schermlink is ongeldig of verlopen.', 404);
-  const row = rows[0];
-  const { rows: boards } = await database().query<{ id: string; name: string; blocked: boolean; state: MatchState | null }>('select b.id,b.name,b.blocked,m.state from dartflow_private.boards b left join dartflow_private.matches m on m.board_id=b.id where b.event_id=$1 order by b.name,b.id', [row.state.eventId]);
+  const row = await decorateCircuitQualificationState(database(),rows[0]);
+  const underReview=Boolean(row.state.circuitSourceStale||row.state.primaryCorrectionOpen||row.state.primaryCorrectionHold);
+  const { rows: boards } = await database().query<{ id: string; name: string; blocked: boolean; state: MatchState | null }>('select b.id,b.name,b.blocked,case when m.event_id=b.event_id then m.state end as state from dartflow_private.boards b left join dartflow_private.matches m on m.board_id=b.id where b.event_id=$1 order by b.name,b.id', [row.state.eventId]);
   const names = await database().query<Profile>('select p.id,p.name from dartflow_private.platform_members m join dartflow_private.profile_labels p on p.id=m.user_id where m.entity_id=$1 and m.status=\'active\' and m.attributes->>\'registered\'=\'true\'', [row.id]);
-  const publicName = (id: string | null | undefined) => names.rows.find(p => p.id === id)?.name ?? 'Speler';
-  const fixtures = (row.state.fixtures ?? []).map(f => ({ id: f.id, players: f.players.map(publicName), status: f.status, phase: f.phase, round: f.round, pool: f.pool, score: f.score, winner: f.winnerId ? publicName(f.winnerId) : null }));
-  return { event: { id: row.id, name: row.state.name, revision: row.revision, date: row.state.date }, cast: row.state.cast, paused: row.state.paused, champion: row.state.championId ? publicName(String(row.state.championId)) : null,
+  const publicName = (id: string | null | undefined) => id?names.rows.find(p => p.id === id)?.name ?? 'Speler':'Vrij vak';
+  const sourceFixtures=row.state.fixtures??[],format=String(row.state.format),playerIds=row.state.tournamentRules?.seedOrder??names.rows.map(p=>p.id),table=tournamentTable(sourceFixtures,format,playerIds,row.state.tournamentRules?.swissRounds),outcome=table!==null?tournamentOutcome(sourceFixtures,format,playerIds,row.state.tournamentRules?.swissRounds):null;
+  const fixtures = sourceFixtures.map(f => ({ id: f.id, players: f.players.map(publicName), status: f.status, phase: f.phase, round: f.round, pool: f.pool, score: f.score, winner: f.winnerId ? publicName(f.winnerId) : null,ready:f.players.every(Boolean)&&!['confirmed','bye','void'].includes(f.status),...(typeof f.pairingNotice==='string'?{pairingNotice:f.pairingNotice.replace(/[\u0000-\u001f\u007f]/g,' ').slice(0,500)}:{}) }));
+  const champion=underReview?null:outcome?outcome.championId:typeof row.state.championId==='string'?row.state.championId:null;
+  return { event: { id: row.id, name: row.state.name, revision: row.revision, date: row.state.date,format }, cast: row.state.cast, paused: row.state.paused, champion: champion?publicName(champion):null,completed:!underReview&&(outcome?.completed??row.state.completed),underReview,notice:row.state.circuitSourceStale?'Erkenning herzien':underReview?'Uitslag onder herbeoordeling':null,
     boards: boards.map(b => ({ id: b.id, name: b.name, blocked: b.blocked, match: b.state ? { id: b.state.id, revision: b.state.revision, status: b.state.status,paused:b.state.paused, players: b.state.players.map(p => ({ name: p.name })), remaining: b.state.game.remaining, legs: b.state.game.legs, turn: b.state.game.turn, visits: b.state.game.visits.slice(-18).map(v => ({ score: v.score, playerIndex: v.playerIndex, remainingAfter: v.remainingAfter, bust: v.bust, checkout: v.checkout })) } : null })), fixtures,
-    standings: standings((row.state.fixtures ?? []).filter(f => f.phase !== 'knockout'), names.rows.map(p => p.id)).map(s => ({ name: publicName(s.id), played: s.played, won: s.won, drawn: s.drawn, points: s.points, legsFor: s.legsFor, legsAgainst: s.legsAgainst })) };
+    standings: (table??standings(sourceFixtures.filter(f=>f.phase!=='knockout'),playerIds)).map(s => ({ name: publicName(s.id),...('position'in s?{position:s.position,shared:s.shared}:{}),played:s.played,won:s.won,drawn:s.drawn,points:s.points,legsFor:s.legsFor,legsAgainst:s.legsAgainst,...('buchholz'in s?{buchholz:s.buchholz,byes:s.byes}:{}) })) };
 }
 
 export async function getPlatformStatistics(actorId: string) {

@@ -1,0 +1,20 @@
+'use client';
+import type {RankingsResponse} from '@/lib/ranking-types';
+
+export default function CircuitQualification({data,busy,command}:{data:RankingsResponse;busy:boolean;command:(action:{type:string;[key:string]:unknown})=>Promise<boolean>}){
+ const list=data.selectedList,qualification=data.qualification;
+ if(list?.kind!=='circuit'||list.scope!=='club')return null;
+ return <section className="panel" aria-label="Slotavond van het clubcircuit"><h2>Slotavond en topacht</h2><p>De beste vijf avondresultaten bepalen de kwalificatie. Een gelijke grens wordt sportief beslist. De aparte finale levert geen negende circuitavond op.</p>
+  {data.qualificationUnavailableReason&&<p role="status">{data.qualificationUnavailableReason}</p>}
+  {(!qualification||qualification.stale)&&data.canCreateQualification&&data.generation&&<form onSubmit={event=>{event.preventDefault();void command({type:'qualification.create',listId:list.id,expectedGeneration:data.generation!.id,reason:String(new FormData(event.currentTarget).get('reason'))});}}><label className="field">Reden kwalificatie vastleggen<textarea name="reason" minLength={3} maxLength={1000} required/></label><button className="button" disabled={busy||!!data.qualificationUnavailableReason}>{qualification?.stale?'Nieuw kwalificatiedossier vastleggen':'Eindstand en kwalificatie vastleggen'}</button></form>}
+  {qualification&&<>
+   {qualification.stale&&<p className="notice error" role="alert">De bronstand is gewijzigd. Laat de kwalificatie opnieuw beoordelen voordat de slotavond verdergaat.</p>}
+   <details><summary>Vastgelegde sportieve volgorde</summary><ol>{qualification.snapshot.map(row=><li key={row.playerId}>{row.position}. {row.name} · {row.points} punten · meetellende resultaten {row.countingResults.join(', ')}</li>)}</ol></details>
+   <h3>Geplaatst</h3>{qualification.qualified.length?<ol>{qualification.qualified.map(player=><li key={player.id}>{player.name}</li>)}</ol>:<p>De plaatsen wachten op de grensbeslissing.</p>}
+   {qualification.boundaryPlayers.length>0&&<><p>{qualification.placesRemaining} resterende plaatsen · {qualification.boundaryPlayers.map(player=>player.name).join(', ')}</p><p><a href={`/app/leagues/${qualification.decisionEventId}`}>Open de best-of-five beslissingspartijen</a></p>{qualification.fixtures.map(fixture=><p key={fixture.id}>{fixture.players.map(player=>player?.name??'Wacht op voorganger').join(' tegen ')} · {fixture.status}{fixture.matchId&&<> · <a href={`/wedstrijd/${fixture.matchId}`}>Scorekaart openen</a></>}</p>)}</>}
+   {qualification.canManage&&qualification.status==='deciding'&&!qualification.stale&&<form onSubmit={event=>{event.preventDefault();void command({type:'qualification.advance',qualificationId:qualification.id,expectedRevision:qualification.revision,reason:String(new FormData(event.currentTarget).get('reason'))});}}><label className="field">Reden sportieve beslissing verwerken<textarea name="reason" minLength={3} maxLength={1000} required/></label><button className="button" disabled={busy}>Bevestigde beslissers verwerken</button></form>}
+   {qualification.canManage&&qualification.status==='qualified'&&!qualification.stale&&<form onSubmit={event=>{event.preventDefault();const input=new FormData(event.currentTarget);void command({type:'qualification.finale',qualificationId:qualification.id,expectedRevision:qualification.revision,name:String(input.get('name')),date:String(input.get('date')),reason:String(input.get('reason'))});}}><label className="field">Naam slotavond<input name="name" defaultValue={`${list.name} · Finale`} maxLength={120} required/></label><label className="field">Datum<input name="date" type="date" defaultValue={new Date().toISOString().slice(0,10)} required/></label><label className="field">Reden finale publiceren<textarea name="reason" minLength={3} maxLength={1000} required/></label><button className="button gold" disabled={busy}>Aparte finale aanmaken</button></form>}
+   {qualification.finaleId&&<a className="button" href={`/app/hall/${qualification.finaleId}`}>Open de slotavond</a>}
+  </>}
+ </section>;
+}

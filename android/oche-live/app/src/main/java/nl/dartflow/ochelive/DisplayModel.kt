@@ -5,18 +5,37 @@ import org.json.JSONObject
 import kotlin.math.ceil
 
 /** Public v1 only: never a player account, writer capability or private history. */
-data class Player(val name: String, val remaining: Int, val legs: Int, val sets: Int, val average: Double?, val maxima: Int, val highestFinish: Int)
-data class Visit(val player: Int, val score: Int, val remaining: Int, val bust: Boolean)
+data class Player(val name: String, val remaining: Int, val legs: Int, val sets: Int, val average: Double?, val maxima: Int, val highestFinish: Int, val partners: List<String> = emptyList())
+data class Cricket(val marks: List<List<Int>>, val points: List<Int>, val mpr: List<Double?>, val mode: String)
+data class Visit(val player: Int, val score: Int, val remaining: Int, val bust: Boolean, val creditedMarks: Int? = null)
 data class ScoreEvent(val id: String, val revision: Long, val kind: String, val score: Int, val bust: Boolean, val checkout: Boolean, val player: String)
-data class Match(val id: String, val revision: Long, val status: String, val players: List<Player>, val turn: Int, val startScore: Int, val leg: Int, val set: Int, val visits: List<Visit>, val events: List<ScoreEvent>, val sessionKey: String) {
+data class Match(val id: String, val revision: Long, val status: String, val players: List<Player>, val turn: Int, val startScore: Int, val leg: Int, val set: Int, val visits: List<Visit>, val events: List<ScoreEvent>, val sessionKey: String, val paused: Boolean = false, val winnerName: String? = null, val resultPublished: Boolean = false, val checkout: String? = null, val inRule: String = "single", val outRule: String = "double", val sideStartScores: List<Int> = emptyList(), val currentThrowerName: String? = null, val cricket: Cricket? = null) {
     val legKey get() = "$sessionKey:$set:$leg"
+    fun startFor(index: Int) = sideStartScores.getOrNull(index) ?: startScore
+    val startLabel get() = if (cricket != null) "CRICKET" else players.indices.map { startFor(it) }.distinct().joinToString(" / ")
+    val startRow get() = if (players.size == 1) listOf("–", "${startFor(0)}") else listOf("–", "${startFor(0)}", "${startFor(1)}", "–")
+    val rulesLabel get() = if (cricket != null) "Cricket · " + if (cricket.mode == "no-score") "zonder punten" else "met punten" else (if (inRule == "double") "Dubbel in · " else if (inRule != "single") "Inregel op telefoon · " else "") + when (outRule) { "straight" -> "Straight uit"; "double" -> "Dubbel uit"; "master" -> "Master uit"; else -> "Uitregel op telefoon" }
+    val finished get() = status in listOf("result", "confirmed", "disputed")
+    val canShowTurn get() = status == "live" && !paused
+    val statusLabel get() = when {
+        status == "disputed" -> "Uitslag in behandeling"
+        finished -> if (resultPublished) "Uitslag bevestigd" else "Voorlopige uitslag"
+        status == "interrupted" -> "Onderbroken"
+        status == "abandoned" -> "Partij beëindigd"
+        paused -> "Gepauzeerd"
+        status == "live" -> "● Live"
+        else -> "Wacht op start"
+    }
     fun rows(): List<List<Visit?>> {
         val columns = players.indices.map { index -> visits.filter { it.player == index } }
         return (0 until maxOf(5, columns.maxOfOrNull { it.size } ?: 0)).map { row -> columns.map { it.getOrNull(row) } }
     }
 }
+data class PendingCall(val label: String, val players: List<String>, val writerName: String?)
+data class Encounter(val name: String, val homeName: String, val awayName: String, val score: List<Int>, val legs: List<Int>, val componentIndex: Int, val componentLabel: String)
 data class Activity(val warningAt: Long, val deadlineAt: Long, val extensionsUsed: Int)
-data class DisplaySnapshot(val state: String, val serverNow: Long, val eventId: String, val revision: Long, val boardName: String, val displayName: String, val scope: String, val playUrl: String?, val reservation: String?, val match: Match?, val activity: Activity?) {
+data class DisplaySnapshot(val state: String, val serverNow: Long, val eventId: String, val revision: Long, val boardName: String, val displayName: String, val scope: String, val playUrl: String?, val reservation: String?, val match: Match?, val activity: Activity?, val theme: String = "dartflow", val encounter: Encounter? = null, val pendingCall: PendingCall? = null) {
+    val publicStandby get() = state == "standby" && playUrl != null
     companion object {
         fun parse(json: JSONObject): DisplaySnapshot {
             require(json.getInt("apiVersion") == 1) { "Deze app moet worden bijgewerkt." }
@@ -27,25 +46,43 @@ data class DisplaySnapshot(val state: String, val serverNow: Long, val eventId: 
                 val legs = m.optJSONArray("legs") ?: JSONArray()
                 val sets = m.optJSONArray("sets") ?: JSONArray()
                 val stats = m.optJSONArray("stats") ?: JSONArray()
-                val players = m.optJSONArray("players").objects().mapIndexed { index, p ->
+                val identities = m.optJSONArray("players").objects()
+                val players = identities.mapIndexed { index, p ->
                     val stat = stats.optJSONObject(index)
                     val darts = stat?.optInt("darts") ?: 0
                     val avg = if (darts > 0) 3.0 * stat!!.optDouble("total", 0.0) / darts else null
-                    Player(p.optString("displayName").ifBlank { p.optString("name", "Speler ${index + 1}") }, remaining.optInt(index), legs.optInt(index), sets.optInt(index), avg, stat?.optInt("oneEighties") ?: 0, stat?.optInt("highestFinish") ?: 0)
+                    val partners = m.optJSONArray("sideParticipants")?.optJSONArray(index).objects().map { it.optString("displayName").ifBlank { it.optString("name", "Speler") } }
+                    val sideName = m.optJSONArray("sideNames")?.optString(index)?.takeIf { it.isNotBlank() && it != "null" }
+                        ?: partners.takeIf { it.isNotEmpty() }?.joinToString(" & ")
+                        ?: p.optString("displayName").ifBlank { p.optString("name", "Speler ${index + 1}") }
+                    Player(sideName, remaining.optInt(index), legs.optInt(index), sets.optInt(index), avg, stat?.optInt("oneEighties") ?: 0, stat?.optInt("highestFinish") ?: 0, partners)
                 }
-                val leg = m.optInt("legNumber", legs.ints().sum() + 1)
-                val visits = (m.optJSONArray("currentLegVisits") ?: m.optJSONArray("visits")).objects().filter { !it.has("leg") || it.optInt("leg") == leg }.map { Visit(it.optInt("playerIndex"), it.optInt("score"), it.optInt("remainingAfter"), it.optBoolean("bust")) }
+                val finished = m.optString("status") in listOf("result", "confirmed", "disputed")
+                val leg = m.optInt("legNumber", maxOf(1, legs.ints().sum() + if (finished) 0 else 1))
+                val visits = (m.optJSONArray("currentLegVisits") ?: m.optJSONArray("visits")).objects().filter { !it.has("leg") || it.optInt("leg") == leg }.map { Visit(it.optInt("playerIndex"), it.optInt("score"), it.optInt("remainingAfter"), it.optBoolean("bust"), it.optJSONObject("cricket")?.optInt("creditedMarks")) }
                 val events = snapshot.optJSONArray("scoreEvents").objects().map { ScoreEvent(it.optString("id"), it.optLong("revision"), it.optString("kind"), it.optInt("score"), it.optBoolean("bust"), it.optBoolean("checkout"), it.optString("playerName")) }
-                Match(m.getString("id"), m.optLong("revision"), m.optString("status"), players, m.optInt("turn"), m.optInt("currentLegStartScore", m.optJSONObject("settings")?.optInt("startScore", 501) ?: 501), leg, m.optInt("setNumber", 1), visits, events, snapshot.optString("sessionKey", m.getString("id")))
+                val winner = m.optString("winnerId").takeIf { it.isNotBlank() && it != "null" }?.let { id -> identities.indexOfFirst { it.optString("id") == id }.takeIf { it >= 0 }?.let { players[it].name } }
+                val settings = m.optJSONObject("settings")
+                val startScore = m.optInt("currentLegStartScore", settings?.optInt("startScore", 501) ?: 501)
+                val sideStarts = settings?.optJSONArray("sideStartScores")?.let { values -> players.indices.map { index -> values.optInt(index, startScore).takeIf { it in 1..1001 } ?: startScore } } ?: emptyList()
+                val cricket = m.optJSONObject("cricket")?.let { c ->
+                    val allVisits = m.optJSONArray("visits").objects()
+                    Cricket((0..1).map { c.optJSONArray("marks")?.optJSONArray(it)?.ints().orEmpty().map { value -> value.coerceIn(0,3) } }, c.optJSONArray("points")?.ints().orEmpty(), (0..1).map { side -> val own = allVisits.filter { it.optInt("playerIndex") == side && it.has("cricket") }; val darts = own.sumOf { it.optInt("darts") }; if (darts > 0) 3.0 * own.sumOf { it.optJSONObject("cricket")?.optInt("creditedMarks") ?: 0 } / darts else null }, settings?.optString("cricketMode", "standard") ?: "standard")
+                }
+                Match(m.getString("id"), m.optLong("revision"), m.optString("status"), players, m.optInt("turn"), startScore, leg, m.optInt("setNumber", 1), visits, events, snapshot.optString("sessionKey", m.getString("id")), m.optBoolean("paused"), winner, m.optBoolean("resultPublished"), m.optString("checkout").takeIf { it.isNotBlank() && it != "null" }, settings?.optString("inRule", "single") ?: "single", settings?.optString("outRule", "double") ?: "double", sideStarts, m.optJSONObject("currentThrower")?.let { it.optString("displayName").ifBlank { it.optString("name") } }?.takeIf { it.isNotBlank() }, cricket)
             }
             val board = json.optJSONObject("board") ?: display?.optJSONObject("board")
             val activity = (snapshot?.optJSONObject("boardActivity") ?: snapshot?.optJSONObject("match")?.optJSONObject("boardActivity"))?.let { Activity(it.optLong("warningAt"), it.optLong("deadlineAt"), it.optInt("extensionsUsed")) }
-            return DisplaySnapshot(json.getString("state"), json.getLong("serverNow"), json.optString("eventId"), json.optLong("revision"), board?.optString("name") ?: "Mijn scherm", json.optJSONObject("device")?.optString("name") ?: "Oche Live", json.optString("scope"), display?.optJSONObject("board")?.takeIf { it.optBoolean("publicScan", false) }?.optString("playUrl")?.let { if (it.startsWith("/baan/")) BuildConfig.API_ORIGIN + it else it }?.takeIf { it.startsWith("${BuildConfig.API_ORIGIN}/baan/") }, display?.optJSONObject("reservation")?.optString("label"), match, activity)
+            val pendingCall = snapshot?.optJSONObject("pendingCall")?.let { c -> PendingCall(c.optString("label"), c.optJSONArray("players")?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty(), c.optString("writerName").takeIf { it.isNotBlank() && it != "null" }) }
+            val encounter = snapshot?.optJSONObject("encounter")?.let { e -> val component = e.optJSONObject("component"); Encounter(e.optString("name"), e.optString("homeName"), e.optString("awayName"), e.optJSONArray("score")?.ints().orEmpty(), e.optJSONArray("legs")?.ints().orEmpty(), component?.optInt("index") ?: 0, component?.optString("label").orEmpty()) }
+            return DisplaySnapshot(json.getString("state"), json.getLong("serverNow"), json.optString("eventId"), json.optLong("revision"), board?.optString("name") ?: "Mijn scherm", json.optJSONObject("device")?.optString("name") ?: "Oche Live", json.optString("scope"), display?.optJSONObject("board")?.takeIf { it.optBoolean("publicScan", false) }?.optString("playUrl")?.let { if (it.startsWith("/baan/")) BuildConfig.API_ORIGIN + it else it }?.takeIf { it.startsWith("${BuildConfig.API_ORIGIN}/baan/") }, display?.optJSONObject("reservation")?.optString("label"), match, activity, snapshot?.optJSONObject("theme")?.takeIf { it.optInt("version") == 1 && it.optString("id") in listOf("dartflow", "onzetrots") }?.optString("id") ?: "dartflow", encounter, pendingCall)
         }
     }
 }
 internal fun JSONArray?.objects(): List<JSONObject> = if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }
 internal fun JSONArray.ints(): List<Int> = (0 until length()).map { optInt(it) }
+/** Only an installation with a retained grant may restore its encrypted public projection. */
+fun cachedDisplay(saved: JSONObject): DisplaySnapshot? = if (saved.optString("refreshToken").isBlank()) null else runCatching { DisplaySnapshot.parse(saved.getJSONObject("lastSnapshot")) }.getOrNull()
 fun secondsRemaining(deadline: Long, serverTime: Long): Int = maxOf(0, ceil((deadline - serverTime) / 1000.0).toInt())
 fun standbySlide(elapsedMs: Long): Int = when (elapsedMs.coerceAtLeast(0) % 30_000) { in 0..4_999 -> 0; in 5_000..14_999 -> 1; else -> 2 }
 
@@ -65,6 +102,6 @@ class EventCursor {
         val fresh = match.events.filter { it.revision > revision && it.id !in seen }.sortedBy { it.revision }
         revision = maxOf(revision, match.revision)
         seen.addAll(fresh.map { it.id }); if (seen.size > 1024) { seen.clear(); seen.addAll(match.events.map { it.id }) }
-        return if (fresh.any { it.kind == "undo" }) null else fresh.lastOrNull { it.kind == "score" && !it.bust && (it.score == 180 || it.checkout && it.score >= 100) }
+        return if (match.cricket != null || fresh.any { it.kind == "undo" }) null else fresh.lastOrNull { it.kind == "score" && !it.bust && (it.score == 180 || it.checkout && it.score >= 100) }
     }
 }

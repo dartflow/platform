@@ -1,0 +1,26 @@
+▶ v15 Postgres platform has real persistence, private scopes, capacity serialization and one score source
+  ✔ physical board sessions serialize claims, publish solo Sprint and never survive scope or lease loss (870.101787ms)
+  ✔ personal organizers need no club and keep private invitations, ownership and official destinations enforced (289.220193ms)
+  ✔ nonstandard rules use the same persisted native/web match actions and distinct statistics (172.211849ms)
+  ✔ Swiss and both double-elimination variants finish real persisted matches through the existing command service (3220.315679ms)
+  ✔ a match-point precall is a revocable expectation and never replaces the active board assignment (387.643046ms)
+  ✔ different events cannot simultaneously call the same real players onto two boards (257.428728ms)
+  ✔ tournament request, approval, changes and rejection emit only their genuine durable mail transition (130.131294ms)
+  ✔ independent accounts keep multiple clubs, fresh roles and directory privacy (535.147209ms)
+  ✔ room admission locks capacity and moderation cannot cross room or host scope (67.893088ms)
+  ✔ club departure immediately revokes private club room access (117.701141ms)
+  ✔ training retries are exactly once, stale revisions fail and another account cannot write (13.792648ms)
+  ✔ lobby invitation, independent readiness, private signaling and core scoring share one match (713.291641ms)
+  ✔ event signup serializes waitlist, promotion, actual fixtures and protected global creation (584.97742ms)
+  ✔ registration review, report privacy, external writers and call expiry use current server state (548.242859ms)
+  ✔ open and code-gated club events authorize only their entries and never create club memberships (615.879883ms)
+  ✔ blocking clears friendship and prevents fresh invitations (98.878094ms)
+✔ v15 Postgres platform has real persistence, private scopes, capacity serialization and one score source (8919.530492ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9292.610028
