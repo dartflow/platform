@@ -1,5 +1,10 @@
 """Offline regression coverage for the real Google Play release planner."""
 import argparse
+import contextlib
+import io
+import json
+import os
+from unittest.mock import patch
 import importlib.util
 from pathlib import Path
 import unittest
@@ -80,6 +85,79 @@ class Commits(unittest.TestCase):
         publisher=FakePublisher();edit=play.Edit(publisher,'/edit/123');edit.commit(validate_only=False)
         self.assertFalse(edit.should_discard)
         self.assertIn('changesInReviewBehavior=ERROR_IF_IN_REVIEW',publisher.requests[-1][1])
+
+
+class SigningCertificates(unittest.TestCase):
+    package='nl.dartflow.ochelive'
+    app_path='/androidpublisher/v3/applications/nl.dartflow.ochelive'
+    tracks={'tracks':[
+        {'track':'internal','releases':[release(9),release(99,'draft')]},
+        {'track':'tv:production','releases':[release(100)]},
+        {'track':'production','releases':[]},
+    ]}
+
+    def invoke(self,generated,*,flag=True,tracks=None):
+        requests=[]
+        def request(publisher,method,path,**kwargs):
+            requests.append((method,path,kwargs))
+            if (method,path)==('POST',self.app_path+'/edits'):return {'id':'read-only-edit'}
+            if (method,path)==('GET',self.app_path+'/edits/read-only-edit/tracks'):return self.tracks if tracks is None else tracks
+            if (method,path)==('GET',self.app_path+'/generatedApks/100'):return generated
+            if (method,path)==('DELETE',self.app_path+'/edits/read-only-edit'):return {}
+            self.fail(f'Unexpected release mutation or API path: {method} {path}')
+        output,error=io.StringIO(),io.StringIO()
+        args=['play_release.py','list-tracks','--package',self.package]+(['--signing-certificates']if flag else[])
+        with patch.object(play.sys,'argv',args),patch.dict(os.environ,{'PLAY_ACCESS_TOKEN':'private-test-access-token'}),patch.object(play.Publisher,'request',autospec=True,side_effect=request),contextlib.redirect_stdout(output),contextlib.redirect_stderr(error):
+            status=play.main()
+        self.assertNotIn('private-test-access-token',output.getvalue()+error.getvalue())
+        return status,output.getvalue(),error.getvalue(),requests
+
+    def test_latest_real_track_version_reads_only_public_deduplicated_certificates(self):
+        generated={'generatedApks':[
+            {'certificateSha256Hash':'a1'*32,'generatedUniversalApk':{'downloadId':'private-download-metadata'}},
+            {'certificateSha256Hash':'A1'*32},
+            {'certificateSha256Hash':':'.join(['b2']*32),'targetingInfo':{'private':'metadata'}},
+        ]}
+        status,output,error,requests=self.invoke(generated)
+        self.assertEqual(status,0,error)
+        self.assertEqual(json.loads(output),{
+            'tracks':{'internal':[{'versionCodes':['9'],'status':'completed'},{'versionCodes':['99'],'status':'draft'}],'tv:production':[{'versionCodes':['100'],'status':'completed'}],'production':[]},
+            'signingCertificates':{'versionCode':100,'sha256Fingerprints':[':'.join(['A1']*32),':'.join(['B2']*32)]},
+        })
+        self.assertNotIn('private-download-metadata',output)
+        self.assertNotIn('targetingInfo',output)
+        self.assertEqual([(method,path)for method,path,_ in requests],[
+            ('POST',self.app_path+'/edits'),('GET',self.app_path+'/edits/read-only-edit/tracks'),
+            ('GET',self.app_path+'/generatedApks/100'),('DELETE',self.app_path+'/edits/read-only-edit'),
+        ])
+        self.assertEqual(requests[0][2],{'payload':{}})
+        self.assertTrue(all('upload'not in kwargs for _,_,kwargs in requests))
+
+    def test_list_tracks_without_flag_preserves_the_original_json_and_requests(self):
+        status,output,error,requests=self.invoke({},flag=False)
+        self.assertEqual(status,0,error)
+        self.assertEqual(json.loads(output),{'internal':[{'versionCodes':['9'],'status':'completed'},{'versionCodes':['99'],'status':'draft'}],'tv:production':[{'versionCodes':['100'],'status':'completed'}],'production':[]})
+        self.assertEqual([method for method,_,_ in requests],['POST','GET','DELETE'])
+        self.assertTrue(all('/generatedApks/'not in path for _,path,_ in requests))
+
+    def test_invalid_or_missing_certificate_is_rejected_without_provider_values(self):
+        for generated in ({},{'generatedApks':[]},{'generatedApks':'private-provider-data'},*({'generatedApks':[{'certificateSha256Hash':value}]}for value in [None,'private-provider-data','a'*63,'aa:'*32,{'secret':'private-provider-data'}])):
+            with self.subTest(generated=generated):
+                status,output,error,requests=self.invoke(generated)
+                self.assertEqual(status,1)
+                self.assertEqual(output,'')
+                self.assertNotIn('private-provider-data',error)
+                self.assertEqual(requests[-1][:2],('DELETE',self.app_path+'/edits/read-only-edit'))
+                self.assertTrue(all(method in {'POST','GET','DELETE'}and ':commit'not in path and ':validate'not in path and '/upload'not in path for method,path,_ in requests))
+
+    def test_absent_or_invalid_real_track_versions_do_not_guess_or_query_an_apk(self):
+        for tracks in ({'tracks':[]},{'tracks':[{'track':'internal','releases':[release(0)]}]},{'tracks':[{'track':'internal','releases':[release('not-a-version')]}]}):
+            with self.subTest(tracks=tracks):
+                status,output,_,requests=self.invoke({},tracks=tracks)
+                self.assertEqual(status,1)
+                self.assertEqual(output,'')
+                self.assertEqual([method for method,_,_ in requests],['POST','GET','DELETE'])
+
 
 class Readiness(unittest.TestCase):
     def test_real_public_association_and_read_only_contract_are_required(self):
