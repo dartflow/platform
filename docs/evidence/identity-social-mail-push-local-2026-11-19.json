@@ -90,12 +90,20 @@
     "tests/db.test.ts": "216cdecb0bdc92e4d2bd2fe145c892ee8124f133ddcd0d9a5da51588fd42b857",
     "tests/play-review.test.ts": "305306fe5448185aa66c1a005191f7339140d4a9bbada9fb47c02a86420feed7",
     "tests/platform-snapshot.test.ts": "821cdd3e923bffb9cc16a1829598f0bb031c27c836a4f48a666c85149450efa7",
-    "tests/locations.test.ts": "2e493646e123e3da451d35ec400e3ca914168e1f91cfad7245dd5e403ec059a7"
+    "tests/locations.test.ts": "2e493646e123e3da451d35ec400e3ca914168e1f91cfad7245dd5e403ec059a7",
+    "tests/e2e/player-flows.spec.ts": "46e5cc4e9ba30b42f0084e9d3e9dac1c24974bebc2f07d2c7510b300f452325a"
   },
   "legacyFixtures": "Only test data changed: canonical whitespace-free immutable handles are separate from the original display labels; the PIN Unicode test claims a fresh real profile per canonical variant instead of renaming an existing handle. No production guard was weakened.",
   "browserFlow": {
     "file": "tests/e2e/player-flows.spec.ts",
-    "status": "prepared-not-executed-by-this-agent",
-    "scope": "Immutable first username claim, deliberate stale-availability conflict, private Google name proposal, two browser turns, exact isolated fixture restore"
+    "status": "passed",
+    "command": "npx playwright test tests/e2e/player-flows.spec.ts --reporter=line",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 13.3,
+    "log": "docs/evidence/identity-player-flow-browser-2026-11-19.log",
+    "sha256": "9507ec3e256ce7928509f0eed9fbe5f3593a00fa74ee76da1f58312b7ae142d0",
+    "scope": "Real onboarding in two browser contexts; first immutable claims, stale availability conflict rejected by real API, private Google name proposal, three real remote/hybrid/local shared-writer matches; exact profile/lock/PIN/receipt/rate-limit fixture restoration asserted privately"
   }
 }
