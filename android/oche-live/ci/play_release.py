@@ -54,7 +54,8 @@ class PlayTransportError(ReleaseError):
 
 class Publisher:
     def __init__(self, package, access_token):
-        self.path = f"/androidpublisher/v3/applications/{quote(package, safe='')}/edits"
+        self.application_path = f"/androidpublisher/v3/applications/{quote(package, safe='')}"
+        self.path = f"{self.application_path}/edits"
         self.access_token = access_token
 
     def request(self, method, path, *, payload=None, upload=None):
@@ -87,6 +88,23 @@ class Publisher:
         if not isinstance(decoded, dict):
             raise PlayTransportError("Google Play gaf een onleesbaar succesantwoord.")
         return decoded
+
+    def signing_certificates(self, version_code):
+        # Public certificate hashes only; never emit APK download IDs or provider metadata.
+        result = self.request("GET", f"{self.application_path}/generatedApks/{version_code}")
+        generated = result.get("generatedApks")
+        if not isinstance(generated, list) or not generated:
+            raise ReleaseError("Google Play gaf geen gegenereerde APK-certificaten voor deze trackversie.")
+        fingerprints = set()
+        for entry in generated:
+            value = entry.get("certificateSha256Hash") if isinstance(entry, dict) else None
+            if not isinstance(value, str) or not re.fullmatch(
+                r"(?:[a-fA-F0-9]{64}|(?:[a-fA-F0-9]{2}:){31}[a-fA-F0-9]{2})", value
+            ):
+                raise ReleaseError("Google Play gaf geen geldig SHA-256-certificaat voor deze trackversie.")
+            digest = value.replace(":", "").upper()
+            fingerprints.add(":".join(digest[index:index + 2] for index in range(0, 64, 2)))
+        return {"versionCode": version_code, "sha256Fingerprints": sorted(fingerprints)}
 
     def create_edit(self):
         edit_id = self.request("POST", self.path, payload={}).get("id")
@@ -167,6 +185,22 @@ def read_tracks(edit, names):
 
 def codes(release):
     return [int(code) for code in release.get("versionCodes", [])]
+
+
+def latest_track_version(tracks):
+    versions = []
+    for track in tracks.values():
+        for release in track.get("releases", []):
+            for value in release.get("versionCodes", []):
+                if isinstance(value, bool) or not isinstance(value, (str, int)):
+                    raise ReleaseError("Google Play gaf een ongeldige versionCode in de tracks.")
+                try:
+                    versions.append(positive_version(str(value)))
+                except argparse.ArgumentTypeError as error:
+                    raise ReleaseError("Google Play gaf een ongeldige versionCode in de tracks.") from error
+    if not versions:
+        raise ReleaseError("Geen versionCode op een bestaande track beschikbaar voor certificaatcontrole.")
+    return max(versions)
 
 
 def check_simple_track(name, releases):
@@ -308,6 +342,10 @@ def make_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     discover = commands.add_parser("list-tracks", help="Toon de door Play gevonden track-ID's en statussen.")
+    discover.add_argument(
+        "--signing-certificates", action="store_true",
+        help="Lees ook publieke Play-signingcertificaten van de hoogste bestaande trackversie.",
+    )
     internal = commands.add_parser("upload-internal", help="Publiceer één gesigneerde AAB op interne testtracks.")
     production = commands.add_parser("promote", help="Publiceer een productie-update of beheer een gefaseerde rollout.")
     for command in (discover, internal, production):
@@ -350,13 +388,16 @@ def validate_args(args):
 
 def execute(args, edit):
     if args.command == "list-tracks":
+        tracks = edit.list_tracks()
         report = {
             name: [
                 {key: release[key] for key in ("versionCodes", "status", "userFraction") if key in release}
                 for release in track.get("releases", [])
             ]
-            for name, track in edit.list_tracks().items()
+            for name, track in tracks.items()
         }
+        if getattr(args, "signing_certificates", False):
+            report = {"tracks": report, "signingCertificates": edit.publisher.signing_certificates(latest_track_version(tracks))}
         print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
         return
 
