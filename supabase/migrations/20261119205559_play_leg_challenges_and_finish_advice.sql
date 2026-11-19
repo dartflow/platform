@@ -20,9 +20,14 @@ do $$declare t text;r text;begin
  execute format('revoke all on dartflow_private.%I from public',t);
  foreach r in array array['anon','authenticated','service_role']loop if exists(select 1 from pg_roles where rolname=r)then execute format('revoke all on dartflow_private.%I from %I',t,r);end if;end loop;
  if not exists(select 1 from pg_policies where schemaname='dartflow_private' and tablename=t and policyname='runtime')then execute format('create policy runtime on dartflow_private.%I to dartflow_app using(true)with check(true)',t);end if;
- execute format('grant select,insert,update on dartflow_private.%I to dartflow_app',t);
+ execute format('revoke all on dartflow_private.%I from dartflow_app',t);
+ execute format('grant select,insert on dartflow_private.%I to dartflow_app',t);
  end loop;
 end$$;
+-- Runtime may revoke a challenge and update its own saved advice, but cannot
+-- rewrite frozen sources, ownership, link proofs or immutable retry receipts.
+grant update(revoked_at)on dartflow_private.play_leg_challenges to dartflow_app;
+grant update(advice,saved_at)on dartflow_private.play_saved_finish_advice to dartflow_app;
 -- Only the already authorized owner erasure function can remove a private identity.
 create or replace function dartflow_private.scrub_play_challenge_identity(actor uuid)returns void
 language plpgsql security definer set search_path=pg_catalog,dartflow_private as $$begin

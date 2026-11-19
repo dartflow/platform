@@ -2,6 +2,12 @@
 
 Firebase wordt momenteel via de beschermde serverconfiguratie ingericht. **DartFlow-beheer → Integraties** (`/app/platform/integraties`) heeft hiervoor geen invoervelden. **Android → Meer → Meldingen** biedt toestemming, categorievoorkeuren, toestelregistratie en een testmelding; dat scherm configureert geen Firebaseproject.
 
+## Als het Firebaseproject nog ontbreekt
+
+Open [Firebase Console](https://console.firebase.google.com/) en kies **Project maken → Firebase toevoegen aan Google Cloud-project**. De bestaande Google-publicatiekoppeling verwijst naar Cloud-project-ID `dartflow`; voeg Firebase bij voorkeur aan dat bestaande project toe. Google Analytics is optioneel. Registreer daarna de onderstaande productie- en stagingpackages als twee Android-apps en download hun configuratiebestanden. De SDK-koppeling is al ingebouwd in DartFlow. [Officiële project- en Androidregistratie](https://firebase.google.com/docs/android/setup).
+
+Als het bestaande Cloud-project niet zichtbaar is, controleer eerst het Google-account en de projecttoegang. Een ander beschikbaar project-ID moet eerst bewust aan de servervalidatie worden gekoppeld: de huidige release accepteert uitsluitend `dartflow`. Alleen de weergavenaam **DartFlow** is hiervoor onvoldoende. Controleer na inrichting ook **Projectinstellingen → Cloud Messaging → Firebase Cloud Messaging API (V1)**. De serverautorisatie hieronder blijft afzonderlijk nodig.
+
 ## Publieke Androidconfiguratie
 
 Open [Firebase Console](https://console.firebase.google.com/) → project **dartflow** → **Projectinstellingen → Algemeen → Jouw apps**. Selecteer de bestaande Androidregistratie en download `google-services.json`. Controleer de exacte package:

@@ -34,6 +34,22 @@ test('canonical leg challenges enforce source access, private links, frozen vers
   await t.test('finish advice uses only accepted own real rest positions and saved advice stays private',async()=>{
    const own=await getPlayAdvice(accounts[0]);assert.equal(own.advice?.target,121);assert.equal(own.advice?.frequency,2);assert.equal(own.advice?.outRule,'double');assert.equal((await getPlayAdvice(accounts[2])).advice,null);const saved=await savePlayAdvice(accounts[0],'save');assert.equal(saved.saved?.advice.target,121);assert.equal((await getPlayAdvice(accounts[2])).saved,null);assert.equal((await savePlayAdvice(accounts[0],'clear')).saved,null);
   });
+  await t.test('actual runtime cannot rewrite challenge ownership, frozen source, link proof or retry receipt; narrow normal writes still work',async()=>{
+   const runtime=(await import('../lib/db')).database();assert.equal((await runtime.query('select current_user as role')).rows[0].role,'dartflow_app');
+   const requestId=randomUUID(),made=await executeChallengeCommand(owner,{requestId,action:{type:'challenge.create',sourceKind:'play',sourceId:first.s.id,visibility:'link'}});if(!('challenge'in made))throw Error('challenge');const id=made.challenge.id;challenges.push(id);
+   const read=async()=>({challenge:(await admin.query('select * from dartflow_private.play_leg_challenges where id=$1',[id])).rows[0],receipt:(await admin.query('select * from dartflow_private.play_challenge_receipts where actor_id=$1 and request_id=$2',[accounts[0],requestId])).rows[0]});
+   const before=await read();assert.ok(before.receipt);
+   await assert.rejects(runtime.query('update dartflow_private.play_leg_challenges set owner_id=$2 where id=$1',[id,accounts[1]]),{code:'42501'});
+   await assert.rejects(runtime.query("update dartflow_private.play_leg_challenges set source=jsonb_set(source,'{valid}','false'::jsonb)where id=$1",[id]),{code:'42501'});
+   await assert.rejects(runtime.query("update dartflow_private.play_leg_challenges set link_hash=repeat('0',64)where id=$1",[id]),{code:'42501'});
+   await assert.rejects(runtime.query("update dartflow_private.play_challenge_receipts set payload_hash=repeat('0',64)where actor_id=$1 and request_id=$2",[accounts[0],requestId]),{code:'42501'});
+   await assert.rejects(runtime.query('delete from dartflow_private.play_challenge_receipts where actor_id=$1 and request_id=$2',[accounts[0],requestId]),{code:'42501'});
+   assert.deepEqual(await read(),before);
+   const revoked=await executeChallengeCommand(owner,{requestId:randomUUID(),action:{type:'challenge.revoke',challengeId:id}});assert.ok('challenge'in revoked&&revoked.challenge.revoked);assert.ok((await read()).challenge.revoked_at);assert.deepEqual((await read()).receipt,before.receipt);
+   const advice=await savePlayAdvice(accounts[0],'save');assert.equal(advice.saved?.advice.target,121);
+   await assert.rejects(runtime.query('update dartflow_private.play_saved_finish_advice set user_id=$2 where user_id=$1',[accounts[0],accounts[1]]),{code:'42501'});
+   assert.equal((await getPlayAdvice(accounts[0])).saved?.advice.target,121);assert.equal((await savePlayAdvice(accounts[0],'clear')).saved,null);
+  });
   await t.test('corrected source marks the existing frozen version invalid without revealing or rewriting the reference',async()=>{
    const before=await getPlaySession(attemptPrincipal,attempt.id);second.s=(await send(second.principal,second.s,{type:'session.undo',writerEpoch:second.s.writer.epoch,rulesHash:second.s.rulesHash})).session!;const after=await getPlaySession(attemptPrincipal,attempt.id);assert.deepEqual(after.rules,before.rules);assert.equal(after.game.progress.mode,'leg-challenge');if(after.game.progress.mode==='leg-challenge')assert.equal(after.game.progress.sourceInvalidated,true);assert.equal(after.id,before.id);assert.equal(after.revision,before.revision);
   });
