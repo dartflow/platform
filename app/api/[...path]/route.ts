@@ -1,4 +1,7 @@
+import {PlayRuleError} from '@/lib/play-rules';
 import {searchPlayers}from'@/lib/player-search';
+import {handlePlayApi} from '@/lib/play-api';
+import {getManual} from '@/lib/manual';
 import {usernameAvailability} from '@/lib/profile-name';
 import{getNativePush,executeNativePushCommand}from'@/lib/native-push';
 import{buildTournamentPlan,parseTournamentPlanning}from'@/lib/tournament-planning';
@@ -103,8 +106,11 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   const path=parts.join('/');
   if(appConfig().mode==='local' && !isLocalRequest(request)) throw new DomainError('local_only','Deze testomgeving is alleen lokaal bereikbaar.',403);
   if(method==='GET'&&path==='faq'){const q=request.nextUrl.searchParams;return json(await getPublishedFaq({q:q.get('q'),category:q.get('category'),id:q.get('id')}));}
+  if(method==='GET'&&path==='manual'){const q=request.nextUrl.searchParams;return json(getManual({q:q.get('q'),category:q.get('category'),id:q.get('id')}));}
   const nativePlayer=await handleNativePlayerApi(request,parts,handle);
   if(nativePlayer)return nativePlayer;
+  const play=await handlePlayApi(request,parts);
+  if(play)return play;
   const ocheDevice=await handleOcheDeviceApi(request,parts);
   if(ocheDevice)return ocheDevice;
   const blogAdmin=await handleBlogAdminApi(request,parts);
@@ -271,7 +277,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   }
   if(method==='GET'&&path==='player-statistics'){
     const q=request.nextUrl.searchParams;
-    return json(await getPlayerStatistics(actor.id,{limit:25,...(q.has('outRule')?{outRule:q.get('outRule') as StatisticsFilter['outRule']}:{}),...(q.has('inRule')?{inRule:q.get('inRule') as StatisticsFilter['inRule']}:{}),...(q.get('handicap')==='true'?{handicap:true}:{}),startScore:q.has('startScore')?Number(q.get('startScore')) as 301|501|701:undefined,offset:Number(q.get('offset')||0),opponent:q.get('opponent')||undefined,search:q.get('search')||undefined,opponentOffset:Number(q.get('opponentOffset')||0),practiceOffset:Number(q.get('practiceOffset')||0)}));
+    return json(await getPlayerStatistics(actor.id,{limit:25,...(q.has('source')?{source:q.get('source')as StatisticsFilter['source']}:{}),...(q.has('outRule')?{outRule:q.get('outRule') as StatisticsFilter['outRule']}:{}),...(q.has('inRule')?{inRule:q.get('inRule') as StatisticsFilter['inRule']}:{}),...(q.get('handicap')==='true'?{handicap:true}:{}),startScore:q.has('startScore')?Number(q.get('startScore')) as 301|501|701:undefined,offset:Number(q.get('offset')||0),opponent:q.get('opponent')||undefined,search:q.get('search')||undefined,opponentOffset:Number(q.get('opponentOffset')||0),practiceOffset:Number(q.get('practiceOffset')||0)}));
   }
   if(method==='POST'&&path==='board-activity/continue'){
     const data=await body(request);
@@ -377,7 +383,8 @@ async function handle(request:NextRequest,parts:string[],method:string) {
 type Context={params:Promise<{path:string[]}>};
 async function route(request:NextRequest,context:Context) {
   try { return await handle(request,(await context.params).path,request.method); }
-  catch (error) {
+  catch (caught) {
+    const error=caught instanceof PlayRuleError?new DomainError(caught.code,caught.message,caught.status):caught;
     if (error instanceof DomainError) {
       const retryAfter='retryAfter' in error ? Number(error.retryAfter) : undefined;
       const response=json({error:error.message,code:error.code,...(retryAfter?{retryAfter}:{})},error.status);

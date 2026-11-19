@@ -13,7 +13,7 @@ android {
         applicationId = "nl.dartflow.ochelive"
         minSdk = 26
         targetSdk = 36
-        versionCode = providers.gradleProperty("ocheVersionCode").orElse("1016").get().toInt()
+        versionCode = providers.gradleProperty("ocheVersionCode").orElse("1017").get().toInt()
         versionName = providers.gradleProperty("ocheVersionName").orElse(releaseVersion.getProperty("versionName")).get()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

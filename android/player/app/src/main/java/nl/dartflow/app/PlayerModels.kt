@@ -5,7 +5,7 @@ import java.util.Locale
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class PlayerScreen { HOME, PLAY, EVENTS, EVENT, FRIENDS, FEED, PROFILE, STATISTICS, HISTORY, BOARDS, MATCH, BOARD, LOBBY, TRAINING, CHAT, SEASONS, SEASON, NOTIFICATIONS, SCREENS, ORGANIZE, DIRECTOR, RANKINGS, HELP, CLUBS, CLUB, SEASON_CREATE, RANKING_EVENT, FAQ_ADMIN, LOCATIONS }
+enum class PlayerScreen { HOME, PLAY, EVENTS, EVENT, FRIENDS, FEED, PROFILE, STATISTICS, HISTORY, BOARDS, MATCH, BOARD, LOBBY, TRAINING, CHAT, SEASONS, SEASON, NOTIFICATIONS, SCREENS, ORGANIZE, DIRECTOR, RANKINGS, HELP, CLUBS, CLUB, SEASON_CREATE, RANKING_EVENT, FAQ_ADMIN, LOCATIONS, PLAY_START, PLAY_SESSION, PLAY_HISTORY, PRACTICE, CHALLENGES, MANUAL }
 
 /** UI session metadata intentionally contains no bearer or refresh credential. */
 data class PlayerSession(val userId: String, val email: String, val expiresAt: Long, val local: Boolean = false)
@@ -57,12 +57,14 @@ data class PlayerUiState(
     val match: PlayerMatch? = null, val board: JSONObject? = null, val error: String? = null, val notice: String? = null,
     val pendingEmail: String? = null, val localUsers: List<PlayerProfile> = emptyList(), val googleUrl: String? = null,
     val online: Boolean = true, val hasPendingCommand: Boolean = false, val capabilities: JSONObject = JSONObject(),
+    val pendingMatchVisits: Int = 0, val pendingTrainingVisits: Int = 0,
     val safety: JSONObject = JSONObject(),
     val invitation: JSONObject = JSONObject(),
     val canManagePlatform: Boolean = false, val organizerDraft: JSONObject = JSONObject(), val organizerCloudDraft: JSONObject = JSONObject(), val faqAdminReceipt: JSONObject = JSONObject(),
     val accountDeletion: JSONObject = JSONObject(),
     val homeFeed: JSONObject = JSONObject(), val homeFeedLoading: Boolean = false, val homeFeedError: String? = null,
     val guestOperatorId: String = "",
+    internal val play: PlayerPlayUi = PlayerPlayUi(),
 )
 
 fun JSONArray?.objects(): List<JSONObject> = if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }

@@ -21,8 +21,8 @@ export async function boardAction(client:PoolClient,actor:string,command:Platfor
  const scope=await client.query('select event_id from dartflow_private.boards where id=$1',[boardId]);if(!scope.rows.length)throw new DomainError('not_found','Deze baan bestaat niet.',404);
  let event=await eventAccess(client,actor,scope.rows[0].event_id);
  if(a.type==='board.start'){
-  // Take the existing source lock before its event lock, just like score/expiry.
-  // A claim queued behind a late score can then see its committed tombstone.
+  // Serialize with scoring and expiry in the same event/source lock order.
+  // A queued claim then sees the committed interruption before taking the lane.
   const existing=await readBoardActivity(client,boardId);
   if(existing){const locked=await lockBoardActivity(client,existing.sessionId);if(locked?.row.status==='active'&&locked.now>=locked.row.deadline_at.getTime())await releaseBoardActivity(client,{sessionId:existing.sessionId,reason:'timeout'});}
  }

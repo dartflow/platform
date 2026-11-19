@@ -1,7 +1,11 @@
 import {test,expect} from '@playwright/test';
+import {readFileSync} from 'node:fs';
+
+const faqVersion=readFileSync(new URL('../../lib/faq.ts',import.meta.url),'utf8').match(/^export const FAQ_VERSION\s*=\s*['"]([^'"]+)['"];?$/m)?.[1];
+if(!faqVersion)throw new Error('De gedeelde FAQ-versie ontbreekt in lib/faq.ts.');
 
 test('public FAQ searches the shared source and a direct question works without login',async({page,request},info)=>{
- const api=await request.get('/api/faq?q=scorekaart');expect(api.ok()).toBe(true);const data=await api.json();expect(data.version).toBe('2026.11.19');expect(data.items.length).toBeGreaterThan(0);
+ const api=await request.get('/api/faq?q=scorekaart');expect(api.ok()).toBe(true);const data=await api.json();expect(data.version).toBe(faqVersion);expect(data.items.length).toBeGreaterThan(0);
  await page.setViewportSize({width:390,height:844});await page.goto('/help');await expect(page.getByRole('heading',{name:'Help & FAQ',exact:true})).toBeVisible();
  await page.getByRole('searchbox',{name:'Zoek een vraag'}).fill('scorekaart');await expect(page.locator('.faq-answers details')).toHaveCount(data.items.length);
  await page.goto(`/help/${data.items[0].id}`);await expect(page.locator('details[open] summary')).toHaveText(data.items[0].question);await expect(page.locator('details[open]')).toContainText(data.items[0].answer);

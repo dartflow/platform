@@ -1,0 +1,2 @@
+import type {PlayOutRule} from './play-types';
+export type PlayChallengeView={id:string;sourceName:string;sourceId:string;sourceKind:'match'|'play';ownerName:string;visibility:'private'|'friends'|'link';comparison:'darts'|'visits';createdAt:string;revoked:boolean;sourceChanged:boolean;sourceInvalidated:boolean;canStart:boolean;canManage:boolean;link?:{url:string;token:string};sourceSummary:{startScore:number;inRule:'single'|'double';outRule:PlayOutRule;visits:number;darts:number|null}};

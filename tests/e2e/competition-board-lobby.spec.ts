@@ -1,6 +1,8 @@
 import {test,expect} from '@playwright/test';
 import type {CompetitionBoardContext,CompetitionBoardLobby} from '../../lib/competition-board-lobby-types';
 import type {ClubBoardScreenView,Profile} from '../../lib/types';
+import type {PlayBoardView} from '../../lib/play-session-types';
+import type {getMyPlaySessions} from '../../lib/play-sessions';
 
 const boardId='55555555-5555-4555-8555-555555555555',actor='00000000-0000-4000-8000-000000000002',other='00000000-0000-4000-8000-000000000003';
 const profile:Profile={id:actor,name:'Noor Dart',displayName:'Noor Dart',username:'noordart',usernameLocked:true,displayNameConfirmed:true,onboardingComplete:true,pinConfigured:true};
@@ -18,6 +20,8 @@ test('board QR offers the actual planned match, keeps PIN private and restores t
    else if(path==='/api/overview')value={profile,clubs:[],currentClub:null,events:[],matches:[],boards:[],participants:[],history:[],standings:[],permissions:{canManage:false}};
    else if(path==='/api/platform')value={profile,matches:[],history:[],players:[],clubs:[],clubBoards:[],rooms:[],trainings:[],leagues:[],tournaments:[],lobbies:[],friends:[],blocked:[],preferences:{}};
    else if(path===`/api/boards/${boardId}`)value={board:{id:boardId,name:'Baan 1',blocked:false,occupied:Boolean(current.lobby)},event:{id:lobby.seasonId,name:'Verenigingscompetitie'},canStart:!current.lobby};
+   else if(path===`/api/play/boards/${boardId}`)value={board:{id:boardId,name:'Baan 1',available:!current.lobby,status:current.lobby?'occupied':'available'},canStart:!current.lobby,requiresAccount:false} satisfies PlayBoardView;
+   else if(path==='/api/play/mine')value={sessions:[],history:[]} satisfies Awaited<ReturnType<typeof getMyPlaySessions>>;
    else if(path===`/api/boards/${boardId}/competition`)value=current;
    else if(path==='/api/competition-lobbies/actions'){
     const command=route.request().postDataJSON();commands.push(command.action.type);expect(command.action).toMatchObject({type:'open',boardId,seasonId:lobby.seasonId,fixtureId:lobby.fixtureId,slotId:lobby.slotId});current={...current,lobby};value={ok:true,lobby};
@@ -25,7 +29,7 @@ test('board QR offers the actual planned match, keeps PIN private and restores t
     pinCalls.push(route.request().postDataJSON());expect(pinCalls.at(-1)).toMatchObject({lobbyId:lobby.id,username:'@samdart',pin:'012345'});
     if(pinCalls.length===1)return route.fulfill({status:403,json:{error:'Gebruikersnaam of spelerspincode klopt niet.'}});
     const ready:CompetitionBoardLobby={...lobby,status:'ready',revision:2,canStart:true,players:[lobby.players[0],{...lobby.players[1],confirmed:true,method:'pin'}]};current={...current,lobby:ready};value={ok:true,lobby:ready};
-   }
+   }else if(path.startsWith('/api/play/'))throw Error(`Unexpected play endpoint in competition board fixture: ${path}`);
    await route.fulfill({json:value});
   });
   await page.goto(`/baan/${boardId}`);const panel=page.getByRole('region',{name:'Competitiewedstrijd via baan-QR'});

@@ -6,7 +6,7 @@ export function startBoardActivityWorker():void{
  let busy=false,lastError=0;
  const tick=async()=>{
   if(busy)return;busy=true;
-  try{await processBoardActivityBatch();}
+  try{await processBoardActivityBatch();await(await import('./play-sessions')).processPlaySessionBatch();}
   catch(error){if(Date.now()-lastError>30_000){lastError=Date.now();const code=error&&typeof error==='object'&&'code'in error?String(error.code):'worker_error';console.error('Oche Live: verlopen sessies konden niet worden verwerkt.',/^[a-zA-Z0-9_]{1,40}$/.test(code)?code:'worker_error');}}
   finally{busy=false;}
  };

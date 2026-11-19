@@ -61,19 +61,15 @@
   },
   {
     "id": "sport-bust",
-    "category": "Spelregels",
-    "question": "Waarom springt mijn resterende score terug na een worp?",
-    "answer": "Bij 501 dubbel-uit is je beurt ongeldig als je onder nul uitkomt, één punt overhoudt of nul bereikt zonder een dubbel als laatste pijl. Je beurt stopt en je krijgt de score van vóór die beurt terug. Sta je op 32 en gooi je eerst 20 en daarna 20, dan begin je je volgende beurt weer op 32.",
+    "category": "Spelen & oefenen",
+    "question": "Wanneer is een beurt bust?",
+    "answer": "Bij dubbel uit zijn een negatieve rest, één over en nul zonder geldige einddubbel bust. De stand en openingsstatus gaan terug naar vóór de beurt en de beurt eindigt. Bij een andere uitregel gebruikt de server die vooraf vastgelegde regel.",
     "keywords": [
-      "bust",
-      "dood",
-      "dubbel",
-      "restscore",
-      "1",
-      "over",
-      "beurt",
-      "nul"
-    ]
+      "x01",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "x01"
   },
   {
     "id": "sport-legset",
@@ -768,21 +764,15 @@
   },
   {
     "id": "baan-tablet",
-    "category": "Oche Live en Android",
-    "question": "Kunnen twee spelers met één telefoon of clubtablet spelen?",
-    "answer": "Ja. Gebruik het gedeelde toestel voor de score-invoer. De tweede speler identificeert zich voor een rankingpartij met de eigen gebruikersnaam en zescijferige pincode. Iedere speler bevestigt namens het eigen account. Zonder bevestigde tweede identiteit kun je oefenen. De baanweergave toont alleen de wedstrijdinformatie.",
+    "category": "Gastspel",
+    "question": "Kunnen meerdere spelers één telefoon gebruiken?",
+    "answer": "Ja. Kies Eén telefoon en wijs één schrijver aan. De invoer vermeldt steeds voor welke speler en welk teamlid de beurt telt. Bij Eigen telefoons heeft iedere deelnemer een eigen privétoegang en alleen de toegestane invoer.",
     "keywords": [
-      "gedeeld",
-      "apparaat",
-      "tweede",
-      "speler",
-      "geen",
-      "telefoon",
-      "tablet",
-      "PIN",
-      "zescijferig",
-      "identiteit"
-    ]
+      "gasten en telefoons",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "gasten-en-telefoons"
   },
   {
     "id": "baan-kaart",
@@ -821,20 +811,15 @@
   },
   {
     "id": "baan-offline",
-    "category": "Oche Live en Android",
-    "question": "Waarom loopt het baanscherm achter op mijn Android-telefoon?",
-    "answer": "Controleer de synchronisatiestatus van de partij. Bij verbindingsverlies bewaart de app de laatst geaccepteerde beurt en de nog te verzenden invoer op het toestel. Houd dezelfde partij open en herstel de verbinding. Na controle van de volgorde werken de schermen bij. Zie je tegenstrijdige scores, laat de wedstrijdleiding dan eerst de laatste geaccepteerde beurt controleren.",
+    "category": "Herstel & verbinding",
+    "question": "Waarom toont het baanscherm tijdelijk een oudere stand?",
+    "answer": "Oche Live toont de laatste door de server bevestigde stand, met een verbindingsmelding bij uitval. Alleen het schrijvende toestel kan een lokale wachtrij hebben. Na herstel halen telefoon en scherm de geaccepteerde actuele stand op.",
     "keywords": [
-      "offline",
-      "telefoon",
-      "tablet",
-      "wachtrij",
-      "sync",
-      "achterstand",
-      "scores",
-      "ongelijk",
-      "reconnect"
-    ]
+      "hervatten offline",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "hervatten-offline"
   },
   {
     "id": "baan-oproep",
@@ -955,20 +940,15 @@
   },
   {
     "id": "hulp-correctie",
-    "category": "Uitslagen en hulp",
-    "question": "Waarom kan een correctie ook mijn rating van een latere partij wijzigen?",
-    "answer": "Bij Elo hangt de wijziging af van de startratings van beide spelers. Als een eerdere winnaar verandert, kunnen ook de startratings en wijzigingen van latere partijen veranderen. DartFlow berekent de getroffen reeks opnieuw in de officiële volgorde. Je ziet de correctiereden en je aangepaste historie. De wedstrijdleiding beoordeelt afzonderlijk wat dit betekent voor al gespeelde vervolgronden.",
+    "category": "Herstel & verbinding",
+    "question": "Wat gebeurt er bij een correctie na een officiële uitslag?",
+    "answer": "De bevoegde wedstrijdleiding beoordeelt de correctie en de gevolgen voor uitslag, stand, rating en al vrijgegeven vervolgpartijen. Eerdere toestand, verantwoordelijke en reden blijven vastgelegd. Verwerk een ongeldige vervolgtoestand niet stilzwijgend verder.",
     "keywords": [
-      "herberekenen",
-      "correctie",
-      "revisie",
-      "oude",
-      "match",
-      "rating",
-      "achteraf",
-      "tegenstanders",
-      "bracket"
-    ]
+      "score correcties",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "score-correcties"
   },
   {
     "id": "moderatie-signaal",
@@ -1040,20 +1020,15 @@
   },
   {
     "id": "hulp-gastprofiel",
-    "category": "Uitslagen en hulp",
-    "question": "Kan ik mijn wedstrijden als gast later aan mijn profiel koppelen?",
-    "answer": "Maak een eigen account en laat je gastdeelname aan het evenement bevestigen. De betreffende organisator kan de koppeling van je evenementenhistorie laten controleren. Je eerdere resultaat houdt de betekenis die vóór de wedstrijd gold. Een persoonlijke vrijdagcup die je als gast hebt gewonnen, blijft zo zichtbaar als toernooiwinst zonder extra ratingpunten.",
+    "category": "Gastspel",
+    "question": "Hoe bewaar ik een gastpartij?",
+    "answer": "Kies na afloop Bewaar mijn resultaat bij jouw eigen deelname. Open de privélink of privé-QR, meld je aan en controleer welke speler je koppelt. Dezelfde partij en scorekaart blijven behouden; de deelname verschijnt eenmaal bij je profiel.",
     "keywords": [
-      "gastaccount",
-      "profiel",
-      "koppelen",
-      "historische",
-      "resultaten",
-      "dubbele",
-      "naam",
-      "account",
-      "aanmaken"
-    ]
+      "gast bewaren",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "gast-bewaren"
   },
   {
     "id": "hulp-toegankelijk",
@@ -1201,18 +1176,15 @@
   },
   {
     "id": "oche-inactiviteit",
-    "category": "Oche Live en Android",
-    "question": "Waarom vraagt Oche Live of onze vrije baan nog in gebruik is?",
-    "answer": "Na twee minuten zonder relevante spelactiviteit waarschuwt de vrije sessie dat de baan over één minuut vrijkomt. Gebruik de verlengactie in DartFlow als je verder speelt. Je kunt dit twee keer doen. Bij een officiële toewijzing bewaart DartFlow de partij en kan de wedstrijdleiding het spelen hervatten.",
+    "category": "Herstel & verbinding",
+    "question": "Wat gebeurt er na afloop van de baantimer?",
+    "answer": "Na 120 seconden zonder nieuwe geaccepteerde beurt volgt 60 seconden waarschuwing. Na de deadline komt de baan vrij en blijft de partij onderbroken bewaard. Hervatten gebruikt dezelfde partij op een beschikbare baan; een opvolgende partij kan niet door de oude toegang worden overgenomen.",
     "keywords": [
-      "120",
-      "60",
-      "inactiviteit",
-      "verlengen",
-      "pauze",
-      "vrijgeven",
-      "timer"
-    ]
+      "baantimer",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "baantimer"
   },
   {
     "id": "profiel-gemiddelde",
@@ -1413,5 +1385,497 @@
       "Oche Live",
       "hervatten"
     ]
+  },
+  {
+    "id": "play-account",
+    "category": "Gastspel",
+    "question": "Heb ik een account nodig om te beginnen?",
+    "answer": "Nee, voor vrijspel op een open beschikbare baan volstaat een herkenbare voornaam. Scan de baan-QR en kies Start een spel. Voor een officiële competitiewedstrijd gebruik je je bestaande account en de geplande deelname.",
+    "keywords": [
+      "qr beginnen",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "qr-beginnen"
+  },
+  {
+    "id": "play-profiel-pin",
+    "category": "Gastspel",
+    "question": "Hoe gebruik ik mijn bestaande profiel op een gedeeld toestel?",
+    "answer": "Bevestig je deelname met je @gebruikersnaam en eigen zescijferige spelers-PIN. De primaire accountsessie op het gedeelde toestel blijft bruikbaar. Gebruik op je eigen telefoon de normale aanmelding; selecteren van alleen een naam bewijst geen identiteit.",
+    "keywords": [
+      "gasten en telefoons",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "gasten-en-telefoons"
+  },
+  {
+    "id": "play-tweede-gast",
+    "category": "Gastspel",
+    "question": "Hoe voeg ik een tweede gast toe?",
+    "answer": "Voeg vóór de start nog een deelnemer met een herkenbare voornaam toe. Hebben twee gasten dezelfde naam, voeg dan een onderscheid toe. Iedere gast krijgt een vaste eigen deelname-ID, ook wanneer de schermnaam later wijzigt.",
+    "keywords": [
+      "gasten en telefoons",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "gasten-en-telefoons"
+  },
+  {
+    "id": "play-linktermijn",
+    "category": "Gastspel",
+    "question": "Hoelang blijft een claim- of herstellink geldig?",
+    "answer": "Standaard zeven dagen: een claim vanaf afronding en herstel vanaf onderbreking. Bij de actie staat de concrete vervaldatum. Refresh of reconnect verlengt die niet. Een platformwijziging geldt standaard voor nieuw ontstane termijnen.",
+    "keywords": [
+      "gast bewaren",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "gast-bewaren"
+  },
+  {
+    "id": "play-link-verlopen",
+    "category": "Gastspel",
+    "question": "Wat kan ik doen als mijn link verlopen is?",
+    "answer": "De verlopen link verleent geen claim- of herstelrecht meer. Open je bestaande profielhistorie als de deelname al was gekoppeld, of start een nieuwe partij. Het verlopen van jouw gasttoegang wist niet automatisch de historie van een geregistreerde tegenstander of een officieel archief.",
+    "keywords": [
+      "gast bewaren",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "gast-bewaren"
+  },
+  {
+    "id": "play-claim-eenmaal",
+    "category": "Gastspel",
+    "question": "Kan dezelfde gastdeelname twee keer worden gekoppeld?",
+    "answer": "Nee. Een deelname kan bij één account horen. Een herhaalde bevestiging door datzelfde account is idempotent en levert dezelfde koppeling op. Een ander account kan de deelname niet opnieuw claimen. Een publieke QR of voornaam geeft geen claimrecht.",
+    "keywords": [
+      "gast bewaren",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "gast-bewaren"
+  },
+  {
+    "id": "play-claim-rating",
+    "category": "Spelen & oefenen",
+    "question": "Waarom verandert koppelen de oorspronkelijke rankingstatus niet?",
+    "answer": "Koppelen identificeert een bestaande deelname en maakt geen nieuwe uitslag. Vrijspel, training en een leguitdaging houden hun oorspronkelijke status. Alleen vooraf toegelaten officiële bronnen volgen de bestaande rating- en circuitregels.",
+    "keywords": [
+      "historie statistieken",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "historie-statistieken"
+  },
+  {
+    "id": "play-x01-kiezen",
+    "category": "Spelen & oefenen",
+    "question": "Hoe kies ik 301, 501 of 701?",
+    "answer": "Open Spelen en kies de startscore. Een verse 301-keuze gebruikt standaard dubbel openen en dubbel uit; 501 en 701 gebruiken open start en dubbel uit. Controleer de samenvatting of pas de regels bewust aan vóór de eerste pijl.",
+    "keywords": [
+      "x01",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "x01"
+  },
+  {
+    "id": "play-dubbel-openen",
+    "category": "Spelen & oefenen",
+    "question": "Hoe werkt dubbel openen en welke pijlen tellen mee?",
+    "answer": "Vóór de eerste openingsdubbel tellen pijlen nul. De dubbel en geldige resterende pijlen tellen mee. Voer die fase per pijl in: S20, D16, T20 vanaf 301 levert 92 punten en 209 over. Undo herstelt ook de openingsstatus.",
+    "keywords": [
+      "x01",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "x01"
+  },
+  {
+    "id": "play-bull",
+    "category": "Spelen & oefenen",
+    "question": "Welke rol heeft bullseye bij openen en finishen?",
+    "answer": "Bullseye (DB) is 50 en geldt als dubbel voor dubbel openen en dubbel uit. Buitenbull (SB) is 25 en geen dubbel. De gekozen spelvorm kan bull ook als apart target gebruiken; de samenvatting vermeldt de geldende regel.",
+    "keywords": [
+      "x01",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "x01"
+  },
+  {
+    "id": "play-checkout",
+    "category": "Spelen & oefenen",
+    "question": "Hoe voer ik een checkout en het aantal pijlen in?",
+    "answer": "Voer de werkelijke finishpijlen in of bevestig bij geschikte totaalinvoer de einddubbel en het aantal gebruikte pijlen. De server controleert of de checkout daarmee mogelijk is. Pijlen na een geldige finish tellen niet mee.",
+    "keywords": [
+      "x01",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "x01"
+  },
+  {
+    "id": "play-correcties",
+    "category": "Herstel & verbinding",
+    "question": "Hoe herstel ik de laatste of een oudere beurt?",
+    "answer": "Pas onbevestigde invoer direct aan. Gebruik voor de geaccepteerde laatste beurt Undo wanneer je die bevoegdheid hebt. Een oudere of officiële correctie volgt de bestaande beoordelingsroute met reden; latere invoer kan daardoor opnieuw controle nodig hebben.",
+    "keywords": [
+      "score correcties",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "score-correcties"
+  },
+  {
+    "id": "play-app-sluit",
+    "category": "Herstel & verbinding",
+    "question": "Wat gebeurt er wanneer mijn app sluit?",
+    "answer": "Open Hervat partij om dezelfde serverpartij terug te halen. Lokaal bewaarde opdrachten blijven alleen beschikbaar zolang de app- of browsergegevens behouden blijven. Een gast gebruikt dezelfde privésessie of privéherstellink.",
+    "keywords": [
+      "hervatten offline",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "hervatten-offline"
+  },
+  {
+    "id": "play-zonder-internet",
+    "category": "Herstel & verbinding",
+    "question": "Kan ik zonder internet doorgooien?",
+    "answer": "De huidige schrijver kan bij lokaal spel toegestane beurten op hetzelfde toestel bewaren. Je ziet het aantal wachtende beurten en de lokale stand. Andere toestellen zien de geaccepteerde stand. Bij remote spel wacht voortgang zodra een bevestigde tegenstandersbeurt ontbreekt.",
+    "keywords": [
+      "hervatten offline",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "hervatten-offline"
+  },
+  {
+    "id": "play-verwerkt",
+    "category": "Herstel & verbinding",
+    "question": "Hoe herken ik lokaal bewaarde en verwerkte beurten?",
+    "answer": "Verwerkt betekent door de server geaccepteerd. Wacht op verbinding toont het aantal lokaal bewaarde beurten. Controle nodig betekent dat lokale invoer en de geaccepteerde partij beoordeeld moeten worden. Bewaar de lokale opdrachten totdat de bevestiging betrouwbaar ontvangen is.",
+    "keywords": [
+      "hervatten offline",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "hervatten-offline"
+  },
+  {
+    "id": "play-scoreconflict",
+    "category": "Herstel & verbinding",
+    "question": "Wat gebeurt er bij een scoreconflict?",
+    "answer": "Beide lezingen blijven beschikbaar met speler, beurt en waarden. De sessiebeheerder beoordeelt vrijspel; de bevoegde wedstrijdleiding beoordeelt officiële partijen. Een conflict houdt verwerking tegen waar die van de uitkomst afhankelijk is.",
+    "keywords": [
+      "score correcties",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "score-correcties"
+  },
+  {
+    "id": "play-schriver",
+    "category": "Herstel & verbinding",
+    "question": "Hoe draag ik de schrijver over?",
+    "answer": "Controleer de laatste geaccepteerde beurt en behandel wachtende offline invoer. Kies daarna de nieuwe schrijver. De server maakt de nieuwe toewijzing leidend; opdrachten onder een verouderde toewijzing worden niet blind als nieuwe scores verwerkt.",
+    "keywords": [
+      "schrijver en bord",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "schrijver-en-bord"
+  },
+  {
+    "id": "play-bordwissel",
+    "category": "Herstel & verbinding",
+    "question": "Hoe ga ik verder op een ander bord?",
+    "answer": "Kies in de partij een beschikbare andere baan en bevestig Bord wisselen. Dezelfde partij en scorekaart verhuizen, de oude baan komt vrij en de deelnemers zien het actuele baannummer. Bij een bezette doelbaan blijft de bestaande toewijzing intact.",
+    "keywords": [
+      "schrijver en bord",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "schrijver-en-bord"
+  },
+  {
+    "id": "play-verlengingen",
+    "category": "Herstel & verbinding",
+    "question": "Hoe werken de twee verlengingen?",
+    "answer": "Dezelfde partij heeft maximaal twee gedeelde verlengingen. Gebruik de actie bij de actuele waarschuwing. Refresh, reconnect, legwissel en bordwissel geven geen nieuw budget. Gewone correcties en dubbele beurten schuiven de deadline niet op.",
+    "keywords": [
+      "baantimer",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "baantimer"
+  },
+  {
+    "id": "play-gastherstel",
+    "category": "Herstel & verbinding",
+    "question": "Welke gegevens heb ik nodig om een gastpartij te hervatten?",
+    "answer": "Gebruik de nog aanwezige privésessie of de eigen privéherstellink vóór de getoonde vervaldatum. Voor uitsluitend lokaal bewaarde beurten moeten ook de lokale toestelgegevens behouden zijn. Een voornaam of publieke baan-QR volstaat niet als herstelbewijs.",
+    "keywords": [
+      "hervatten offline",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "hervatten-offline"
+  },
+  {
+    "id": "play-cricket",
+    "category": "Spelen & oefenen",
+    "question": "Hoe werken Cricket en de puntentelling?",
+    "answer": "Drie treffers sluiten een doel van 20 tot en met 15 of bull. Overschot scoort zolang een tegenstander dat doel open heeft. Met punten wint alles gesloten en minstens evenveel punten; zonder punten wint de eerste die alles sluit.",
+    "keywords": [
+      "cricket",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "cricket"
+  },
+  {
+    "id": "play-tactics",
+    "category": "Spelen & oefenen",
+    "question": "Wat is het verschil tussen Tactics 3 en Tactics 5?",
+    "answer": "Beide gebruiken 20 tot en met 10 en bull. Tactics 5 is de standaard met vijf treffers, punten en meer punten nodig voor winst. Tactics 3 gebruikt drie treffers en de Cricket-eindregel: minstens evenveel punten na alles sluiten.",
+    "keywords": [
+      "tactics",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "tactics"
+  },
+  {
+    "id": "play-tactics-replay",
+    "category": "Spelen & oefenen",
+    "question": "Wanneer wordt een Tactics-leg overgespeeld?",
+    "answer": "Bij Tactics 5 met punten wanneer alle zijden alles hebben gesloten en de punten gelijk zijn. Die poging levert geen legwinst op en blijft herkenbaar in de historie. De volgende poging volgt de vastgelegde startregeling.",
+    "keywords": [
+      "tactics",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "tactics"
+  },
+  {
+    "id": "play-around",
+    "category": "Spelen & oefenen",
+    "question": "Hoe werken segmentkeuze en bull bij Around the Clock?",
+    "answer": "Kies voor getallen alle segmenten of uitsluitend singles, dubbels of triples. Bull heeft een eigen instelling: uit, beide bulls, alleen buitenbull of alleen bullseye. Een geldige triple is standaard één succes en slaat geen doelen over.",
+    "keywords": [
+      "around",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "around"
+  },
+  {
+    "id": "play-bingo-winst",
+    "category": "Spelen & oefenen",
+    "question": "Hoe werken een lijn en volle kaart bij Dubbelbingo?",
+    "answer": "Een lijn is horizontaal, verticaal of diagonaal. Volle kaart vereist alle negen vakken. Iedereen gebruikt dezelfde negen unieke dubbels en posities. Alleen de afgebeelde dubbel vult een vak; na winst stopt de partij direct.",
+    "keywords": [
+      "dubbelbingo",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "dubbelbingo"
+  },
+  {
+    "id": "play-bingo-teams",
+    "category": "Spelen & oefenen",
+    "question": "Hoe speel ik Dubbelbingo met teams?",
+    "answer": "Kies twee teams en leg de ledenvolgorde vast. Elk team deelt één kaart; teamleden gooien om beurten een volledige beurt van maximaal drie pijlen. De actieve speler, ingevoerde pijlen en teamvoortgang blijven zichtbaar.",
+    "keywords": [
+      "dubbelbingo",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "dubbelbingo"
+  },
+  {
+    "id": "play-leg-delen",
+    "category": "Spelen & oefenen",
+    "question": "Hoe verstuur ik Versla mijn leg?",
+    "answer": "Open een geschikte voltooide X01-leg in Historie, kies de leguitdaging en controleer bronspeler, regels en vergelijkingsmethode. Kies de toegestane zichtbaarheid en deel de link. De ontvanger speelt op een eigen moment.",
+    "keywords": [
+      "versla mijn leg",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "versla-mijn-leg"
+  },
+  {
+    "id": "play-leg-ongeschikt",
+    "category": "Spelen & oefenen",
+    "question": "Waarom kan een oude leg ongeschikt zijn als uitdaging?",
+    "answer": "Een bron heeft een geldige geaccepteerde beurtvolgorde, voltooide leg en bekende relevante regels nodig. Ontbreken die, dan staat een concrete reden bij de leg. De overige historie blijft bruikbaar; ontbrekende gegevens worden niet uit scores verzonnen.",
+    "keywords": [
+      "versla mijn leg",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "versla-mijn-leg"
+  },
+  {
+    "id": "play-leg-vergelijking",
+    "category": "Spelen & oefenen",
+    "question": "Wanneer vergelijken we op pijlen en wanneer op beurten?",
+    "answer": "Alleen bij voldoende betrouwbare geregistreerde pijlaantallen wordt vooraf op pijlen vergeleken. Anders geldt vergelijking op beurten. De uitnodiging vermeldt de gekozen methode; een ontbrekend checkoutpijlaantal wordt niet uit een totaalscore afgeleid.",
+    "keywords": [
+      "versla mijn leg",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "versla-mijn-leg"
+  },
+  {
+    "id": "play-leg-gelijk",
+    "category": "Spelen & oefenen",
+    "question": "Waarom kan een uitdaging gelijk eindigen?",
+    "answer": "Bij vergelijking op beurten is finishen in dezelfde vergelijkbare beurt gelijkspel. Bij vergelijking op pijlen telt de vooraf getoonde gelijkwaardige vergelijking. Beide kanten krijgen dezelfde vergelijkbare gelegenheid; de volgorde van de historische weergave geeft geen startvoordeel.",
+    "keywords": [
+      "versla mijn leg",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "versla-mijn-leg"
+  },
+  {
+    "id": "play-leg-zichtbaarheid",
+    "category": "Spelen & oefenen",
+    "question": "Wie kan mijn gedeelde leg bekijken?",
+    "answer": "Alleen wie past binnen de gekozen deelkeuze én de zichtbaarheid van de bron. Privé, vrienden en iedereen met de link worden servermatig getoetst. Intrekken stopt nieuwe pogingen. Een broncorrectie verandert een bestaande poging niet stilzwijgend.",
+    "keywords": [
+      "versla mijn leg",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "versla-mijn-leg"
+  },
+  {
+    "id": "play-leg-overzicht",
+    "category": "Spelen & oefenen",
+    "question": "Waar vind ik ontvangen en verstuurde uitdagingen?",
+    "answer": "Open Uitdagingen voor toegankelijke uitnodigingen en je eigen pogingen. Na afloop kun je Opnieuw proberen, Stuur een leg terug of Delen kiezen. Een asynchrone poging blijft in de oefenstatus; de bronpartij wordt niet dubbel geboekt.",
+    "keywords": [
+      "versla mijn leg",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "versla-mijn-leg"
+  },
+  {
+    "id": "play-finish-advies",
+    "category": "Spelen & oefenen",
+    "question": "Waarom krijg ik een training op een bepaalde reststand?",
+    "answer": "Een voorstel gebruikt werkelijk geregistreerde reststanden en hun frequentie onder het betreffende reglement. De uitleg vermeldt waarop het advies berust. Na een partij verschijnt maximaal één voorstel; zonder bruikbare historie kies je zelf een finish.",
+    "keywords": [
+      "finishtraining",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "finishtraining"
+  },
+  {
+    "id": "play-dubbelpogingen",
+    "category": "Spelen & oefenen",
+    "question": "Hoe worden dubbelpogingen geregistreerd?",
+    "answer": "Bij gerichte training voer je naast de werkelijke pijl ook het beoogde doel in. Een bedoelde dubbel die wordt gemist kan daardoor als poging meetellen. Gewone totaalscores onthullen geen bedoelde dubbels en worden daarvoor niet gebruikt.",
+    "keywords": [
+      "finishtraining",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "finishtraining"
+  },
+  {
+    "id": "play-dubbelpercentage",
+    "category": "Spelen & oefenen",
+    "question": "Waarom ontbreekt soms een dubbelpercentage?",
+    "answer": "Zonder expliciet geregistreerde dubbelpogingen kan DartFlow geen betrouwbaar percentage berekenen. Dat ontbreekt dan zichtbaar in plaats van nul te tonen. De benodigde pijlen en geslaagde pogingen kunnen wel beschikbaar zijn.",
+    "keywords": [
+      "finishtraining",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "finishtraining"
+  },
+  {
+    "id": "play-routehulp",
+    "category": "Spelen & oefenen",
+    "question": "Hoe schakel ik routehulp uit?",
+    "answer": "Zet Routehulp uit bij de finishtraining. De gekozen hulp is optioneel. Wanneer de hulp aanstaat, volgt de route de actuele restscore, resterende pijlen en finishregel; je kunt een alternatief of een afwijkend beoogd doel registreren.",
+    "keywords": [
+      "finishtraining",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "finishtraining"
+  },
+  {
+    "id": "play-training-rating",
+    "category": "Spelen & oefenen",
+    "question": "Waar tellen trainingsresultaten en uitdagingen mee?",
+    "answer": "Ze staan in de passende trainingshistorie met hun eigen regels en meetdefinitie. Ze veranderen niet achteraf in officiële ratingpartijen. Een oorspronkelijke bronpartij blijft eenmaal in haar oorspronkelijke statistiek- en rankingbestemming.",
+    "keywords": [
+      "historie statistieken",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "historie-statistieken"
+  },
+  {
+    "id": "play-officiele-rechten",
+    "category": "Spelen & oefenen",
+    "question": "Hoe werken officiële bevoegdheden en uitslagbevestigingen?",
+    "answer": "De bestaande officiële rollen blijven leidend voor deelname, schrijven, correcties en uitslagbevestiging. Gasttoegang of een publieke baan-QR geeft geen leidingrechten. Alleen geaccepteerde en bevoegde verwerking kan stand, bracket en toegestane rating bijwerken.",
+    "keywords": [
+      "organiseren",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "organiseren"
+  },
+  {
+    "id": "play-platformpariteit",
+    "category": "Gastspel",
+    "question": "Hoe vind ik dezelfde functie op desktop en in de Android-app?",
+    "answer": "Gebruik Spelen voor QR en vrijspel, Oefenen voor finishtraining en Around, Uitdagingen voor leguitdagingen en Historie voor scorekaarten. De indeling past bij het scherm; de server hanteert dezelfde regels, rechten en uitkomsten.",
+    "keywords": [
+      "qr beginnen",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "qr-beginnen"
+  },
+  {
+    "id": "play-uitleg-opnieuw",
+    "category": "Spelen & oefenen",
+    "question": "Hoe open ik de eerste uitleg opnieuw?",
+    "answer": "Open Help en kies de handleiding Vanaf de baan-QR naar je eerste pijl. Informatieknoppen bij een functie openen het relevante artikel. Score- en hersteluitleg is ook beschikbaar vanuit het lopende speelscherm.",
+    "keywords": [
+      "account meldingen hulp",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "account-meldingen-hulp"
+  },
+  {
+    "id": "play-probleem-melden",
+    "category": "Spelen & oefenen",
+    "question": "Hoe meld ik een probleem met een specifieke partij?",
+    "answer": "Vermeld de openbare partijreferentie, het tijdstip, de getoonde toestand en wat je probeerde. Stuur geen PIN, privéclaimlink, herstelcode, token of wachtwoord mee. Bewaar wachtende lokale invoer totdat duidelijk is wat de server heeft geaccepteerd.",
+    "keywords": [
+      "account meldingen hulp",
+      "spelen",
+      "handleiding"
+    ],
+    "manualId": "account-meldingen-hulp"
   }
 ]

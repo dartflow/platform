@@ -13,6 +13,7 @@ ENVIRONMENTS = {
     'staging': ('staging.dartflow.nl', 'dsnqnvbckkqpzadblshu', PACKAGE + '.staging'),
 }
 LEGAL_PATHS = ('/privacy', '/account-verwijderen', '/communityregels', '/voorwaarden')
+REQUIRED_FEATURES = {'resumable-guest-play', 'versioned-play-modes', 'private-guest-results', 'manual', 'offline-score-conflicts'}
 JSON_PATHS = ('/api/health', '/api/ready', '/api/player/v1/capabilities', '/.well-known/assetlinks.json')
 
 
@@ -52,6 +53,9 @@ def validate_capabilities(data, environment):
         raise ValueError(f'{environment}: Auth-project of native terugkeerroute wijkt af.')
     if data.get('authentication') != 'Bearer' or data.get('permissions') != 'existing-player-domain-rights':
         raise ValueError(f'{environment}: bestaande spelersrechten en bearer-auth zijn niet bevestigd.')
+    features = data.get('features')
+    if not isinstance(features, list) or not REQUIRED_FEATURES.issubset(set(value for value in features if isinstance(value, str))):
+        raise ValueError(f'{environment}: hervatbaar gastspel, spelvormen, privéresultaten, handleiding of offline-conflictbediening ontbreken.')
 
 
 def validate_health(health, ready, sha, environment):

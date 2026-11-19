@@ -478,14 +478,17 @@ export async function assertSeasonPinParticipant(client:Client,actor:string,play
  if(isTeamSeason(s)){const team=s.teams.find(t=>t.playerIds.includes(player));if(!team||team.status!=='active'||!(f.lineups.home?.submittedAt&&f.lineups.away?.submittedAt))throw new DomainError('player_ineligible','Deze speler is niet opgesteld voor dit slot.',403);await eligibleProfile(client,player,team.clubId);}else await eligibleProfile(client,player,participantClub(s,player)!);
 }
 /** The generic scorer must not bypass the current season assignment, published rules or round gate. */
-export async function assertSeasonMatchCommand(client:Client,actor:string,source:MatchState,action:MatchAction):Promise<void>{
+export async function assertSeasonMatchCommand(client:Client,actor:string,source:MatchState,action:MatchAction,options:{authorityOnly?:boolean}={}):Promise<void>{
  const link=(await client.query<{entity_id:string;fixture_id:string}>('select l.entity_id,l.fixture_id from dartflow_private.platform_match_links l join dartflow_private.competition_seasons s on s.id=l.entity_id where l.match_id=$1',[source.id])).rows[0];if(!link)return;
- if(action.type==='call')throw new DomainError('season_assignment_required','Roep deze officiële partij op via de competitieplanning.',409);
+ if(!options.authorityOnly&&action.type==='call')throw new DomainError('season_assignment_required','Roep deze officiële partij op via de competitieplanning.',409);
  const s=await seasonRow(client,link.entity_id),f=s.fixtures.find(f=>f.slots.some(slot=>slot.id===link.fixture_id&&slot.matchId===source.id)),slot=f?.slots.find(slot=>slot.id===link.fixture_id);
- if(!f||!slot||!slot.players.every((p,i)=>p===source.players[i]?.id)||slotPeople(slot).some(id=>!matchParticipants(source).some(p=>p.id===id)))throw new DomainError('assignment_changed','De officiële spelers- of baantoewijzing is gewijzigd.',409);
- if(!f.classification&&s.promotionPlan&&['dispute','resolve','request-correction','approve-correction','undo'].includes(action.type))throw new DomainError('promotion_source_locked','De plaatsing gebruikt deze vastgezette eindstand.',409);
+ if(!f||!slot||!slot.players.every((p,i)=>p===source.players[i]?.id)||slotPeople(slot).some(id=>!matchParticipants(source).some(p=>p.id===id)))throw new DomainError(options.authorityOnly?'forbidden':'assignment_changed','De officiële spelers- of baantoewijzing is gewijzigd.',options.authorityOnly?403:409);
  if(!await currentSeasonActor(client,s,actor))throw new DomainError('forbidden','Je hebt geen actueel speel- of schrijfrecht voor deze vereniging.',403);
  if((await client.query("select 1 from dartflow_private.platform_registrations where user_id=$1 and status='rejected'",[actor])).rowCount)throw new DomainError('forbidden','Dit profiel heeft geen actuele toelating.',403);
+ // A receipt or queued reading needs current authority and the same canonical roster,
+ // but does not start another throw or reopen a closed playing window.
+ if(options.authorityOnly)return;
+ if(!f.classification&&s.promotionPlan&&['dispute','resolve','request-correction','approve-correction','undo'].includes(action.type))throw new DomainError('promotion_source_locked','De plaatsing gebruikt deze vastgezette eindstand.',409);
  if(['canceled','administrative'].includes(f.status))throw new DomainError('fixture_closed','Deze officiële ontmoeting is door de leiding afgehandeld.',409);
  if(['recover','release'].includes(action.type)||action.type==='confirm'&&source.status==='confirmed')return;
  if(!['planned','active',...(f.classification?['draft','registration','completed']:[])].includes(s.status))throw new DomainError('season_not_active','Dit seizoen is niet vrijgegeven om te spelen.',409);

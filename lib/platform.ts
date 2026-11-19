@@ -78,8 +78,7 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
       }
       if(response.entity){const row=await entity(client,response.entity.id);const m=await member(client,row.id,actor);
         if(row.kind==='training'){
-          if(row.state.discarded)throw new DomainError('board_session_expired','Deze baanpartij is beëindigd. Scan de baan opnieuw.',409);
-          if(row.state.boardHeld===true){const activity=await guardTrainingBoardActivity(client,row);if(activity&&['released','interrupted'].includes(activity.phase))return {ok:true,boardActivityExpired:true};}
+      if(row.state.discarded)throw new DomainError('board_session_expired','Deze baanpartij is beëindigd. Scan de baan opnieuw.',409);
           response.entity=await view(client,row,actor);
           const activity=await readSourceBoardActivity(client,row.id,actor);if(activity)response.entity.boardActivity=activity;
         }
@@ -114,8 +113,10 @@ export async function executePlatformCommand(actorId: string, input: unknown): P
       const { row } = await createEntity(client, actor, 'training', state, 'private', null, id);
       result = { ok: true, id, entity: await view(client, row, actor) };
     } else if (['training.score', 'training.undo', 'training.finish'].includes(action.type)) {
+      const scope=await entity(client,action.id);if(typeof scope.state.eventId==='string')await client.query('select id from dartflow_private.events where id=$1 for update',[scope.state.eventId]);
       const row = await entity(client, action.id, true);
       if (row.kind !== 'training' || row.owner_id !== actor) throw new DomainError('forbidden', 'Deze training hoort bij een andere speler.', 403);
+      if((row.state.offlineConflict as{status?:string}|undefined)?.status==='open')throw new DomainError('training_offline_conflict','Beoordeel eerst de bewaarde invoer en de geaccepteerde trainingsscorekaart.',409);
       if(row.state.discarded)throw new DomainError('board_session_expired','Deze baanpartij is beëindigd. Scan de baan opnieuw.',409);
       if(typeof row.state.boardId==='string'){
         const activity=await guardTrainingBoardActivity(client,row);
@@ -405,16 +406,14 @@ export async function replayMatchCommands(actorId:string,input:unknown):Promise<
   uuid(command?.requestId);
   if(ids.has(command.requestId)||command.matchId!==undefined&&command.matchId!==matchId||command.expectedRevision!==batch.baseRevision+i||!['score','undo'].includes(String(command.action?.type)))throw new DomainError('invalid_replay','De wachtrij hoort niet bij één partij en één basisrevisie.');ids.add(command.requestId);
  }
- const supported=await database().query("select 1 from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind='tournament'",[matchId]);
- if(!supported.rowCount)throw new DomainError('offline_not_supported','Offline herstellen is alleen beschikbaar voor toernooiregie; live vrije partijen synchroniseren eerst opnieuw.',409);
- let current=await getMatch(actor,matchId);
- if(!current.permissions.canScore&&!current.permissions.canUndo&&batch.baseRevision>=current.revision)throw new DomainError('not_writer','Alleen de actuele schrijver kan deze wachtrij herstellen.',403);
+ let current:Awaited<ReturnType<typeof getMatch>>|undefined;try{current=await getMatch(actor,matchId);}catch(error){if(!(error instanceof DomainError&&error.status===403))throw error;}
+ if(current&&!current.permissions.canScore&&!current.permissions.canUndo&&batch.baseRevision>=current.revision)throw new DomainError('not_writer','Alleen de actuele schrijver kan deze wachtrij herstellen.',403);
  const accepted:string[]=[];let conflict:Record<string,unknown>|undefined;
- for(const command of batch.commands){
-  try{current=await executeMatchCommand(actor,{offline:true,matchId,requestId:command.requestId,expectedRevision:command.expectedRevision,action:command.action as Parameters<typeof executeMatchCommand>[1]['action']});accepted.push(command.requestId);}
-  catch(error){if(!(error instanceof DomainError))throw error;conflict={code:error.code,message:error.message,status:error.status};break;}
+ for(const [sequence,command]of batch.commands.entries()){
+  try{current=await executeMatchCommand(actor,{offline:true,matchId,requestId:command.requestId,expectedRevision:command.expectedRevision,action:command.action as Parameters<typeof executeMatchCommand>[1]['action']},{baseRevision:batch.baseRevision,sequence,acceptedPrefix:batch.commands.slice(0,accepted.length).map(v=>({...v,matchId,action:v.action as Parameters<typeof executeMatchCommand>[1]['action']}))});accepted.push(command.requestId);}
+  catch(error){if(!(error instanceof DomainError))throw error;conflict={code:error.code,message:error.message,status:error.status};if(error.code!=='offline_conflict_pending')break;}
  }
- return {ok:accepted.length===batch.commands.length,matchId,accepted,pending:batch.commands.slice(accepted.length).map(c=>c.requestId),revision:current.revision,...(conflict?{conflict}:{})};
+ return {ok:accepted.length===batch.commands.length,matchId,accepted,pending:batch.commands.slice(accepted.length).map(c=>c.requestId),revision:current?.revision??batch.baseRevision,...(conflict?{conflict}:{})};
 }
 
 /** Durable event ticking is safe to repeat; expired calls never cancel a live match. */

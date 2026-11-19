@@ -12,7 +12,7 @@ export function appConfig() {
 
 export function safeNext(value: unknown): string {
   if (typeof value !== 'string' || value.length > 240 || /[%\\\r\n#]/.test(value)) return '/';
-  if(value==='/account-verwijderen')return value;
+  if(value==='/account-verwijderen'||value==='/speelsessie'||value==='/handleiding'||/^\/handleiding\/[a-z0-9-]+$/.test(value)||/^\/(?:spelen|leg)\/[a-f0-9-]{36}$/.test(value))return value;
   const [pathname,query,...extra]=value.split('?');
   const id='[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}';
   if(query!==undefined) {

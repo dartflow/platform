@@ -15,7 +15,7 @@ android {
         applicationId = "nl.dartflow.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = providers.gradleProperty("playerVersionCode").orElse("6").get().toInt()
+        versionCode = providers.gradleProperty("playerVersionCode").orElse("7").get().toInt()
         versionName = providers.gradleProperty("playerVersionName").orElse(releaseVersion.getProperty("versionName")).get()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -77,6 +77,7 @@ android {
     buildFeatures { compose = true; buildConfig = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     testOptions { unitTests.isReturnDefaultValues = true }
+    sourceSets.getByName("test").resources.srcDir("../../../tests/fixtures")
     lint { abortOnError = true; checkReleaseBuilds = true }
 }
 dependencies {

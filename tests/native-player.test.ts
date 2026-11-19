@@ -8,6 +8,7 @@ import {nativePlayerPrincipal,withNativePlayerPrincipal} from '../lib/native-pla
 import {actorId} from '../lib/auth';
 import {closeDatabase,database} from '../lib/db';
 import {GET,POST} from '../app/api/[...path]/route';
+import {FAQ_VERSION} from '../lib/faq';
 
 try{process.loadEnvFile('.env.local');}catch{/* CI supplies the loopback fixture. */}
 const origin='http://localhost:3000';
@@ -23,7 +24,7 @@ test('native route allowlist includes player functions and excludes worker, cook
 test('published native FAQ is available before login while ranking and director reads still require bearer',async()=>{
  localEnvironment();
  const faq=await GET(request('faq?id=start-zonderclub'),{params:Promise.resolve({path:['player','v1','faq']})});
- assert.equal(faq.status,200);const data=await faq.json();assert.equal(data.version,'2026.11.19');assert.equal(data.items.length,1);assert.equal(data.items[0].id,'start-zonderclub');
+ assert.equal(faq.status,200);const data=await faq.json();assert.equal(data.version,FAQ_VERSION);assert.equal(data.items.length,1);assert.equal(data.items[0].id,'start-zonderclub');
  for(const path of ['rankings',`events/${randomUUID()}/boards`]){const result=await GET(request(path),{params:Promise.resolve({path:['player','v1',...path.split('/')]})});assert.equal(result.status,401,path);}
 });
 test('native authentication never falls back to cookies, actor headers, browser Origin, malformed or oversized bearer',()=>{

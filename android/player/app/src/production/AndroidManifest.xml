@@ -17,6 +17,9 @@
             <data android:pathPrefix="/verenigingen"/>
             <data android:pathPrefix="/faq"/>
             <data android:pathPrefix="/help"/>
+            <data android:pathPrefix="/spelen/"/>
+            <data android:pathPrefix="/leg/"/>
+            <data android:pathPrefix="/handleiding"/>
         </intent-filter>
     </activity></application>
 </manifest>

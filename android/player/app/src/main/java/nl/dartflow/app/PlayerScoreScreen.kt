@@ -31,6 +31,7 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
     onSubmit: (Int, Int, Boolean, Int?) -> Unit, onBack: () -> Unit, onRetry: () -> Unit,
     activity: JSONObject = JSONObject(), onExtend: () -> Unit = {}, pending: Boolean = false,
     options: @Composable () -> Unit = {}, media: (@Composable () -> Unit)? = null,
+    queueSupported: Boolean = false, queuedVisits: Int = 0,
     dartEntry: (@Composable () -> Unit)? = null, currentThrowerName: String? = null, scoreLabel: String = "restscore",
 ) {
     val matchIdentity = scoreKey.substringBefore(':')
@@ -46,7 +47,7 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
     val remaining = players.getOrNull(active)?.remaining ?: 0
     val finish = score.toIntOrNull()?.let { it == remaining && remaining in 2..170 } == true
     val invalid = score.toIntOrNull()?.let { it > 180 } == true
-    val locked = !canScore || busy || offline || pending
+    val locked = !canScore || busy || (!queueSupported && (offline || pending))
     val received = remember(activity.text("sessionId"), activity.optLong("serverNow")) { SystemClock.elapsedRealtime() }
     var monotonic by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(activity.text("sessionId")) { if (activity.length() > 0) while (true) { monotonic = SystemClock.elapsedRealtime(); delay(250) } }
@@ -97,7 +98,7 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
                     }
                 }
             }
-            val feedback = when { offline -> "Geen verbinding · herstel voor je verzendt."; message != null -> message; pending -> "Je vorige worp wacht op bevestiging. Controleer dezelfde actie."; invalid -> "Voer een worp van 0 tot en met 180 in."; !canScore -> "Wacht op de beurt van je tegenstander."; busy -> "Worp wordt bevestigd…"; checkout != null -> "Finish: $checkout"; warning -> if (warningSeconds == 0L) "Baansessie verlopen · actuele status ophalen…" else "Scoor of tik op Doorspelen. $extensions verlengingen over."; else -> "Voer jouw worptotaal in." }
+            val feedback = when { queuedVisits > 0 -> "Wacht op verbinding · $queuedVisits beurt(en) lokaal bewaard · voorlopig"; offline -> if (queueSupported) "Offline · nieuwe beurten worden versleuteld bewaard." else "Geen verbinding · herstel voor je verzendt."; message != null -> message; pending -> "Je vorige worp wacht op bevestiging. Controleer dezelfde actie."; invalid -> "Voer een worp van 0 tot en met 180 in."; !canScore -> "Wacht op de beurt van je tegenstander."; busy -> "Worp wordt bevestigd…"; checkout != null -> "Finish: $checkout"; warning -> if (warningSeconds == 0L) "Baansessie verlopen · actuele status ophalen…" else "Scoor of tik op Doorspelen. $extensions verlengingen over."; else -> "Voer jouw worptotaal in." }
             Text(feedback, Modifier.fillMaxWidth().heightIn(min = if (compact) 26.dp else 34.dp).semantics { liveRegion = LiveRegionMode.Polite }, fontSize = if (compact) 11.sp else 13.sp, color = if (offline || message != null || invalid) PlayerError else PlayerMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Button(onClick = { if (finish) finishDialog = true else score.toIntOrNull()?.let { onSubmit(it, darts, false, attempts) } }, enabled = !locked && score.isNotEmpty() && !invalid, modifier = Modifier.fillMaxWidth().height(if (compact) 48.dp else 56.dp).testTag("confirm-score"), shape = RoundedCornerShape(12.dp)) { Text(if (busy) "Verzenden…" else if (finish) "Finish bevestigen" else "Bevestigen", fontWeight = FontWeight.Bold) }
             }

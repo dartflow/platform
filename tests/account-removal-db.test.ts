@@ -101,13 +101,13 @@ test('durable privacy erasure blocks access, retries Auth safely, scrubs prior n
    await assert.rejects(worker.query('select dartflow_private.erase_account_job($1,null)',[pendingJob]),{code:'42501'});
    await assert.rejects(database().query('update dartflow_private.profiles set email=$2 where id=$1',[actor,'resurrection@example.invalid']),{code:'42501'});
   });
-  await t.test('confirmation immediately frees physical boards, discards free score data and interrupts official progress',async()=>{
+  await t.test('confirmation immediately frees physical boards while retaining both players sporting history for anonymization',async()=>{
    assert.equal((await admin.query('select count(*)::int n from dartflow_private.board_activity_links where board_id=any($1::uuid[])',[boards])).rows[0].n,0);
    const free=(await admin.query('select state from dartflow_private.matches where id=$1',[activeMatches[0]])).rows[0].state;
    const official=(await admin.query('select state from dartflow_private.matches where id=$1',[activeMatches[1]])).rows[0].state;
-   assert.equal(free.status,'abandoned');assert.deepEqual(free.game.visits,[]);assert.equal(free.boardId,null);
+   assert.equal(free.status,'interrupted');assert.equal(free.game.remaining[0],241);assert.equal(free.game.visits.length,1);assert.equal(free.game.visits[0].player,actor);assert.equal(free.boardId,null);
    assert.equal(official.status,'interrupted');assert.equal(official.game.remaining[0],241);assert.equal(official.game.visits.length,1);assert.equal(official.boardId,null);
-   assert.equal((await admin.query('select count(*)::int n from dartflow_private.visits where match_id=$1',[activeMatches[0]])).rows[0].n,0);
+   assert.equal((await admin.query('select count(*)::int n from dartflow_private.visits where match_id=$1',[activeMatches[0]])).rows[0].n,1);
   });
   await t.test('application erasure commits before external Auth failure and retry does not repeat erasure',async()=>{
    const failed=await processAccountRemovalBatch(worker,async()=>{throw new Error('synthetic Auth unavailable');},1);
@@ -119,6 +119,7 @@ test('durable privacy erasure blocks access, retries Auth safely, scrubs prior n
    const saved=(await admin.query('select snapshot from dartflow_private.match_results where match_id=$1',[match])).rows[0].snapshot;
    assert.equal(saved.players[0].id,actor);assert.equal(saved.players[0].name,'Verwijderde speler');assert.equal(saved.players[0].email,null);assert.deepEqual(saved.legs,[3,1]);assert.equal(saved.players[1].name,'Ann');assert.equal(saved.players[1].displayName,'Anna');assert.equal(saved.title,'Annual club event');
    assert.equal(JSON.stringify(saved).includes('Historical previous display name'),false);assert.equal(JSON.stringify(saved).includes(address),false);
+   const preservedFree=(await admin.query('select state from dartflow_private.matches where id=$1',[activeMatches[0]])).rows[0].state;assert.equal(preservedFree.players[0].name,'Verwijderde speler');assert.equal(preservedFree.players[1].name,'Other synthetic player');assert.equal(preservedFree.game.remaining[0],241);assert.equal(preservedFree.game.visits.length,1);assert.equal(preservedFree.game.visits[0].player,actor);
    const remainingReview=(await admin.query("select password_envelope,review_details,companion_user_id from dartflow_private.play_review_accounts where environment='production' and user_id=$1",[other])).rows[0];
    assert.equal(remainingReview.review_details,null);assert.equal(remainingReview.companion_user_id,null);assert.deepEqual(remainingReview.password_envelope,{fixture:'other-primary-credential'});
    await admin.query('update dartflow_private.account_deletion_jobs set available_at=clock_timestamp() where actor_id=$1',[actor]);

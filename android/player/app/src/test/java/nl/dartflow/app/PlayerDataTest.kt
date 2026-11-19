@@ -108,6 +108,7 @@ class PlayerDataTest {
         assertEquals("", PlayerViewModel.statisticsQuery("startScore=999&offset=-1&token=never-allowed"))
         assertEquals("?search=Danny+G", PlayerViewModel.statisticsQuery("search=Danny%20G"))
         assertEquals("?offset=25", PlayerViewModel.statisticsQuery("offset:25"))
+        assertEquals("?source=league",PlayerViewModel.statisticsQuery("source=league"));assertEquals("",PlayerViewModel.statisticsQuery("source=unknown"))
         assertEquals("?startScore=301", PlayerViewModel.statisticsQuery("startScore:301"))
     }
     @Test fun capabilitiesCannotCrossHostEnvironmentOrAuthScheme() {

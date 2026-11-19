@@ -1,4 +1,6 @@
 "use client";
+import LegacyTrainingOffline from './legacy-training-offline';
+import X01OpeningField from './x01-opening-field';
 import ProfileIdentityFields from './profile-identity-fields';
 import {socialIdentityLabel} from '@/lib/public-identity';
 
@@ -12,13 +14,7 @@ import {
 import type { Overview, Profile, MatchView, ResultView, ClubBoardView } from "@/lib/types";
 import { ClubBoardQr } from "./club-board-screen";
 import MailWorkspace from "./mail-workspace";
-import ScoreConsole from "./score-console";
-import DartVisitInput from "./dart-visit-input";
-import CricketCard from "./cricket-card";
-import {dartValue} from "@/lib/x01-rules";
-import type {CricketState} from "@/lib/cricket";
 import LocalPlayerAdd from "./local-player-add";
-import BoardActivityNotice from "./board-activity-notice";
 import ScreenDeviceManager from "./screen-device-manager";
 import IntegrationsPanel from "./integrations-panel";
 import BlogWorkspace from "./blog-workspace";
@@ -421,11 +417,17 @@ function iso(value: unknown) {
 }
 
 function ruleInput(form:FormData){
+  if(form.get('discipline')==='tactics')return{...readWinByTwo(form),discipline:'tactics' as const,tacticsPreset:form.get('tacticsPreset')==='tactics-3'?'tactics-3' as const:'tactics-5' as const,tacticsMode:form.get('tacticsMode')==='no-score'?'no-score' as const:'standard' as const};
   if(form.get('discipline')==='cricket')return{...readWinByTwo(form),discipline:'cricket' as const,cricketMode:form.get('cricketMode')==='no-score'?'no-score' as const:'standard' as const};
   const inRule=text(form.get('inRule')),outRule=text(form.get('outRule')),home=text(form.get('homeStart')),away=text(form.get('awayStart'));
-  return {...readWinByTwo(form),...(inRule==='double'?{inRule}:{}),...(outRule&&outRule!=='double'?{outRule}:{}),...(home||away?{sideStartScores:[Number(home),Number(away)]}:{})};
+  return {...readWinByTwo(form),...(['single','double'].includes(inRule)?{inRule}:{}),...(outRule&&outRule!=='double'?{outRule}:{}),...(home||away?{sideStartScores:[Number(home),Number(away)]}:{})};
 }
-function RulesFields(){const[discipline,setDiscipline]=useState('x01');return <details className="panel"><summary>Discipline, spelregels en handicap</summary><div className="field-grid"><label className="field">Discipline<select name="discipline"value={discipline}onChange={event=>setDiscipline(event.target.value)}><option value="x01">X01</option><option value="cricket">Cricket</option></select></label>{discipline==='cricket'?<Field label="Cricketvariant"name="cricketMode"defaultValue="standard"><option value="standard">Standaard · marks en punten</option><option value="no-score">No score · als eerste sluiten</option></Field>:<><Field label="Openen" name="inRule" defaultValue="single"><option value="single">Open in</option><option value="double">Double in</option></Field><Field label="Uitgooien" name="outRule" defaultValue="double"><option value="double">Double out</option><option value="straight">Straight out</option><option value="master">Master out</option></Field><Field label="Handicap startscore zijde 1" name="homeStart" type="number"/><Field label="Handicap startscore zijde 2" name="awayStart" type="number"/></>}</div><p>Cricket heeft eigen marks en statistieken. Afwijkende X01-regels en Cricket tellen niet voor de landelijke X01-spelersrating.</p></details>;}
+function RulesFields({allowTactics=true,freshX01=false,bot=false}:{allowTactics?:boolean;freshX01?:boolean;bot?:boolean}){
+ const[discipline,setDiscipline]=useState('x01');
+ if(bot)return <details className="panel"><summary>Openingsregel</summary><X01OpeningField fresh={freshX01}/><p>Dartbot gebruikt dubbel uit. De bot registreert zijn eigen geldige pijlen op de server.</p></details>;
+ return <details className="panel"><summary>Discipline, spelregels en handicap</summary><div className="field-grid">{!bot&&<label className="field">Discipline<select name="discipline"value={discipline}onChange={event=>setDiscipline(event.target.value)}><option value="x01">X01</option><option value="cricket">Cricket</option>{allowTactics&&<option value="tactics">Tactics</option>}</select></label>}
+ {discipline==='tactics'?<><Field label="Tactics-preset"name="tacticsPreset"defaultValue="tactics-5"><option value="tactics-5">Tactics 5 · 20–10 en bull · 5 treffers</option><option value="tactics-3">Tactics 3 · 20–10 en bull · 3 treffers</option></Field><Field label="Tacticsvariant"name="tacticsMode"defaultValue="standard"><option value="standard">Met punten</option><option value="no-score">Zonder punten · als eerste sluiten</option></Field><p>Tactics 5 vereist bij punten strikt meer punten; een volledig gesloten gelijk veld wordt in dezelfde leg overgespeeld. Tactics 3 mag bij gelijke punten sluiten.</p></>:discipline==='cricket'?<Field label="Cricketvariant"name="cricketMode"defaultValue="standard"><option value="standard">Standaard · marks en punten</option><option value="no-score">No score · als eerste sluiten</option></Field>:<><X01OpeningField fresh={freshX01}/><Field label="Uitgooien" name="outRule" defaultValue="double"><option value="double">Double out</option><option value="straight">Straight out</option><option value="master">Master out</option></Field><Field label="Handicap startscore zijde 1" name="homeStart" type="number"/><Field label="Handicap startscore zijde 2" name="awayStart" type="number"/></>}</div><p>Cricket en Tactics houden eigen marks en statistieken bij. Deze disciplines en afwijkende X01-regels tellen niet voor de landelijke X01-spelersrating.</p></details>;
+}
 
 export default function PlatformWorkspace({
   path,
@@ -1027,8 +1029,6 @@ function Training({
   id,
   command,
   busy,
-  error,
-  online,
 }: {
   data: Platform;
   id?: string;
@@ -1038,30 +1038,6 @@ function Training({
   online: boolean;
 }) {
   const entity = data.trainings.find((e) => e.id === id);
-  const [score, setScore] = useState("");
-  const [double, setDouble] = useState(false);
-  const [visitDarts, setVisitDarts] = useState("3");
-  const [doubleAttempts,setDoubleAttempts]=useState<number|null>(null);
-  const [consoleOpen,setConsoleOpen]=useState(true);
-  const [pendingScore,setPendingScore]=useState<(ImmutableAttempt & {action:Action})|null>(null);
-  const scoreSending=useRef(false);
-  const pendingKey=`dartflow-training-score:${data.profile.id}:${id || ''}`;
-  const draftKey=`dartflow-training-draft:${data.profile.id}:${id || ''}`;
-  useEffect(()=>{
-    try{
-      const saved=sessionStorage.getItem(pendingKey),draft=sessionStorage.getItem(draftKey);
-      if(saved){const pending=JSON.parse(saved) as ImmutableAttempt & {action:Action};if(pending.action.type==='training.score' && pending.action.id===id && typeof pending.requestId==='string' && Number.isSafeInteger(pending.expectedRevision)){setPendingScore(pending);setScore(String(pending.action.score??''));setDouble(pending.action.doubleConfirmed===true);setVisitDarts(String(pending.action.darts||3));setDoubleAttempts(typeof pending.action.doubleAttempts==='number'?pending.action.doubleAttempts:null);}}
-      else if(draft)setScore(draft.replace(/\D/g,'').slice(0,3));
-    }catch{/* Private draft storage is optional. */}
-  },[pendingKey,draftKey,id]);
-  function updateTrainingScore(value:string){const next=value.replace(/\D/g,'').slice(0,3);setScore(next);setDouble(false);setDoubleAttempts(null);try{sessionStorage.setItem(draftKey,next);}catch{/* Optional draft storage. */}}
-  async function submitTrainingScore(input?:{score:number;darts:number;dartHits:string[]}){
-    if(!entity||scoreSending.current||busy)return;
-    const pending=pendingScore || {requestId:crypto.randomUUID(),expectedRevision:entity.revision,action:{type:'training.score',id:entity.id,score:number(score),darts:number(visitDarts,3),doubleConfirmed:double,...(doubleAttempts==null?{}:{doubleAttempts}),...(input??{})}};
-    scoreSending.current=true;setPendingScore(pending);try{sessionStorage.setItem(pendingKey,JSON.stringify(pending));}catch{/* The in-memory attempt still keeps its identity. */}
-    try{const result=await command(pending.action,entity,pending);if(result){setPendingScore(null);setScore('');setDouble(false);setDoubleAttempts(null);try{sessionStorage.removeItem(pendingKey);sessionStorage.removeItem(draftKey);}catch{/* Optional draft storage. */}}}finally{scoreSending.current=false;}
-  }
-
   if (!entity)
     return (
       <>
@@ -1116,7 +1092,7 @@ function Training({
                   <option>701</option>
                 </Field>
               )}
-              {item.mode === "solo"&&<RulesFields/>}
+              {["solo","bot"].includes(item.mode)&&<RulesFields allowTactics={false} freshX01 bot={item.mode==='bot'}/>}
               {item.mode === "bot" && (
                 <Field
                   label="Doelgemiddelde Dartbot"
@@ -1152,278 +1128,10 @@ function Training({
         </section>
       </>
     );
-  if(entity.state.discarded)return <><Title title="Baanpartij beëindigd"/><section className="panel"><p>De baan is vrijgegeven. De voorlopige scores van deze afgebroken partij zijn gewist.</p><a className="button gold" href="/app/spelen">Nieuwe partij starten</a></section></>;
-  const game = record(entity.state.game);
-  const detailedScoring=game.discipline==='cricket'||game.inRule==='double'||Boolean(game.outRule&&game.outRule!=='double');
-  const remain = Array.isArray(game.remaining) ? game.remaining : [];
-  const visits = list(game.visits);
-  const finished =
-    entity.state.completed === true ||
-    entity.state.status === "finished" ||
-    game.status === "finished";
-  return (
-    <>
-      {(!consoleOpen||finished)&&<BoardActivityNotice activity={entity.boardActivity} offline={!online}/>}
-      {!finished && entity.state.mode !== 'around' && !detailedScoring && consoleOpen && <ScoreConsole activity={<BoardActivityNotice activity={entity.boardActivity} offline={!online}/>} title={entity.name} players={[{id:data.profile.id,name:data.profile.name,remaining:number(remain[0] ?? entity.state.target ?? entity.state.remaining,501)},...(entity.state.mode==='bot'&&remain.length>1?[{id:'dartbot',name:'Dartbot',remaining:number(remain[1])}]:[])]} active={number(game.turn,0)} score={score} onScore={updateTrainingScore} darts={number(visitDarts,3)} onDarts={value=>setVisitDarts(String(value))} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={score!==''&&number(score)===number(remain[0]??entity.state.remaining??entity.state.target)} doubleConfirmed={double} onDoubleConfirmed={setDouble} canScore={!finished} busy={busy} disabled={busy||Boolean(pendingScore)} offline={!online} message={error || (pendingScore&&!busy?'Controleer de stand. Je bewaarde worp kan met hetzelfde actie-ID opnieuw worden verzonden.':'')} checkout={text(entity.state.checkout||game.checkout)} onBack={()=>setConsoleOpen(false)} onSubmit={()=>void submitTrainingScore()} options={<>
-        {pendingScore&&!busy&&<div className="notice"><p>Dezelfde bewaarde worp opnieuw verzenden boekt nooit een extra beurt.</p><Button onClick={()=>void submitTrainingScore()}>Zelfde worp opnieuw proberen</Button><Button onClick={()=>{setPendingScore(null);try{sessionStorage.removeItem(pendingKey);}catch{/* Optional storage. */}}}>Bewaarde worp verwerpen</Button></div>}
-        <Button disabled={busy||Boolean(pendingScore)||!Array.isArray(entity.state.undo)||!entity.state.undo.length} onClick={()=>void command({type:'training.undo',id:entity.id},entity)}>Laatste beurt terug</Button>
-        <Button disabled={busy||Boolean(pendingScore)} onClick={()=>void command({type:'training.finish',id:entity.id},entity)}>Training bewaren en beëindigen</Button>
-      </>} />}
-      {!finished && entity.state.mode !== 'around' && !detailedScoring && <Button primary onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</Button>}
-
-      <Title
-        title={entity.name}
-        actions={
-          typeof entity.state.boardId === "string" ? (
-            <a
-              className="button ghost small"
-              href={`/baan/${encodeURIComponent(entity.state.boardId)}`}
-            >
-              Vaste baan openen
-            </a>
-          ) : (
-            <Link to="training">Alle trainingen</Link>
-          )
-        }
-      />
-      {typeof entity.state.boardId === "string" &&
-        !finished &&
-        entity.state.boardHeld === true && (
-          <BoundBoardScreen
-            boardId={entity.state.boardId}
-            command={command}
-            busy={busy}
-          />
-        )}
-      <div className="workspace-grid two">
-        <section className="panel training-console">
-          <Label value={entity.state.mode} />
-          {Boolean(game.cricket)&&<CricketCard cricket={game.cricket as CricketState} names={[data.profile.name]}/>}
-          <p className="eyebrow">
-            {finished ? "TRAINING AFGEROND" : "JOUW RESTSCORE"}
-          </p>
-          <strong className="training-remaining">
-            {entity.state.mode === "around"
-              ? finished
-                ? "✓"
-                : Array.isArray(entity.state.rounds) &&
-                    entity.state.rounds.length === 20
-                  ? "Bull"
-                  : text(
-                      Array.isArray(entity.state.rounds)
-                        ? entity.state.rounds.length + 1
-                        : 1,
-                    )
-              : remain.length
-                ? text(remain[0])
-                : text(
-                    entity.state.mode === "around"
-                      ? Math.min(
-                          21,
-                          Array.isArray(entity.state.rounds)
-                            ? entity.state.rounds.length + 1
-                            : 1,
-                        )
-                      : entity.state.target || entity.state.remaining,
-                    "—",
-                  )}
-          </strong>
-          {entity.state.mode === "around" ? (
-            <>
-              <p>
-                Drie darts op dubbel{" "}
-                {Array.isArray(entity.state.rounds) &&
-                entity.state.rounds.length === 20
-                  ? "Bull"
-                  : text(
-                      Array.isArray(entity.state.rounds)
-                        ? entity.state.rounds.length + 1
-                        : 1,
-                    )}
-              </p>
-              <div className="button-row">
-                {[0, 1, 2, 3].map((hits) => (
-                  <Button
-                    key={hits}
-                    disabled={busy || finished}
-                    primary={hits > 0}
-                    onClick={() =>
-                      void command(
-                        {
-                          type: "training.score",
-                          id: entity.id,
-                          hits,
-                          darts: 3,
-                        },
-                        entity,
-                      )
-                    }
-                  >
-                    {hits} geraakt
-                  </Button>
-                ))}
-              </div>
-            </>
-          ) : detailedScoring ? <><DartVisitInput disabled={finished||busy||Boolean(pendingScore)} onSubmit={hits=>void submitTrainingScore({score:hits.reduce((sum,hit)=>sum+dartValue(hit),0),darts:hits.length,dartHits:hits})}/>{pendingScore&&!busy&&<Button onClick={()=>void submitTrainingScore()}>Zelfde bewaarde beurt opnieuw proberen</Button>}</> : (
-            <form
-              onSubmit={async (e) => {e.preventDefault();await submitTrainingScore();}}
-            >
-              <label className="field">
-                Beurtscore
-                <input
-                  autoComplete="off"
-                  type="number"
-                  min="0"
-                  max="180"
-                  inputMode="numeric"
-                  required
-                  value={score}
-                  onChange={(e) => updateTrainingScore(e.target.value)}
-                  disabled={finished || busy || Boolean(pendingScore)}
-                />
-              </label>
-              <label className="field">
-                Gegooide darts
-                <select
-                  value={visitDarts}
-                  onChange={(event) => setVisitDarts(event.target.value)}
-                  disabled={finished || busy}
-                >
-                  {[1, 2, 3].map((count) => (
-                    <option key={count}>{count}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="workspace-checkbox">
-                <input
-                  type="checkbox"
-                  checked={double}
-                  onChange={(e) => setDouble(e.target.checked)}
-                />
-                Laatste dart is een dubbel
-              </label>
-              <div className="button-row">
-                {[26, 45, 60, 100, 140, 180].map((n) => (
-                  <Button
-                    disabled={busy || finished}
-                    key={n}
-                    onClick={() => updateTrainingScore(String(n))}
-                  >
-                    {n}
-                  </Button>
-                ))}
-              </div>
-              <button className="button gold full" disabled={busy || finished || Boolean(pendingScore)}>
-                {busy ? "Opslaan…" : "Score invoeren"}
-              </button>
-            </form>
-          )}
-          <div className="button-row">
-            {finished && (
-              <Button
-                primary
-                disabled={busy}
-                onClick={() => {
-                  void command({
-                    type:
-                      typeof entity.state.boardId === "string"
-                        ? "board.start"
-                        : "training.create",
-                    ...(typeof entity.state.boardId === "string"
-                      ? { boardId: entity.state.boardId }
-                      : {}),
-                    mode: entity.state.mode,
-                    startScore:
-                      entity.state.mode === "170"
-                        ? 501
-                        : number(game.startScore, 501),
-                    botAverage: number(entity.state.botAverage, 45),
-                  }).then((result) => {
-                    if (result?.id) navigate(`/app/training/${result.id}`);
-                  });
-                }}
-              >
-                Opnieuw trainen
-              </Button>
-            )}
-            <Button
-              disabled={
-                busy ||
-                (finished && typeof entity.state.boardId === "string" && entity.state.boardHeld !== true) ||
-                (entity.state.mode === "around"
-                  ? !Array.isArray(entity.state.rounds) ||
-                    !entity.state.rounds.length
-                  : !Array.isArray(entity.state.undo) ||
-                    !entity.state.undo.length)
-              }
-              onClick={() =>
-                void command({ type: "training.undo", id: entity.id }, entity)
-              }
-            >
-              Laatste beurt terug
-            </Button>
-            <Button
-              disabled={busy || finished}
-              onClick={() =>
-                void command({ type: "training.finish", id: entity.id }, entity)
-              }
-            >
-              Training bewaren en beëindigen
-            </Button>
-          </div>
-        </section>
-        <section className="panel">
-          <h2>Trainingsoverzicht</h2>
-          {finished && typeof entity.state.boardId === "string" && entity.state.boardHeld !== true && <p className="muted-copy">Je training en historie zijn bewaard. De baan is weer vrij. Scan de vaste baan-QR om een volgende partij te beginnen.</p>}
-          {entity.state.mode === "170" && (
-            <p>
-              Nog {Math.max(0, 9 - number(list(game.stats)[0]?.darts))} darts in
-              deze poging.
-            </p>
-          )}
-          {entity.state.mode === "around" &&
-            Array.isArray(entity.state.rounds) && (
-              <div className="workspace-scroll">
-                {entity.state.rounds.map((hits, index) => (
-                  <div className="workspace-row" key={index}>
-                    <strong>{index === 20 ? "Bull" : `D${index + 1}`}</strong>
-                    <span>{number(hits)} / 3 raak</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          {entity.state.mode === "bot" && remain.length > 1 && (
-            <p>
-              Dartbot resterend: <strong>{text(remain[1])}</strong>
-            </p>
-          )}
-          <p className="muted-copy">
-            {text(entity.state.checkout || game.checkout)}
-          </p>
-          <div className="workspace-scroll">
-            {visits.length ? (
-              visits
-                .slice()
-                .reverse()
-                .map((v, i) => (
-                  <div className="workspace-row" key={i}>
-                    <span>
-                      {number(v.playerIndex) === 1 ? "Dartbot" : "Jij"} ·{" "}
-                      {number(v.darts, 3)} darts
-                    </span>
-                    <strong>{v.bust ? "BUST" : text(v.score)}</strong>
-                    <span>{text(v.remainingAfter)} rest</span>
-                  </div>
-                ))
-            ) : (
-              <Empty>Je opgeslagen beurten verschijnen hier.</Empty>
-            )}
-          </div>
-        </section>
-      </div>
-    </>
-  );
+  if(entity.state.discarded)return <section className="panel"><h2>Deze oude training is verwijderd</h2><a href="/app/spelen">Nieuwe partij starten</a></section>;
+  return <LegacyTrainingOffline key={entity.id} actorId={data.profile.id} actorName={data.profile.name} initial={entity}/>;
 }
+
 function Friends({
   data,
   command,
@@ -2491,7 +2199,7 @@ function Lobby({
           }}
         >
           <Field label="Wedstrijdnaam" name="name" />
-          <RulesFields/>
+          <RulesFields freshX01/>
           <StartProcedureFields/>
           <Field
             label="Tegenstander"

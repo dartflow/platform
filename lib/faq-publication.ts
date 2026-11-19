@@ -3,7 +3,8 @@ import type {PoolClient} from 'pg';
 import {database} from './db';
 import {DomainError} from './domain';
 import {assertAccountActive} from './account-removal';
-import {filterFaq,getFaq} from './faq';
+import {manualArticles} from './manual';
+import {filterFaq,getFaq,mergePublishedFaq} from './faq';
 import type {FaqItem,FaqSnapshot} from './faq';
 
 type Client=Pick<PoolClient,'query'>;
@@ -17,7 +18,8 @@ const draft=(row:{id:string;question_id:string;revision:number;item:FaqItem;audi
 async function requireEditor(client:Client,actor:string){await assertAccountActive(actor,client);if(!(await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in('owner','admin')",[actor])).rowCount)throw new DomainError('forbidden','Alleen platformbeheer publiceert de gedeelde hulpinhoud.',403);}
 async function published(client:Client):Promise<FaqSnapshot>{
  const row=(await client.query<{version:string;items:FaqItem[];created_at:Date}>('select version,items,created_at from dartflow_private.faq_publications order by created_at desc,id desc limit 1')).rows[0];
- return row?{version:row.version,publishedAt:stamp(row.created_at),categories:[...new Set(row.items.map(item=>item.category))],items:row.items}:getFaq();
+ if(!row)return getFaq();
+ return mergePublishedFaq({version:row.version,items:row.items,createdAt:row.created_at});
 }
 export async function getPublishedFaq(input:Parameters<typeof getFaq>[0]={}):Promise<FaqSnapshot>{
  if(!process.env.DARTFLOW_DATABASE_URL)return getFaq(input);
@@ -33,7 +35,8 @@ function parseItem(value:unknown):FaqItem{
  const item=value as FaqItem,id=label(item.id,100);if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id))throw new DomainError('invalid_faq','Gebruik een vaste vraagcode met kleine letters, cijfers en streepjes.');
  const audience=item.audience??'all';if(!['all','player','captain','organizer','club','platform'].includes(audience))throw new DomainError('invalid_faq','Kies een doelgroep.');
  if(!Array.isArray(item.keywords)||item.keywords.length>30||item.keywords.some(word=>typeof word!=='string'||word.length>80))throw new DomainError('invalid_faq','Gebruik maximaal dertig korte zoekwoorden.');
- return {id,question:label(item.question,240),answer:label(item.answer,12000),category:label(item.category,100),keywords:[...new Set(item.keywords.map(word=>word.trim()).filter(Boolean))],audience};
+ if(item.manualId!==undefined&&(typeof item.manualId!=='string'||!manualArticles.some(article=>article.id===item.manualId)))throw new DomainError('invalid_faq','Kies een bestaand handleidingartikel.');
+ return {...(item.manualId?{manualId:item.manualId}:{}),id,question:label(item.question,240),answer:label(item.answer,12000),category:label(item.category,100),keywords:[...new Set(item.keywords.map(word=>word.trim()).filter(Boolean))],audience};
 }
 export async function executeFaqAdminCommand(actor:string,command:FaqAdminCommand):Promise<{ok:true;id:string;draft?:FaqDraft;version?:string}>{
  const actorId=uuid(actor),requestId=uuid(command?.requestId);if(!command.action||!['faq.save','faq.publish','faq.restore'].includes(command.action.type))throw new DomainError('invalid_action','Onbekende hulpbeheeractie.');

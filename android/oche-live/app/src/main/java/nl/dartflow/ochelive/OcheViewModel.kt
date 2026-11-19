@@ -121,7 +121,7 @@ class OcheViewModel(application: Application) : AndroidViewModel(application) {
             saved.put("lastSnapshot",source); persist()
         }
         forceSnapshot = false
-        val cue = events.observe(snapshot.match, body.optBoolean("reset"))
+        val cue = events.observe(snapshot.match?:snapshot.play?.x01Match, body.optBoolean("reset"))
         state.value = ConnectionState(DisplayUi.Screen(snapshot, snapshot.serverNow, SystemClock.elapsedRealtime(), cue))
     }
     fun newCode() {

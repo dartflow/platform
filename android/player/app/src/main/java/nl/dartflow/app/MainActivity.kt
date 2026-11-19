@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
                         model.consumeGoogleUrl()
                     }
                 }
-                val keepAwake = state.screen == PlayerScreen.MATCH || state.screen == PlayerScreen.TRAINING
+                val keepAwake = state.screen == PlayerScreen.MATCH || state.screen == PlayerScreen.TRAINING || state.screen == PlayerScreen.PLAY_SESSION
                 DisposableEffect(keepAwake) {
                     if (keepAwake) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -51,11 +51,12 @@ class MainActivity : ComponentActivity() {
                 val actions = remember {
                     PlayerActions(
                         request = { path, body -> model.api.call(path, body) },
+                        playAction = model::playAction,
                         selectGuestOperator = model::selectGuestOperator,
                         pushConsent = { enabled -> if (!enabled || PlayerPush.permitted(this@MainActivity)) model.setPushEnabled(enabled) else if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) else openNotificationSettings() },
                         pushSettings = ::openNotificationSettings,
                         openNotification = model::handlePushTap,
-                        read = { model.api.call(it) },
+                        read = { if(it.startsWith("/play/"))model.api.play(it)else model.api.call(it) },
                         navigate = model::navigate, back = model::back, saveOrganizerDraft = model::saveOrganizerDraft, refresh = model::refresh, requestOtp = model::requestOtp,
                         verifyOtp = model::verifyOtp, google = model::startGoogle, localLogin = model::localLogin,
                         reviewLogin = model::reviewLogin,

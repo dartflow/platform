@@ -8,7 +8,7 @@ import androidx.compose.ui.text.font.FontWeight
 import org.json.JSONObject
 
 internal val playerCricketTargets = listOf(20, 19, 18, 17, 16, 15, 25)
-internal fun playerIsCricket(match: PlayerMatch) = match.raw.obj("settings").text("discipline", "x01") == "cricket"
+internal fun playerIsCricket(match: PlayerMatch) = match.raw.obj("settings").text("discipline", "x01") in listOf("cricket", "tactics")
 internal fun playerCricketMark(value: Int): String = when (value.coerceIn(0, 3)) { 0 -> "–"; 1 -> "/"; 2 -> "X"; else -> "⊗" }
 internal fun playerCricketMpr(visits: List<JSONObject>, side: Int): Double? {
     val own = visits.filter { it.optInt("playerIndex") == side && it.has("cricket") }
@@ -16,16 +16,21 @@ internal fun playerCricketMpr(visits: List<JSONObject>, side: Int): Double? {
     return if (darts > 0) 3.0 * own.sumOf { it.obj("cricket").optInt("creditedMarks") } / darts else null
 }
 @Composable internal fun PlayerCricketTable(match: PlayerMatch) {
-    val cricket = match.raw.obj("cricket")
+    val tactics = match.raw.obj("settings").text("discipline") == "tactics"
+    val cricket = match.raw.obj(if (tactics) "tactics" else "cricket")
+    val required = if (tactics) cricket.optInt("requiredMarks",5) else 3
+    val targets = if (tactics) (20 downTo 10).toList() + 25 else playerCricketTargets
+    fun label(value: Int) = if (tactics) if (value >= required) "✓" else "$value/$required" else playerCricketMark(value)
     val marks = cricket.optJSONArray("marks")
-    PlayerCard(if (match.raw.obj("settings").text("cricketMode", "standard") == "no-score") "Cricket · zonder punten" else "Cricket · punten") {
+    PlayerCard(if (tactics) playerRuleLabel(match.raw.obj("settings")) else if (match.raw.obj("settings").text("cricketMode", "standard") == "no-score") "Cricket · zonder punten" else "Cricket · punten") {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(match.sideName(0), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); Text("Doel", color = PlayerMuted); if (match.players.size > 1) Text(match.sideName(1), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)) }
-        playerCricketTargets.forEachIndexed { index, target -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-            Text(playerCricketMark(marks?.optJSONArray(0)?.optInt(index) ?: 0), color = PlayerLime)
+        targets.forEachIndexed { index, target -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+            Text(label(marks?.optJSONArray(0)?.optInt(index) ?: 0), color = PlayerLime)
             Text(if (target == 25) "Bull" else "$target", color = PlayerMuted)
-            if (match.players.size > 1) Text(playerCricketMark(marks?.optJSONArray(1)?.optInt(index) ?: 0), color = PlayerLime)
+            if (match.players.size > 1) Text(label(marks?.optJSONArray(1)?.optInt(index) ?: 0), color = PlayerLime)
         } }
         Text("Punten ${cricket.optJSONArray("points")?.ints()?.joinToString(" – ").orEmpty()}", color = PlayerLime)
+        if (tactics && cricket.rows("replays").isNotEmpty()) Text("Leg overgespeeld · poging ${cricket.optInt("attempt",1)} · geen leg toegekend bij gelijke gesloten stand", color = PlayerLime)
         Text("/ één mark · X twee · ⊗ gesloten. Alleen de server bepaalt sluiting, punten en winnaar.", color = PlayerMuted)
     }
 }
