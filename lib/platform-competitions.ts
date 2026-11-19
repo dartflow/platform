@@ -1,4 +1,5 @@
 import{assertCircuitQualificationCommand}from'./circuit-qualifications';
+import{parseTournamentRuleOverrides,snapshotTournamentRules}from'./tournament-rule-overrides';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { DomainError, validateSettings } from './domain';
@@ -18,10 +19,14 @@ import {drawTournamentPlayers,TOURNAMENT_ALGORITHM_VERSION,swissRoundLimit,nextS
 import {assertEventRankingMutable} from './ranking-events';
 import {assertPrimaryCorrectionFixtureAllowed,primaryCorrectionBlockedFixtureIds} from './match-corrections';
 import {assertAccountActive} from './account-removal';
+import {publishTournamentDraw,manageTournamentRound,assertTournamentManagerReplay} from './tournament-management';
+import {tournamentFixtureReleased} from './tournament-pools';
+import {parseTournamentPlanning,buildTournamentPlan,type TournamentPlanningInput} from './tournament-planning';
 
 /** Receipt replay checks the original scope again, including a copy's independently authorized destination. */
 export async function revalidateCompetitionManagementCommand(client:PoolClient,actor:string,command:PlatformCommand):Promise<void>{
- const action=command.action;if(!['competition.copy','competition.coorganizer'].includes(action.type))return;
+ await assertTournamentManagerReplay(client,actor,command);
+ const action=command.action;if(!['competition.copy','competition.coorganizer','competition.rules'].includes(action.type))return;
  const source=await entity(client,action.id);await requireAccess(client,source,actor,true);
  if(action.type==='competition.coorganizer'&&source.owner_id!==actor)throw new DomainError('forbidden','Alleen de eigenaar wijst medebeheerders voor dit evenement aan.',403);
  if(action.type==='competition.copy'){
@@ -79,6 +84,9 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     const visibility=String(a.visibility??(eligibility==='club'?'club':ownership==='personal'?'private':'public'));
     if(!['public','private','club'].includes(visibility)||visibility==='club'&&!clubId)throw new DomainError('invalid_visibility','Kies een geldige zichtbaarheid voor dit evenement.');
     const state: PlatformState = { name: text(a.name), ownership, rankingDestinations:[], description: a.description ? text(a.description, 2000) : '',location:a.location?text(a.location,200):'', capacity: number(a.capacity, 32, 2, 128),approvalRequired:kind==='tournament'&&a.approvalRequired===true,eligibility, format, settings, date, poolCount: number(a.poolCount, 2, 1, 8), fixtures: [], registrationOpen: true, paused: false, autoSchedule: false, callSeconds: 120, restSeconds: 90, cooldownSeconds: 30, requireWriter: a.requireWriter !== false, cast: { scene: 'hall', updatedAt: new Date().toISOString() } };
+    if(kind==='tournament'&&a.planning!==undefined){try{const planningFormat: TournamentPlanningInput['format']=format==='pools-knockout'?'pools-ko':format.startsWith('double-elimination')?'double-elimination':format as TournamentPlanningInput['format'];state.planning=parseTournamentPlanning(a.planning,{players:state.capacity,boards:number(a.boards,4,1,32),pools:state.poolCount,format:planningFormat});state.planningPreview=buildTournamentPlan(state.planning as TournamentPlanningInput);}catch(error){throw new DomainError('invalid_planning',error instanceof Error?error.message:'Controleer de planning.');}}
+    if(state.planningPreview){const preview=state.planningPreview as ReturnType<typeof buildTournamentPlan>;if(preview.endAt&&preview.input.deadline&&Date.parse(preview.endAt)>Date.parse(preview.input.deadline)){if(a.acceptPlanningWarnings!==true)throw new DomainError('planning_deadline_ack','Pas de eindtijd/planning aan of bevestig de tijdoverschrijding vóór publicatie.',409);state.planningDeadlineAcceptedAt=new Date().toISOString();state.planningDeadlineAcceptedUntil=preview.endAt;}}
+    state.bronze=a.bronze===true||a.thirdPlace===true;if(a.consolation===true){if(format!=='knockout')throw new DomainError('consolation_format','Kies enkele eliminatie voor een afzonderlijke eerste-rondeverliezersbeker.',409);state.consolation={enabled:true,title:a.consolationTitle===undefined?'Troostbeker':text(a.consolationTitle,80),completed:false,placings:[]};}if(a.tournamentRuleOverrides!==undefined)state.tournamentRuleOverrides=parseTournamentRuleOverrides(a.tournamentRuleOverrides,settings);
     await createCoreEvent(client, actor, state, clubId);
     state.drawCheckedInOnly=a.drawCheckedInOnly===true||['swiss','double-elimination-reset','double-elimination-single'].includes(format);
     if(format==='swiss'&&a.swissRounds!==undefined)state.swissRounds=number(a.swissRounds,1,1,128);
@@ -96,7 +104,14 @@ export async function competitionAction(client: PoolClient, actor: string, comma
   if (type.startsWith('lobby.')) return lobbyAction(client, actor, command, row);
   if (!['league', 'tournament'].includes(row.kind)) throw new DomainError('invalid_kind', 'Open eerst een competitie of toernooi.');
   await assertCircuitQualificationCommand(client,row,type);
-  if(type.startsWith('fixture.')||['competition.plan','competition.next-round','competition.autoplan','competition.settings'].includes(type))await assertPrimaryCorrectionFixtureAllowed(client,row,type.startsWith('fixture.')?String(a.fixtureId??''):undefined);
+  if(type.startsWith('fixture.')||['competition.plan','competition.redraw','competition.pool-decider','competition.advance-decider','competition.release-round','competition.next-round','competition.autoplan','competition.settings','competition.rules'].includes(type))await assertPrimaryCorrectionFixtureAllowed(client,row,type.startsWith('fixture.')?String(a.fixtureId??''):undefined);
+  if(type==='competition.rules'){
+    await requireAccess(client,row,actor,true);if(row.kind!=='tournament')throw new DomainError('invalid_kind','Faseregels horen bij een toernooi.');
+    if(command.expectedRevision===undefined)throw new DomainError('revision_required','Publiceer faseregels op de actuele evenementversie.',409);
+    await assertEventRankingMutable(client,row.id);if(row.state.fixtures?.length)throw new DomainError('phase_rules_locked','Publiceer de spelregels vóór de loting. Kopieer de editie voor andere regels.',409);
+    row.state.tournamentRuleOverrides=parseTournamentRuleOverrides(a.overrides,row.state.settings!);row.state.ruleVersion=Number(row.state.ruleVersion??0)+1;
+    await client.query('insert into dartflow_private.platform_audit(actor_id,entity_id,action,detail)values($1,$2,$3,$4)',[actor,row.id,type,JSON.stringify({requestId:command.requestId,ruleVersion:row.state.ruleVersion,overrides:row.state.tournamentRuleOverrides})]);await save(client,row);return{ok:true,id:row.id,entity:await view(client,row,actor)};
+  }
   if(type==='competition.copy'){
     await requireAccess(client,row,actor,true);
     const ownership=String(a.ownership??row.state.ownership??(row.club_id?'club':'platform')),clubId=ownership==='club'?uuid(a.clubId):null;
@@ -105,7 +120,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
       description:row.state.description??'',location:row.state.location??'',format:row.state.format,capacity:row.state.capacity,poolCount:row.state.poolCount,
       date:a.date??row.state.date,visibility:a.visibility??(ownership==='personal'?'private':row.visibility==='club'&&!clubId?'private':row.visibility),
       eligibility:a.eligibility??(row.state.eligibility==='club'&&!clubId?'all':row.state.eligibility),approvalRequired:row.state.approvalRequired,
-      boards:Math.max(1,boardCount),requireWriter:row.state.requireWriter,drawCheckedInOnly:row.state.drawCheckedInOnly,swissRounds:row.state.tournamentRules?.swissRounds??row.state.swissRounds,...sourceSettings}});
+      boards:Math.max(1,boardCount),requireWriter:row.state.requireWriter,drawCheckedInOnly:row.state.drawCheckedInOnly,swissRounds:row.state.tournamentRules?.swissRounds??row.state.swissRounds,tournamentRuleOverrides:row.state.tournamentRuleOverrides,...sourceSettings}});
     await client.query('insert into dartflow_private.platform_audit(actor_id,entity_id,action,detail)values($1,$2,$3,$4)',[actor,copied!.id,'competition.copy.definition',JSON.stringify({sourceId:row.id,sourceRevision:row.revision,requestId:command.requestId})]);return copied;
   }
   if(type==='competition.coorganizer'){
@@ -130,6 +145,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     }
     await client.query('insert into dartflow_private.platform_audit(actor_id,entity_id,action,detail)values($1,$2,$3,$4)',[actor,row.id,'competition.coorganizer.decision',JSON.stringify({target,enabled:a.enabled,requestId:command.requestId})]);await save(client,row);return{ok:true,id:row.id,entity:await view(client,row,actor)};
   }
+  snapshotTournamentRules(row.state);
   const self = await member(client, row.id, actor);
   if (row.club_id && !allowsExternalParticipants(row) && !(await isClubMember(client,row.club_id,actor)))throw new DomainError('forbidden','Dit evenement is voor clubleden.',403);
   if (type === 'competition.register') {
@@ -192,8 +208,10 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     if (m?.status !== 'active' || m.attributes.registered !== true) throw new DomainError('registration_required', 'Deze speler heeft geen bevestigde inschrijving.', 409);
     await client.query("update dartflow_private.platform_members set attributes=attributes || $3::jsonb where entity_id=$1 and user_id=$2", [row.id, target, JSON.stringify(type === 'competition.checkin' ? { checkedIn: true, available: true } : { available: a.available !== false })]);
     if(type==='competition.checkin')await client.query("update dartflow_private.entries set checked_in=true where event_id=$1 and user_id=$2 and status='registered'",[row.state.eventId,target]);
-  } else if (type === 'competition.plan') {
+  } else if (type === 'competition.plan'||type==='competition.redraw') {
     await requireAccess(client, row, actor, true);
+    if(row.kind==='tournament')await publishTournamentDraw(client,row,actor,command);
+    else {
     if (row.state.fixtures?.length) throw new DomainError('schedule_exists', 'Dit schema is al vastgelegd.', 409);
     const { rows } = await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='active' and attributes->>'registered'='true' and ($2::boolean=false or attributes->>'checkedIn'='true') order by created_at,user_id", [row.id,row.state.drawCheckedInOnly===true]);
     const players = rows.map(r => String(r.user_id));
@@ -204,6 +222,10 @@ export async function competitionAction(client: PoolClient, actor: string, comma
       if(row.state.format==='swiss')row.state.standings=tournamentOutcome(row.state.fixtures,'swiss',seedOrder,swissRounds).standings;
     }
     row.state.registrationOpen = false;
+    }
+  }else if(['competition.pool-decider','competition.advance-decider','competition.release-round'].includes(type)){
+    await requireAccess(client,row,actor,true);if(command.expectedRevision===undefined)throw new DomainError('revision_required','Deze fasebeslissing vereist de actuele revisie.',409);manageTournamentRound(row,a);
+    await client.query('insert into dartflow_private.platform_audit(actor_id,entity_id,action,detail)values($1,$2,$3,$4)',[actor,row.id,type,JSON.stringify({requestId:command.requestId,reason:text(a.reason,1000),pool:a.pool,round:a.round,decisionId:a.decisionId})]);
   }else if(type==='competition.next-round'){
     await requireAccess(client,row,actor,true);nextSwissRound(row.state);
     row.state.standings=tournamentOutcome(row.state.fixtures!,'swiss',row.state.tournamentRules!.seedOrder,row.state.tournamentRules!.swissRounds).standings;
@@ -276,6 +298,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     const previous = row.state.cast;
     row.state.cast = { scene: a.live === false ? previous?.scene ?? 'hall' : scene, ...(a.boardId ? { boardId: String(a.boardId) } : previous?.boardId ? { boardId: previous.boardId } : {}), preview: scene, updatedAt: new Date().toISOString() };
   } else throw new DomainError('invalid_action', 'Onbekende competitieactie.');
+  snapshotTournamentRules(row.state);
   await save(client, row);
   return { ok: true, id: row.id, ...(row.state.matchId ? { matchId: row.state.matchId } : {}), entity: await view(client, row, actor) };
 }
@@ -309,6 +332,7 @@ async function lobbyAction(client: PoolClient, actor: string, command: PlatformC
     await joinLobbyMember(client,actor,row,{boardId:a.boardId,code:a.code,requestId:command.requestId});
   } else if(a.type==='lobby.starter'){
     if(row.owner_id!==actor)throw new DomainError('forbidden','Alleen de host kiest de startspeler.',403);
+    if(row.state.settings?.startProcedure)throw new DomainError('start_procedure_fixed','De gepubliceerde bull-, lotings- of thuisregel bepaalt de startspeler.',409);
     if(row.state.matchId||row.state.closed)throw new DomainError('lobby_started','Deze lobby is al gestart of gesloten.',409);
     const starter=uuid(a.starterId);if((await member(client,row.id,starter))?.status!=='active')throw new DomainError('invalid_starter','Kies een aanwezige speler.');
     row.state.starterId=starter;row.state.ready={};
@@ -377,10 +401,12 @@ async function fixtureAction(client: PoolClient, actor: string, command: Platfor
     for(const other of recipients)await enqueueDomainMail(client, { id: `${command.requestId}:fixture:${other}`, templateId: a.type === 'fixture.propose' ? 'fixture-changed' : 'fixture-scheduled', scope: row.club_id ? `club:${row.club_id}` : 'platform', recipientId: other!, entityId: row.id, variables: { eventName: row.state.name, date: String(fixture.time ?? fixture.proposedTime), actionUrl: `/app#leagues/${row.id}` } });
   } else if (a.type === 'fixture.start') {
     if (!participant) await requireAccess(client, row, actor, true); else await requireAccess(client, row, actor);
+    if(!tournamentFixtureReleased(fixture))throw new DomainError('round_not_released','De wedstrijdleiding moet deze ronde eerst expliciet vrijgeven.',409);
     if (fixture.status === 'proposed' || fixture.players.some(p => !p)) throw new DomainError('fixture_not_ready', 'Bevestig eerst het tijdstip en de tegenstanders.', 409);
-    if (!fixture.matchId) { fixture.matchId = await createCoreMatch(client, row, fixture.players as string[], row.state.settings!, fixture.id); fixture.status = 'live'; }
+    if (!fixture.matchId) { fixture.matchId = await createCoreMatch(client, row, fixture.players as string[], fixture.settings??row.state.settings!, fixture.id); fixture.status = 'live'; }
   } else if (a.type === 'fixture.walkover') {
     await requireAccess(client, row, actor, true);
+    if(!tournamentFixtureReleased(fixture))throw new DomainError('round_not_released','De wedstrijdleiding moet deze ronde eerst expliciet vrijgeven.',409);
     if (fixture.matchId || fixture.status === 'confirmed' || !fixture.players.includes(String(a.winnerId))) throw new DomainError('invalid_walkover', 'Gebruik een nog niet gestarte partij en een toegewezen winnaar.');
     const reason=text(a.reason,1000);
     fixture.matchId=await createCoreMatch(client,row,fixture.players as string[],row.state.settings!,fixture.id,true);
@@ -424,14 +450,14 @@ export async function autoAssign(client: PoolClient, row: EntityRow, manual?:{fi
     if(Number((row.state.boardCooldowns as Record<string,number>|undefined)?.[board.id]??0)>Date.now())continue;
     const reservation=(row.state.boardReservations as Record<string,{fixtureId?:string}>|undefined)?.[board.id];
     if(reservation&&!reservation.fixtureId)continue;
-    const fixture = row.state.fixtures?.find(f => !correctionBlocked.has(f.id) && (f.status === 'scheduled'||Boolean(manual&&resumeMatch&&f.matchId===resumeMatch)) && (!manual||f.id===manual.fixtureId) && (!reservation?.fixtureId||f.id===reservation.fixtureId) && (manual||!f.time||new Date(f.time).getTime()<=Date.now()+5*60_000) && f.players.every((p): p is string => p !== null && Boolean(eligible(p))));
+    const fixture = row.state.fixtures?.find(f => tournamentFixtureReleased(f)&&!correctionBlocked.has(f.id) && (f.status === 'scheduled'||Boolean(manual&&resumeMatch&&f.matchId===resumeMatch)) && (!manual||f.id===manual.fixtureId) && (!reservation?.fixtureId||f.id===reservation.fixtureId) && (manual||!f.time||new Date(f.time).getTime()<=Date.now()+5*60_000) && f.players.every((p): p is string => p !== null && Boolean(eligible(p))));
     if (!fixture) continue;
     try{await assertBoardUnreserved(client,board.id,row.state.eventId!,row.id,fixture.id);}catch(error){if(error instanceof DomainError&&error.code==='board_reserved')continue;throw error;}
     const players = fixture.players as string[];
     const writer = manual?.writerId ? members.rows.find(m=>m.user_id===manual.writerId&&!players.includes(m.user_id)&&eligible(m.user_id))?.user_id : row.state.requireWriter === false ? undefined : members.rows.find(m => !players.includes(m.user_id) && eligible(m.user_id))?.user_id;
     if(manual?.writerId&&!writer)throw new DomainError('writer_unavailable','Deze schrijver is niet beschikbaar of hoort niet bij deze speeldag.',409);
     if (row.state.requireWriter !== false && !writer) continue;
-    if (!fixture.matchId) fixture.matchId = await createCoreMatch(client, row, players, row.state.settings!, fixture.id);
+    if (!fixture.matchId) fixture.matchId = await createCoreMatch(client, row, players, fixture.settings??row.state.settings!, fixture.id);
     await assertPhysicalBoardEvent(client,board.id,row.state.eventId!,fixture.matchId,true);
     const match = await client.query('select state from dartflow_private.matches where id=$1 for update', [fixture.matchId]);
     const state = match.rows[0].state;

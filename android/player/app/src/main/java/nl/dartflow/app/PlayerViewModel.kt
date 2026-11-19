@@ -26,7 +26,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val state = MutableStateFlow(PlayerUiState())
     val ui = state.asStateFlow()
     private var saved = store.read()
-    private val refreshLock = Mutex()
+    private val refreshLock = PlayerAuthCoordinator.refresh
     private val commandLock = Mutex()
     private val snapshots = PlayerSnapshotGate()
     private val homeReads = PlayerHomeReads()
@@ -38,6 +38,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     @Volatile private var identityGeneration = 0
     private var pending: NativePlayerCommand? = null
     private var pendingDestination: PlayerDestination? = null
+    private var pendingPushId: String? = null
     private var identityPoll = 0
     private val navigation = ArrayDeque<PlayerDestination>()
     init {
@@ -106,6 +107,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private fun persist() = store.write(saved)
     private suspend fun accessToken(expectedIdentity: PlayerRequestIdentity? = null): String? = refreshLock.withLock {
         if (expectedIdentity != null && requestIdentity() != expectedIdentity) throw playerSessionChanged()
+        val latest = store.read()
+        if (latest.text("userId").isNotBlank() && latest.text("userId") == saved.text("userId") && latest.text("accessToken") != saved.text("accessToken") && latest.optLong("expiresAt") > saved.optLong("expiresAt")) listOf("accessToken", "refreshToken", "expiresAt").forEach { key -> if (latest.has(key)) saved.put(key, latest.get(key)) }
         if (!hasSession()) return@withLock null
         val generation = identityGeneration
         if (saved.optLong("expiresAt") <= api.serverNow() + 60_000) {
@@ -132,7 +135,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         require(token.isNotBlank() && refresh.isNotBlank()) { "Inloggen leverde geen geldige sessie op." }
         val incomingUser = result.optJSONObject("user")
         val incomingId = incomingUser?.optString("id").orEmpty()
+        if (incomingId.isBlank() && saved.text("userId").isNotBlank()) PlayerPush.clearLocal(getApplication())
         if (saved.optString("userId").isNotBlank() && incomingId.isNotBlank() && incomingId != saved.optString("userId")) {
+            PlayerPush.clearLocal(getApplication())
             identityGeneration++; pending = null; navigation.clear(); saved.remove("pendingCommand"); saved.remove("organizerDraft"); saved.remove("invitation"); saved.remove("navigation")
             state.update { it.copy(profile = null, platform = JSONObject(), overview = JSONObject(), resource = JSONObject(), match = null, board = null, screen = PlayerScreen.HOME, activeId = null, hasPendingCommand = false, loading = true, organizerDraft = JSONObject(), organizerCloudDraft = JSONObject(), faqAdminReceipt = JSONObject(), invitation = JSONObject(), canManagePlatform = false, homeFeed = JSONObject(), homeFeedLoading = false, homeFeedError = null) }
         }
@@ -151,6 +156,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val profile = result.optJSONObject("user")?.let(PlayerProfile::parse)
         profile?.let { saved.put("userId", it.id); persist() }
         state.update { it.copy(profile = profile, session = sessionMetadata(), canManagePlatform = result.optBoolean("canManagePlatform"), organizerDraft = saved.optJSONObject("organizerDraft") ?: JSONObject(), invitation = saved.optJSONObject("invitation") ?: JSONObject()) }
+        profile?.let { runCatching { PlayerPush.sync(getApplication(), api, it.id) } }
+        pendingPushId?.let { id -> pendingPushId = null; openPush(id) }
     }
     private suspend fun loadCommon() {
         val generation = identityGeneration
@@ -174,7 +181,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val generation = identityGeneration
         val ticket = snapshots.capture()
         val resource = when (screen) {
-            PlayerScreen.BOARDS, PlayerScreen.NOTIFICATIONS -> api.call("/player-experience")
+            PlayerScreen.BOARDS -> api.call("/player-experience")
+            PlayerScreen.NOTIFICATIONS -> api.call("/player-experience").also { it.put("push", api.call("/push")) }
             PlayerScreen.SCREENS -> {
                 val experience = api.call("/player-experience")
                 val context = api.call("/oche/v1/context")
@@ -302,7 +310,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         saved.put("navigation", json("active" to json("screen" to current.screen.name, "id" to current.activeId), "history" to org.json.JSONArray(navigation.map { json("screen" to it.screen.name, "id" to it.id) })))
     }
     private fun showDestination(screen: PlayerScreen, id: String?) {
-        state.update { it.copy(screen = screen, activeId = id, resource = JSONObject(), match = if (screen == PlayerScreen.MATCH) null else it.match, loading = hasSession() || screen == PlayerScreen.HELP, error = null, notice = null) }
+        state.update { it.copy(screen = screen, activeId = id, resource = JSONObject(), match = if (screen == PlayerScreen.MATCH) null else it.match, guestOperatorId = if (screen == PlayerScreen.MATCH && id == it.activeId) it.guestOperatorId else "", loading = hasSession() || screen == PlayerScreen.HELP, error = null, notice = null) }
         if (hasSession()) { persistNavigation(); persist() }
         if (hasSession() || screen == PlayerScreen.HELP) launchTask(showBusy = false) { loadCurrent() }
     }
@@ -408,18 +416,43 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val result = api.call("/auth/local", JSONObject().put("userId", id), anonymous = true)
         val expires = when (val value = result.opt("expiresAt")) { is Number -> value.toLong(); is String -> runCatching { Instant.parse(value).toEpochMilli() }.getOrDefault(0); else -> 0 }
         require(result.optString("accessToken").isNotBlank() && expires > api.serverNow())
+        PlayerPush.clearLocal(getApplication())
         saved = JSONObject().put("accessToken", result.getString("accessToken")).put("expiresAt", expires).put("local", true).put("userId", id)
         persist(); signedIn()
     }
     fun signOut() = launchTask {
         val token = saved.optString("accessToken")
         val local = saved.optBoolean("local")
+        PlayerPush.disable(getApplication(), api)
         clearSession()
         if (!local && token.isNotBlank()) runCatching { api.authCall(auth, "/logout?scope=local", token = token) }
     }
     private fun clearSession() {
+        PlayerPush.clearLocal(getApplication())
         identityGeneration++; pending = null; pendingDestination = null; navigation.clear(); saved = JSONObject(); store.clear()
         state.update { PlayerUiState(loading = false, capabilities = it.capabilities, localUsers = it.localUsers) }
+    }
+    fun setPushEnabled(enabled: Boolean) = launchTask {
+        val actor = state.value.profile?.id ?: throw IllegalArgumentException("Log eerst in om meldingen in te stellen.")
+        if (enabled) {
+            val data = api.call("/push")
+            val sdk = data.optJSONObject("sdk") ?: throw IllegalArgumentException("Systeemmeldingen zijn voor deze appomgeving nog niet ingericht. Je meldingen blijven in DartFlow beschikbaar.")
+            PlayerPush.enable(getApplication(), api, actor, sdk)
+        } else PlayerPush.disable(getApplication(), api)
+        loadCurrent()
+    }
+    fun handlePushTap(id: String) {
+        if (runCatching { UUID.fromString(id).toString() == id }.getOrDefault(false).not()) return
+        if (!ready || !hasSession()) { pendingPushId = id; state.update { it.copy(notice = "Log in om deze melding en je actuele toegang te controleren.") }; return }
+        launchTask { openPush(id) }
+    }
+    private suspend fun openPush(id: String) {
+        val result = api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to json("type" to "notification.open", "id" to id)))
+        if (result.optBoolean("available")) {
+            val settings = PlayerPush.settings(getApplication())
+            if (settings.text("deviceId").isNotBlank()) runCatching { api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to json("type" to "delivery.ack", "id" to id, "deviceId" to settings.text("deviceId"), "stage" to "opened"))) }
+            handleDeepLink(result.text("href"))
+        } else state.update { it.copy(notice = result.text("message", "Deze melding is verlopen of ingetrokken. Open Vandaag voor de actuele informatie.")) }
     }
     fun completeProfile(username: String, displayName: String, pin: String, confirm: String) {
         if (!PlayerValidation.validUsername(username) || !PlayerValidation.validName(displayName)) { state.update { it.copy(error = "Vul een geldige gebruikersnaam en weergavenaam in.") }; return }
@@ -462,7 +495,12 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
     fun matchAction(type: String, extra: JSONObject = JSONObject()) {
         val match = state.value.match ?: return
-        command("/matches/${match.id}/actions", JSONObject().put("matchId", match.id).put("expectedRevision", match.revision).put("action", JSONObject(extra.toString()).put("type", type)))
+        val guest = state.value.guestOperatorId.takeIf { id -> match.raw.rows("guestOperators").any { it.text("id") == id } && type in listOf("accept", "confirm", "score", "undo", "start", "draw-start", "bull-throw", "bull-confirm") }
+        command("/matches/${match.id}/actions", JSONObject().put("matchId", match.id).put("expectedRevision", match.revision).put("action", JSONObject(extra.toString()).put("type", type)).also { if (guest != null) it.put("guestId", guest) })
+    }
+    fun selectGuestOperator(id: String) {
+        if (state.value.busy || state.value.hasPendingCommand) return
+        if (id.isBlank() || state.value.match?.raw?.rows("guestOperators")?.any { it.text("id") == id } == true) state.update { it.copy(guestOperatorId = id) }
     }
     fun score(score: Int, darts: Int = 3, doubleConfirmed: Boolean = false, doubleAttempts: Int? = null) {
         if (score !in 0..180 || darts !in 1..3) { state.update { it.copy(error = "Gebruik een worp van 0–180 en één tot drie darts.") }; return }
@@ -476,7 +514,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             val generation = identityGeneration
             snapshots.advance()
             try {
-                val result = execute(command)
+                val result = execute(command.forOfflineRetry())
                 clearPendingCommand()
                 afterCommand(command.path, command.body, result, generation)
             } catch (failure: PlayerApiFailure) {
@@ -609,6 +647,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private fun handleFailure(failure: Exception, polling: Boolean = false) {
         // Discard work from a previous login without changing the new login's feedback/state.
         if (failure is PlayerApiFailure && failure.code == "session_changed") return
+        if (failure is PlayerApiFailure && failure.code == "account_deleted") clearSession()
         val message = when (failure) {
             is PlayerApiFailure -> failure.feedback
             is IllegalArgumentException, is IllegalStateException -> failure.message?.takeIf { it.length in 1..200 } ?: "Controleer je invoer en probeer opnieuw."
@@ -658,6 +697,7 @@ class NativePlayerCommand private constructor(val path: String, val body: JSONOb
     val requestId: String get() = body.getString("requestId")
     val sensitive: Boolean get() = path.startsWith("/profile") || path.startsWith("/account") || path == "/safety/report" || path.contains("player-pin") || containsSecret(body)
     override fun toString() = "NativePlayerCommand(path=$path, requestId=$requestId, body=[redacted])"
+    fun forOfflineRetry(): NativePlayerCommand = if (Regex("/matches/[0-9a-fA-F-]{36}/actions").matches(path) && body.obj("action").text("type") in listOf("score", "undo")) create(path, JSONObject(body.toString()).put("offline", true)) else this
     fun forStorage(userId: String, origin: String): JSONObject {
         check(!sensitive)
         return JSONObject().put("userId", userId).put("origin", origin).put("path", path).put("body", body)

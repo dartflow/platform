@@ -1,4 +1,7 @@
 "use client";
+import GuestMatchControls from './guest-match-controls';
+import BullStartPanel,{StartProcedureFields,readWinByTwo} from './bull-start-panel';
+import OfflineConflictPanel from './offline-conflict-panel';
 
 import {
   useCallback,
@@ -1111,7 +1114,7 @@ function PlanMatch({
       await request(`/api/events/${event.id}/actions`, {
         type: "plan",
         playerIds: [p1, p2],
-        settings: { startScore, bestOfLegs: legs, bestOfSets: sets },
+        settings: { startScore, bestOfLegs: legs, bestOfSets: sets,...Object.fromEntries(new FormData(e.currentTarget as HTMLFormElement)),...readWinByTwo(new FormData(e.currentTarget as HTMLFormElement)) },
       });
       await refresh();
     } catch (e) {
@@ -1124,6 +1127,7 @@ function PlanMatch({
     <form className="panel plan-panel" onSubmit={submit}>
       <div className="panel-kicker">VOLGENDE AAN DE OCHE</div>
       <h3>Partij klaarzetten</h3>
+      <StartProcedureFields/>
       <p className="muted-copy">
         Kies twee ingecheckte spelers. De server controleert of ze beschikbaar
         zijn.
@@ -1627,10 +1631,12 @@ function BoardPage({
                 mode,
                 startScore: Number(startScore),
                 bestOfLegs: Number(bestOfLegs),
+                ...(mode!=='solo'?{...Object.fromEntries(new FormData(event.currentTarget)),...readWinByTwo(new FormData(event.currentTarget))}:{}),
               });
             }}
           >
             <h2>Vrij spelen op deze baan</h2>
+            {mode!=='solo'&&<StartProcedureFields key={mode} defaultProcedure={mode==='remote'?'server-lot':'bull'}/>}
             <p>
               Deze vaste QR en het gekoppelde Oche Live-scherm blijven bij
               hetzelfde fysieke bord.
@@ -1701,6 +1707,8 @@ function BoardPage({
 }
 
 type PendingAction = {
+  guestId?:string;
+  offline?:boolean;
   requestId: string;
   expectedRevision: number;
   action: MatchAction;
@@ -1774,6 +1782,7 @@ function MatchPage({
         await refreshMatch();
       } catch (e) {
         const status = (e as Error & { status?: number }).status;
+        if(!status){const saved={...command,offline:true};setPending(saved);sessionStorage.setItem(storeKey,JSON.stringify(saved));}
         setConflict(status === 409 || status === 400 || status === 403 || status === 410);
         setActionError(
           e instanceof Error
@@ -1801,11 +1810,13 @@ function MatchPage({
       window.removeEventListener("online", retry);
     };
   }, [pending, conflict, submitPending]);
-  function act(action: MatchAction) {
-    if (!match || pending || sendingRef.current) return;
+  function act(action: MatchAction,guestId?:string) {
+    if (!match || pending&&action.type!=='resolve-offline-conflict' || sendingRef.current) return;
     const command = {
       requestId: crypto.randomUUID(),
       expectedRevision: match.revision,
+      offline:!navigator.onLine,
+      ...(guestId?{guestId}:{}),
       matchId: match.id,
       action,
     };
@@ -2010,7 +2021,8 @@ function MatchPage({
             )}
   </>;
   const detailedScoring=match.settings.discipline==='cricket'||match.settings.inRule==='double'||Boolean(match.settings.outRule&&match.settings.outRule!=='double');
-  const activeConsole = !detailedScoring && consoleOpen && match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore);
+  const startProcedurePending = Boolean(match.settings.startProcedure && (match.startDecision?.starter === undefined || match.bull && match.bull.status !== 'complete'));
+  const activeConsole = match.offlineConflict?.status!=='open'&&(!match.bull||match.bull.status==='complete')&&!detailedScoring && consoleOpen && match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore);
   return (
     <>
       {!activeConsole&&<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>}
@@ -2376,7 +2388,7 @@ function MatchPage({
                   match.accepted.every(Boolean) && (
                     <button
                       className="button gold"
-                      disabled={disabled}
+                      disabled={disabled || startProcedurePending}
                       onClick={() => act({ type: "start" })}
                     >
                       Wedstrijd starten <Icon name="arrow" />
@@ -2384,6 +2396,8 @@ function MatchPage({
                   )}
               </div>
             )}
+            <BullStartPanel match={match}onAction={act}disabled={disabled}/><GuestMatchControls match={match}busy={disabled}onAction={act}/>
+            <OfflineConflictPanel match={match}onAction={act}disabled={sending}/>
             {matchControls}
             <div className="revision-label">
               Stand bijgewerkt · revisie {match.revision}
@@ -2501,7 +2515,7 @@ function MatchPage({
               {["called", "ready"].includes(match.status) && (
                 <button
                   className="button gold full"
-                  disabled={disabled || !match.accepted.every(Boolean)}
+                  disabled={disabled || !match.accepted.every(Boolean) || startProcedurePending}
                   onClick={() => act({ type: "start" })}
                 >
                   Wedstrijd starten

@@ -15,7 +15,7 @@ import java.time.LocalDate
 
 /** Persist only the known, non-sensitive wizard fields, scoped to the signed-in account. */
 internal object PlayerOrganizerDraft {
-    private val defaults = mapOf<String, Any>("discipline" to "x01", "cricketMode" to "standard", "ownership" to "personal", "name" to "", "description" to "", "date" to "", "location" to "", "clubId" to "", "format" to "pools-knockout", "capacity" to "16", "boards" to "4", "poolCount" to "4", "startScore" to "501", "bestOfLegs" to "5", "eligibility" to "all", "requireWriter" to true, "approvalRequired" to false, "visibility" to "private", "inRule" to "single", "outRule" to "double", "handicap" to false, "leftStart" to "501", "rightStart" to "501", "swissRounds" to "3", "step" to 0)
+    private val defaults = mapOf<String, Any>("discipline" to "x01", "cricketMode" to "standard", "ownership" to "personal", "name" to "", "description" to "", "date" to "", "location" to "", "clubId" to "", "format" to "pools-knockout", "capacity" to "16", "boards" to "4", "poolCount" to "4", "startScore" to "501", "bestOfLegs" to "5", "eligibility" to "all", "requireWriter" to true, "approvalRequired" to false, "visibility" to "private", "inRule" to "single", "outRule" to "double", "handicap" to false, "leftStart" to "501", "rightStart" to "501", "swissRounds" to "3", "startProcedure" to "bull", "setOpener" to "continuous", "decidingLeg" to "continue", "bestOfSets" to "1", "bronze" to false, "consolation" to false, "consolationTitle" to "Troostbeker", "legTwoDifference" to false, "setTwoDifference" to false, "legMaximum" to "19", "setMaximum" to "9", "planMatchMinutes" to "20", "planFinalMinutes" to "20", "planRestMinutes" to "5", "planChangeMinutes" to "0", "planQualify" to "2", "planStartAt" to "", "planDeadline" to "", "planEnabled" to false, "planAcknowledged" to false, "step" to 0)
     fun sanitize(input: JSONObject): JSONObject = JSONObject().also { result ->
         defaults.forEach { (key, fallback) ->
             result.put(key, when (fallback) {
@@ -47,12 +47,19 @@ internal object PlayerOrganizerDraft {
         if (d.text("outRule") !in listOf("straight", "double", "master")) errors["outRule"] = "Kies straight, dubbel of master uit."
         if (d.optBoolean("handicap")) listOf("leftStart", "rightStart").forEach { key -> if (d.text(key).toIntOrNull()?.let { it in (if (d.text("outRule") == "straight") 1 else 2)..1001 } != true) errors[key] = "Kies een handicap-startscore tot 1001." }
         if (d.text("format") == "swiss" && d.text("swissRounds").toIntOrNull()?.let { it in 1..128 } != true) errors["swissRounds"] = "Kies één tot 128 Zwitserse ronden."
+        if (d.text("startProcedure") !in listOf("bull", "server-lot", "home-first") || d.text("setOpener") !in listOf("continuous", "alternate-sets") || d.text("decidingLeg") !in listOf("continue", "rebull") || d.text("bestOfSets") !in listOf("1", "3", "5")) errors["startProcedure"] = "Controleer de startprocedure en setregels."
+        for (prefix in listOf("leg", "set")) if (d.optBoolean("${prefix}TwoDifference")) { val cap = d.text("${prefix}Maximum").toIntOrNull(); val base = d.text(if (prefix == "leg") "bestOfLegs" else "bestOfSets").toIntOrNull() ?: 1; if (cap == null || cap < base || cap !in 1..99 || cap % 2 != 1) errors["${prefix}Maximum"] = "Kies een oneven harde cap van minstens de best-of, tot 99." }
+        if (d.text("format") == "knockout" && d.optBoolean("consolation") && d.text("consolationTitle").trim().length !in 1..80) errors["consolationTitle"] = "Geef de troostbeker een titel van maximaal 80 tekens."
         return errors
     }
     fun command(input: JSONObject): JSONObject {
         require(errors(input).isEmpty()) { "Controleer de gemarkeerde velden." }
         val d = sanitize(input)
         return json("type" to "tournament.create", "drawCheckedInOnly" to true, "ownership" to d.text("ownership"), "name" to d.text("name").trim(), "description" to d.text("description").trim(), "date" to d.text("date"), "location" to d.text("location").trim(), "format" to d.text("format"), "eligibility" to d.text("eligibility"), "visibility" to d.text("visibility"), "capacity" to d.text("capacity").toInt(), "boards" to d.text("boards").toInt(), "poolCount" to d.text("poolCount").toInt(), "startScore" to d.text("startScore").toInt(), "bestOfLegs" to d.text("bestOfLegs").toInt(), "requireWriter" to d.optBoolean("requireWriter"), "approvalRequired" to d.optBoolean("approvalRequired")).also {
+            playerStartSettings(d).keys().forEach { key -> it.put(key, playerStartSettings(d).get(key)) }
+            it.put("bronze", d.optBoolean("bronze") && d.text("format") in listOf("knockout", "pools-knockout"))
+            it.put("consolation", d.optBoolean("consolation") && d.text("format") == "knockout").put("consolationTitle", d.text("consolationTitle").trim())
+            if (d.optBoolean("planEnabled")) it.put("planning", playerPlanningSettings(d)).put("acceptPlanningWarnings", d.optBoolean("planAcknowledged"))
             it.put("discipline", d.text("discipline")).put("cricketMode", d.text("cricketMode")).put("inRule", d.text("inRule")).put("outRule", d.text("outRule"))
             if (d.optBoolean("handicap")) it.put("sideStartScores", JSONArray(listOf(d.text("leftStart").toInt(), d.text("rightStart").toInt())))
             if (d.text("format") == "swiss") it.put("swissRounds", d.text("swissRounds").toInt())
@@ -66,7 +73,7 @@ internal object PlayerOrganizerDraft {
     val draft = PlayerOrganizerDraft.sanitize(state.organizerDraft)
     val step = draft.optInt("step")
     var validating by rememberSaveable { mutableStateOf(false) }
-    fun update(key: String, value: Any) = actions.saveOrganizerDraft(JSONObject(draft.toString()).put(key, value))
+    fun update(key: String, value: Any) = actions.saveOrganizerDraft(JSONObject(draft.toString()).put(key, value).also { if (key != "planAcknowledged" && key != "step") it.put("planAcknowledged", false) })
     val errors = if (validating) PlayerOrganizerDraft.errors(draft) else emptyMap()
     val clubs = PlayerOrganizerDraft.clubs(state.platform)
     val steps = listOf("Doel en eigenaar", "Deelnemers en speelvorm", "Spelregels en banen", "Controleren en publiceren")
@@ -95,6 +102,8 @@ internal object PlayerOrganizerDraft {
             if (draft.text("format") == "pools-knockout") Field("Aantal poules", draft.text("poolCount"), { update("poolCount", it) }, !state.busy, keyboard = KeyboardType.Number, error = errors["poolCount"], max = 1)
             if (draft.text("format").startsWith("double-elimination")) Text(if (draft.text("format") == "double-elimination-reset") "De finalist uit het verliezersschema moet de ongeslagen finalist tweemaal verslaan. Alleen dan wordt de resetfinale gespeeld." else "Eén grand final beslist het toernooi. Er volgt geen reset als de finalist uit het verliezersschema wint.", color = PlayerMuted)
             if (draft.text("format") == "swiss") Field("Aantal Zwitserse ronden", draft.text("swissRounds"), { update("swissRounds", it) }, !state.busy, keyboard = KeyboardType.Number, error = errors["swissRounds"], max = 3)
+            if (draft.text("format") in listOf("pools-knockout", "knockout")) PlayerToggle("Wedstrijd om derde plaats", draft.optBoolean("bronze"), !state.busy) { update("bronze", it) }
+            if (draft.text("format") == "knockout") { PlayerToggle("Aparte troostbeker na echte nederlaag in ronde één", draft.optBoolean("consolation"), !state.busy) { update("consolation", it) }; if (draft.optBoolean("consolation")) Field("Titel troostbeker", draft.text("consolationTitle"), { update("consolationTitle", it) }, !state.busy, max = 80, error = errors["consolationTitle"]) }
             PlayerToggle("Aanmeldingen eerst goedkeuren", draft.optBoolean("approvalRequired"), !state.busy) { update("approvalRequired", it) }
             Text("Deelnemers schrijven in via de gedeelde toernooilink. De loting volgt vanuit wedstrijdleiding.", color = PlayerMuted)
         }
@@ -112,9 +121,11 @@ internal object PlayerOrganizerDraft {
                 Field("Startscore tweede zijde", draft.text("rightStart"), { update("rightStart", it) }, !state.busy, keyboard = KeyboardType.Number, error = errors["rightStart"], max = 4)
             }
             }
+            PlayerStartSettingsFields(draft, !state.busy) { key, value -> update(key, value) }
             Field("Aantal banen", draft.text("boards"), { update("boards", it) }, !state.busy, keyboard = KeyboardType.Number, error = errors["boards"], max = 2)
             PlayerToggle("Aparte schrijver vereist", draft.optBoolean("requireWriter"), !state.busy) { update("requireWriter", it) }
             Text("De wedstrijdleiding controleert bij elke oproep aanwezigheid, rust en beschikbaarheid van baan en schrijver.", color = PlayerMuted)
+            PlayerOrganizerPlanning(draft, state, actions) { key, value -> update(key, value) }
         }
         3 -> PlayerCard("Publicatie controleren") {
             Text(draft.text("name"), style = MaterialTheme.typography.titleLarge)
@@ -123,7 +134,9 @@ internal object PlayerOrganizerDraft {
             Text("Zichtbaarheid: ${when (draft.text("visibility")) { "public" -> "Openbaar"; "club" -> "Alleen vereniging"; else -> "Besloten" }}")
             if (draft.text("discipline") == "cricket") Text("Cricket · ${if (draft.text("cricketMode") == "no-score") "zonder punten" else "met punten"} · best of ${draft.text("bestOfLegs")} legs") else Text("${draft.text("startScore")} · ${if (draft.text("inRule") == "double") "Dubbel in" else "Single in"} · ${when (draft.text("outRule")) { "master" -> "Master uit"; "straight" -> "Straight uit"; else -> "Dubbel uit" }} · best of ${draft.text("bestOfLegs")} legs")
             if (draft.optBoolean("handicap")) Text("Handicap: ${draft.text("leftStart")} – ${draft.text("rightStart")}")
+            if (draft.optBoolean("legTwoDifference") || draft.optBoolean("setTwoDifference")) Text(playerDifferenceLabel(playerDifferenceSettings(draft)).removePrefix(" · "), color = PlayerLime)
             if (draft.text("format") == "swiss") Text("${draft.text("swissRounds")} Zwitserse ronden")
+            if (draft.text("format") == "knockout" && draft.optBoolean("consolation")) Text("Aparte ${draft.text("consolationTitle")} · alleen echte eerste-rondeverliezers, eigen eindplaats en geen extra circuitbonus.", color = PlayerLime)
             Text(if (draft.text("ownership") == "personal") "Persoonlijk evenement · geen officiële rankingpunten" else "${if (draft.text("ownership") == "club") clubs.find { it.text("id") == draft.text("clubId") }?.text("name") ?: "Vereniging" else "DartFlow"} · ranking volgt het gepubliceerde reglement", color = PlayerLime)
             errors.values.forEach { Text(it, color = PlayerError) }
             Action("Publiceer toernooi", !state.busy && state.online && PlayerOrganizerDraft.errors(draft).isEmpty(), modifier = Modifier.fillMaxWidth()) { actions.platformAction(PlayerOrganizerDraft.command(draft)) }
@@ -152,7 +165,6 @@ internal fun playerManagedEvent(state: PlayerUiState): JSONObject = state.resour
     val body = event.obj("state")
     val context = LocalContext.current
     var tab by rememberSaveable { mutableStateOf("entries") }
-    var planConfirm by rememberSaveable { mutableStateOf(false) }
     Heading(event.text("name", "Wedstrijdleiding"), "WEDSTRIJDLEIDING", "${when (body.text("ownership")) { "club" -> "Vereniging"; "platform" -> "DartFlow"; "personal" -> "Persoonlijk"; else -> if (event.text("clubId").isNotBlank()) "Vereniging" else "DartFlow" }} · revisie ${event.optInt("revision")}")
     if (!event.optBoolean("canManage")) { if (!state.loading) Notice("Je hebt geen actueel beheerrecht voor dit evenement.", true); return }
     fun send(type: String, extra: JSONObject = JSONObject()) = entityCommand(actions, event, JSONObject(extra.toString()).put("type", type).put("id", id))
@@ -170,6 +182,7 @@ internal fun playerManagedEvent(state: PlayerUiState): JSONObject = state.resour
     val fixtures = body.rows("fixtures")
     when (tab) {
         "entries" -> {
+            PlayerOrganizerParticipants(event, state, actions)
             Text("${entries.count { it.obj("attributes").optBoolean("checkedIn") }} van ${entries.count { it.text("status") == "active" }} ingecheckt", color = PlayerLime)
             if (entries.isEmpty()) Text("Nog geen aanmeldingen. Deel de uitnodiging om spelers toe te voegen.", color = PlayerMuted)
             entries.forEach { entry -> PlayerCard(entry.text("name")) {
@@ -185,16 +198,17 @@ internal fun playerManagedEvent(state: PlayerUiState): JSONObject = state.resour
             } }
         }
         "fixtures" -> {
-            if (fixtures.isEmpty()) {
-                Text("De loting sluit de inschrijving en legt de deelnemers vast. Controleer eerst de aanmeldingen.", color = PlayerMuted)
-                Action("Controleer en maak loting", enabled && entries.count { it.text("status") == "active" && (!body.optBoolean("drawCheckedInOnly") || it.obj("attributes").optBoolean("checkedIn")) } >= 2) { planConfirm = true }
-            } else {
+            if (event.text("kind") == "tournament") PlayerTournamentDraw(event, state, actions)
+            else if (fixtures.isEmpty()) Action("Maak competitieschema", enabled) { send("competition.plan") }
+            PlayerTournamentPoolControl(event, state, actions)
+            if (fixtures.isNotEmpty()) {
                 Action("Beschikbare partijen oproepen", enabled && !body.optBoolean("paused")) { send("competition.autoplan") }
                 if (body.text("format") == "swiss") Action("Volgende Zwitserse ronde", enabled && fixtures.all { it.text("status") in listOf("confirmed", "bye", "void") }) { send("competition.next-round") }
-                fixtures.forEach { fixture -> PlayerFixtureCard(fixture, event, state, actions) }
+                fixtures.filter { it.text("purpose") != "consolation" }.forEach { fixture -> PlayerFixtureCard(fixture, event, state, actions) }
+                if (body.obj("consolation").optBoolean("enabled")) { PlayerTournamentConsolation(event); fixtures.filter { it.text("purpose") == "consolation" }.forEach { fixture -> PlayerFixtureCard(fixture, event, state, actions) } }
             }
         }
-        "standings" -> PlayerTournamentStandings(event)
+        "standings" -> { PlayerTournamentPoolControl(event, state, actions); PlayerTournamentStandings(event) }
         "boards" -> {
             val boards = state.resource.rows("boards").ifEmpty { state.overview.rows("boards").filter { it.text("eventId") == body.text("eventId") } }
             if (boards.isEmpty() && !state.loading) Text("Geen toegankelijke banen ontvangen. Vernieuw de wedstrijdleiding.", color = PlayerMuted)
@@ -206,6 +220,7 @@ internal fun playerManagedEvent(state: PlayerUiState): JSONObject = state.resour
             } }
         }
         "settings" -> {
+            if (event.text("kind") == "tournament") PlayerTournamentRules(event, state, actions)
             PlayerOrganizerSharing(event, state, actions)
             PlayerCard("Regie-instellingen") {
             PlayerToggle("Nieuwe oproepen pauzeren", body.optBoolean("paused"), enabled) { send("competition.settings", json("paused" to it)) }
@@ -217,7 +232,6 @@ internal fun playerManagedEvent(state: PlayerUiState): JSONObject = state.resour
             }
         }
     }
-    if (planConfirm) AlertDialog(onDismissRequest = { planConfirm = false }, title = { Text("Loting vastleggen?") }, text = { Text("${entries.count { it.text("status") == "active" && (!body.optBoolean("drawCheckedInOnly") || it.obj("attributes").optBoolean("checkedIn")) }} ${if (body.optBoolean("drawCheckedInOnly")) "ingecheckte" else "bevestigde"} deelnemers worden ingedeeld. De inschrijving sluit. Controleer eerst de juiste deelnemers en speelvorm.") }, confirmButton = { TextButton(onClick = { planConfirm = false; send("competition.plan") }, enabled = enabled) { Text("Maak loting") } }, dismissButton = { TextButton(onClick = { planConfirm = false }) { Text("Terug") } })
 }
 
 @Composable private fun PlayerFixtureCard(fixture: JSONObject, event: JSONObject, state: PlayerUiState, actions: PlayerActions) {
@@ -234,11 +248,16 @@ internal fun playerManagedEvent(state: PlayerUiState): JSONObject = state.resour
     val matchId = fixture.text("matchId")
     fun send(type: String, extra: JSONObject = JSONObject()) = entityCommand(actions, event, JSONObject(extra.toString()).put("type", type).put("id", event.text("id")).put("fixtureId", fixture.text("id")))
     PlayerCard("Ronde ${fixture.optInt("round")} · ${fixture.text("pool", playerTournamentPhaseLabel(fixture.text("phase")))}") {
+        fixture.optJSONObject("settings")?.let { Text("Partijreglement: ${playerRuleLabel(it)} · best of ${it.optInt("bestOfLegs", 3)} legs · ${it.optInt("bestOfSets", 1)} set(s)", color = PlayerMuted) }
         Text(names.joinToString(" – ").ifBlank { "Wacht op vorige ronde" }, style = MaterialTheme.typography.titleMedium)
         fixture.text("pairingNotice").takeIf { it.isNotBlank() }?.let { Text(it, color = PlayerMuted) }
+        if (fixture.text("purpose") == "bronze") Text("Bronswedstrijd · plaats drie en vier", color = PlayerLime)
+        if (fixture.text("purpose") == "consolation") Text(event.obj("state").obj("consolation").text("title", "Troostbeker"), color = PlayerLime)
+        if (fixture.text("purpose") == "pool-decider") Text("Echte poulebeslisser · ${playerRuleLabel(fixture.obj("settings"))} · best of ${fixture.obj("settings").optInt("bestOfLegs", 5)}", color = PlayerLime)
+        if (fixture.optBoolean("requiresRelease") && !fixture.optBoolean("released")) Notice("Deze ronde wacht op expliciete vrijgave door de wedstrijdleiding.")
         Text(statusLabel(fixture.text("status")) + (fixture.optJSONArray("score")?.strings()?.joinToString("–")?.let { " · $it" } ?: ""), color = PlayerMuted)
         if (matchId.isNotBlank()) Action("Open partij en uitslag", primary = false) { actions.navigate(PlayerScreen.MATCH, matchId) }
-        else if (players.size == 2 && fixture.text("status") !in listOf("confirmed", "bye", "void")) {
+        else if (players.size == 2 && fixture.text("status") !in listOf("confirmed", "bye", "void") && (!fixture.optBoolean("requiresRelease") || fixture.optBoolean("released"))) {
             if (event.text("kind") == "league" && !event.obj("state").optBoolean("seasonManaged")) Action("Open geplande competitiepartij", enabled && !event.obj("state").optBoolean("paused") && !event.obj("state").optBoolean("closed")) { send("fixture.start") }
             val boards = state.resource.rows("boards").ifEmpty { state.overview.rows("boards").filter { it.text("eventId") == event.obj("state").text("eventId") } }.filter { !it.optBoolean("blocked") && it.text("matchId").isBlank() }
             Choice("Baan", boardId, listOf("" to "Kies een beschikbare baan") + boards.map { it.text("id") to it.text("name") }, { boardId = it }, enabled)
@@ -276,6 +295,7 @@ internal fun playerTournamentStandingSummary(row: JSONObject): String = if (row.
 @Composable internal fun PlayerTournamentStandings(event: JSONObject) {
     val body = event.obj("state")
     val standings = body.rows("standings")
+    PlayerTournamentConsolation(event)
     if (standings.isEmpty()) return
     PlayerCard(if (body.optBoolean("completed")) "Eindstand" else "Stand") {
         standings.forEach { row ->

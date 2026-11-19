@@ -1,6 +1,10 @@
+import{getNativePush,executeNativePushCommand}from'@/lib/native-push';
+import{buildTournamentPlan,parseTournamentPlanning}from'@/lib/tournament-planning';
 import {getMatchCorrections,executeMatchCorrectionCommand} from '@/lib/match-corrections';
 import type {MatchCorrectionCommand} from '@/lib/match-corrections-types';
 import {getOrganizerDrafts,executeOrganizerDraftCommand} from '@/lib/organizer-drafts';
+import{getOrganizerParticipants,getMyGuestClaims,executeOrganizerParticipantCommand}from'@/lib/event-guests';
+import type{OrganizerParticipantCommand}from'@/lib/event-guests-types';
 import type {OrganizerDraftCommand} from '@/lib/organizer-drafts-types';
 import { NextRequest, NextResponse } from 'next/server';
 import {handleOcheDeviceApi} from '@/lib/oche-device-api';
@@ -215,8 +219,13 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if (method==='GET' && parts[0]==='platform' && parts[1]==='cast' && parts.length===3) return json(await getPlatformCast(parts[2]));
   if(method==='GET'&&parts[0]==='feed'&&parts[1]==='result'&&parts.length===3)return json(await getFeedResult(await actorId(request),parts[2]));
   const actor=await requireActor(request);
+  if(method==='GET'&&path==='push')return json(await getNativePush(actor.id));
+  if(method==='POST'&&path==='push/actions')return json(await executeNativePushCommand(actor.id,await body(request)));
   if(method==='GET'&&path==='organizer-drafts')return json(await getOrganizerDrafts(actor.id,{kind:(request.nextUrl.searchParams.get('kind')??undefined) as 'tournament'|'season'|undefined,clubId:request.nextUrl.searchParams.get('clubId')??undefined}));
   if(method==='POST'&&path==='organizer-drafts/actions')return json(await executeOrganizerDraftCommand(actor.id,await body(request) as OrganizerDraftCommand));
+  if(method==='GET'&&parts[0]==='organizer-participants'&&uuid(parts[1])&&parts.length===2)return json(await getOrganizerParticipants(actor.id,parts[1]));
+  if(method==='GET'&&path==='organizer-guest-claims')return json(await getMyGuestClaims(actor.id));
+  if(method==='POST'&&path==='organizer-participants')return json(await executeOrganizerParticipantCommand(actor.id,await body(request,65536) as OrganizerParticipantCommand));
   if(method==='GET'&&parts[0]==='matches'&&uuid(parts[1])&&parts[2]==='corrections'&&parts.length===3)return json(await getMatchCorrections(actor.id,parts[1]));
   if(method==='POST'&&parts[0]==='matches'&&uuid(parts[1])&&parts[2]==='corrections'&&parts[3]==='actions'&&parts.length===4){const input=await body(request) as MatchCorrectionCommand;if(input.action?.type==='correction.request'&&input.action.matchId!==parts[1])throw new DomainError('invalid_id','De partij en het correctieverzoek komen niet overeen.');return json(await executeMatchCorrectionCommand(actor.id,input,parts[1]));}
   if(method==='GET'&&path==='faq/admin')return json(await getFaqAdmin(actor.id));
@@ -327,6 +336,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     if(method==='GET')return json(await getMatchSignals(actor.id,parts[2],Number(request.nextUrl.searchParams.get('after') || '0')));
     if(method==='POST')return json(await sendMatchSignal(actor.id,parts[2],await body(request,65536)));
   }
+  if(method==='GET'&&path==='organizer-planning'){const input=Object.fromEntries(request.nextUrl.searchParams);try{return json(buildTournamentPlan(parseTournamentPlanning(input)));}catch(error){throw new DomainError('invalid_planning',error instanceof Error?error.message:'Controleer de planning.');}}
   if (method==='GET' && path==='overview') {
     const clubId=request.nextUrl.searchParams.get('clubId') || undefined;
     if (clubId && !uuid(clubId)) throw new DomainError('club','Ongeldige club.');
@@ -339,7 +349,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
       const data=await body(request);
       if (!uuid(data.requestId) || !Number.isSafeInteger(data.expectedRevision) || Number(data.expectedRevision)<0 || !data.action || typeof data.action!=='object') throw new DomainError('command','Ongeldige wedstrijdactie.');
       if (data.matchId!==undefined && data.matchId!==parts[1]) throw new DomainError('match_changed','Deze actie hoort bij een andere partij. Open de oorspronkelijke wedstrijd.',409);
-      const result=await executeMatchCommand(actor.id,{matchId:parts[1],requestId:data.requestId,expectedRevision:Number(data.expectedRevision),action:data.action as MatchAction});
+      const result=await executeMatchCommand(actor.id,{...(data.guestId===undefined?{}:{guestId:String(data.guestId)}),offline:data.offline===true,matchId:parts[1],requestId:data.requestId,expectedRevision:Number(data.expectedRevision),action:data.action as MatchAction});
       await reconcilePlatformResults();
       return json(result);
     }

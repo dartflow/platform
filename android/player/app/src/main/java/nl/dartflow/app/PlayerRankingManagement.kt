@@ -36,6 +36,17 @@ internal fun playerRankingAction(actions: PlayerActions, type: String, data: JSO
         Action("Maak klassement", enabled && club.isNotBlank() && name.isNotBlank()) { playerRankingAction(actions, "list.create", json("clubId" to club, "kind" to kind, "name" to name.trim(), "policy" to json("discipline" to discipline, "cricketMode" to cricketMode))) }
     }
     if (selected.optBoolean("canManage")) {
+        selected.optJSONObject("publication")?.let { publication ->
+            PlayerCard("Publicatie van het klassement") {
+                Text(if (publication.optBoolean("paused")) "De zichtbare generatie is bevroren. Nieuwe geldige bronnen blijven bewaard voor de herbouw." else "Het klassement verwerkt geldige bronnen in de gepubliceerde generatie.", color = PlayerMuted)
+                if (publication.optBoolean("pending")) Text("Er wachten nieuwe bronnen op publicatie.", color = PlayerLime)
+                publication.text("reason").takeIf { it.isNotBlank() }?.let { Text(it, color = PlayerMuted) }
+                Field("Reden publicatiepauze of hervatting", reason, { reason = it }, enabled, max = 1000)
+                Action(if (publication.optBoolean("paused")) "Controleer herbouw en hervatting" else "Controleer publicatiepauze", enabled && reason.trim().length >= 3, false) {
+                    pending = json("type" to if (publication.optBoolean("paused")) "list.resume" else "list.pause", "listId" to selected.text("id"), "expectedPublicationRevision" to publication.optInt("revision"), "reason" to reason.trim())
+                }
+            }
+        }
         if (selected.text("scope") == "club") key(selected.text("id"), selected.optInt("policyVersion")) { PlayerRankingPolicyEditor(selected, enabled) { policy -> pending = json("type" to "list.policy", "listId" to selected.text("id"), "policy" to policy) } }
         PlayerCard("Sluiten voor nieuwe evenementen") {
             Text("Bestaande gepubliceerde rechten en eerdere resultaten blijven behouden. Nieuwe evenementen volgen de ingangsdatum.", color = PlayerMuted)
@@ -55,7 +66,7 @@ internal fun playerRankingAction(actions: PlayerActions, type: String, data: JSO
     val approvals = state.resource.rows("approvals").filter { it.optBoolean("canApprove") }
     approvals.forEach { declaration -> PlayerRankingDeclaration(declaration, state, actions) }
     if (clubs.isEmpty() && !selected.optBoolean("canManage") && approvals.isEmpty()) Text("Je hebt geen actueel beheerrecht voor deze ranking.", color = PlayerMuted)
-    pending?.let { data -> AlertDialog(onDismissRequest = { pending = null }, title = { Text(if (data.text("type") == "list.close") "Klassement sluiten?" else "Nieuw reglement publiceren?") }, text = { Text("${selected.text("name")}\n${data.text("reason", "De server controleert of het huidige beleid nog gewijzigd mag worden. Bestaande toezeggingen aan evenementen blijven vast.")}") }, confirmButton = { TextButton(onClick = { pending = null; playerRankingAction(actions, data.text("type"), data) }, enabled = enabled) { Text("Bevestigen") } }, dismissButton = { TextButton(onClick = { pending = null }) { Text("Terug") } }) }
+    pending?.let { data -> AlertDialog(onDismissRequest = { pending = null }, title = { Text(when (data.text("type")) { "list.close" -> "Klassement sluiten?"; "list.pause" -> "Publicatie bevriezen?"; "list.resume" -> "Herbouwen en publiceren?"; else -> "Nieuw reglement publiceren?" }) }, text = { Text("${selected.text("name")}\n${data.text("reason", "De server controleert of het huidige beleid nog gewijzigd mag worden. Bestaande toezeggingen aan evenementen blijven vast.")}") }, confirmButton = { TextButton(onClick = { pending = null; playerRankingAction(actions, data.text("type"), data) }, enabled = enabled && selected.optBoolean("canManage")) { Text("Bevestigen") } }, dismissButton = { TextButton(onClick = { pending = null }) { Text("Terug") } }) }
 }
 
 @Composable private fun PlayerRankingPolicyEditor(selected: JSONObject, enabled: Boolean, save: (JSONObject) -> Unit) {

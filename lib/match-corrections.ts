@@ -1,3 +1,4 @@
+import{resetTournamentPoolRepair}from'./tournament-management';
 import{createHash,randomUUID}from'node:crypto';
 import type{PoolClient}from'pg';
 import{enqueueDomainMail}from'./integrations-mail';
@@ -47,7 +48,7 @@ export async function assertPrimaryCorrectionMatchAllowed(client:Client,state:Ma
  const hold=dependencyHold(event),open=event.state.primaryCorrectionOpen as{matchId:string}|undefined;
  if(hold?.downstreamFixtureIds.includes(event.fixture_id))throw new DomainError('primary_correction_dependency_hold',reasonForHold,409);
  const openFixture=open?event.state.fixtures?.find(f=>f.matchId===open.matchId):undefined;
- if(openFixture&&dependentFixtures(event,openFixture.id,false).includes(event.fixture_id))throw new DomainError('primary_correction_dependency_hold',reasonForHold,409);
+ if(openFixture&&primaryCorrectionDependencyIds(event,openFixture.id,false).includes(event.fixture_id))throw new DomainError('primary_correction_dependency_hold',reasonForHold,409);
  const blocked=await primaryCorrectionBlockedFixtureIds(client,event);if(blocked.has(event.fixture_id)&&open?.matchId!==state.id)throw new DomainError('primary_correction_dependency_hold',reasonForHold,409);
 }
 export function assertPrimaryCorrectionEventMutable(event:EntityRow):void{
@@ -56,10 +57,10 @@ export function assertPrimaryCorrectionEventMutable(event:EntityRow):void{
 /** Pending objections freeze their actual descendants, while unrelated boards continue. */
 export async function primaryCorrectionBlockedFixtureIds(client:Client,event:EntityRow):Promise<Set<string>>{
  const blocked=new Set<string>(dependencyHold(event)?.downstreamFixtureIds??[]),open=event.state.primaryCorrectionOpen as{matchId:string}|undefined;
- for(const id of [...blocked])for(const descendant of dependentFixtures(event,id,false))blocked.add(descendant);
- const source=open?event.state.fixtures?.find(f=>f.matchId===open.matchId):undefined;if(source){blocked.add(source.id);for(const id of dependentFixtures(event,source.id,false))blocked.add(id);}
+ for(const id of [...blocked])for(const descendant of primaryCorrectionDependencyIds(event,id,false))blocked.add(descendant);
+ const source=open?event.state.fixtures?.find(f=>f.matchId===open.matchId):undefined;if(source){blocked.add(source.id);for(const id of primaryCorrectionDependencyIds(event,source.id,false))blocked.add(id);}
  const pending=(await client.query<{fixture_id:string}>(`select l.fixture_id from dartflow_private.match_correction_requests q join dartflow_private.platform_match_links l on l.match_id=q.match_id where l.entity_id=$1 and not exists(select 1 from dartflow_private.match_correction_decisions d where d.request_id=q.id)`,[event.id])).rows;
- for(const row of pending){blocked.add(row.fixture_id);for(const id of dependentFixtures(event,row.fixture_id,false))blocked.add(id);}return blocked;
+ for(const row of pending){blocked.add(row.fixture_id);for(const id of primaryCorrectionDependencyIds(event,row.fixture_id,false))blocked.add(id);}return blocked;
 }
 export async function assertPrimaryCorrectionFixtureAllowed(client:Client,event:EntityRow,fixtureId?:string):Promise<void>{
  const blocked=await primaryCorrectionBlockedFixtureIds(client,event);if(fixtureId?blocked.has(fixtureId):blocked.size>0)throw new DomainError('primary_correction_dependency_hold',reasonForHold,409);
@@ -72,11 +73,13 @@ export async function preparePrimaryCorrectionResult(client:PoolClient,next:Matc
  state.primaryCorrection.phase='confirmed';
 }
 
-function dependentFixtures(event:EntityRow,fixtureId:string,assignedOnly=true):string[]{
+export function primaryCorrectionDependencyIds(event:EntityRow,fixtureId:string,assignedOnly=true):string[]{
  const fixtures=event.state.fixtures??[],source=fixtures.find(row=>row.id===fixtureId);if(!source)return[];
+ const sourceDecision=source.purpose==='pool-decider'?event.state.tournamentControl?.decisions.find(d=>d.id===source.decisionId):undefined;
  const affected=new Set<string>();let changed=true;
  while(changed){changed=false;for(const fixture of fixtures){if(fixture.id===fixtureId||affected.has(fixture.id))continue;
-  const follows=fixture.sources?.some(link=>link.fixtureId&&(link.fixtureId===fixtureId||affected.has(link.fixtureId))||source.phase==='pool'&&link.pool===source.pool)||fixture.resetOf&&(fixture.resetOf===fixtureId||affected.has(fixture.resetOf))||source.phase==='swiss'&&fixture.phase==='swiss'&&fixture.round>source.round;
+  const deciderDependency=sourceDecision&&(fixture.sources?.some(link=>link.pool===sourceDecision.pool)||source.phase==='pool'&&fixture.purpose==='pool-decider'&&fixture.decisionId===source.decisionId&&fixture.phase==='knockout')||source.phase==='pool'&&!source.purpose&&fixture.purpose==='pool-decider'&&event.state.tournamentControl?.decisions.some(d=>d.id===fixture.decisionId&&d.pool===source.pool);
+  const follows=deciderDependency||fixture.sources?.some(link=>link.fixtureId&&(link.fixtureId===fixtureId||affected.has(link.fixtureId))||source.phase==='pool'&&link.pool===source.pool)||fixture.resetOf&&(fixture.resetOf===fixtureId||affected.has(fixture.resetOf))||source.phase==='swiss'&&fixture.phase==='swiss'&&fixture.round>source.round;
   if(follows){affected.add(fixture.id);changed=true;}
  }}
  return fixtures.filter(fixture=>affected.has(fixture.id)&&(!assignedOnly||fixture.matchId)).map(fixture=>fixture.id);
@@ -88,7 +91,7 @@ async function repairDependencies(client:PoolClient,actor:string,row:RequestRow,
  const event=await origin(client,state,true),hold=dependencyHold(event);if(!event||!hold||hold.requestId!==row.id||row.decision!=='approved')throw new DomainError('correction_repair_unavailable','Dit dossier heeft geen open vervolgpartijen om opnieuw in te delen.',409);
  if(!isPublished(state)||state.primaryCorrection?.requestId!==row.id||state.primaryCorrection.phase!=='confirmed')throw new DomainError('correction_source_unconfirmed','Beide spelers moeten eerst de werkelijk herstelde primaire uitslag bevestigen.',409);
  const source=event.state.fixtures?.find(fixture=>fixture.id===event.fixture_id);if(!source||source.status!=='confirmed')throw new DomainError('correction_source_unconfirmed','Verwerk eerst de actuele primaire uitslag in het evenement.',409);
- const allDescendants=dependentFixtures(event,event.fixture_id,false),affected=event.state.fixtures!.filter(fixture=>allDescendants.includes(fixture.id)),before=structuredClone(event.state);
+ const allDescendants=primaryCorrectionDependencyIds(event,event.fixture_id,false),affected=event.state.fixtures!.filter(fixture=>allDescendants.includes(fixture.id)),before=structuredClone(event.state);
  for(const fixture of affected){if(!fixture.matchId)continue;await client.query('select id from dartflow_private.matches where id=$1 for update',[fixture.matchId]);const old=await currentMatch(client,fixture.matchId);
   if(matchParticipants(old).some(player=>player.id===actor))throw new DomainError('independent_correction_review_required','Een onafhankelijke wedstrijdleider moet ook buiten alle getroffen vervolgpartijen staan.',403);
   if((await client.query('select 1 from dartflow_private.match_results where match_id=$1',[old.id])).rowCount)throw new DomainError('correction_dependency_still_published','Een getroffen vervolgbron is nog officieel gepubliceerd. Laat eerst het correctiedossier beoordelen.',409);
@@ -105,7 +108,7 @@ async function repairDependencies(client:PoolClient,actor:string,row:RequestRow,
    }
    if(result.sources)result.sources=result.sources.map(link=>({...link,...(link.fixtureId&&replacements.has(link.fixtureId)?{fixtureId:replacements.get(link.fixtureId)!}:{})}));
    if(result.resetOf&&replacements.has(result.resetOf))result.resetOf=replacements.get(result.resetOf)!;return result;
-  });advanceFixtures(event.state.fixtures);
+  });resetTournamentPoolRepair(event,event.fixture_id,replacements);advanceFixtures(event.state.fixtures);
  }
  delete event.state.primaryCorrectionHold;delete event.state.primaryCorrectionOpen;event.state.paused=false;event.state.autoSchedule=false;event.state.completed=false;delete event.state.championId;delete event.state.placings;delete event.state.standings;
  await client.query('insert into dartflow_private.match_correction_repairs(request_id,actor_id,reason,before_event,after_event)values($1,$2,$3,$4,$5)',[row.id,actor,reason,JSON.stringify(before),JSON.stringify(event.state)]);await save(client,event);
@@ -127,7 +130,7 @@ async function reopen(client:PoolClient,actor:string,row:RequestRow,state:Correc
  if(event&&event.state.seasonManaged===true)throw new DomainError('season_correction_required','Gebruik de eigen beoordeelde seizoenscorrectie voor een samengestelde ontmoeting.',409);
  if(event&&['league','tournament'].includes(event.kind)){
   if(event.state.primaryCorrectionOpen||event.state.primaryCorrectionHold)throw new DomainError('correction_repair_pending','Rond eerst de eerder beoordeelde primaire correctie af voordat een tweede bron wordt heropend.',409);
-  const descendants=dependentFixtures(event,event.fixture_id),fixture=event.state.fixtures?.find(item=>item.id===event.fixture_id);
+  const descendants=primaryCorrectionDependencyIds(event,event.fixture_id),fixture=event.state.fixtures?.find(item=>item.id===event.fixture_id);
   if(fixture){fixture.status='live';delete fixture.winnerId;delete fixture.score;}
   event.state.primaryCorrectionOpen={requestId:row.id,matchId:state.id};delete event.state.championId;delete event.state.placings;delete event.state.standings;event.state.completed=false;event.state.autoSchedule=false;
   if(descendants.length){event.state.primaryCorrectionHold={requestId:row.id,matchId:state.id,downstreamFixtureIds:descendants};hold={requestId:row.id,entityId:event.id,downstreamFixtureIds:descendants,message:reasonForHold};

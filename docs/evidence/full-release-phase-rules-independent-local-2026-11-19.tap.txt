@@ -1,0 +1,12 @@
+▶ published phase rules use fresh organizer authority, immutable actual fixture settings and future Swiss rating eligibility
+  ✔ one accepted phase-rule request freezes 301/BO7 double-in master-out into the genuine scoring match (299.660268ms)
+  ✔ only Swiss round one exists when a future 301 round blocks a 501 destination until explicitly excluded (149.512905ms)
+✔ published phase rules use fresh organizer authority, immutable actual fixture settings and future Swiss rating eligibility (548.760299ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 909.590203

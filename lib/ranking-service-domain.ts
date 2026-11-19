@@ -39,8 +39,8 @@ export function parseRankingPolicy(input: unknown, version: string): RankingPoli
 export function publishedRatingFormat(settings: Settings, policy: RankingPolicy): boolean {
   const rules = settings as Settings & { inRule?: string; outRule?: string; sideStartScores?: number[];discipline?:string;cricketMode?:string };
   if((rules.discipline??'x01')!==policy.discipline)return false;
-  if(policy.discipline==='cricket')return settings.bestOfSets===1&&settings.legLimit===undefined&&policy.bestOfLegs.includes(settings.bestOfLegs)&&(rules.cricketMode??'standard')===(policy.cricketMode??'standard')&&!rules.sideStartScores;
-  return settings.startScore === policy.startScore && settings.bestOfSets === 1 && settings.legLimit === undefined && policy.bestOfLegs.includes(settings.bestOfLegs) && rules.inRule!=='double' && (!rules.outRule || rules.outRule === 'double') && !rules.sideStartScores;
+  if(policy.discipline==='cricket')return settings.bestOfSets===1&&settings.legLimit===undefined&&!settings.legWinByTwo&&!settings.setWinByTwo&&policy.bestOfLegs.includes(settings.bestOfLegs)&&(rules.cricketMode??'standard')===(policy.cricketMode??'standard')&&!rules.sideStartScores;
+  return settings.startScore === policy.startScore && settings.bestOfSets === 1 && settings.legLimit === undefined && !settings.legWinByTwo && !settings.setWinByTwo && policy.bestOfLegs.includes(settings.bestOfLegs) && rules.inRule!=='double' && (!rules.outRule || rules.outRule === 'double') && !rules.sideStartScores;
 }
 
 export function parseRankingRules(value: unknown): RankingRule[] {
@@ -55,7 +55,8 @@ export function parseRankingRules(value: unknown): RankingRule[] {
   });
 }
 
-export function effectiveRankingRule(rules: RankingRule[], fixture: Pick<Fixture, 'id' | 'phase' | 'round'>): boolean {
+export function effectiveRankingRule(rules: RankingRule[], fixture: Pick<Fixture, 'id' | 'phase' | 'round'> & Pick<Partial<Fixture>,'purpose'>): boolean {
+  if(fixture.purpose==='consolation'&&!rules.some(rule=>rule.fixtureId===fixture.id&&rule.enabled))return false;
   const matched = rules.filter(rule => (!rule.phase || rule.phase === fixture.phase) && (!rule.round || rule.round === fixture.round) && (!rule.fixtureId || rule.fixtureId === fixture.id));
   if (!matched.length) return false;
   const specificity = (rule: RankingRule) => rule.fixtureId ? 3 : rule.round ? 2 : rule.phase ? 1 : 0;
@@ -73,8 +74,8 @@ export function circuitPoints(starters: number, place: number, played: boolean, 
 
 /** Canonical main-bracket places use real entrants; byes do not manufacture losses. */
 export function knockoutPlacements(fixtures: Fixture[]): { playerId: string; place: number }[] {
-  if (!fixtures.length || fixtures.some(fixture => !['confirmed', 'bye'].includes(fixture.status))) throw new DomainError('ranking_event_incomplete', 'Rond alle partijen en bezwaren af vóór de circuiteindstand.', 409);
-  const main = fixtures.filter(fixture => fixture.phase === 'knockout');
+  if (!fixtures.length || fixtures.some(fixture => !['confirmed', 'bye'].includes(fixture.status)&&!(fixture.purpose==='pool-decider'&&fixture.status==='void'))) throw new DomainError('ranking_event_incomplete', 'Rond alle partijen en bezwaren af vóór de circuiteindstand.', 409);
+  const main = fixtures.filter(fixture => fixture.phase === 'knockout'&&!fixture.purpose);
   if (!main.length) throw new DomainError('ranking_classification_required', 'Dit evenement heeft geen definitief hoofdknock-outschema voor circuitplaatsen.', 409);
   const players = new Set(main.flatMap(fixture => fixture.players.filter((id): id is string => id !== null)));
   const rounds = [...new Set(main.map(fixture => fixture.round))].sort((a, b) => a - b);
@@ -91,6 +92,8 @@ export function knockoutPlacements(fixtures: Fixture[]): { playerId: string; pla
   const final = main.filter(fixture => fixture.round === rounds.at(-1));
   if (final.length !== 1 || !final[0].winnerId || eliminated !== players.size - 1) throw new DomainError('ranking_classification_required', 'Het hoofdknock-outschema levert nog geen eenduidige volledige eindstand.', 409);
   places.push({ playerId: final[0].winnerId, place: 1 });
+  const bronze=fixtures.find(fixture=>fixture.purpose==='bronze');if(bronze){if(!bronze.winnerId)throw new DomainError('ranking_event_incomplete','De bronzen plaats is nog niet definitief.',409);for(const id of bronze.players.filter((id):id is string=>Boolean(id))){const row=places.find(row=>row.playerId===id);if(!row)throw new DomainError('ranking_classification_required','Een bronsspeler ontbreekt in het hoofdschema.',409);row.place=id===bronze.winnerId?3:4;}}
+  const poolPlayers=new Set(fixtures.filter(f=>f.phase==='pool'&&!f.purpose).flatMap(f=>f.players.filter((id):id is string=>Boolean(id))));for(const playerId of poolPlayers)if(!players.has(playerId))places.push({playerId,place:players.size+1});
   if (new Set(places.map(place => place.playerId)).size !== places.length) throw new DomainError('ranking_classification_required', 'Een deelnemer heeft meerdere eindplaatsen in het hoofdknock-outschema.', 409);
   return places;
 }

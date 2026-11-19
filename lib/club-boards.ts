@@ -1,3 +1,4 @@
+import{publicBullStart}from'./bull-start';
 import {matchEventNotice} from './event-display-notice';
 import {readPublicPrecall} from './competition-precalls';
 import {readSeasonDisplay} from './season-display';
@@ -116,7 +117,7 @@ export async function getClubBoardScreen(boardId:string,client?:Client):Promise<
   row.state=currentPlayerProfiles(row.state,labels.rows);
   const view=matchView(row.state,'',false);
   const currentLegVisits=(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit));
-  match={id:`board-${id}`,revision:view.revision,status:view.status,...publicMatchSides(view),...(view.cricket?{cricket:view.cricket}:{}),players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:currentLegVisits,currentLegVisits,currentLegStartScore:view.currentLegStartScore??view.settings.startScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:publicMatchSettings(view.settings),writerId:'',stats:statsForDisplay(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
+  match={id:`board-${id}`,revision:view.revision,status:view.status,...publicMatchSides(view),...publicBullStart(view),...(view.cricket?{cricket:view.cricket}:{}),players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:currentLegVisits,currentLegVisits,currentLegStartScore:view.currentLegStartScore??view.settings.startScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:publicMatchSettings(view.settings),writerId:'',stats:statsForDisplay(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
  }else if(lease?.kind==='training'){
   const game=lease.state.game as Game;
   const profile=await client.query<{name:string}>('select name from dartflow_private.profile_labels where id=$1',[lease.owner_id]);

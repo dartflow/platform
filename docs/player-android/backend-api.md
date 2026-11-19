@@ -12,7 +12,7 @@ De Kotlin-app gebruikt `/api/player/v1` op de gekozen DartFlow-omgeving. Dit is 
 | Staging | `https://staging.dartflow.nl` | `nl.dartflow.app.staging` |
 | Productie | `https://dartflow.nl` | `nl.dartflow.app` |
 
-Er zijn geen nieuwe migraties of hosted secrets voor deze adapter. De server gebruikt zijn bestaande `DARTFLOW_DATA_MODE`, `DARTFLOW_APP_ORIGIN`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, databaseconfiguratie en spelerspincodeconfiguratie. `GET /api/player/v1/capabilities` geeft alleen de publieke Supabase-URL en publishable key (of de bestaande legacy anon-key), omgeving, callback-URL, app-scheme, OTP-lengtegrenzen en pollinterval. Een verkeerd als publishable geconfigureerde `service_role`- of `sb_secret_`-sleutel wordt geweigerd. Databasegegevens en servergeheimen staan nooit in dit antwoord.
+De oorspronkelijke bearer-adapter gebruikt zijn bestaande `DARTFLOW_DATA_MODE`, `DARTFLOW_APP_ORIGIN`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, databaseconfiguratie en spelerspincodeconfiguratie. Kandidaat 0.2.0 heeft aanvullende domeinmigraties, waaronder de private pushopslag; het [achtergrondmeldingencontract](achtergrondmeldingen.md) beschrijft de aanvullende serverconfiguratie en nog ontbrekende providerproef. `GET /api/player/v1/capabilities` geeft alleen de publieke Supabase-URL en publishable key (of de bestaande legacy anon-key), omgeving, callback-URL, app-scheme, OTP-lengtegrenzen en pollinterval. Een verkeerd als publishable geconfigureerde `service_role`- of `sb_secret_`-sleutel wordt geweigerd. Databasegegevens en servergeheimen staan nooit in dit antwoord.
 
 Development geeft `auth.url=null`, `auth.publishableKey=null` en vier lokale testaccounts. `POST /api/player/v1/auth/local` met `{"userId":"<fixture-ID>"}` levert een lokaal ondertekend `accessToken` met `expiresAt` acht uur later. De lokale server bewaart hiervoor automatisch één private sleutel in `.local/native-player-session.key` buiten Git. Dit werkt alleen bij expliciete lokale modus, loopback-origin, loopback-host en uitsluitend loopback forwarding-adressen. Dezelfde token werkt nooit op staging of productie. Dit vervangt geen echte OTP- of Google-test.
 
@@ -57,6 +57,11 @@ Alle routes hieronder beginnen met `/api/player/v1/`. Queryparameters en JSON-DT
 | Methode | Suffix | Bestaand contract |
 | --- | --- | --- |
 | GET | `capabilities` | Publieke native configuratie, geen aanmelding nodig |
+| GET | `organizer-planning` | Alleen-lezen planning met dezelfde invoer en afhankelijkheden als de webwizard |
+| GET | `organizer-participants/<uuid>`, `organizer-guest-claims` | Actuele import-/gastbevoegdheden en eigen historieclaims |
+| POST | `organizer-participants` | Importpreview, expliciet toepassen, eventgast en tweezijdige historieclaim |
+| GET | `push` | Eigen generieke inbox, gedeelde voorkeuren en publieke SDK-opties indien ingericht |
+| POST | `push/actions` | Eigen toestelregistratie/intrekking, voorkeur, verse notificatiecontrole en ontvangst-/openbevestiging |
 | GET | `session` | `user`, `requiresDisplayName`, `requiresProfileCompletion`, `environment`; lokale testaccounts alleen lokaal |
 | GET | `profile` | `{user}` met bestaande profielstatus en uitsluitend pincode-status |
 | POST | `profile/complete` | `requestId`, `username`, `displayName`, `pin`, `pinConfirmation` |

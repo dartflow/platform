@@ -25,7 +25,7 @@ test('private player PIN lifecycle and atomic one-phone local coupling',{skip:!c
  const run=(actor:string,action:Record<string,unknown>)=>executePlatformCommand(actor,{requestId:randomUUID(),action:action as PlatformCommand['action']});
  const setPin=(actor:string,pin:string,mode='initial',currentPin?:string,recentAuth=false)=>updatePlayerPin(actor,{requestId:randomUUID(),pin,pinConfirmation:pin,mode,currentPin},{recentAuth});
  const lobbies:string[]=[],matches:string[]=[];
- const create=async()=>{const created=await run(first,{type:'board.start',boardId:board,mode:'local',startScore:301,bestOfLegs:1});lobbies.push(created.id!);return created;};
+ const create=async(settings:Record<string,unknown>={})=>{const created=await run(first,{type:'board.start',boardId:board,mode:'local',startScore:301,bestOfLegs:1,...settings});lobbies.push(created.id!);return created;};
  const add=(lobbyId:string,username=names[1],pin:unknown='012345',requestId=randomUUID(),actor=first,expectedRevision?:number)=>addLocalLobbyPlayer(actor,{lobbyId,username,pin,requestId,expectedRevision});
  const cancel=async(id:string)=>{await run(first,{type:'lobby.cancel',id});};
  try{
@@ -166,6 +166,10 @@ test('private player PIN lifecycle and atomic one-phone local coupling',{skip:!c
    assert.equal((await admin.query('select count(*)::int as n from dartflow_private.match_results where match_id=$1',[matchId])).rows[0].n,1);
    for(const id of [first,second])assert.equal((await getPlatformOverview(id)).history.filter(item=>item.matchId===matchId).length,1);
    await assert.rejects(add(lobby.id!,names[2],'065432'),{code:'lobby_started'});
+  });
+
+  await t.test('real PIN-linked local companion has a separate explicit bull signature without granting remote or organizer impersonation',async()=>{
+   const lobby=await create({startProcedure:'bull'});await add(lobby.id!,names[1],'012345',randomUUID(),first,lobby.entity!.revision);await run(first,{type:'lobby.ready',id:lobby.id});const started=await run(first,{type:'lobby.start',id:lobby.id}),matchId=started.matchId!;matches.push(matchId);let match=await getMatch(first,matchId);const send=async(action:MatchAction)=>{match=await executeMatchCommand(first,{requestId:randomUUID(),matchId,expectedRevision:match.revision,action});};await send({type:'accept'});await send({type:'bull-throw',hit:'DB'});await send({type:'bull-throw',hit:'outside'});await send({type:'bull-confirm'});assert.deepEqual(match.bull!.confirmed,[true,false]);assert.equal(match.permissions.canBullConfirmCompanion,true);await assert.rejects(executeMatchCommand(outsider,{requestId:randomUUID(),matchId,expectedRevision:match.revision,action:{type:'bull-confirm-companion'}}));await assert.rejects(send({type:'start'}),{code:'start_procedure_pending'});await send({type:'bull-confirm-companion'});assert.deepEqual(match.bull!.confirmed,[true,true]);assert.equal(match.visits.length,0);assert.equal((await admin.query("select count(*)::int n from dartflow_private.audit_events where match_id=$1 and action='bull-confirm-companion'",[matchId])).rows[0].n,1);await send({type:'start'});await send({type:'score',score:180});await send({type:'score',score:60});await send({type:'score',score:121,doubleConfirmed:true,darts:3});await send({type:'confirm'});assert.equal(match.status,'confirmed');assert.equal(match.rankingEligibility?.eligible,false);assert.equal(match.rankingDestinations?.length,0);
   });
  }finally{
   await admin.query('begin');

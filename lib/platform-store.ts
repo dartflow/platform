@@ -1,3 +1,5 @@
+import{consolationOutcome}from'./tournament-consolation';
+import {readEventGuestIds}from'./event-guests';
 import{decorateCircuitQualificationState}from'./circuit-qualifications';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
@@ -73,7 +75,7 @@ export async function view(client: Client, row: EntityRow, actor: string,cachedM
   const own = row.owner_id === actor, self = members.find(m => m.id === actor);
   const canManage = row.club_id&&['league','tournament'].includes(row.kind)?await clubPermission(client,row.club_id,actor,row.kind==='league'?'competitions.manage':'tournaments.manage'):own || self?.status === 'active' && ['owner', 'admin', 'moderator'].includes(self.role);
   const full = own || self?.status === 'active';
-  const state = (await decorateCircuitQualificationState(client,row)).state;
+  const state = (await decorateCircuitQualificationState(client,row)).state;if(state.consolation?.enabled)state.consolation=consolationOutcome(state.fixtures??[],state.consolation.title);
   if (!full) { delete state.game; delete state.undo; delete state.ready; delete state.coreClubId; }
   const visibleMembers = full ? members.filter(m => canManage || ['active', 'waitlisted'].includes(m.status) || m.id === actor) : members.filter(m => m.id === actor);
   return { id: row.id, kind: row.kind, name: state.name, ownerId: row.owner_id, clubId: row.club_id, visibility: row.visibility, revision: row.revision, state, members: visibleMembers, canManage: Boolean(canManage),...(full&&self?.status!=='banned'&&invitationCodeAccepted(row,row.invitation_code)?{inviteCode:row.invitation_code!}:{}) };
@@ -128,7 +130,8 @@ export async function createCoreMatch(client: Client, row: EntityRow, players: s
   const starter=row.kind==='lobby'&&typeof row.state.starterId==='string'?players.indexOf(row.state.starterId):0;
   if(starter<0)throw new DomainError('invalid_starter','De startspeler is niet aanwezig.');
   const scoringMode=row.kind==='lobby'&&['remote','hybrid'].includes(String(row.state.setup))?'per-player':'shared-writer';
-  const state: MatchState = { id, clubId: row.state.coreClubId!, eventId: row.state.eventId!, boardId: null, revision: 0, status: 'called', players: participants,scoringMode,writerId:players[scoringMode==='per-player'?starter:0], settings, accepted: [false, false], confirmations: [false, false], resultRevision: null, game: newGame(id, players, settings,starter), previousSets: [], winnerId: null, resultPublished: false, dispute: null };
+  const guestPlayerIds=await readEventGuestIds(client,row.state.eventId!,players);
+  const state: MatchState = { ...(guestPlayerIds.length?{guestPlayerIds}:{}),id, clubId: row.state.coreClubId!, eventId: row.state.eventId!, boardId: null, revision: 0, status: 'called', players: participants,scoringMode,writerId:players[scoringMode==='per-player'?starter:0], settings, accepted: [false, false], confirmations: [false, false], resultRevision: null, game: newGame(id, players, settings,starter), previousSets: [], winnerId: null, resultPublished: false, dispute: null };
   await client.query('insert into dartflow_private.matches(id,club_id,event_id,revision,state) values($1,$2,$3,0,$4)', [id, state.clubId, state.eventId, JSON.stringify(state)]);
   for (const [i, player] of players.entries()) await client.query('insert into dartflow_private.match_players(match_id,user_id,position) values($1,$2,$3)', [id, player, i]);
   await client.query('insert into dartflow_private.platform_match_links(match_id,entity_id,fixture_id) values($1,$2,$3)', [id, row.id, fixtureId]);

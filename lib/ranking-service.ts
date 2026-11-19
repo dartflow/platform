@@ -16,6 +16,7 @@ import {containsPrivatePinField} from './private-pin-fields';
 import{rankingSeason,rankingEventContext,requireRankingEventManager,seasonRankingParticipant,seasonMatchRankingConfirmed}from'./ranking-seasons';
 import{acceptChangedRosters,rosterReconfirmations}from'./ranking-rosters';
 import{executeCircuitQualification,requireCircuitQualificationManager}from'./circuit-qualifications';
+import{tournamentFixtureSettings}from'./tournament-rule-overrides';
 
 type Client = Pick<PoolClient, 'query'>;
 const iso = (value: Date | string): string => new Date(value).toISOString();
@@ -30,7 +31,8 @@ export async function canReadRankingList(client: Client, list: Pick<RankingListR
 }
 
 export async function rankingListView(client: Client, list: RankingListRecord, actor: string): Promise<RankingListView> {
-  return { id: list.id, scope: list.scope, kind: list.kind, clubId: list.club_id, name: list.name, policyVersion: list.policy_version, policy: list.policy, generation: list.active_generation, closesAt: list.closes_at ? iso(list.closes_at) : null, canManage: await canManageRankingList(client, list, actor) };
+  const canManage=await canManageRankingList(client,list,actor);
+  return { id: list.id, scope: list.scope, kind: list.kind, clubId: list.club_id, name: list.name, policyVersion: list.policy_version, policy: list.policy, generation: list.active_generation, closesAt: list.closes_at ? iso(list.closes_at) : null, canManage,publication:{paused:list.publication_paused,revision:list.publication_revision,reason:canManage?list.publication_reason:null,pausedAt:list.publication_paused_at?iso(list.publication_paused_at):null,pending:canManage&&Boolean(list.pending_generation)} };
 }
 
 export async function readableRankingLists(client: Client, actor: string): Promise<RankingListView[]> {
@@ -75,7 +77,7 @@ async function authorizeServiceCommand(client: PoolClient, actor: string, comman
   if(a.type.startsWith('qualification.')){const listId=a.type==='qualification.create'?uuid(a.listId):uuid(((await entity(client,uuid(a.qualificationId))).state.circuitQualification as{listId?:string}|undefined)?.listId);await requireCircuitQualificationManager(client,actor,listId);
   }else if (a.type === 'list.create') {
     if (!await clubPermission(client, uuid(a.clubId), actor, 'settings.edit')) throw new DomainError('forbidden', 'Je mist het rankingbeheerrecht van deze vereniging.', 403);
-  } else if (['list.policy', 'list.close'].includes(a.type)) {
+  } else if (['list.policy', 'list.close','list.pause','list.resume'].includes(a.type)) {
     if (!await canManageRankingList(client, await rankingList(client, uuid(a.listId)), actor)) throw new DomainError('forbidden', 'Je beheert deze ranking niet.', 403);
   } else if (['event.request', 'event.finalize', 'event.cancel'].includes(a.type)) {
     await requireRankingEventManager(client, await entity(client, uuid(a.entityId)), actor);
@@ -120,6 +122,14 @@ export async function executeRankingServiceCommand(actorId: string, command: Ran
       await client.query("insert into dartflow_private.ranking_lists(id,scope,kind,club_id,name,created_by)values($1,'club',$2,$3,$4,$5)", [id, a.kind, uuid(a.clubId), text(a.name, 120), actor]);
       await client.query('insert into dartflow_private.ranking_list_policies(list_id,version,policy,published_by)values($1,1,$2,$3)', [id, JSON.stringify(policy), actor]);
       response = { ok: true, id, ...await rebuildRankingGeneration(client, await rankingList(client, id, true)) };
+    } else if(a.type==='list.pause'||a.type==='list.resume'){
+      const list=await rankingList(client,uuid(a.listId),true),reason=text(a.reason,1000);
+      if(reason.length<3)throw new DomainError('reason_required','Geef de reden voor deze publicatiebeslissing.');
+      if(!Number.isSafeInteger(a.expectedPublicationRevision)||a.expectedPublicationRevision!==list.publication_revision)throw new DomainError('revision_conflict','De publicatiestatus is gewijzigd. Vernieuw de lijst.',409);
+      const paused=a.type==='list.pause';
+      if(paused===list.publication_paused)throw new DomainError('publication_state_changed','Deze publicatiestatus is al actief.',409);
+      await client.query('update dartflow_private.ranking_lists set publication_paused=$2,publication_revision=publication_revision+1,publication_reason=$3,publication_paused_at=case when $2 then clock_timestamp()else null end where id=$1',[list.id,paused,reason]);
+      response={ok:true,id:list.id,...(!paused?await rebuildRankingGeneration(client,await rankingList(client,list.id,true)): {})};
     } else if (a.type === 'list.policy') {
       const list = await rankingList(client, uuid(a.listId), true);
       if (list.scope === 'national') throw new DomainError('ranking_national_policy_fixed', 'Het landelijke pilotreglement is vastgezet; maak een nieuw landelijk seizoen via de beheerde migratie.', 409);
@@ -143,10 +153,12 @@ export async function executeRankingServiceCommand(actorId: string, command: Ran
       if (list.closes_at && list.closes_at.getTime() <= Date.now()) throw new DomainError('ranking_closed', 'Deze ranking is gesloten voor nieuwe evenementen.', 409);
       if (list.scope === 'club' && event.club_id !== list.club_id && !(event.club_id===null&&event.state.ownership==='platform')) throw new DomainError('ranking_club_link_required', 'Een clubbestemming vereist voorafgaande organisatie of koppeling namens diezelfde club.', 403);
       const rules = parseRankingRules(a.rules);
-      if(((event.state.settings as{discipline?:string}|undefined)?.discipline??'x01')!==list.policy.discipline)throw new DomainError('ranking_discipline_ineligible','Een X01- en Cricket-reeks hebben afzonderlijke officiële bronnen.',409);
       if (rules.some(rule => rule.fixtureId && !event.state.fixtures!.some(fixture => fixture.id === rule.fixtureId))) throw new DomainError('ranking_fixture_unknown', 'Een bestemmingsregel verwijst buiten het vastgelegde schema.');
       for (const fixture of event.state.fixtures!) effectiveRankingRule(rules, fixture);
-      if (list.kind === 'rating' && !publishedRatingFormat(event.state.settings!, list.policy)) throw new DomainError('ranking_format_ineligible', 'Het gepubliceerde spelprofiel past niet bij deze rating.', 409);
+      const selectedFixtures=event.state.fixtures!.filter(fixture=>(event.state.seasonManaged!==true||fixture.rankingEligibleSingle===true)&&effectiveRankingRule(rules,fixture));
+      if(list.kind==='rating')for(const override of event.state.tournamentRuleOverrides??[]){const phaseRules=event.state.tournamentRuleOverrides!.filter(rule=>rule.phase===override.phase),rounds=new Set([override.round??1,...phaseRules.flatMap(rule=>rule.round?[rule.round]:[]),...rules.filter(rule=>(!rule.phase||rule.phase===override.phase)&&rule.round).map(rule=>rule.round!)]);for(const round of rounds){const synthetic={id:`future-${override.phase}-${round}`,phase:override.phase,round};if(effectiveRankingRule(rules,synthetic)&&!publishedRatingFormat(tournamentFixtureSettings(event.state.settings!,event.state.tournamentRuleOverrides,synthetic),list.policy))throw new DomainError('ranking_format_ineligible','Ook nog te genereren ronden moeten bij de vooraf toegelaten ratingregels passen. Sluit afwijkende fasen of ronden vóór de start uit.',409);}}
+      if(list.kind==='rating'&&selectedFixtures.some(fixture=>((fixture.settings??event.state.settings)?.discipline??'x01')!==list.policy.discipline))throw new DomainError('ranking_discipline_ineligible','Een X01- en Cricket-reeks hebben afzonderlijke officiële bronnen.',409);
+      if (list.kind === 'rating' && (!selectedFixtures.length||selectedFixtures.some(fixture=>!publishedRatingFormat(fixture.settings??event.state.settings!, list.policy)))) throw new DomainError('ranking_format_ineligible', 'Elke geselecteerde reguliere single moet bij het gepubliceerde ratingprofiel passen; sluit afwijkende onderdelen vooraf uit.', 409);
       if (list.kind === 'circuit' && !['knockout','pools-knockout','double-elimination-reset','double-elimination-single','swiss'].includes(String(event.state.format))) throw new DomainError('ranking_classification_required', 'Een circuitbestemming vereist een toernooischema met canonieke eindplaatsen.', 409);
       if(list.kind==='circuit'&&rules.some(rule=>rule.phase||rule.round||rule.fixtureId))throw new DomainError('ranking_circuit_scope','Circuitpunten volgen de volledige eindplaats; gebruik een algemene evenementbestemming.');
       if (list.kind === 'circuit' && (await client.query<{ n: number }>("select count(*)::int n from dartflow_private.ranking_event_declarations where list_id=$1 and status in('pending','approved')", [list.id])).rows[0].n >= list.policy.eventCount) throw new DomainError('ranking_circuit_full', 'Het gepubliceerde aantal circuitevenementen is bereikt. De seizoensfinale krijgt een afzonderlijke titel.', 409);

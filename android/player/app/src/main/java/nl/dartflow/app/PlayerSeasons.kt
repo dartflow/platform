@@ -57,6 +57,9 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
     var visibility by rememberSaveable { mutableStateOf("members") }
     var divisions by rememberSaveable { mutableStateOf("Hoofdklasse") }
     var divisionMetadata by rememberSaveable { mutableStateOf("{}") }
+    var startValues by rememberSaveable { mutableStateOf("{}") }
+    var ruleValues by rememberSaveable { mutableStateOf("{}") }
+    var slotRuleValues by rememberSaveable { mutableStateOf("{}") }
     val enabled = !state.busy && state.online
     LaunchedEffect(state.resource.optBoolean("canCreateNational"), clubs.isEmpty()) { if (clubs.isEmpty() && state.resource.optBoolean("canCreateNational")) { scope = "national"; format = "teams" } }
     Heading("Competitie maken", "NIEUW SEIZOEN", "Maak eerst een concept, voeg deelnemers toe en controleer het programma vóór publicatie.")
@@ -85,8 +88,9 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
         Field("Startdatum · jjjj-mm-dd", date, { date = it }, enabled, max = 10)
         Field("Lokale speeltijd · uu:mm", time, { time = it }, enabled, max = 5)
         Text("Tijdzone: Europe/Amsterdam", color = PlayerMuted)
-        Choice("Speellocatie", playMode, listOf("local" to "Samen op locatie", "remote" to "Officieel op afstand · twee banen"), { playMode = it }, enabled)
+        Choice("Speellocatie", playMode, listOf("local" to "Samen op locatie", "remote" to "Officieel op afstand · twee banen", "hybrid" to "Per ontmoeting samen lokaal of op afstand afspreken"), { playMode = it }, enabled)
         if (playMode == "remote") Text("Iedere zijde koppelt een eigen geregistreerde fysieke baan en schrijver. Iedere schrijver voert alleen de eigen zijde in.", color = PlayerMuted)
+        if (playMode == "hybrid") Text("Iedere ontmoeting krijgt eerst een expliciet speelwijzevoorstel en akkoord van de andere zijde, of een gemotiveerd besluit van de leiding. Zonder vastgelegde keuze kan de partij niet starten.", color = PlayerMuted)
         PlayerToggle("Camera verplicht volgens reglement", cameraRequired, enabled) { cameraRequired = it }
         val availableBoards = state.resource.rows("boards").filter { it.text("clubId").isNotBlank() }.ifEmpty { state.platform.rows("clubBoards") }.filter { !it.optBoolean("blocked") && !it.optBoolean("closed") }
         if (availableBoards.isNotEmpty()) {
@@ -97,6 +101,19 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
         Choice("Planning", mode, listOf("fixed" to "Vaste speeldagen", "flex" to "Afspreken binnen rondevenster"), { mode = it }, enabled)
         if (format !in listOf("cup", "champions", "ladder")) Choice("Legreglement", legMode, listOf("bestOf" to "Best of", "fixed" to "Vaste legs"), { legMode = it; legs = if (it == "fixed") "6" else "5" }, enabled)
         Choice("Aantal legs", legs, (if (legMode == "fixed" && format !in listOf("cup", "champions", "ladder")) listOf("6", "8", "10") else listOf("1", "3", "5", "7", "9")).map { it to it }, { legs = it }, enabled)
+        PlayerStartSettingsFields(JSONObject(startValues), enabled, fixedLegs = legMode == "fixed", allowDifference = scope == "internal") { key, value -> startValues = JSONObject(startValues).put(key, value).toString() }
+        if (scope == "internal") {
+            Text("Recreatief basisreglement", color = PlayerLime)
+            PlayerSeasonRuleFields(JSONObject(ruleValues), enabled) { key, value -> ruleValues = JSONObject(ruleValues).put(key, value).toString() }
+            val count = if (format == "teams") slotCount.toIntOrNull() ?: 4 else 1
+            (0 until count).forEach { index ->
+                val saved = JSONObject(slotRuleValues).obj("$index")
+                fun set(key: String, value: Any) { slotRuleValues = JSONObject(slotRuleValues).put("$index", JSONObject(saved.toString()).put(key, value)).toString() }
+                PlayerToggle("Afwijkend reglement onderdeel ${index + 1}", saved.optBoolean("enabled"), enabled) { set("enabled", it) }
+                if (saved.optBoolean("enabled")) PlayerSeasonRuleFields(saved, enabled, slot = legMode != "fixed") { key, value -> set(key, value) }
+            }
+            Text("Onderdeelregels worden vóór publicatie vastgelegd. De effectieve regels staan bij iedere daadwerkelijke partij. Landelijke officiële profielen blijven beschermd.", color = PlayerMuted)
+        }
         if (format == "ladder") {
             Field("Uitdagen maximaal plaatsen omhoog", ladderDistance, { ladderDistance = it }, enabled, max = 2, keyboard = KeyboardType.Number)
             Field("Antwoordtermijn in uren", ladderAnswerHours, { ladderAnswerHours = it }, enabled, max = 3, keyboard = KeyboardType.Number)
@@ -107,13 +124,14 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
         PlayerToggle("Heen en terug", returnLegs, enabled) { returnLegs = it }
         PlayerToggle("Ronden apart vrijgeven", roundGating, enabled) { roundGating = it }
         val valid = name.isNotBlank() && (scope == "national" || clubs.any { it.text("id") == clubId }) && runCatching { LocalDate.parse(date) }.isSuccess && Regex("([01][0-9]|2[0-3]):[0-5][0-9]").matches(time) && divisions.lines().filter { it.isNotBlank() }.size in 1..12 && playerSeasonFormats(scope).any { it.first == format } && slotCount in listOf("4", "7") && legs.toIntOrNull() in (if (legMode == "fixed" && format !in listOf("cup", "champions", "ladder")) listOf(6, 8, 10) else listOf(1, 3, 5, 7, 9)) && ladderDistance.toIntOrNull() in 1..10 && ladderAnswerHours.toIntOrNull() in 1..168 && ladderPlayDays.toIntOrNull() in 1..30 && (scope != "national" || format != "singles" || boardIds.isNotEmpty()) && (transferDeadline.isBlank() || runCatching { java.time.OffsetDateTime.parse(transferDeadline) }.isSuccess)
-        Action("Maak seizoensconcept", enabled && valid, modifier = Modifier.fillMaxWidth()) {
-            actions.command("/seasons/actions", json("action" to json("type" to "season.create", "name" to name.trim(), "scope" to scope, "clubId" to if (scope == "internal") clubId else JSONObject.NULL, "format" to format, "divisions" to playerSeasonDivisions(divisions, runCatching { JSONObject(divisionMetadata) }.getOrDefault(JSONObject())), "settings" to json("startDate" to date, "playTime" to time, "timezone" to "Europe/Amsterdam", "scheduleMode" to mode, "playMode" to playMode, "cameraRequired" to cameraRequired, "boardIds" to JSONArray(boardIds), "boardCount" to if (boardIds.isEmpty()) 3 else boardIds.size, "legs" to legs.toInt(), "slotCount" to slotCount.toInt(), "legMode" to if (format in listOf("cup", "champions", "ladder")) "bestOf" else legMode, "ladderDistance" to ladderDistance.toInt(), "ladderAnswerHours" to ladderAnswerHours.toInt(), "ladderPlayDays" to ladderPlayDays.toInt(), "transferDeadline" to transferDeadline.ifBlank { null }, "returnLegs" to returnLegs, "roundGating" to roundGating, "visibility" to visibility))))
+        val validRules = scope != "internal" || playerDifferenceValid(JSONObject(startValues), legs.toIntOrNull() ?: 5, JSONObject(startValues).text("bestOfSets", "1").toIntOrNull() ?: 1, legMode == "fixed") && playerSeasonRulesValid(JSONObject(ruleValues)) && JSONObject(slotRuleValues).keys().asSequence().filter { JSONObject(slotRuleValues).obj(it).optBoolean("enabled") }.all { playerSeasonRulesValid(JSONObject(slotRuleValues).obj(it), legs.toIntOrNull() ?: 5, JSONObject(startValues).text("bestOfSets", "1").toIntOrNull() ?: 1, legMode == "fixed") }
+        Action("Maak seizoensconcept", enabled && valid && validRules, modifier = Modifier.fillMaxWidth()) {
+            actions.command("/seasons/actions", json("action" to json("type" to "season.create", "name" to name.trim(), "scope" to scope, "clubId" to if (scope == "internal") clubId else JSONObject.NULL, "format" to format, "divisions" to playerSeasonDivisions(divisions, runCatching { JSONObject(divisionMetadata) }.getOrDefault(JSONObject())), "settings" to playerWithSettings(json("startDate" to date, "playTime" to time, "timezone" to "Europe/Amsterdam", "scheduleMode" to mode, "playMode" to playMode, "cameraRequired" to cameraRequired, "boardIds" to JSONArray(boardIds), "boardCount" to if (boardIds.isEmpty()) 3 else boardIds.size, "legs" to legs.toInt(), "slotCount" to slotCount.toInt(), "legMode" to if (format in listOf("cup", "champions", "ladder")) "bestOf" else legMode, "ladderDistance" to ladderDistance.toInt(), "ladderAnswerHours" to ladderAnswerHours.toInt(), "ladderPlayDays" to ladderPlayDays.toInt(), "transferDeadline" to transferDeadline.ifBlank { null }, "returnLegs" to returnLegs, "roundGating" to roundGating, "visibility" to visibility), playerWithSettings(playerStartSettings(JSONObject(startValues), fixedLegs = legMode == "fixed", allowDifference = scope == "internal"), if (scope == "internal") playerSeasonRuleSettings(JSONObject(ruleValues), fixedLegs = legMode == "fixed").put("slotRules", JSONObject().also { rules -> val count = if (format == "teams") slotCount.toInt() else 1; (0 until count).forEach { index -> val saved = JSONObject(slotRuleValues).obj("$index"); if (saved.optBoolean("enabled")) rules.put("$index", playerSeasonRuleSettings(saved, fixedLegs = legMode == "fixed")) } }) else JSONObject())))))
         }
     }
-    val cloudValues = json("name" to name, "scope" to scope, "clubId" to clubId, "format" to format, "date" to date, "time" to time, "mode" to mode, "playMode" to playMode, "cameraRequired" to cameraRequired, "boardIds" to JSONArray(boardIds), "legs" to legs, "slotCount" to slotCount, "legMode" to legMode, "ladderDistance" to ladderDistance, "ladderAnswerHours" to ladderAnswerHours, "ladderPlayDays" to ladderPlayDays, "transferDeadline" to transferDeadline, "returnLegs" to returnLegs, "roundGating" to roundGating, "visibility" to visibility, "divisions" to divisions, "divisionMetadata" to JSONObject(divisionMetadata))
+    val cloudValues = json("name" to name, "scope" to scope, "clubId" to clubId, "format" to format, "date" to date, "time" to time, "mode" to mode, "playMode" to playMode, "cameraRequired" to cameraRequired, "boardIds" to JSONArray(boardIds), "legs" to legs, "slotCount" to slotCount, "legMode" to legMode, "ladderDistance" to ladderDistance, "ladderAnswerHours" to ladderAnswerHours, "ladderPlayDays" to ladderPlayDays, "transferDeadline" to transferDeadline, "returnLegs" to returnLegs, "roundGating" to roundGating, "visibility" to visibility, "divisions" to divisions, "divisionMetadata" to JSONObject(divisionMetadata), "startSettings" to JSONObject(startValues), "ruleSettings" to JSONObject(ruleValues), "slotRuleSettings" to JSONObject(slotRuleValues))
     PlayerCloudDraftPanel(state, actions, "season", if (scope == "national") "platform" else "club", clubId, name, "details", cloudValues) { values ->
-        name = values.text("name").take(100); scope = if (values.text("ownership") == "platform") "national" else "internal"; clubId = values.text("clubId"); format = values.text("format", "singles"); date = values.text("date"); time = values.text("time", "19:30"); mode = values.text("mode", "fixed"); playMode = values.text("playMode", "local"); cameraRequired = values.optBoolean("cameraRequired"); boardIds = values.optJSONArray("boardIds")?.strings().orEmpty(); legs = values.text("legs", "5"); slotCount = values.text("slotCount", "4"); legMode = values.text("legMode", "bestOf"); ladderDistance = values.text("ladderDistance", "3"); ladderAnswerHours = values.text("ladderAnswerHours", "48"); ladderPlayDays = values.text("ladderPlayDays", "7"); transferDeadline = values.text("transferDeadline"); returnLegs = values.optBoolean("returnLegs"); roundGating = values.optBoolean("roundGating", true); visibility = values.text("visibility", "members"); divisions = values.text("divisions", "Hoofdklasse"); divisionMetadata = values.obj("divisionMetadata").toString()
+        ruleValues = values.obj("ruleSettings").toString(); slotRuleValues = values.obj("slotRuleSettings").toString(); startValues = values.obj("startSettings").toString(); name = values.text("name").take(100); scope = if (values.text("ownership") == "platform") "national" else "internal"; clubId = values.text("clubId"); format = values.text("format", "singles"); date = values.text("date"); time = values.text("time", "19:30"); mode = values.text("mode", "fixed"); playMode = values.text("playMode", "local"); cameraRequired = values.optBoolean("cameraRequired"); boardIds = values.optJSONArray("boardIds")?.strings().orEmpty(); legs = values.text("legs", "5"); slotCount = values.text("slotCount", "4"); legMode = values.text("legMode", "bestOf"); ladderDistance = values.text("ladderDistance", "3"); ladderAnswerHours = values.text("ladderAnswerHours", "48"); ladderPlayDays = values.text("ladderPlayDays", "7"); transferDeadline = values.text("transferDeadline"); returnLegs = values.optBoolean("returnLegs"); roundGating = values.optBoolean("roundGating", true); visibility = values.text("visibility", "members"); divisions = values.text("divisions", "Hoofdklasse"); divisionMetadata = values.obj("divisionMetadata").toString()
     }
     Action("Hulp bij competities", primary = false) { actions.navigate(PlayerScreen.HELP, "q=competitie") }
 }
@@ -157,7 +175,8 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
         "rules" -> PlayerCard("Gepubliceerd reglement · versie ${season.optInt("rulesVersion")}") {
             val rules = season.obj("settings")
             Text(playerSeasonFormatDescription(season.text("format"), rules.optInt("slotCount", 4)), color = PlayerLime)
-            Text("${rules.optInt("startScore")} dubbel uit · ${if (rules.text("legMode") == "fixed") "Vaste" else "Best of"} ${rules.optInt("legs")} legs")
+            Text("${playerRuleLabel(rules)} · ${if (rules.text("legMode") == "fixed") "Vaste" else "Best of"} ${rules.optInt("legs")} legs / ${rules.optInt("bestOfSets", 1)} sets")
+            Text("Start: ${rules.text("startProcedure", "bestaande beurtvolgorde")} · setopener ${rules.text("setOpener", "continuous")} · beslissende leg ${rules.text("decidingLeg", "continue")}", color = PlayerMuted)
             Text("Winst/gelijk/verlies: ${rules.optInt("pointsWin")}/${rules.optInt("pointsDraw")}/${rules.optInt("pointsLoss")}")
             Text("Opstelling ${rules.optInt("lineupHours")} uur vooraf · bevestigen binnen ${rules.optInt("confirmHours")} uur · check-in ${rules.optInt("checkInMinutes")} minuten vooraf")
             Text("${if (rules.optBoolean("returnLegs")) "Heen en terug" else "Enkelvoudige competitie"} · ${rules.text("timezone")}")
@@ -178,10 +197,13 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
     var boardId by rememberSaveable { mutableStateOf(fixture.optJSONArray("boardIds")?.optString(0).orEmpty()) }
     var writerId by rememberSaveable { mutableStateOf(fixture.text("writerId")) }
     var decision by rememberSaveable { mutableStateOf("interrupt") }
+    var extendedWindow by rememberSaveable { mutableStateOf("") }
     fun send(type: String, extra: JSONObject = JSONObject()) = playerSeasonCommand(actions, season, type, JSONObject(extra.toString()).put("fixtureId", fixture.text("id")))
     PlayerCard("Ronde ${fixture.optInt("round")} · ${entries.find { it.text("id") == fixture.text("homeId") }?.text("name") ?: "Thuis"} – ${entries.find { it.text("id") == fixture.text("awayId") }?.text("name") ?: "Uit"}") {
         if (fixture.obj("classification").text("kind") in listOf("promotion", "vacancy")) Text("Beslissingswedstrijd · ${playerRuleLabel(fixture.obj("settings"))} · best of ${fixture.obj("settings").optInt("bestOfLegs", 5)} legs", color = PlayerLime)
         Text("${statusLabel(fixture.text("status"))} · ${shortDate(fixture.text("startsAt", fixture.text("windowStart")))}", color = PlayerMuted)
+        PlayerSeasonPlayMode(season, fixture, state, actions)
+        fixture.optJSONObject("overdue")?.let { Notice("Speeltermijn verstreken: ${it.text("reason")} · sinds ${shortDate(it.text("since"))}") }
         val totals = playerSeasonTotals(fixture)
         Text("Partijen ${totals.first.joinToString("–")} · legs ${totals.second.joinToString("–")}", color = PlayerLime)
         Action(if (open) "Sluit ontmoeting" else "Open ontmoeting", primary = false) { open = !open }
@@ -197,9 +219,10 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
                     Text("$label: ${lineup.optJSONArray("players")?.strings()?.joinToString(" · ") { id -> season.rows("eligiblePlayers").find { it.text("id") == id }?.text("name") ?: "Ontbrekend slot" }}", color = PlayerMuted)
                 }
             }
-            val remote = season.obj("settings").text("playMode") == "remote"
+            val mode = playerSeasonFixtureMode(season, fixture)
+            val remote = mode == "remote"
             if (remote) PlayerSeasonRemoteAssignments(season, fixture, state, actions)
-            if (capabilities.optBoolean("canStart") && !remote) {
+            if (capabilities.optBoolean("canStart") && mode == "local") {
                 Choice("Baan voor oproep", boardId, listOf("" to "Kies baan") + season.rows("boards").map { it.text("id") to it.text("name") }, { boardId = it }, enabled)
                 Choice("Schrijver", writerId, listOf("" to "Volgens opstelling") + season.rows("eligiblePlayers").map { it.text("id") to it.text("name") }, { writerId = it }, enabled)
             }
@@ -207,8 +230,9 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
                 val names = playerSeasonSlotNames(slot, season.rows("eligiblePlayers"))
                 val label = playerSeasonSlotLabel(slot, season.text("format"), season.obj("settings").optInt("slotCount", 4))
                 Text("$label: $names · ${statusLabel(slot.text("status"))}")
+                slot.optJSONObject("settings")?.let { Text("${playerRuleLabel(it)} · best of ${it.optInt("bestOfLegs", 5)} legs / ${it.optInt("bestOfSets", 1)} sets", color = PlayerMuted) }
                 if (slot.text("matchId").isNotBlank()) Action("Open $label", primary = false) { actions.navigate(PlayerScreen.MATCH, slot.text("matchId")) }
-                else if (capabilities.optBoolean("canStart") && slot.text("status") !in listOf("administrative", "confirmed", "canceled")) Action("Roep $label op", enabled && if (remote) playerSeasonRemoteReady(fixture) else boardId.isNotBlank()) { send("season.start", json("slotIndex" to slot.optInt("index")).also { if (!remote) { it.put("boardId", boardId); if (writerId.isNotBlank()) it.put("writerId", writerId) } }) }
+                else if (capabilities.optBoolean("canStart") && mode != null && slot.text("status") !in listOf("administrative", "confirmed", "canceled")) Action("Roep $label op", enabled && if (remote) playerSeasonRemoteReady(fixture) else boardId.isNotBlank()) { send("season.start", json("slotIndex" to slot.optInt("index")).also { if (!remote) { it.put("boardId", boardId); if (writerId.isNotBlank()) it.put("writerId", writerId) } }) }
             }
             if (capabilities.optBoolean("canManage") && playerSeasonHasTeams(season)) PlayerSeasonReserve(season, fixture, state, actions)
             if (capabilities.optBoolean("canPropose")) {
@@ -221,6 +245,11 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
                 Field("Reden of toelichting", reason, { reason = it }, enabled, max = 1000, multiline = true)
                 if (capabilities.optBoolean("canDispute")) Action("Bezwaar indienen", enabled && reason.trim().length >= 5, false) { send("season.dispute", json("reason" to reason)) }
                 if (capabilities.optBoolean("canManage")) {
+                    if (fixture.has("overdue")) {
+                        Field("Nieuwe eindtermijn · tijdstip met tijdzone", extendedWindow, { extendedWindow = it }, enabled, max = 40)
+                        val end = runCatching { java.time.OffsetDateTime.parse(extendedWindow) }.getOrNull()
+                        Action("Verleng speeltermijn met toelichting", enabled && reason.trim().length >= 5 && end != null && end.toInstant().isAfter(java.time.Instant.now()), false) { send("season.extend-window", json("windowEnd" to extendedWindow, "reason" to reason.trim())) }
+                    }
                     Choice("Besluit wedstrijdleiding", decision, listOf("interrupt" to "Onderbreken", "accept" to "Uitslag accepteren", "reopen" to "Heropenen", "cancel" to "Annuleren"), { decision = it }, enabled)
                     Action("Leg besluit vast", enabled && reason.trim().length >= 5, false) { send("season.decide", json("decision" to decision, "reason" to reason)) }
                 }
@@ -279,6 +308,7 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
 }
 
 @Composable private fun PlayerSeasonManage(season: JSONObject, state: PlayerUiState, actions: PlayerActions) {
+    PlayerSeasonDelegation(season, state, actions)
     var reason by rememberSaveable { mutableStateOf("") }
     var status by rememberSaveable { mutableStateOf(season.text("status")) }
     var pending by remember { mutableStateOf<JSONObject?>(null) }

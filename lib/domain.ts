@@ -1,9 +1,11 @@
+import {prepareInitialStart,drawStart,assertStartReady,throwBull,confirmBull,bullPending,canThrowBull,canConfirmBull,canConfirmCompanionBull,synchronizeDecidingBull,lastLegStarter} from './bull-start';
 import {calculatePlayerMeasures} from './player-statistics';
 import {NATIONAL_RATING_POLICY} from './ranking-policy';
 import {newCricket,scoreCricketGame} from './cricket';
 import {dartValue} from './x01-rules';
 import {evaluateX01Visit} from './x01-rules';
 import {gameThrowerId,matchParticipants,matchSideIndex,isMultiPlayerMatch,matchMediaActors} from './match-sides';
+import{seriesWinner}from'./match-winning-rules';
 import type { Game, MatchAction, MatchState, MatchView, Settings } from './types';
 
 export class DomainError extends Error {
@@ -35,11 +37,14 @@ export function validateSettings(input: Partial<Settings> = {}): Settings {
   if(input.sideStartScores!==undefined){if(!Array.isArray(input.sideStartScores)||input.sideStartScores.length!==2||input.sideStartScores.some(n=>!Number.isInteger(n)||n<(value.outRule==='straight'?1:2)||n>1001))fail('Kies per zijde een geldige handicap-startscore tot 1001.');value.sideStartScores=[...input.sideStartScores];}
   if(input.discipline!==undefined){if(!['x01','cricket'].includes(input.discipline))fail('Kies X01 of Cricket.');value.discipline=input.discipline;}
   if(input.cricketMode!==undefined){if(!['standard','no-score'].includes(input.cricketMode))fail('Kies standaard Cricket of no score.');value.cricketMode=input.cricketMode;}
+  for(const [key,allowed] of [['startProcedure',['bull','server-lot','home-first']],['setOpener',['continuous','alternate-sets']],['decidingLeg',['continue','rebull']]] as const){const item=input[key];if(item!==undefined){if(!(allowed as readonly string[]).includes(item))fail('Kies een geldige start-, set- of beslissingsprocedure.');Object.assign(value,{[key]:item});}}
+  if(value.legLimit&&value.decidingLeg==='rebull')fail('Vaste legs gebruiken geen beslissingsleg met rebull.');
+  for(const [key,bestOf]of[['legWinByTwo',value.bestOfLegs],['setWinByTwo',value.bestOfSets]]as const){const rule=input[key];if(rule===undefined)continue;if(value.legLimit||bestOf<3||!rule||typeof rule!=='object'||Array.isArray(rule)||!Number.isInteger(rule.maximum)||rule.maximum<bestOf||rule.maximum>99||rule.maximum%2!==1)fail('Twee verschil vereist een best-of vanaf drie en een oneven absoluut maximum tot 99, minimaal het basis-best-of.');value[key]={maximum:rule.maximum};}
   if(value.discipline==='cricket'&&(value.sideStartScores||value.inRule==='double'||value.outRule&&value.outRule!=='double'))fail('Cricket heeft eigen marks en punten; X01-opening, uitgooien en handicap zijn hier niet van toepassing.');
   return value;
 }
 export function newGame(id: string, players: string[], settings: Settings, starter = 0,sidePlayers?:[string[],string[]],legOffset=0): Game {
-  return { id, players,...(settings.discipline==='cricket'?{discipline:'cricket',cricketMode:settings.cricketMode??'standard',cricket:newCricket()}:{}),...(sidePlayers?{sidePlayers:clone(sidePlayers),legOffset}:{}), startScore: settings.startScore, bestOf: settings.bestOfLegs, ...(settings.legLimit ? { legLimit: settings.legLimit } : {}), legs: [0, 0], remaining: settings.discipline==='cricket'?[0,0]:settings.sideStartScores?[...settings.sideStartScores]:[settings.startScore, settings.startScore],...(settings.inRule?{inRule:settings.inRule,opened:[settings.inRule!=='double',settings.inRule!=='double'] as [boolean,boolean]}:{}),...(settings.outRule?{outRule:settings.outRule}:{}),...(settings.sideStartScores?{sideStartScores:[...settings.sideStartScores] as [number,number]}:{}), turn: starter, legStarter: starter, status: 'live', visits: [], history: [], stats: [0, 1].map(() => ({ darts: 0, total: 0, oneEighties: 0, highestFinish: 0, legsWon: 0 })) };
+  return { id, players,...(settings.legWinByTwo?{legWinByTwo:{maximum:settings.legWinByTwo.maximum}}:{}),...(settings.discipline==='cricket'?{discipline:'cricket',cricketMode:settings.cricketMode??'standard',cricket:newCricket()}:{}),...(sidePlayers?{sidePlayers:clone(sidePlayers),legOffset}:{}), startScore: settings.startScore, bestOf: settings.bestOfLegs, ...(settings.legLimit ? { legLimit: settings.legLimit } : {}), legs: [0, 0], remaining: settings.discipline==='cricket'?[0,0]:settings.sideStartScores?[...settings.sideStartScores]:[settings.startScore, settings.startScore],...(settings.inRule?{inRule:settings.inRule,opened:[settings.inRule!=='double',settings.inRule!=='double'] as [boolean,boolean]}:{}),...(settings.outRule?{outRule:settings.outRule}:{}),...(settings.sideStartScores?{sideStartScores:[...settings.sideStartScores] as [number,number]}:{}), turn: starter, legStarter: starter, status: 'live', visits: [], history: [], stats: [0, 1].map(() => ({ darts: 0, total: 0, oneEighties: 0, highestFinish: 0, legsWon: 0 })) };
 }
 export function scoreGame(source: Game, score: number, count = 3, doubleConfirmed = false,doubleAttempts?:number|null,dartHits?:string[],explicitBust=false): Game {
   if (source.status !== 'live') fail('Deze set is afgelopen.');
@@ -75,7 +80,7 @@ export function scoreGame(source: Game, score: number, count = 3, doubleConfirme
   next.legs[player]++;
   next.stats[player].legsWon = (next.stats[player].legsWon ?? 0) + 1;
   next.stats[player].highestFinish = Math.max(next.stats[player].highestFinish, score);
-  if (next.legLimit ? next.legs[0] + next.legs[1] >= next.legLimit : next.legs[player] >= Math.ceil(next.bestOf / 2)) {
+  if (next.legLimit ? next.legs[0] + next.legs[1] >= next.legLimit : seriesWinner(next.legs,next.bestOf,next.legWinByTwo)!==null) {
     next.status = 'finished';
     next.winner = next.legLimit && next.legs[0] === next.legs[1] ? null : next.players[next.legs[0] > next.legs[1] ? 0 : 1];
     next.draw = next.winner === null;
@@ -95,7 +100,7 @@ const matchVisits = (state:MatchState) => [...state.previousSets,state.game].fla
 const perPlayerScoring = (state:MatchState) => state.scoringMode==='per-player';
 const currentScorer = (state:MatchState) => perPlayerScoring(state)?state.remoteWriterIds?.[state.game.turn]??gameThrowerId(state.game):state.writerId;
 const canUndoOwnVisit = (state:MatchState,actorId:string) => !perPlayerScoring(state)||(state.remoteWriterIds?.includes(actorId)?state.remoteWriterIds[matchVisits(state).at(-1)?.playerIndex??-1]===actorId:(matchVisits(state).at(-1)?.throwerId??matchVisits(state).at(-1)?.player)===actorId);
-export function applyMatchAction(source: MatchState, actorId: string, isOrganizer: boolean, action: MatchAction): MatchState {
+export function applyMatchAction(source: MatchState, actorId: string, isOrganizer: boolean, action: MatchAction,server?:{drawStarter?:0|1}): MatchState {
   const next = clone(source), index = matchSideIndex(source,actorId);
   if(source.status==='abandoned')fail('Deze baansessie is verlopen of vrijgegeven. Start een nieuwe partij.','board_session_released',410);
   if(source.status==='interrupted'&&action.type!=='call')fail('Deze officiële wedstrijd is onderbroken. De wedstrijdleiding kan een beschikbare baan opnieuw toewijzen.','match_interrupted',409);
@@ -113,8 +118,12 @@ export function applyMatchAction(source: MatchState, actorId: string, isOrganize
       break;
     }
     case 'call': manager(); if (!['planned','called','interrupted'].includes(source.status)) fail('Deze partij kan niet worden opgeroepen.'); next.boardId = action.boardId; next.status = 'called';next.callRef=action.callRef??`${source.id}:${source.revision+1}`;next.accepted=[false,false];next.paused=false;next.correction=null; break;
-    case 'accept': participant(); if (source.status !== 'called' && source.status !== 'ready') fail('Deze partij wacht niet op akkoord.'); next.accepted[index] = true; if (next.accepted.every(Boolean)) next.status = 'ready'; break;
-    case 'start': if (!isOrganizer) participant(); if (source.status !== 'ready' || !source.accepted.every(Boolean)) fail('Beide spelers moeten eerst akkoord geven.'); next.status = 'live'; break;
+    case 'accept': participant(); if (source.status !== 'called' && source.status !== 'ready') fail('Deze partij wacht niet op akkoord.'); next.accepted[index] = true; if (next.accepted.every(Boolean)) {next.status = 'ready';prepareInitialStart(next);} break;
+    case 'start': if (!isOrganizer) participant(); if (source.status !== 'ready' || !source.accepted.every(Boolean)) fail('Beide spelers moeten eerst akkoord geven.'); assertStartReady(source);next.status = 'live'; break;
+    case 'draw-start':if(!isOrganizer)participant();drawStart(next,server?.drawStarter);break;
+    case 'bull-throw':throwBull(next,actorId,action.hit);break;
+    case 'bull-confirm':confirmBull(next,actorId);break;
+    case 'bull-confirm-companion':confirmBull(next,actorId,true);break;
     case 'take-over': participant(); if(perPlayerScoring(source))fail('Iedere speler voert op de eigen beurt zijn eigen worp in.','per_player_scoring',409);if (source.status !== 'live') fail('Alleen tijdens een lopende partij.'); next.writerId = actorId; break;
     case 'pause': if(!isOrganizer)participant();if(source.status!=='live'||source.paused)fail('Deze partij kan nu niet gepauzeerd worden.');if(action.reason!==undefined&&(typeof action.reason!=='string'||action.reason.length>1000))fail('Geef een geldige pauzereden.');next.paused=true;next.pausedBy=actorId;break;
     case 'resume':if(!isOrganizer)participant();if(source.status!=='live'||!source.paused)fail('Deze partij is niet gepauzeerd.');next.paused=false;next.pausedBy=null;break;
@@ -137,13 +146,13 @@ export function applyMatchAction(source: MatchState, actorId: string, isOrganize
       }
       next.correction=null;break;
     }
-    case 'score': if(perPlayerScoring(source)){if(!source.remoteWriterIds?.includes(actorId))participant();}else writer();if(source.paused)fail('De partij is gepauzeerd.','match_paused',409);if(source.correction)fail('Handel eerst het correctieverzoek af.','correction_pending',409);if(source.status!=='live'||currentScorer(source)!==actorId)fail(perPlayerScoring(source)?'Je kunt alleen je eigen worp invoeren wanneer je aan de beurt bent.':'Alleen de huidige schrijver mag scoren.',perPlayerScoring(source)?'not_your_turn':'not_writer',403);
+    case 'score': if(perPlayerScoring(source)){if(!source.remoteWriterIds?.includes(actorId))participant();}else writer();if(bullPending(source))fail('Rond eerst de bullprocedure af.','bull_pending',409);if(source.paused)fail('De partij is gepauzeerd.','match_paused',409);if(source.correction)fail('Handel eerst het correctieverzoek af.','correction_pending',409);if(source.status!=='live'||currentScorer(source)!==actorId)fail(perPlayerScoring(source)?'Je kunt alleen je eigen worp invoeren wanneer je aan de beurt bent.':'Alleen de huidige schrijver mag scoren.',perPlayerScoring(source)?'not_your_turn':'not_writer',403);
       next.scoringRevision=source.revision+1;
       next.game = scoreGame(source.game, action.score, action.darts ?? 3, action.doubleConfirmed === true,action.doubleAttempts,action.dartHits,action.bust===true);
       if (next.game.status === 'finished') {
-        const winner = setScore(next).findIndex(value => value >= Math.ceil(source.settings.bestOfSets / 2));
-        if (winner >= 0 || source.settings.legLimit) { next.status = 'result'; next.winnerId = winner >= 0 ? next.players[winner].id : next.game.winner ?? null; next.resultRevision = source.revision + 1; }
-        else { next.previousSets.push(next.game); next.game = newGame(next.id, next.players.map(p => p.id), next.settings, (next.previousSets[0].legStarter+next.previousSets.reduce((sum,game)=>sum+game.legs[0]+game.legs[1],0))%2,source.game.sidePlayers,next.previousSets.reduce((sum,game)=>sum+game.legs[0]+game.legs[1],0)); }
+        const winner = seriesWinner(setScore(next),source.settings.bestOfSets,source.settings.setWinByTwo);
+        if (winner !== null || source.settings.legLimit) { next.status = 'result'; next.winnerId = winner !== null ? next.players[winner].id : next.game.winner ?? null; next.resultRevision = source.revision + 1; }
+        else { next.previousSets.push(next.game); next.game = newGame(next.id, next.players.map(p => p.id), next.settings, next.settings.setOpener==='alternate-sets'?((next.startDecision?.starter??next.previousSets[0].legStarter)+next.previousSets.length)%2:(lastLegStarter(next.previousSets.at(-1)!)+1)%2,source.game.sidePlayers,next.previousSets.reduce((sum,game)=>sum+game.legs[0]+game.legs[1],0)); }
       }
       break;
     case 'undo': if(perPlayerScoring(source)){if(!source.remoteWriterIds?.includes(actorId))participant();}else writer();if ((!perPlayerScoring(source)&&source.writerId!==actorId)||!canUndoOwnVisit(source,actorId)||!['live','result'].includes(source.status)||source.confirmations.some(Boolean)||source.resultPublished) fail(perPlayerScoring(source)?'Je kunt alleen je eigen laatste onbevestigde worp terugdraaien.':'Alleen de schrijver kan een onbevestigde beurt terugdraaien.','forbidden',403);
@@ -159,6 +168,7 @@ export function applyMatchAction(source: MatchState, actorId: string, isOrganize
     default: fail('Onbekende partijactie.');
   }
   if(perPlayerScoring(next))next.writerId=currentScorer(next);
+  if(['score','undo','approve-correction'].includes(action.type))synchronizeDecidingBull(next);
   next.revision++;
   return next;
 }
@@ -166,14 +176,14 @@ export function matchView(match: MatchState, actorId: string, isOrganizer: boole
   const { game, previousSets, ...base } = match;
   const currentLeg=game.legs[0]+game.legs[1]+(game.status==='finished'?0:1);
   const ownIndex = matchSideIndex(match,actorId), participant=ownIndex>=0;
-  const writer = participant || match.delegatedWriterId === actorId;
-  const canWrite=(perPlayerScoring(match)?participant||Boolean(match.remoteWriterIds?.includes(actorId)):writer)&&currentScorer(match)===actorId&&match.status==='live'&&!match.paused&&!match.correction;
+  const writer = participant || match.delegatedWriterId === actorId,conflicted=match.offlineConflict?.status==='open';
+  const canWrite=(perPlayerScoring(match)?participant||Boolean(match.remoteWriterIds?.includes(actorId)):writer)&&currentScorer(match)===actorId&&match.status==='live'&&!match.paused&&!match.correction&&!bullPending(match)&&!conflicted;
   return { ...base,...(game.cricket?{cricket:game.cricket}:{}),...(match.sideParticipants?{currentThrower:matchParticipants(match).find(player=>player.id===gameThrowerId(game))}:{}),scoringMode:perPlayerScoring(match)?'per-player':'shared-writer',writerId:currentScorer(match),remaining: game.remaining, legs: game.legs, sets: setScore(match), turn: game.turn, checkout: match.status === 'live'&&game.discipline!=='cricket'&&(game.outRule??'double')==='double' ? checkout(game.remaining[game.turn]) : null,
     visits: [...previousSets, game].flatMap(g => g.visits),currentLegVisits:game.visits.filter(v=>v.leg===currentLeg),currentLegStartScore:game.sideStartScores?.[game.turn]??game.startScore, stats: match.players.map((player,index)=>{if(game.cricket)return {total:game.cricket.points[index],darts:[...previousSets,game].flatMap(set=>set.visits).filter(visit=>visit.playerIndex===index).reduce((sum,visit)=>sum+visit.darts,0),oneEighties:0,highestFinish:0,measurementComplete:false};const stats=calculatePlayerMeasures([...previousSets,game],player.id);return{total:stats.points,darts:stats.darts,oneEighties:stats.oneEighties,highestFinish:stats.highestFinish,average:stats.average===null?0:stats.average,measurementComplete:stats.complete,hundredPlus:stats.hundredPlus,hundredFortyPlus:stats.hundredFortyPlus,firstNine:stats.firstNine,bestLegDarts:stats.bestLegDarts,checkoutPercentage:stats.checkoutPercentage};}),
     legNumber: game.legs[0] + game.legs[1] + (game.status === 'finished' ? 0 : 1), setNumber: previousSets.length + 1,
-    permissions: { canMedia:matchMediaActors(match).includes(actorId)&&['called','ready','live','result','disputed'].includes(match.status),canManage: isOrganizer,canWrite,canScore:canWrite, canAccept: participant && ['called', 'ready'].includes(match.status) && !match.accepted[ownIndex], canConfirm: participant && match.status === 'result' && !match.confirmations[ownIndex] && !match.correction, canTakeOver:!perPlayerScoring(match)&&participant&&match.status==='live'&&match.writerId!==actorId,canUndo:(perPlayerScoring(match)?(participant||Boolean(match.remoteWriterIds?.includes(actorId)))&&canUndoOwnVisit(match,actorId):writer&&match.writerId===actorId)&&['live','result'].includes(match.status)&&!match.resultPublished&&!match.confirmations.some(Boolean)&&!match.paused&&!match.correction&&game.history.length+previousSets.length>0,
-      canPause:(participant||isOrganizer)&&match.status==='live'&&!match.paused,canResume:(participant||isOrganizer)&&match.status==='live'&&match.paused===true,
-      canRequestCorrection:participant&&['live','result'].includes(match.status)&&!match.resultPublished&&!match.confirmations.some(Boolean)&&!match.correction&&matchVisits(match).some(v=>(v.throwerId??v.player)===actorId),
-      canAnswerCorrection:participant&&Boolean(match.correction)&&matchSideIndex(match,match.correction!.requestedBy)!==ownIndex,canCancelCorrection:Boolean(match.correction)&&(isOrganizer||match.correction?.requestedBy===actorId) }
+    permissions: {canDrawStart:!conflicted&&match.status==='ready'&&match.settings.startProcedure==='server-lot'&&match.startDecision?.starter===undefined&&(participant||isOrganizer),canBullThrow:!conflicted&&canThrowBull(match,actorId),canBullConfirm:!conflicted&&canConfirmBull(match,actorId),canBullConfirmCompanion:!conflicted&&canConfirmCompanionBull(match,actorId), canMedia:matchMediaActors(match).includes(actorId)&&['called','ready','live','result','disputed'].includes(match.status),canManage: isOrganizer,canWrite,canScore:canWrite, canAccept: !conflicted&&participant && ['called', 'ready'].includes(match.status) && !match.accepted[ownIndex], canConfirm: !conflicted&&participant && match.status === 'result' && !match.confirmations[ownIndex] && !match.correction, canTakeOver:!conflicted&&!perPlayerScoring(match)&&participant&&match.status==='live'&&match.writerId!==actorId,canUndo:!conflicted&&(perPlayerScoring(match)?(participant||Boolean(match.remoteWriterIds?.includes(actorId)))&&canUndoOwnVisit(match,actorId):writer&&match.writerId===actorId)&&['live','result'].includes(match.status)&&!match.resultPublished&&!match.confirmations.some(Boolean)&&!match.paused&&!match.correction&&game.history.length+previousSets.length>0,
+      canPause:!conflicted&&(participant||isOrganizer)&&match.status==='live'&&!match.paused,canResume:!conflicted&&(participant||isOrganizer)&&match.status==='live'&&match.paused===true,
+      canRequestCorrection:!conflicted&&participant&&['live','result'].includes(match.status)&&!match.resultPublished&&!match.confirmations.some(Boolean)&&!match.correction&&matchVisits(match).some(v=>(v.throwerId??v.player)===actorId),
+      canAnswerCorrection:!conflicted&&participant&&Boolean(match.correction)&&matchSideIndex(match,match.correction!.requestedBy)!==ownIndex,canCancelCorrection:!conflicted&&Boolean(match.correction)&&(isOrganizer||match.correction?.requestedBy===actorId) }
   };
 }

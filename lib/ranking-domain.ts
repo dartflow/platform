@@ -33,7 +33,7 @@ export function roundRating(value: number, decimals = 0): number {
 
 export function nationalRatingFormat(settings: Settings): boolean {
   const rules=settings as Settings&{inRule?:string;outRule?:string;sideStartScores?:number[];discipline?:string};
-  return (rules.discipline??'x01')==='x01'&&settings.startScore === 501 && settings.bestOfSets === 1 && settings.legLimit === undefined && [5, 7, 9, 11, 13, 15, 17, 19].includes(settings.bestOfLegs)&&rules.inRule!=='double'&&(!rules.outRule||rules.outRule==='double')&&!rules.sideStartScores;
+  return (rules.discipline??'x01')==='x01'&&settings.startScore === 501 && settings.bestOfSets === 1 && settings.legLimit === undefined && !settings.legWinByTwo && !settings.setWinByTwo && [5, 7, 9, 11, 13, 15, 17, 19].includes(settings.bestOfLegs)&&rules.inRule!=='double'&&(!rules.outRule||rules.outRule==='double')&&!rules.sideStartScores;
 }
 
 export function ratingActive(lastPlayedAt: string | null, now: number,activeDays:number=policy.activeDays): boolean {

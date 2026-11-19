@@ -6,6 +6,7 @@ import type {MatchState,PublicSnapshot} from './types';
 import {eventPhysicalBoards} from './location-access';
 import {assertPrimaryCorrectionFixtureAllowed,primaryCorrectionBlockedFixtureIds} from './match-corrections';
 import {assertCircuitQualificationCommand,decorateCircuitQualificationState} from './circuit-qualifications';
+import {tournamentFixtureReleased} from './tournament-pools';
 
 type Precall={fixtureId:string;writerId?:string;createdAt:string;showOnDisplay:boolean};
 export async function precallAccess(client:PoolClient,actor:string,command:PlatformCommand):Promise<void>{
@@ -24,7 +25,7 @@ export async function precallAction(client:PoolClient,actor:string,command:Platf
  else{
   if(row.state.paused||row.state.closed||row.state.completed)throw new DomainError('event_paused','Deze speeldag kan nu geen vooroproep versturen.',409);
   const fixture=row.state.fixtures?.find(fixture=>fixture.id===uuid(action.fixtureId));
-  if(!fixture||fixture.status!=='scheduled'||fixture.players.length!==2||!fixture.players.every(Boolean))throw new DomainError('fixture_unavailable','Kies een complete nog niet toegewezen partij.',409);
+  if(!fixture||!tournamentFixtureReleased(fixture)||fixture.status!=='scheduled'||fixture.players.length!==2||!fixture.players.every(Boolean))throw new DomainError('fixture_unavailable','Kies een complete en vrijgegeven nog niet toegewezen partij.',409);
   await assertPrimaryCorrectionFixtureAllowed(client,row,fixture.id);
   await assertCircuitQualificationCommand(client,row,'fixture.precall');
   if(Object.entries(calls).some(([board,call])=>board!==boardId&&call.fixtureId===fixture.id))throw new DomainError('precall_exists','Deze partij heeft al een vooroproep op een andere baan.',409);
@@ -44,7 +45,7 @@ export async function readPublicPrecall(client:Pick<PoolClient,'query'>,boardId:
  const row=(await client.query<EntityRow>("select e.* from dartflow_private.platform_entities e join dartflow_private.boards b on b.id=$1 and not b.blocked where e.state->>'eventId'=$2 and e.state->'preCalls' ? $1::text and not exists(select 1 from dartflow_private.location_boards lb where lb.board_id=b.id and(lb.archived_at is not null or lb.closed_at is not null or lb.close_after_session)) limit 1",[boardId,eventId])).rows[0];
  if(!row||row.state.paused||row.state.closed||row.state.completed)return {};
  const call=(row.state.preCalls as Record<string,Precall>)[boardId],fixture=row.state.fixtures?.find(fixture=>fixture.id===call.fixtureId);
- if(!call.showOnDisplay||!fixture||fixture.status!=='scheduled'||!fixture.players.every(Boolean))return {};
+ if(!call.showOnDisplay||!fixture||!tournamentFixtureReleased(fixture)||fixture.status!=='scheduled'||!fixture.players.every(Boolean))return {};
  if((await primaryCorrectionBlockedFixtureIds(client,row)).has(fixture.id)||(await decorateCircuitQualificationState(client,row)).state.circuitSourceStale)return {};
  const ids=[...fixture.players,...(call.writerId?[call.writerId]:[])];
  const people=(await client.query<{id:string;name:string;available:boolean}>("select p.id,p.name,coalesce(m.attributes->>'available','true')<>'false' as available from dartflow_private.platform_members m join dartflow_private.profile_labels p on p.id=m.user_id where m.entity_id=$1 and m.status='active' and m.attributes->>'registered'='true' and m.user_id=any($2::uuid[])",[row.id,ids])).rows;

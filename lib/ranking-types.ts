@@ -12,7 +12,7 @@ export type MatchRanking = {
 };
 
 export type RankingEligibility = { eligible: boolean; reason: string | null };
-export type MatchRankingDestination={listId:string;name:string;scope:'national'|'club';kind:'rating'|'circuit';policyVersion:string;status:'admitted'|'excluded'|'booked'|'void';generation:string|null;sourceId?:string;sourceRevision?:number;before?:number[];after?:number[];deltas?:number[];reason?:string|null};
+export type MatchRankingDestination={listId:string;name:string;scope:'national'|'club';kind:'rating'|'circuit';policyVersion:string;status:'admitted'|'excluded'|'booked'|'void';publicationPaused?:boolean;generation:string|null;sourceId?:string;sourceRevision?:number;before?:number[];after?:number[];deltas?:number[];reason?:string|null};
 export type RankingRow = {
   playerId: string;
   name: string;

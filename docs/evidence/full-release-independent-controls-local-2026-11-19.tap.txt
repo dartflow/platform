@@ -1,0 +1,35 @@
+✔ legacy starts unchanged; explicit home-first and one-time server draw are canonical (3.617901ms)
+✔ bull ties reverse throw order, DB beats SB, and two sides confirm without fake score visits (1.538347ms)
+✔ SB beats outside; per-player cannot enter the other side bull and public payload has no account identifiers (0.785235ms)
+✔ rebull blocks scoring only at a real deciding leg, and restored complete bull remains stable after undo boundary (1.629152ms)
+✔ alternate set openers differs from continuous legs when a preceding set has even leg count (0.98438ms)
+✔ fixed legs reject rebull and unsupported start procedures are rejected (0.279526ms)
+✔ companion confirmation requires the complete existing local PIN binding and never applies to remote play (0.60007ms)
+✔ public bull projection explicitly strips future runtime actor and credential fields at every nesting level (0.455029ms)
+✔ published club component overrides inherit the base and fixed classification finals discard recreational handicap (15.281356ms)
+✔ central match projection used by overview blocks all game mutation controls while a canonical offline conflict is open (0.901766ms)
+✔ pool source correction holds its real qualification decisions and descendants while the other branch stays available (1.404803ms)
+✔ decision pool correction holds deciding KO and main qualification, not independent decision-pool games (0.232001ms)
+✔ decision knockout correction follows explicit children and original pool destination only (0.127998ms)
+▶ private correction dossiers retain real moments, reply, independent appeal and scoped sporting holds
+  ✔ real moment and private optional proof require opponent response, log authorized reads and hold only actual descendants (463.955935ms)
+  ✔ one timely appeal uses another independent reviewer, then actual rescoring and both signatures close both linked dossiers (204.729187ms)
+  ✔ server clock enforces late discovery, response expiry, appeal deadline and expired proof projection without automatic penalty (130.90553ms)
+✔ private correction dossiers retain real moments, reply, independent appeal and scoped sporting holds (1073.000047ms)
+▶ publication holds and offline conflict decisions retain the accepted sporting source
+  ✔ A freezes while B books the same fully scored and doubly confirmed source; resume replays once (659.867363ms)
+  ✔ two writers conflict on replay, preserve chronological accepted visits and need a manager reason (332.732786ms)
+✔ publication holds and offline conflict decisions retain the accepted sporting source (1147.777863ms)
+✔ sixteen players in four pools then eight-player KO has 31 real matches and 155 minute floor (7.919999ms)
+✔ three boards, required rest and longer final increase a feasible schedule without overlapping actors or boards (3.650968ms)
+✔ deadline, unequal pools and reset are explicit warnings; invalid dependencies fail (3.87746ms)
+✔ explicit writer dependencies receive the same rest and overlap protection as players (0.236806ms)
+✔ large round-robin remains bounded and the smallest pool must support every qualifier (175.97804ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3638.606573

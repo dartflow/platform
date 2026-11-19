@@ -28,6 +28,10 @@ import LocationWorkspace from './location-workspace';
 import type {ClubEntity} from '@/lib/club-types';
 import RankingEventPanel from './ranking-event-panel';
 import OrganizerDrafts from './organizer-drafts';
+import TournamentManagementPanel,{ConsolationFields} from './tournament-management-panel';
+import OrganizerParticipantsPanel,{GuestClaimsPanel}from'./organizer-participants';
+import TournamentPlanning,{readTournamentPlanning} from './tournament-planning';
+import {StartProcedureFields,readWinByTwo} from './bull-start-panel';
 import {PlayerPinSettings,PlayerStatisticsPanel,ProfileStatisticsLinks} from './player-profile';
 
 type RecordValue = Record<string, unknown>;
@@ -415,9 +419,9 @@ function iso(value: unknown) {
 }
 
 function ruleInput(form:FormData){
-  if(form.get('discipline')==='cricket')return{discipline:'cricket' as const,cricketMode:form.get('cricketMode')==='no-score'?'no-score' as const:'standard' as const};
+  if(form.get('discipline')==='cricket')return{...readWinByTwo(form),discipline:'cricket' as const,cricketMode:form.get('cricketMode')==='no-score'?'no-score' as const:'standard' as const};
   const inRule=text(form.get('inRule')),outRule=text(form.get('outRule')),home=text(form.get('homeStart')),away=text(form.get('awayStart'));
-  return {...(inRule==='double'?{inRule}:{}),...(outRule&&outRule!=='double'?{outRule}:{}),...(home||away?{sideStartScores:[Number(home),Number(away)]}:{})};
+  return {...readWinByTwo(form),...(inRule==='double'?{inRule}:{}),...(outRule&&outRule!=='double'?{outRule}:{}),...(home||away?{sideStartScores:[Number(home),Number(away)]}:{})};
 }
 function RulesFields(){const[discipline,setDiscipline]=useState('x01');return <details className="panel"><summary>Discipline, spelregels en handicap</summary><div className="field-grid"><label className="field">Discipline<select name="discipline"value={discipline}onChange={event=>setDiscipline(event.target.value)}><option value="x01">X01</option><option value="cricket">Cricket</option></select></label>{discipline==='cricket'?<Field label="Cricketvariant"name="cricketMode"defaultValue="standard"><option value="standard">Standaard · marks en punten</option><option value="no-score">No score · als eerste sluiten</option></Field>:<><Field label="Openen" name="inRule" defaultValue="single"><option value="single">Open in</option><option value="double">Double in</option></Field><Field label="Uitgooien" name="outRule" defaultValue="double"><option value="double">Double out</option><option value="straight">Straight out</option><option value="master">Master out</option></Field><Field label="Handicap startscore zijde 1" name="homeStart" type="number"/><Field label="Handicap startscore zijde 2" name="awayStart" type="number"/></>}</div><p>Cricket heeft eigen marks en statistieken. Afwijkende X01-regels en Cricket tellen niet voor de landelijke X01-spelersrating.</p></details>;}
 
@@ -710,6 +714,7 @@ function Dashboard({
         }).format(new Date())}{" "}
         · {data.clubs.find((c) => c.id === clubId)?.name || "Wereldwijd"}
       </Title>
+      <GuestClaimsPanel/>
       {organizer ? (
         <>
           <div className="workspace-metrics">
@@ -2322,6 +2327,7 @@ function Lobby({
             ))}
             <div className="button-row">
               {entity.ownerId === data.profile.id &&
+                !record(entity.state.settings).startProcedure &&
                 !entity.state.matchId &&
                 !entity.state.closed && (
                   <label className="field">
@@ -2472,6 +2478,9 @@ function Lobby({
             const result = await command({
               type: "lobby.create",
               ...ruleInput(f),
+              startProcedure: text(f.get("startProcedure"), "bull"),
+              setOpener: text(f.get("setOpener"), "continuous"),
+              decidingLeg: text(f.get("decidingLeg"), "continue"),
               name: text(f.get("name")) || "Vrije wedstrijd",
               opponentId: text(f.get("opponentId")) || undefined,
               setup: text(f.get("setup")),
@@ -2484,6 +2493,7 @@ function Lobby({
         >
           <Field label="Wedstrijdnaam" name="name" />
           <RulesFields/>
+          <StartProcedureFields/>
           <Field
             label="Tegenstander"
             name="opponentId"
@@ -2599,7 +2609,9 @@ function Competitions({
         {manager&&entity.state.format==='swiss'&&<section className="panel"><h2>Zwitserse ronden</h2><p>Geplaatste ronden: {Math.max(0,...fixtures.map(f=>number(f.round,0)))} · gepubliceerd maximum: {text(record(entity.state.tournamentRules).swissRounds)}</p><Button disabled={busy||entity.state.completed===true} onClick={()=>void command({type:'competition.next-round',id:entity.id},entity)}>Volgende ronde vaststellen</Button></section>}
         {entity.state.format==='swiss'&&entity.state.completed===true&&!entity.state.championId&&<p className="notice">De hoogste sportieve plaats is gedeeld. Volg het gepubliceerde reglement voor een beslissingspartij op een titel- of kwalificatiegrens.</p>}
         <RankingEventPanel entityId={entity.id} participant={member?.status==='active'&&member.attributes?.registered===true}/>
+        {entity.kind==='tournament'&&<TournamentManagementPanel key={`${entity.id}:${record(entity.state.tournamentRules).draw?record(record(entity.state.tournamentRules).draw).revision:'initial'}`}entity={entity}canManage={manager}busy={busy}command={(action,expectedRevision)=>command(action,entity,expectedRevision===undefined?undefined:{requestId:crypto.randomUUID(),expectedRevision})}/>}
         {manager&&<EventAdministration entity={entity} data={data} command={command} busy={busy}/>}
+        {manager&&entity.kind==='tournament'&&<OrganizerParticipantsPanel entityId={entity.id}revision={entity.revision}players={[data.profile,...data.players]}/>}
         {communityAccess&&<><FeedSpace actorId={data.profile.id} kind={entity.kind as 'league'|'tournament'} scopeId={entity.id} compact/><ScopedChat kind={entity.kind as 'league'|'tournament'} scopeId={entity.id} actorId={data.profile.id} label={entity.kind==='tournament'?'Toernooichat':'Competitiechat'}/></>}
         {manager && (
           <CompetitionControls
@@ -2706,7 +2718,7 @@ function Competitions({
                 >
                   Uitnodigingslink maken
                 </Button>
-                <Button
+                {entity.kind!=='tournament'&&<Button
                   disabled={busy}
                   onClick={() =>
                     void command(
@@ -2716,7 +2728,7 @@ function Competitions({
                   }
                 >
                   Schema genereren
-                </Button>
+                </Button>}
                 <Button
                   primary
                   disabled={busy}
@@ -3094,6 +3106,8 @@ function Competitions({
                 ? { approvalRequired: f.get("approvalRequired") === "on" }
                 : {}),
               boards: number(f.get("boards"), 4),
+              poolCount:number(f.get('poolCount'),4),
+              ...(create==='tournament'?{planning:readTournamentPlanning(f),thirdPlace:f.get('thirdPlace')==='on',consolation:f.get('consolation')==='on',consolationTitle:text(f.get('consolationTitle'),'Troostbeker'),acceptPlanningWarnings:f.get('acceptPlanningWarnings')==='on',startProcedure:text(f.get('startProcedure'),'bull'),setOpener:text(f.get('setOpener'),'continuous'),decidingLeg:text(f.get('decidingLeg'),'continue')}:{}),
             });
             if (result?.id)
               navigate(
@@ -3109,6 +3123,7 @@ function Competitions({
           <RulesFields/>
           <OrganizerDrafts actorId={data.profile.id}kind={create==='tournament'?'tournament':'season'}/>
           <Field label="Locatie" name="location" />
+          {create==='tournament'&&<><StartProcedureFields/><Field label="Aantal poules" name="poolCount" type="number"defaultValue={4}/><label className="workspace-checkbox"><input type="checkbox"name="thirdPlace"/>Bronzen wedstrijd voor de verliezende halvefinalisten</label><ConsolationFields/><TournamentPlanning/></>}
           <Field label="Zwitserse ronden (leeg voor automatisch)" name="swissRounds" type="number"/>
           <Scope data={data} personal={create==='tournament'} permission={create==='league'?'competitions.manage':'tournaments.manage'} />
           {create==='tournament'&&<><p>Je kunt zelfstandig een persoonlijk toernooi organiseren. Uitslagen blijven buiten officiële ratings en circuits.</p><Field label="Zichtbaarheid" name="visibility" defaultValue="private"><option value="private">Besloten · alleen deelnemers en genodigden</option><option value="public">Openbaar · zichtbaar bij ontdekken</option></Field><a href="/help/start-zonderclub">Hulp bij zelfstandig organiseren</a></>}

@@ -8,7 +8,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** Returns only game settings; identity and outcomes never come from this form. */
-@Composable internal fun PlayerRuleFields(enabled: Boolean): JSONObject {
+@Composable internal fun PlayerRuleFields(enabled: Boolean, includeStartProcedure: Boolean = true): JSONObject {
     var discipline by rememberSaveable { mutableStateOf("x01") }
     var cricketMode by rememberSaveable { mutableStateOf("standard") }
     var inRule by rememberSaveable { mutableStateOf("single") }
@@ -16,6 +16,7 @@ import org.json.JSONObject
     var handicap by rememberSaveable { mutableStateOf(false) }
     var left by rememberSaveable { mutableStateOf("501") }
     var right by rememberSaveable { mutableStateOf("501") }
+    var startValues by rememberSaveable { mutableStateOf("{}") }
     Choice("Discipline", discipline, listOf("x01" to "X01", "cricket" to "Cricket"), { discipline = it }, enabled)
     if (discipline == "cricket") Choice("Cricketregels", cricketMode, listOf("standard" to "Met punten", "no-score" to "Zonder punten"), { cricketMode = it }, enabled)
     else {
@@ -28,7 +29,9 @@ import org.json.JSONObject
             Text("Gebruik een startscore tot 1001; de server controleert de combinatie met de uitgooiveregel.", color = PlayerMuted)
         }
     }
+    if (includeStartProcedure) PlayerStartSettingsFields(JSONObject(startValues), enabled) { key, value -> startValues = JSONObject(startValues).put(key, value).toString() }
     return json("discipline" to discipline, "cricketMode" to cricketMode, "inRule" to if (discipline == "cricket") "single" else inRule, "outRule" to if (discipline == "cricket") "double" else outRule).also {
+        if (includeStartProcedure) playerStartSettings(JSONObject(startValues)).keys().forEach { key -> it.put(key, playerStartSettings(JSONObject(startValues)).get(key)) }
         if (handicap && discipline == "x01") it.put("sideStartScores", JSONArray(listOf(left.toIntOrNull() ?: 0, right.toIntOrNull() ?: 0)))
     }
 }
@@ -45,5 +48,5 @@ internal fun playerTrainingMatch(entity: JSONObject, profile: PlayerProfile?): P
 
 internal fun playerRuleLabel(settings: JSONObject): String = if (settings.text("discipline", "x01") == "cricket") "Cricket · ${if (settings.text("cricketMode", "standard") == "no-score") "zonder punten" else "met punten"}" else {
     val starts = settings.optJSONArray("sideStartScores")?.ints()?.joinToString(" / ") ?: settings.text("startScore", "501")
-    "$starts · ${if (settings.text("inRule", "single") == "double") "dubbel in · " else ""}${when (settings.text("outRule", "double")) { "straight", "straight-out" -> "straight uit"; "master", "master-out" -> "master uit"; else -> "dubbel uit" }}"
+    "$starts · ${if (settings.text("inRule", "single") == "double") "dubbel in · " else ""}${when (settings.text("outRule", "double")) { "straight", "straight-out" -> "straight uit"; "master", "master-out" -> "master uit"; else -> "dubbel uit" }}${playerDifferenceLabel(settings)}"
 }

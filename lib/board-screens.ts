@@ -1,3 +1,4 @@
+import{publicBullStart}from'./bull-start';
 import {matchEventNotice} from './event-display-notice';
 import {readPublicPrecall} from './competition-precalls';
 import {readSeasonDisplay} from './season-display';
@@ -173,7 +174,7 @@ async function readBoardScreen(client:PoolClient,boardId:string,deviceToken?:str
   const labels=await client.query<{id:string;name:string}>('select id,name from dartflow_private.profile_labels where id=any($1::uuid[])',[matchParticipants(row.state).map(p=>p.id)]);
   row.state=currentPlayerProfiles(row.state,labels.rows);
   const view=matchView(row.state,'',false);
-  match={id:`board-${row.id}`,revision:view.revision,status:view.status,...publicMatchSides(view),...(view.cricket?{cricket:view.cricket}:{}),players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit)),currentLegVisits:(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit)),currentLegStartScore:view.currentLegStartScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:publicMatchSettings(view.settings),writerId:'',stats:displayStats(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
+  match={id:`board-${row.id}`,revision:view.revision,status:view.status,...publicMatchSides(view),...publicBullStart(view),...(view.cricket?{cricket:view.cricket}:{}),players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit)),currentLegVisits:(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit)),currentLegStartScore:view.currentLegStartScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:publicMatchSettings(view.settings),writerId:'',stats:displayStats(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
  }else if(lease?.kind==='training'){
   const game=lease.state.game as Game;
   const profile=await client.query<{name:string}>('select name from dartflow_private.profile_labels where id=$1',[lease.owner_id]);

@@ -1,5 +1,6 @@
 import {dartValue} from './x01-rules';
 import {gameThrowerId} from './match-sides';
+import{seriesWinner}from'./match-winning-rules';
 import type {Game} from './types';
 
 export const CRICKET_TARGETS=[20,19,18,17,16,15,25] as const;
@@ -30,11 +31,10 @@ export function scoreCricketGame(source:Game,hits:string[]):Game{
  next.stats[side].total+=score;next.stats[side].darts+=darts;
  const completed=source.legs[0]+source.legs[1];
  next.visits.push({player:source.players[side],playerIndex:side,...(source.sidePlayers?{throwerId:gameThrowerId(source)}:{}),score,darts,leg:completed+1,bust:false,checkout:won,measurementVersion:1,remainingBefore:before.points[side],remainingAfter:cricket.points[side],dartHits:[...hits],observedScore:hits.reduce((sum,hit)=>sum+dartValue(hit),0),cricket:{marksBefore:before.marks[side],marksAfter:[...cricket.marks[side]],pointsBefore:before.points[side],pointsAfter:cricket.points[side],creditedMarks:credited}});
- next.stats[side].darts+=won?hits.length:3;next.stats[side].total+=cricket.points[side]-before.points[side];
  next.remaining=[...cricket.points];
  if(!won){next.turn=other;return next;}
  next.legs[side]++;next.stats[side].legsWon=(next.stats[side].legsWon??0)+1;
- if(next.legLimit?next.legs[0]+next.legs[1]>=next.legLimit:next.legs[side]>=Math.ceil(next.bestOf/2)){next.status='finished';next.winner=next.legLimit&&next.legs[0]===next.legs[1]?null:next.players[next.legs[0]>next.legs[1]?0:1];next.draw=next.winner===null;}
+ if(next.legLimit?next.legs[0]+next.legs[1]>=next.legLimit:seriesWinner(next.legs,next.bestOf,next.legWinByTwo)!==null){next.status='finished';next.winner=next.legLimit&&next.legs[0]===next.legs[1]?null:next.players[next.legs[0]>next.legs[1]?0:1];next.draw=next.winner===null;}
  else{next.cricket={...newCricket(),creditedMarks:cricket.creditedMarks};next.remaining=[0,0];next.turn=(next.legStarter+next.legs[0]+next.legs[1])%2;}
  return next;
 }

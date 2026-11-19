@@ -14,7 +14,7 @@ export async function reservationOrganizer(client:Client,actor:string,eventId:st
  const row=result.rows[0];
  if(lockClub)await client.query("select id from dartflow_private.platform_entities where id=$1 and kind='club' for share",[row.club_id]);
  const allowed=row.kind==='tournament'?await clubPermission(client,row.club_id,actor,'tournaments.manage'):row.kind==='league'?await clubPermission(client,row.club_id,actor,'competitions.manage'):await clubPermission(client,row.club_id,actor,'tournaments.manage')||await clubPermission(client,row.club_id,actor,'competitions.manage');
- if(!allowed&&!await seasonEventAccess(client,actor,eventId))throw new DomainError('forbidden','Je hebt geen actueel organisatierecht voor deze verenigingsspeeldag.',403);
+ if(!allowed&&(await seasonEventAccess(client,actor,eventId))?.canManage!==true)throw new DomainError('forbidden','Je hebt geen actueel organisatierecht voor deze verenigingsspeeldag.',403);
  return row;
 }
 export async function canOrganizeReservedEvent(client:Client,actor:string,eventId:string):Promise<boolean>{

@@ -1,9 +1,11 @@
 import type{PoolClient}from'pg';
 import{DomainError}from'./domain';
-import{clubIsActiveMember,clubPermission}from'./club-access';
+import{clubIsActiveMember}from'./club-access';
+import{seasonManager}from'./season-authority';
 import{requireAccess}from'./platform-store';
 import type{EntityRow}from'./platform-store';
 import{coreSeasonSettings}from'./seasons-types';
+import{seasonSlotSettings}from'./season-rules';
 import type{SeasonFixture,SeasonState}from'./seasons-types';
 import type{MatchState}from'./types';
 import{appendRankingSource,lockRankingLists,rebuildRankingGeneration}from'./ranking-generations';
@@ -12,8 +14,7 @@ import type{RankingSourceData}from'./ranking-generations';
 type Client=Pick<PoolClient,'query'>;
 export async function rankingSeason(client:Client,event:EntityRow):Promise<SeasonState|undefined>{return event.state.seasonManaged===true?(await client.query<{state:SeasonState}>('select state from dartflow_private.competition_seasons where id=$1',[event.id])).rows[0]?.state:undefined;}
 export async function seasonRankingManager(client:Client,season:SeasonState,actor:string):Promise<boolean>{
- if(season.scope==='national')return Boolean((await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in('owner','admin')",[actor])).rowCount);
- return season.clubId!==null&&(await clubPermission(client,season.clubId,actor,'competitions.manage')||season.managerIds.includes(actor)&&await clubIsActiveMember(client,season.clubId,actor));
+ return seasonManager(client,season,actor);
 }
 export async function requireRankingEventManager(client:Client,event:EntityRow,actor:string):Promise<void>{
  const season=await rankingSeason(client,event);if(!season){await requireAccess(client,event,actor,true);return;}
@@ -27,7 +28,7 @@ export async function seasonRankingParticipant(client:Client,season:SeasonState,
 export async function rankingEventContext(client:Client,event:EntityRow):Promise<SeasonState|undefined>{
  const season=await rankingSeason(client,event);if(!season)return;
  event.state.settings=coreSeasonSettings(season.settings);event.state.ownership=season.scope==='national'?'platform':'club';
- event.state.fixtures=season.fixtures.flatMap(fixture=>fixture.slots.map(slot=>({id:slot.id,players:slot.players,round:fixture.round,phase:'league' as const,status:slot.status==='confirmed'&&fixture.status==='confirmed'?'confirmed' as const:slot.matchId?'live' as const:'scheduled' as const,...(slot.matchId?{matchId:slot.matchId}:{})})));
+ event.state.fixtures=season.fixtures.flatMap(fixture=>fixture.slots.map(slot=>({id:slot.id,players:slot.players,round:fixture.round,phase:'league' as const,settings:seasonSlotSettings(season.settings,fixture,slot),rankingEligibleSingle:!fixture.classification&&season.format!=='doubles'&&(slot.kind??(season.format==='teams'&&slot.index>=4?'double':'single'))==='single',status:slot.status==='confirmed'&&fixture.status==='confirmed'?'confirmed' as const:slot.matchId?'live' as const:'scheduled' as const,...(slot.matchId?{matchId:slot.matchId}:{})})));
  return season;
 }
 

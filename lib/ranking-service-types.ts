@@ -29,6 +29,7 @@ export type RankingList = {
   generation: string | null;
   closesAt: string | null;
   canManage: boolean;
+  publication?:{paused:boolean;revision:number;reason:string|null;pausedAt:string|null;pending:boolean};
 };
 export type RankingListView=RankingList;
 export type RankingDeclarationView={id:string;entityId:string;eventName:string;listId:string;listName:string;scope:'national'|'club';kind:'rating'|'circuit';status:'pending'|'approved'|'rejected';policyVersion:number;policy:RankingPolicy;rules:RankingRule[];reason:string|null;canApprove:boolean;accepted:boolean;canRecertify?:boolean;recertificationRequired?:boolean;reconfirmationRequired?:boolean};

@@ -13,7 +13,7 @@ export function competitionStatisticsClassification(competition:OfficialCompetit
   const index=ordered.findIndex(row=>('id'in row&&row.id===actor)||('playerId'in row&&row.playerId===actor));
   return index<0?null:`${index+1}e plaats`;
  }
- const knockout=fixtures.filter(f=>f.phase==='knockout'),lastRound=Math.max(0,...knockout.map(f=>f.round)),finals=knockout.filter(f=>f.round===lastRound);
+ const knockout=fixtures.filter(f=>f.phase==='knockout'&&!f.purpose),lastRound=Math.max(0,...knockout.map(f=>f.round)),finals=knockout.filter(f=>f.round===lastRound);
  if(finals.length!==1)return null;
  const final=finals[0];
  if(!['confirmed','bye'].includes(final.status)||!final.winnerId||!final.players.includes(final.winnerId)||!final.players.includes(actor))return null;

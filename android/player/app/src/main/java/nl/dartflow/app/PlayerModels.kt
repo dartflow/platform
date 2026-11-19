@@ -59,6 +59,7 @@ data class PlayerUiState(
     val canManagePlatform: Boolean = false, val organizerDraft: JSONObject = JSONObject(), val organizerCloudDraft: JSONObject = JSONObject(), val faqAdminReceipt: JSONObject = JSONObject(),
     val accountDeletion: JSONObject = JSONObject(),
     val homeFeed: JSONObject = JSONObject(), val homeFeedLoading: Boolean = false, val homeFeedError: String? = null,
+    val guestOperatorId: String = "",
 )
 
 fun JSONArray?.objects(): List<JSONObject> = if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }

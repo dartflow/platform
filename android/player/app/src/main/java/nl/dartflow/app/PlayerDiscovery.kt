@@ -80,6 +80,7 @@ internal fun playerRankingsQuery(value: String?): String {
     var query by rememberSaveable { mutableStateOf("") }
     var tab by rememberSaveable(selected.text("id")) { mutableStateOf("list") }
     Heading(selected.text("name", "Spelersrating"), "RANKINGS", if (circuit) "Circuitpunten uit definitieve, toegelaten eindplaatsen." else "Spelersrating uit bevestigde en toegelaten singles.")
+    if (selected.obj("publication").optBoolean("paused")) Notice("Dit klassement wordt gecontroleerd. De laatst gepubliceerde stand blijft zichtbaar; nieuwe geldige resultaten worden bewaard.")
     if (resource.rows("lists").isNotEmpty()) Choice("Ranglijst of circuit", selected.text("id", filters["listId"].orEmpty()), resource.rows("lists").map { it.text("id") to "${it.text("name")} · ${if (it.text("scope") == "national") "Landelijk" else "Vereniging"}" }, { actions.navigate(PlayerScreen.RANKINGS, updatedQuery(updatedQuery(state.activeId, "listId", it), "status", "all")) })
     resource.text("updatedAt").takeIf { it.isNotBlank() }?.let { Text("Bijgewerkt ${shortDate(it)}", color = PlayerMuted) }
     selected.text("closesAt").takeIf { it.isNotBlank() }?.let { Text("Gesloten voor nieuwe evenementen vanaf ${shortDate(it)}", color = PlayerMuted) }

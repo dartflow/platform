@@ -1,6 +1,6 @@
 {
   "format": "dartflow-restore-validation-v1",
-  "createdAt": "2026-11-19T16:19:27.956Z",
+  "createdAt": "2026-11-19T17:44:41.870Z",
   "environment": "production",
   "backupDigest": "e84b4a84da0a1b6ac8f24b1588ee28c23f4757fe17abbd3157f3ccc676550890",
   "scope": "Runtime-visible private application rows and active runtime/release configuration. Excludes Supabase Auth, owner_bootstrap and external providers.",
@@ -419,7 +419,7 @@
       "count": 0
     }
   ],
-  "foreignKeysChecked": 234,
+  "foreignKeysChecked": 256,
   "rows": 276,
   "candidateMigrations": [
     {
@@ -461,6 +461,22 @@
     {
       "name": "20261119184010_private_correction_cases.sql",
       "sha256": "fdd1165a5808ea315e57b1e91671a5bde76f71c04eb397a263945b3995b9bba8"
+    },
+    {
+      "name": "20261119194100_ranking_publication_pause.sql",
+      "sha256": "37ab7db8dfd034a2fbcdb4961f319e9a37c179f642ff479b1e4b09929b914652"
+    },
+    {
+      "name": "20261119194200_offline_score_conflicts.sql",
+      "sha256": "c6b4e63d8e52806976ed15c621461525e07047570b02561775aebb80501b679c"
+    },
+    {
+      "name": "20261119194300_native_push.sql",
+      "sha256": "aee89bf65101d2ebf00293c261f8e5bf19cbd1ee04dc74cc9662ae7c66879aeb"
+    },
+    {
+      "name": "20261119200000_event_guests_imports.sql",
+      "sha256": "f835ba2d3e97676131bfcab004901356fd81cb7fdf72b60e9a02650528cb85d5"
     }
   ],
   "migrationPasses": 2,

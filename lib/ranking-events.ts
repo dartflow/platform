@@ -29,7 +29,8 @@ export async function assertRankingEventNotStarted(client: Pick<PoolClient, 'que
   if ((await client.query(`select 1 from dartflow_private.platform_match_links l join dartflow_private.matches m on m.id=l.match_id where l.entity_id=$1 and (m.state->>'status' not in('planned','called','ready') or jsonb_array_length(m.state->'game'->'visits')>0) limit 1`, [event.id])).rowCount) throw new DomainError('ranking_event_started', 'Rankingbestemmingen kunnen niet na de start van het evenement worden toegekend.', 409);
 }
 
-async function participantEligibility(client: PoolClient, declaration: RankingDeclaration, playerId: string): Promise<{ eligible: boolean; reason: string | null }> {
+async function participantEligibility(client: PoolClient, declaration: RankingDeclaration, playerId: string,eventGuest=false): Promise<{ eligible: boolean; reason: string | null }> {
+  if(eventGuest)return{eligible:false,reason:'Eventgast zonder geauthenticeerde rankingidentiteit; een latere historieclaim wijzigt deze oorspronkelijke toelating niet.'};
   const profile = (await client.query('select display_name_confirmed,deleted_at,deletion_requested_at from dartflow_private.profiles where id=$1', [playerId])).rows[0];
   if (!profile || !profile.display_name_confirmed || profile.deleted_at || profile.deletion_requested_at) return { eligible: false, reason: 'Geen bevestigd actief spelersaccount bij toelating.' };
   if (declaration.scope === 'club' && !declaration.policy.allowGuests && !await clubIsActiveMember(client,declaration.club_id!,playerId)) return { eligible: false, reason: 'Gast zonder puntenrecht volgens de gepubliceerde clubregel.' };
@@ -50,13 +51,14 @@ export async function admitOfficialRankingMatch(client: PoolClient, state: Match
   for (const declaration of declarations.filter(item => item.status === 'approved')) {
     if(season&&(seasonFixture?.classification||(seasonSlot?.kind??'single')!=='single'||state.sideParticipants?.some(side=>side.length!==1))){await client.query('insert into dartflow_private.ranking_match_admissions(match_id,declaration_id,eligible,reason,source_revision)values($1,$2,false,$3,$4)on conflict(match_id,declaration_id)do nothing',[state.id,declaration.id,'Alleen vooraf geselecteerde reguliere competitiesingles tellen mee; dubbels, teamgames en plaatsingsbeslissingen blijven afzonderlijk.',state.revision]);continue;}
     await assertRankingRosterConfirmed(client,state);
-    const accepted = await client.query('select player_id from dartflow_private.ranking_event_confirmations where declaration_id=$1 and player_id=any($2::uuid[])', [declaration.id, state.players.map(player => player.id)]);
-    if (accepted.rowCount !== 2) throw new DomainError('ranking_event_confirmation_required', 'Beide deelnemers moeten de gepubliceerde rankinggevolgen vóór hun eerste partij bevestigen.', 409);
+    const accountIds=state.players.filter(player=>!state.guestPlayerIds?.includes(player.id)).map(player=>player.id);
+    const accepted = await client.query('select player_id from dartflow_private.ranking_event_confirmations where declaration_id=$1 and player_id=any($2::uuid[])', [declaration.id,accountIds]);
+    if (accepted.rowCount !== accountIds.length) throw new DomainError('ranking_event_confirmation_required', 'De geauthenticeerde deelnemers moeten de gepubliceerde rankinggevolgen vóór hun eerste partij bevestigen. Eventgasten krijgen geen rankingtoelating.', 409);
     const originalFixtureId=(fixture as typeof fixture&{rankingOriginalFixtureId?:string}).rankingOriginalFixtureId;
     let eligible = effectiveRankingRule(declaration.rules, originalFixtureId?{...fixture,id:originalFixtureId}:fixture), reason: string | null = eligible ? null : 'Deze fase of partij is vooraf uitgesloten.';
     const players = [];
     for (const player of state.players) {
-      const verdict = await participantEligibility(client, declaration, player.id);
+      const verdict = await participantEligibility(client, declaration, player.id,state.guestPlayerIds?.includes(player.id));
       const checkIn=season?Boolean(seasonFixture?.checkIns.includes(player.id)||season.participants.some(entry=>entry.id===player.id&&entry.checkedIn)):Boolean((await client.query("select 1 from dartflow_private.platform_members where entity_id=$1 and user_id=$2 and attributes->>'checkedIn'='true'",[origin.id,player.id])).rowCount);
       await client.query('insert into dartflow_private.ranking_participant_admissions(declaration_id,player_id,eligible,reason,checked_in)values($1,$2,$3,$4,$5)on conflict(declaration_id,player_id)do nothing', [declaration.id, player.id, verdict.eligible, verdict.reason,checkIn]);
       const stored = (await client.query<{ eligible: boolean }>('select eligible from dartflow_private.ranking_participant_admissions where declaration_id=$1 and player_id=$2', [declaration.id, player.id])).rows[0];
@@ -68,6 +70,7 @@ export async function admitOfficialRankingMatch(client: PoolClient, state: Match
 }
 
 export async function bookOfficialRankingMatch(client: PoolClient, state: MatchState): Promise<void> {
+  if(state.guestPlayerIds?.length)return;
   if (state.status !== 'confirmed' || !state.resultPublished || !state.confirmations.every(Boolean) || state.resultRevision === null || state.administrativeDecision || state.game.status !== 'finished' || !state.winnerId ||state.sideParticipants?.some(side=>side.length!==1)|| ![...state.previousSets, state.game].some(game => game.visits.length)) return;
   if(!await seasonMatchRankingConfirmed(client,state))return;
   const admissions = (await client.query<{ list_id: string; declaration_id: string; policy_version: number }>(`select d.list_id,d.id as declaration_id,d.policy_version from dartflow_private.ranking_match_admissions a join dartflow_private.ranking_event_declarations d on d.id=a.declaration_id join dartflow_private.ranking_lists l on l.id=d.list_id where a.match_id=$1 and a.eligible and d.status='approved' and l.kind='rating' order by d.list_id`, [state.id])).rows;

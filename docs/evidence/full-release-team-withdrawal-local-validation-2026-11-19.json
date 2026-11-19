@@ -1,0 +1,29 @@
+{
+  "capturedAt": "2026-11-19T17:44:33.441661+00:00",
+  "headAtCapture": "3108fe55716017f9b77c538803042ac1e0a1cff7",
+  "workingTreeUncommitted": true,
+  "command": "npx tsx --test --test-concurrency=1 tests/seasons.test.ts tests/seasons-formats-db.test.ts",
+  "scope": "Pure and real service/loopback PostgreSQL evidence only; no hosted, browser, installed-device or external delivery claim.",
+  "result": {
+    "tests": 36,
+    "pass": 36,
+    "fail": 0,
+    "skip": 0
+  },
+  "log": {
+    "path": "docs/evidence/full-release-team-withdrawal-local-2026-11-19.tap.txt",
+    "sha256": "83a61e1461d94626b8ebf55e17c8e52708b32f42905faf1fbd8644b05f7c99b9"
+  },
+  "actualProof": [
+    "Four actual returned round-robin duo seasons cover one/two/three genuinely played encounters out of four and zero actual plus two administrative awards out of four.",
+    "Before half excludes the withdrawn team from the table and cancels remaining unplayed encounters; at/above half preserves played encounters and gives remaining opponents administrative component points with no invented legs.",
+    "Frozen withdrawal snapshot records planned/actual counts and selected policy. Replaying the same accepted request does not repeat the decision.",
+    "Confirmed MatchState and match_results JSON snapshots remain identical after withdrawal. Actual official ranking-source preservation is a separate domain-agent bridge test, not claimed by this file."
+  ],
+  "sourceSha256": {
+    "lib/seasons.ts": "4ccc6f2ddf711d2bd851a68eb351915e082cedabff70f88c5890cc74380f29fd",
+    "lib/seasons-domain.ts": "6669ee809c047c470cfca20de8ca4c4faf63278214288b49a59115674748ba2d",
+    "lib/seasons-types.ts": "75b8e1a9d32abbf06e1b85a3e15bdc86dec4c5c34c8f1ca590ca66d11e79cad8",
+    "tests/seasons-formats-db.test.ts": "30614438a1cc1cbe17d546fb3a8dce534a7efe16e7d6ac3360077963b9cfbc5c"
+  }
+}

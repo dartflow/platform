@@ -41,3 +41,13 @@ Een kopie met `copyEntries` en `applyPromotions` bewaart de bronrevisie, oude/ni
 Alleen na uitputting van de sportieve lijst kan `season.vacancy-qualification` een eigen gepubliceerde kwalificatie vóór de eerste partij vastleggen. De bron, deelnemers en regelversie worden bewaard; dezelfde opdracht controleert later de werkelijk gespeelde definitieve bron. De bekrachtiging blijft afzonderlijk. Een manager kan geen vrije speler-ID in de bevestiging meesturen om de sportieve volgorde te overschrijven. Een ingetrokken voorstel blijft in de historie; een begonnen beslissing kan alleen worden losgelaten wanneer de definitief gerechtigde werkelijk uitvalt. De oorspronkelijke seizoenstand verandert niet. Plaatsingsscorekaarten en UUID’s blijven bestaan wanneer het reguliere programma daarna wordt gegenereerd.
 
 De lokale proef gebruikt drie echte historische divisies, twee gelijkwaardige kandidaten uit parallelpoules, een echte BO5-beslisser, twee gelijktijdige bevestigingen waarvan één wint, en een vooraf gekoppelde kwalificatie met echte scorekaart. Dit is servicebewijs; de volledige avond op fysieke web/native/Oche-clients blijft apart.
+
+## Hybride beleid, neutrale locaties en meldingen
+
+Een hybride seizoen legt per ontmoeting `playMode` vast. Een eigen zijde stelt lokaal of remote voor via `season.play-mode`; de werkelijke tegenpartij bevestigt met `season.accept-play-mode`. Leiding kan met reden direct besluiten. Zonder afspraak kan de ontmoeting niet starten. Een gekoppelde fysieke zijde of bestaand onderdeel vergrendelt de keuze. Remote gebruikt de bestaande twee goedgekeurde banen en actuele schrijvers.
+
+Een neutrale lokale locatie vereist een door de locatie-eigenaar geaccepteerde reservering voor exact het seizoensevent. Alleen de actuele goedgekeurde bron verschijnt in de seizoensbanen. Start hercontroleert venster, organisator, bezetting, sluiting en capaciteit. Een losse publieke locatiekeuze verleent geen gebruiksrecht.
+
+Teamrollen, goedgekeurde reservewissels, speelvormafspraken en seizoensafsluiting gebruiken de bestaande inbox en mailwachtrij met herhaalbare bron, actuele rechten en Competitie-voorkeur. Meldingen bevatten geen verborgen opstelling of private sportreden. Tijdmeldingen tonen de oude en voorgestelde of bevestigde afspraak.
+
+Het [gerichte lokale bewijs](../evidence/full-release-hybrid-venues-local-validation-2026-11-19.json) bevat 82 geslaagde pure/service/DB-proeven. Browser, geïnstalleerde apparaten en externe aflevering blijven afzonderlijk bewijs.

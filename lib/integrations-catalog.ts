@@ -2,6 +2,11 @@
 export type MailFields = {subject:string;preheader:string;title:string;body:string;cta:string};
 export type MailTemplate = {id:string;label:string;category:string;fields:MailFields;details:string[][];enabled:boolean;readOnly:boolean;trigger:string;variables:string[]};
 export const MAIL_CATALOG: readonly MailTemplate[] = [
+  {id:'season-team-role',label:'Teamindeling en captainrol',category:'Competitie',fields:{subject:'Je teamrol in {{eventName}}',preheader:'De actuele teamselectie is vastgelegd.',title:'Bekijk je teamrol.',body:'Hoi {{name}},\nJe deelname en rol bij {{teamName}} zijn vastgelegd. Open het seizoen voor de actuele selectie en bevoegdheden.',cta:'Bekijk team'},details:[['Competitie','{{eventName}}'],['Team','{{teamName}}'],['Actuele rol','{{role}}']],enabled:true,readOnly:false,trigger:'Een bevoegde clubbeheerder legt de selectie, captain of plaatsvervanger vast.',variables:['name','eventName','teamName','role']},
+  {id:'season-reserve',label:'Goedgekeurde reservewissel',category:'Competitie',fields:{subject:'Reservewissel in {{eventName}}',preheader:'Beide teams ontvangen dezelfde actuele verwijzing.',title:'De opstelling is bijgewerkt.',body:'Hoi {{name}},\nDe competitieleiding heeft een reglementaire reservewissel vastgelegd. Open de ontmoeting voor de actuele opstelling. De bestaande partijverwijzing blijft behouden.',cta:'Bekijk opstelling'},details:[['Competitie','{{eventName}}'],['Ontmoeting','{{opponentName}}'],['Status','{{status}}']],enabled:true,readOnly:false,trigger:'Een bevoegde leider keurt vóór de eerste worp een gerechtigde reserve goed.',variables:['name','eventName','opponentName','status']},
+  {id:'season-completed',label:'Seizoensafsluiting',category:'Competitie',fields:{subject:'{{eventName}} is {{status}}',preheader:'Bekijk de gecontroleerde stand en historische resultaten.',title:'Het seizoen is afgerond.',body:'Hoi {{name}},\nDe competitieleiding heeft het seizoen gecontroleerd en afgesloten of gearchiveerd. De historische stand en resultaten blijven via dezelfde verwijzing beschikbaar.',cta:'Bekijk eindstand'},details:[['Competitie','{{eventName}}'],['Status','{{status}}']],enabled:true,readOnly:false,trigger:'De leider sluit een seizoen met uitsluitend afgehandelde ontmoetingen af.',variables:['name','eventName','status']},
+  {id:'season-play-mode',label:'Hybride speelvorm afspreken',category:'Competitie',fields:{subject:'Speelvorm voor {{eventName}}',preheader:'Open de ontmoeting voor het voorstel of de bevestigde afspraak.',title:'Stem de speelvorm af.',body:'Hoi {{name}},\nEr is een update over lokaal of op afstand spelen. Alleen de tegenpartij kan een voorstel aanvaarden; de competitieleiding kan een gemotiveerd besluit vastleggen. De actuele afspraak bepaalt welke fysieke banen nodig zijn.',cta:'Bekijk afspraak'},details:[['Competitie','{{eventName}}'],['Tegenstander','{{opponentName}}'],['Status','{{status}}']],enabled:true,readOnly:false,trigger:'Een zijde stelt een hybride speelvorm voor of de speelvorm wordt aanvaard.',variables:['name','eventName','opponentName','status']},
+  {id:'fixture-overdue',label:'Speelvenster verstreken',category:'Competitie',fields:{subject:'Opvolging nodig in {{eventName}}',preheader:'Het speelvenster is verstreken; er is geen automatische straf.',title:'Bespreek de volgende stap.',body:'Hoi {{name}},\nHet speelvenster van deze ontmoeting is verstreken. De competitieleiding moet de reden en een passende vervolgstap vastleggen. Een overschrijding geeft nooit automatisch een sportieve straf.',cta:'Bekijk opvolging'},details:[['Competitie','{{eventName}}'],['Einde speelvenster','{{date}} · {{time}}']],enabled:true,readOnly:false,trigger:'Een open seizoensontmoeting overschrijdt het gepubliceerde speelvenster.',variables:['name','eventName','date','time']},
   {id:'club-invite',label:'Persoonlijke verenigingsuitnodiging',category:'Vereniging',fields:{subject:'{{actorName}} nodigt je uit voor {{clubName}}',preheader:'Je hebt een persoonlijke uitnodiging ontvangen.',title:'Kom bij de vereniging.',body:'Hoi {{name}},\n{{actorName}} heeft je uitgenodigd voor {{clubName}}. Open de vereniging om de uitnodiging te bekijken.',cta:'Bekijk uitnodiging'},details:[['Vereniging','{{clubName}}']],enabled:true,readOnly:false,trigger:'Een bevoegd verenigingslid nodigt een concrete speler uit.',variables:['name','actorName','clubName']},
   {id:'club-request-received',label:'Ontvangstbevestiging lidmaatschap',category:'Vereniging',fields:{subject:'Je aanvraag bij {{clubName}} is ontvangen',preheader:'Je aanvraag is veilig opgeslagen.',title:'We hebben je aanvraag ontvangen.',body:'Hoi {{name}},\nJe lidmaatschapsaanvraag voor {{clubName}} is ontvangen. Je kunt de actuele status bekijken in de vereniging.',cta:'Bekijk aanvraag'},details:[['Vereniging','{{clubName}}']],enabled:true,readOnly:false,trigger:'Een geldige aanvraag is opgeslagen.',variables:['name','clubName']},
 
@@ -303,6 +308,7 @@ export const MAIL_CATALOG: readonly MailTemplate[] = [
       "cta": "Bekijk wedstrijd"
     },
     "details": [
+      ["Vorige afspraak", "{{previousTime}}"],
       [
         "Competitie",
         "{{eventName}}"
@@ -320,6 +326,7 @@ export const MAIL_CATALOG: readonly MailTemplate[] = [
     "readOnly": false,
     "trigger": "Beide spelers hebben het voorgestelde moment bevestigd.",
     "variables": [
+      "previousTime",
       "date",
       "name",
       "opponentName",
@@ -339,6 +346,7 @@ export const MAIL_CATALOG: readonly MailTemplate[] = [
       "cta": "Beoordeel voorstel"
     },
     "details": [
+      ["Vorige afspraak", "{{previousTime}}"],
       [
         "Competitie",
         "{{eventName}}"
@@ -356,6 +364,7 @@ export const MAIL_CATALOG: readonly MailTemplate[] = [
     "readOnly": false,
     "trigger": "Een speler stelt een nieuw wedstrijdmoment voor.",
     "variables": [
+      "previousTime",
       "opponentName",
       "name",
       "actorName",

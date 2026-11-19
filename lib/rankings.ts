@@ -16,17 +16,17 @@ const timestamp = (value: Date | string): string => new Date(value).toISOString(
 
 /** Original result proofs stay immutable; this projection reports their current effective books. */
 export async function getMatchRankingDestinations(client:Client,state:MatchState):Promise<MatchRankingDestination[]>{
-  type Row={list_id:string;name:string;scope:'national'|'club';kind:'rating'|'circuit';policy:{version:string};active_generation:string|null;eligible:boolean|null;reason:string|null;source_id:string|null;source_revision:number|null;verdict:'valid'|'void'|null};
+  type Row={list_id:string;name:string;scope:'national'|'club';kind:'rating'|'circuit';policy:{version:string};active_generation:string|null;publication_paused:boolean;eligible:boolean|null;reason:string|null;source_id:string|null;source_revision:number|null;verdict:'valid'|'void'|null};
   const rows=(await client.query<Row>(`with destinations as(
     select d.list_id,d.policy_version,a.eligible,a.reason from dartflow_private.ranking_match_admissions a join dartflow_private.ranking_event_declarations d on d.id=a.declaration_id where a.match_id=$1
     union select s.list_id,s.policy_version,true,null from dartflow_private.ranking_sources s where s.match_id=$1 and s.declaration_id is null)
-    select l.id as list_id,l.name,l.scope,l.kind,p.policy,l.active_generation,d.eligible,d.reason,s.id as source_id,r.revision as source_revision,r.verdict from destinations d join dartflow_private.ranking_lists l on l.id=d.list_id join dartflow_private.ranking_list_policies p on p.list_id=l.id and p.version=d.policy_version
+    select l.id as list_id,l.name,l.scope,l.kind,p.policy,l.active_generation,l.publication_paused,d.eligible,d.reason,s.id as source_id,r.revision as source_revision,r.verdict from destinations d join dartflow_private.ranking_lists l on l.id=d.list_id join dartflow_private.ranking_list_policies p on p.list_id=l.id and p.version=d.policy_version
     left join dartflow_private.ranking_sources s on s.list_id=l.id and s.match_id=$1 left join lateral(select revision,verdict from dartflow_private.ranking_source_revisions where source_id=s.id order by revision desc limit 1)r on true order by l.id`,[state.id])).rows;
   const result:MatchRankingDestination[]=[];
   for(const row of rows){
     const booking=row.source_id?(await client.query<{player_id:string;before_rating:number;after_rating:number;delta:number}>('select player_id,before_rating,after_rating,delta from dartflow_private.ranking_generation_bookings where generation_id=$1 and source_id=$2',[row.active_generation,row.source_id])).rows:[];
     const ordered=state.players.map(player=>booking.find(value=>value.player_id===player.id));
-    result.push({listId:row.list_id,name:row.name,scope:row.scope,kind:row.kind,policyVersion:row.policy.version,status:row.verdict==='void'?'void':row.source_id?'booked':row.eligible?'admitted':'excluded',generation:row.active_generation,...(row.source_id?{sourceId:row.source_id,sourceRevision:row.source_revision!}:{}),...(ordered.every(Boolean)?{before:ordered.map(item=>Number(item!.before_rating)),after:ordered.map(item=>Number(item!.after_rating)),deltas:ordered.map(item=>Number(item!.delta))}:{}),reason:row.verdict==='void'?'Deze bron is na een onafhankelijk besluit ongeldig voor deze bestemming.':row.reason});
+    result.push({listId:row.list_id,name:row.name,scope:row.scope,kind:row.kind,policyVersion:row.policy.version,publicationPaused:row.publication_paused,status:row.verdict==='void'?'void':row.source_id&&booking.length?'booked':row.eligible?'admitted':'excluded',generation:row.active_generation,...(row.source_id?{sourceId:row.source_id,sourceRevision:row.source_revision!}:{}),...(ordered.every(Boolean)?{before:ordered.map(item=>Number(item!.before_rating)),after:ordered.map(item=>Number(item!.after_rating)),deltas:ordered.map(item=>Number(item!.delta))}:{}),reason:row.publication_paused?'Publicatie van deze ranglijst is tijdelijk gepauzeerd; de geaccepteerde score blijft bewaard.':row.verdict==='void'?'Deze bron is na een onafhankelijk besluit ongeldig voor deze bestemming.':row.reason});
   }
   return result;
 }
@@ -34,6 +34,7 @@ export async function getMatchRankingDestinations(client:Client,state:MatchState
 /** Origins are read from the existing link; a client cannot promote an event to ranked. */
 export async function matchRankingEligibility(client: Client, state: MatchState): Promise<RankingEligibility> {
   const reject = (reason: string): RankingEligibility => ({ eligible: false, reason });
+  if(state.guestPlayerIds?.length)return reject('Een eventgast heeft geen geauthenticeerde rankingidentiteit. Een latere historieclaim verandert deze oorspronkelijke toelating niet.');
   if (!['planned', 'called', 'ready'].includes(state.status) || state.game.visits.length || state.previousSets.length) return reject('De rankingkeuze staat vast zodra de partij start.');
   if (!nationalRatingFormat(state.settings)) return reject('Landelijke rating vereist singles 501, dubbel uit, één set en best of 5 tot en met 19 oneven legs.');
   if (state.players.length !== 2 || state.players[0].id === state.players[1].id) return reject('Twee verschillende ingelogde spelers zijn vereist.');
@@ -77,6 +78,7 @@ export async function prepareMatchRanking(client: PoolClient, actorId: string, s
 /** Both books, the counters and the match projection commit in one transaction. */
 export async function bookMatchRanking(client: PoolClient, state: MatchState): Promise<void> {
   await bookOfficialRankingMatch(client,state);
+  if(state.guestPlayerIds?.length)return;
   if (state.ranking?.status !== 'reserved' || !state.resultPublished || !state.confirmations.every(Boolean) || state.status !== 'confirmed' || state.resultRevision === null) return;
   if (state.administrativeDecision || !state.winnerId || !state.players.some(p => p.id === state.winnerId) || state.game.status !== 'finished' || !nationalRatingFormat(state.settings)) throw new DomainError('ranking_source_invalid', 'Deze uitslag is niet sportief uitgespeeld voor de ranking.', 409);
   const reservation = await client.query<{ policy_version: string; first_throw_at: Date | null }>('select policy_version,first_throw_at from dartflow_private.ranking_reservations where match_id=$1', [state.id]);

@@ -1,0 +1,53 @@
+{
+  "capturedAt": "2026-11-19T17:21:51.188208+00:00",
+  "scope": "Independent local source review plus focused pure and real service/loopback PostgreSQL regression. No hosted or device execution.",
+  "headAtCapture": "6b5b108727d955dadcb2c155aecb411b74b870e6",
+  "workingTreeUncommitted": true,
+  "command": "npx tsx --test --test-concurrency=1 tests/bull-start.test.ts tests/tournament-planning.test.ts tests/release-control-db.test.ts tests/correction-tournament-dependencies.test.ts tests/match-correction-cases-db.test.ts",
+  "result": {
+    "tests": 25,
+    "pass": 25,
+    "fail": 0,
+    "skip": 0
+  },
+  "log": {
+    "path": "docs/evidence/full-release-independent-controls-local-2026-11-19.tap.txt",
+    "sha256": "41a9384fd80e167d543c4674ace41e6b6330ccb532c1035b979102c294c88772"
+  },
+  "reviewConclusions": [
+    "Open offline conflicts block central matchView mutation permissions, including direct overview projections. Server transaction guard remains authoritative.",
+    "Stale offline requests require the accepted receipt at the exact claimed revision proving writer authority or the actual own per-player undo authority; never-writer/host requests fail before revision or pause change.",
+    "Additional offline commands cannot claim the already frozen canonical revision or a later revision; originals and immutable canonical reference remain private match-ACL data.",
+    "Planner uses stable topological heap ordering and explicit fixture/edge bounds. Largest supported 256-player round robin exercises 32640 fixtures.",
+    "Ranking publication pause keeps the public generation pointer stable while rebuilding a pending generation. Per-list ordered locking, fresh role checks and receipt identity preserve retries and independent-list progress.",
+    "Primary correction graph includes actual pool decision relations and retains independent branches. Domain agent separately reports 8/8 actual tournament-management DB proof in /tmp/dartflow-tournament-correction-proof.log; that separate run is not included in the 25 count."
+  ],
+  "ddlReview": {
+    "execution": "None; read-only source review. Native agent owns SQL13 hardening/reapply.",
+    "files": [
+      "supabase/migrations/20261119194100_ranking_publication_pause.sql",
+      "supabase/migrations/20261119194200_offline_score_conflicts.sql",
+      "supabase/migrations/20261119194300_native_push.sql"
+    ],
+    "findings": [
+      "SQL11 publication-pointer trigger and narrow update grants reviewed.",
+      "SQL12 original conflict/action/accepted-state is immutable to runtime update; resolve columns only, no runtime delete.",
+      "SQL13 erases device/inbox rows with cascading pending/leased outbox on both soft request and erased tombstone. Existing SECURITY DEFINER erase_account_job supplies owner context for privacy worker path. Explicit service_role revoke requested from native owner."
+    ]
+  },
+  "sourceSha256": {
+    "lib/tournament-planning.ts": "7c8c82733e14a1a309bb3a9120c3e61499a4cc7e391d148dbaaa50c1981e6a99",
+    "lib/offline-score-conflicts.ts": "9a69f32131811828339e0199340482020480425afbd3fc32ceeacc5d36e411d6",
+    "lib/domain.ts": "1aca99f07133d8f996bff8df15f661c09651540cf368ee12e7aa73e4dcafcda3",
+    "lib/db.ts": "b004a8429b31a2499d48174317bb256c1bc2100e160ddde84746c5055f54df36",
+    "lib/ranking-generations.ts": "1ab89ffcd677748eb1146e272a66a834898283dae12346bf8282d81856a09e5f",
+    "lib/ranking-service.ts": "e6e1213f86787eca08636ce7c146be907b515053da26f12bcd7beebdbe4173ed",
+    "lib/match-corrections.ts": "a6119f974ee20814788beb11dc950d3f2852b1617c22808de00dd329cc502a3e",
+    "lib/tournament-management.ts": "8c919542d3e2d4007c1f244024314b0c78b8d82d397b425a99d2b8f7e39f1ff1",
+    "tests/release-control-db.test.ts": "00197767e919382cf71282e8765bbccc7ebf01ea3edb1ac906212600db9375ee",
+    "tests/tournament-planning.test.ts": "775cb24e21dda1002b94648492382b62d867f52572521cd4fdebf9801b8b5c5c",
+    "tests/correction-tournament-dependencies.test.ts": "c2d813f24dee18cae95749aaedbb1e73c245ca2180dc829d8edb42d7fb5c6b68",
+    "tests/match-correction-cases-db.test.ts": "110caa412acd92dadd027c271ae9c9ebb6e8b771a749f55e7d67a92cef4d2af2",
+    "tests/bull-start.test.ts": "1de9cf76ebb4c3f1acb3adab83ab82cf1b20c29cbdbaf7224139402f87c3c3c6"
+  }
+}

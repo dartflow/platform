@@ -60,7 +60,7 @@ internal fun applyPlayerMatchSnapshot(state: PlayerUiState, resource: JSONObject
     if (previous != null && previous.revision > match.revision) return state
     val merged = if (previous != null && !resource.has("invitation") && state.resource.has("invitation"))
         JSONObject(resource.toString()).put("invitation", state.resource.opt("invitation")) else resource
-    return state.copy(resource = merged, match = match, loading = false)
+    return state.copy(resource = merged, match = match, loading = false, guestOperatorId = state.guestOperatorId.takeIf { state.match?.id == match.id && match.raw.rows("guestOperators").any { guest -> guest.text("id") == it } }.orEmpty())
 }
 
 private fun completeTrainingState(entity: JSONObject): Boolean {

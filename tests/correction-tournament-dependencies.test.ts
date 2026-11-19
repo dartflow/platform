@@ -1,0 +1,12 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {primaryCorrectionDependencyIds} from '../lib/match-corrections';
+import type {EntityRow} from '../lib/platform-store';
+import type {Fixture} from '../lib/platform-types';
+function event():EntityRow{
+ const fixture=(id:string,phase:Fixture['phase'],extra:Partial<Fixture>={}):Fixture=>({id,phase,round:1,players:['a','b'],status:'confirmed',...extra});
+ return {state:{fixtures:[fixture('pool-a','pool',{pool:'A'}),fixture('pool-b','pool',{pool:'B'}),fixture('decider-rr-one','pool',{pool:'decision-a',purpose:'pool-decider',decisionId:'decision-a'}),fixture('decider-rr-two','pool',{pool:'decision-a',purpose:'pool-decider',decisionId:'decision-a'}),fixture('decider-ko-one','knockout',{purpose:'pool-decider',decisionId:'decision-a'}),fixture('decider-ko-final','knockout',{purpose:'pool-decider',decisionId:'decision-a',sources:[{fixtureId:'decider-ko-one'},{fixtureId:'bye'}]}),fixture('affected-ko','knockout',{sources:[{pool:'A',position:1},{pool:'B',position:2}]}),fixture('other-ko','knockout',{sources:[{pool:'B',position:1},{pool:'C',position:2}]}),fixture('final','knockout',{sources:[{fixtureId:'affected-ko'},{fixtureId:'other-ko'}]})],tournamentControl:{version:1,poolCriteria:['points','legDifference','legsFor','headToHead'],releasedRounds:[1,2],decisions:[{id:'decision-a',pool:'A',playerIds:['a','b'],phase:'complete',fixtureIds:['decider-rr-one','decider-rr-two','decider-ko-one','decider-ko-final'],order:['a','b'],sourceProof:'original',seed:'seed'}]}}}as EntityRow;
+}
+test('pool source correction holds its real qualification decisions and descendants while the other branch stays available',()=>{assert.deepEqual(primaryCorrectionDependencyIds(event(),'pool-a',false).sort(),['affected-ko','decider-ko-final','decider-ko-one','decider-rr-one','decider-rr-two','final'].sort());});
+test('decision pool correction holds deciding KO and main qualification, not independent decision-pool games',()=>{assert.deepEqual(primaryCorrectionDependencyIds(event(),'decider-rr-one',false).sort(),['affected-ko','decider-ko-final','decider-ko-one','final'].sort());});
+test('decision knockout correction follows explicit children and original pool destination only',()=>{assert.deepEqual(primaryCorrectionDependencyIds(event(),'decider-ko-one',false).sort(),['affected-ko','decider-ko-final','final'].sort());});

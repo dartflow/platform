@@ -66,7 +66,7 @@ export function advanceTournamentFixtures(fixtures:Fixture[]):void {
         if(final.status==='confirmed'&&final.winnerId===final.players[1]&&final.players.every(Boolean))next=[...final.players];
         else {if(target.status!=='void'){target.status='void';target.players=[null,null];target.winnerId=null;changed=true;}continue;}
       }else if(target.sources?.length&&target.sources.every(item=>item.fixtureId)){
-        next=target.sources.map(input=>{const parent=fixtures.find(item=>item.id===input.fixtureId);if(!parent||!terminal(parent)||parent.status==='confirmed'&&!parent.winnerId&&parent.players.every(Boolean)){ready=false;return null;}if(parent.winnerId&&!parent.players.includes(parent.winnerId))throw new DomainError('invalid_bracket','Een bronwinnaar hoort niet bij de betreffende partij.',409);return input.outcome==='loser'?losingPlayer(parent):parent.winnerId??null;});
+        next=target.sources.map(input=>{const parent=fixtures.find(item=>item.id===input.fixtureId);if(!parent||!terminal(parent)||parent.status==='confirmed'&&!parent.winnerId&&parent.players.every(Boolean)){ready=false;return null;}if(parent.winnerId&&!parent.players.includes(parent.winnerId))throw new DomainError('invalid_bracket','Een bronwinnaar hoort niet bij de betreffende partij.',409);return input.outcome==='loser'?(input.playedOnly&&(!parent.started||parent.administrative)?null:losingPlayer(parent)):parent.winnerId??null;});
       }else if(target.phase==='winners'&&!target.sources)next=[...target.players];
       if(!ready||!next)continue;
       if(next[0]&&next[0]===next[1])throw new DomainError('invalid_bracket','Een speler kan niet tegen zichzelf worden geplaatst.',409);

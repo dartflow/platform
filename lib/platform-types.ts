@@ -5,15 +5,23 @@ export type ClubBoardScreenView = {board:Omit<ClubBoardView,'clubId'|'canManage'
 
 export type PlatformKind = 'training' | 'club' | 'room' | 'lobby' | 'league' | 'tournament';
 export type PlatformMember = { id: string; name: string; role: string; status: string; attributes: Record<string, unknown> };
-export type FixtureSource = { fixtureId?: string; outcome?: 'winner'|'loser'; pool?: string; position?: number };
-export type Fixture = { id: string; players: (string | null)[]; round: number; phase: 'pool' | 'knockout' | 'league' | 'winners' | 'losers' | 'final' | 'reset' | 'swiss'; pool?: string; sources?: FixtureSource[]; status: 'scheduled' | 'proposed' | 'live' | 'confirmed' | 'bye' | 'void'; matchId?: string; winnerId?: string | null; score?: number[]; proposedBy?: string; proposedTime?: string; time?: string; resetOf?: string; pairingNotice?: string; started?: boolean; administrative?: boolean };
-export type TournamentRules = {algorithmVersion:string;seedOrder:string[];drawSeed:string;swissRounds?:number;finalVariant?:'reset'|'single'};
+export type PoolCriterion='points'|'legDifference'|'legsFor'|'headToHead';
+export type FixtureSource = { fixtureId?: string; outcome?: 'winner'|'loser';playedOnly?:boolean; pool?: string; position?: number;criteria?:PoolCriterion[];resolvedPlayerId?:string;poolProof?:string };
+export type Fixture = { id: string; players: (string | null)[]; round: number; phase: 'pool' | 'knockout' | 'league' | 'winners' | 'losers' | 'final' | 'reset' | 'swiss'; pool?: string; sources?: FixtureSource[]; status: 'scheduled' | 'proposed' | 'live' | 'confirmed' | 'bye' | 'void'; matchId?: string; winnerId?: string | null; score?: number[]; proposedBy?: string; proposedTime?: string; time?: string; resetOf?: string; pairingNotice?: string; started?: boolean; administrative?: boolean;purpose?:'bronze'|'pool-decider'|'consolation';decisionId?:string;requiresRelease?:boolean;released?:boolean;settings?:Settings;rankingEligibleSingle?:boolean };
+export type TournamentDraw={revision:number;method:'random'|'seeded'|'manual';closedAt:string;input:{playerId:string;name:string;clubGroup?:string}[];seedPlayerIds:string[];order:string[];spreadClubs:boolean;notices:string[];bronze:boolean;consolation?:boolean;consolationTitle?:string;poolCriteria:PoolCriterion[];reason?:string;seed:string};
+export type PoolRow={id:string;position:number;shared:boolean;played:number;won:number;drawn:number;points:number;legsFor:number;legsAgainst:number;headToHead:number|null};
+export type PoolDecision={id:string;pool:string;playerIds:string[];phase:'pool'|'knockout'|'complete';fixtureIds:string[];order:string[];seed:string;sourceProof:string;stale?:boolean;groups?:{playerIds:string[];offset:number;fixtureIds:string[]}[]};
+export type TournamentControl={version:1;poolCriteria:PoolCriterion[];releasedRounds:number[];decisions:PoolDecision[];poolTables?:{pool:string;rows:PoolRow[];blockedGroups:{playerIds:string[]}[]}[]};
+export type TournamentRules = {algorithmVersion:string;seedOrder:string[];drawSeed:string;swissRounds?:number;finalVariant?:'reset'|'single';draw?:TournamentDraw};
 export type PlatformState = {
   name: string; description?: string; capacity?: number; mode?: 'solo' | 'bot' | 'around' | '170';
   game?: Game; rounds?: number[]; completed?: boolean; botAverage?: number; undo?: Game[];
   settings?: Settings; setup?: string; ready?: Record<string, boolean>; matchId?: string;
   eventId?: string; coreClubId?: string; fixtures?: Fixture[]; format?: string; poolCount?: number;
   tournamentRules?: TournamentRules; swissRounds?: number;
+  consolation?:import('./tournament-consolation').ConsolationState;
+  tournamentRuleOverrides?:import('./tournament-rule-overrides').TournamentRuleOverride[];
+  tournamentControl?:TournamentControl;drawHistory?:{draw:TournamentDraw;fixtures:Fixture[]}[];
   cast?: { scene: string; boardId?: string; preview?: string; updatedAt: string }; closed?: boolean;
   [key: string]: unknown;
 };

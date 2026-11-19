@@ -1,0 +1,43 @@
+{
+  "collectedAt": "2026-11-19T17:40:49.727453+00:00",
+  "source": "Uncommitted integration work; final release must repeat the checks at its exact integration SHA.",
+  "executedLocally": true,
+  "completePlatformAcceptance": false,
+  "command": "npx tsx --test --test-concurrency=1 tests/event-participant-import.test.ts tests/event-guests-db.test.ts tests/account-removal-db.test.ts tests/player-statistics-db.test.ts tests/player-statistics.test.ts",
+  "tests": 39,
+  "passed": 39,
+  "failed": 0,
+  "skipped": 0,
+  "durationMs": 7635.404006,
+  "checks": [
+    "CSV preview writes no roster or guest profiles; reports duplicate/invalid/ambiguous rows and missing headers, quoted separators/newlines and limits. Apply validates the captured event revision and rechecks current accounts/ACL, then inserts reviewed rows exactly once. Revoked coorganizer cannot replay an earlier success.",
+    "Event-scoped guest UUID and public label are separate from authenticated accounts and hidden from the global player directory. Local real manager guest actions carry actedForGuest in audit; one guest confirmation cannot authenticate the account opponent.",
+    "Guest stale offline command preserves canonical visits, opens a real paused conflict, replays idempotently and requires an explicit manager reason; guestId is part of the command identity.",
+    "Actual personal guest winner is proposed by organizer, accepted by the named own account, shown once in own profile history/statistics and as a tournament win. Canonical player/winner/guest markers and match UUID remain unchanged. Claimed GET match has every permission false, no invite, no write or event membership.",
+    "Approved actual club guest winner preserves its real first place. The actual member keeps second-place seven points; guest has no circuit account or rating source even when allowGuests is true. Claim and repeated finalization do not change generation or retroactively award points.",
+    "Expired raw CSV is physically removed with bounded privileged purge, cached preview receipt loses names and becomes explicitly expired, direct runtime DELETE is denied. Normal account erasure also removes a different organizer preview by stable account ID/unique username.",
+    "An actual claimed privacy-worker erasure anonymizes accepted guest labels and stable-ID snapshots while preserving canonical IDs/winner/result and zero retroactive ranking. Web role and isolated worker cannot call the helper directly. Existing privacy and profile statistics regressions pass."
+  ],
+  "checksAdditional": {
+    "typescript": "npx tsc --noEmit passed",
+    "eslint": "Scoped guest/import/statistics module and test lint passed without warnings"
+  },
+  "limitations": [
+    "No full nine-starter two-guest native/desktop evening or physical device acceptance claimed.",
+    "Hosted migrations/deployments and external delivery not performed by this evidence."
+  ],
+  "sourceDigests": {
+    "lib/event-guests.ts": "ca2dc8cbe77bd6677f50806b68d80bf104fe4d99df2e27415db3ae44606b7a75",
+    "lib/event-guests-types.ts": "3a5e28095335fdc0de10955a5a2dbe9542c868056c37b700e04e36b8a82dafe6",
+    "lib/event-participant-import.ts": "cb2fdaa5c80483d53c249e9cdc4c0b34ab05581d3ffccad8a0d99a4771d6b5a8",
+    "lib/platform-store.ts": "74b0644775304201eb78bb44fc284e69585c6bc1ed8d50b1cb04c55611655c80",
+    "lib/player-statistics-db.ts": "e702683d374ea4bcba0d9c34c15c740468763ece6ff8ef8fb60ffd21270bcb83",
+    "components/organizer-participants.tsx": "5d43f4166a5a6ffcc576f188b219e1233d2ef86193fa75ef3eb57c3d13030561",
+    "components/guest-match-controls.tsx": "953cce6880f321507263effa5c2a74e6c1fe816558f2e4e6fc80925dd954bef2",
+    "tests/event-guests-db.test.ts": "f25152aa4127ccdbfeadf3f6e9cdd2a055bc81045142b938cf6cb7c11e203c83",
+    "tests/event-participant-import.test.ts": "ee1a1defe1a43cf4a56ffb2a4540e9701f758bb12875e2429a5efd771bd6dc90",
+    "supabase/migrations/20261119200000_event_guests_imports.sql": "f835ba2d3e97676131bfcab004901356fd81cb7fdf72b60e9a02650528cb85d5"
+  },
+  "log": "docs/evidence/full-release-event-guests-import-local-validation-2026-11-19.tap.txt",
+  "logSha256": "3df31d7f3f8c9aa745372b59f5a8e34e5134cab8498cd9f9659dd12aea0080c0"
+}

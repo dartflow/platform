@@ -5,7 +5,7 @@ import type { RankingPolicy } from './ranking-service-types';
 
 export const NATIONAL_RATING_ID = '10000000-0000-4000-8000-000000000001';
 export const NATIONAL_CIRCUIT_ID = '10000000-0000-4000-8000-000000000002';
-export type RankingListRecord = { id: string; scope: 'national' | 'club'; kind: 'rating' | 'circuit'; club_id: string | null; name: string; policy_version: number; next_sequence: string; active_generation: string | null; closes_at: Date | null; policy: RankingPolicy };
+export type RankingListRecord = { id: string; scope: 'national' | 'club'; kind: 'rating' | 'circuit'; club_id: string | null; name: string; policy_version: number; next_sequence: string; active_generation: string | null; closes_at: Date | null; policy: RankingPolicy;publication_paused:boolean;publication_revision:number;publication_reason:string|null;publication_paused_at:Date|null;pending_generation:string|null };
 export type RankingSourceData = {
   players: string[]; winnerId?: string; resultRevision?: number; playedAt: string;dependencyCorrectionId?:string;seasonConfirmationWithdrawn?:string;
   place?: number; points?: number; starters?: number; eligible?: boolean; played?: boolean; disqualified?: boolean;
@@ -87,7 +87,7 @@ export async function rebuildRankingGeneration(client: PoolClient, list: Ranking
   if (bookings.length) await client.query(`insert into dartflow_private.ranking_generation_bookings(generation_id,source_id,source_revision,player_id,before_rating,after_rating,delta,points,place,recorded_at)
     select $1,r."sourceId",r.revision,r."playerId",r.before,r.after,r.delta,r.points,r.place,r.at from jsonb_to_recordset($2::jsonb)r("sourceId" uuid,revision integer,"playerId" uuid,before double precision,after double precision,delta double precision,points integer,place integer,at timestamptz)`, [generation, JSON.stringify(bookings)]);
   // Readers only follow this pointer; no half-built pair or partial replay becomes visible.
-  await client.query('update dartflow_private.ranking_lists set active_generation=$2 where id=$1', [list.id, generation]);
+  await client.query('update dartflow_private.ranking_lists set active_generation=case when publication_paused then active_generation else $2::uuid end,pending_generation=case when publication_paused then $2::uuid else null end where id=$1', [list.id, generation]);
   return { generation, previousGeneration: list.active_generation, affectedPlayers: accounts.size };
 }
 
@@ -95,9 +95,9 @@ export async function postFreeRankingSource(client: PoolClient, state: { id: str
   const list = await rankingList(client, NATIONAL_RATING_ID, true);
   const playedAt = (await client.query<{ now: Date }>('select clock_timestamp() as now')).rows[0].now.toISOString();
   const source = await appendRankingSource(client, list, { kind: 'match', key: state.id, matchId: state.id, policyVersion: 1, data: { players: state.players.map(player => player.id), winnerId: state.winnerId!, resultRevision: state.resultRevision!, playedAt }, reason: 'Wederzijds bevestigde vrije rankingpartij' });
-  if (source.changed) await rebuildRankingGeneration(client, list);
+  const rebuilt=source.changed?await rebuildRankingGeneration(client, list):null;
   const sourceRow = (await client.query<{ sequence: string }>('select sequence from dartflow_private.ranking_sources where id=$1', [source.sourceId])).rows[0];
-  const rows = (await client.query<{ player_id: string; before_rating: number; after_rating: number; delta: number }>(`select b.player_id,b.before_rating,b.after_rating,b.delta from dartflow_private.ranking_generation_bookings b join dartflow_private.ranking_lists l on l.active_generation=b.generation_id where l.id=$1 and b.source_id=$2`, [list.id, source.sourceId])).rows;
+  const rows = (await client.query<{ player_id: string; before_rating: number; after_rating: number; delta: number }>(`select b.player_id,b.before_rating,b.after_rating,b.delta from dartflow_private.ranking_generation_bookings b where b.generation_id=coalesce($3::uuid,(select coalesce(pending_generation,active_generation)from dartflow_private.ranking_lists where id=$1)) and b.source_id=$2`, [list.id, source.sourceId,rebuilt?.generation??null])).rows;
   const before = state.players.map(player => Number(rows.find(row => row.player_id === player.id)!.before_rating)) as [number, number];
   const after = state.players.map(player => Number(rows.find(row => row.player_id === player.id)!.after_rating)) as [number, number];
   const deltas = state.players.map(player => Number(rows.find(row => row.player_id === player.id)!.delta)) as [number, number];

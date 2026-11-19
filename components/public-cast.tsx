@@ -19,6 +19,7 @@ type Snapshot = {
   cast: { scene: string; boardId?: string; updatedAt?: string };
   paused: boolean;
   champion?: string;
+  consolation?: {title:string;completed:boolean;champion?:string|null;placings:{name:string;position:number}[];notice?:string};
   notice?:string|null;
   underReview?:boolean;
   boards: CastBoard[];
@@ -27,6 +28,7 @@ type Snapshot = {
     players: string[];
     status: string;
     phase: string;
+    purpose?: string;
     round: number;
     pool?: string;
     score?: number[];
@@ -165,6 +167,7 @@ export default function PublicCast({
               "Resultaten volgen"}
           </strong>
           {match && <p>{match.legs.join(" — ")} legs</p>}
+          {data.consolation?.completed&&<p>{data.consolation.title}: {data.consolation.champion||"Eindplaatsen volgen"}</p>}
         </div>
       ) : scene === "next" ? (
         <section className="cast-fixtures">
@@ -176,7 +179,7 @@ export default function PublicCast({
               <div key={f.id}>
                 <strong>{f.players.join(" — ")}</strong>
                 <span>
-                  {f.phase} · Ronde {f.round}
+                  {f.purpose==='consolation'?(data.consolation?.title||'Troostbeker'):f.phase} · Ronde {f.round}
                 </span>
                 {f.pairingNotice&&<small>{f.pairingNotice}</small>}
               </div>
@@ -245,6 +248,11 @@ export default function PublicCast({
               ))}
             </section>
           )}
+          {!obs&&data.consolation&&<section className="cast-standings" aria-label={data.consolation.title}>
+            <h2>{data.consolation.title}</h2>
+            {data.consolation.notice&&<p>{data.consolation.notice}</p>}
+            {data.consolation.placings.slice(0,8).map(p=><div key={`${p.position}:${p.name}`}><span>{p.position}</span><strong>{p.name}</strong></div>)}
+          </section>}
         </>
       )}
       {!obs && (
