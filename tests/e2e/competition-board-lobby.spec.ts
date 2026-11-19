@@ -40,10 +40,10 @@ test('board QR offers the actual planned match, keeps PIN private and restores t
  }finally{await context.close();}
 });
 
-for(const viewport of [{width:1920,height:1080},{width:1080,height:1920}])test(`Oche competition waiting screen fits ${viewport.width}×${viewport.height} with public confirmations`,async({browser,baseURL},info)=>{
+for(const viewport of [{width:1920,height:1080,rotation:0},{width:1080,height:1920,rotation:0},{width:1920,height:1080,rotation:90}])test(`Oche competition waiting screen fits ${viewport.width}×${viewport.height}, rotation ${viewport.rotation} with public confirmations`,async({browser,baseURL},info)=>{
  if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Loopback UI fixture required.');
  const context=await browser.newContext({viewport,serviceWorkers:'block'}),page=await context.newPage();
- const data:ClubBoardScreenView={board:{id:boardId,name:'Baan 1',clubName:'Vereniging',access:'all',blocked:false,occupied:true,publicScan:true,playUrl:`/baan/${boardId}`,screenUrl:`/baanscherm/${boardId}`},screen:{rotation:0},status:'waiting',snapshot:{board:{id:boardId,name:'Baan 1'},event:{name:'Verenigingscompetitie'},match:null,competitionLobby:{competitionName:lobby.seasonName,round:2,players:[{name:'Noor Dart',confirmed:true},{name:'Sam Dart',confirmed:false}],writerName:'Noor Dart',expiresAt:lobby.expiresAt}}};
+ const data:ClubBoardScreenView={board:{id:boardId,name:'Baan 1',clubName:'Vereniging',access:'all',blocked:false,occupied:true,publicScan:true,playUrl:`/baan/${boardId}`,screenUrl:`/baanscherm/${boardId}`},screen:{rotation:viewport.rotation as 0|90},status:'waiting',snapshot:{board:{id:boardId,name:'Baan 1'},event:{name:'Verenigingscompetitie'},match:null,competitionLobby:{competitionName:lobby.seasonName,round:2,players:[{name:'Noor Dart',confirmed:true},{name:'Sam Dart',confirmed:false}],writerName:'Noor Dart',expiresAt:lobby.expiresAt}}};
  try{
   await page.route(`**/api/board-screens/${boardId}`,route=>route.fulfill({json:data}));
   await page.route(`**/api/boards/${boardId}/screen`,route=>route.fulfill({json:data}));
@@ -51,6 +51,6 @@ for(const viewport of [{width:1920,height:1080},{width:1080,height:1920}])test(`
   await page.goto(`/baanscherm/${boardId}`);await expect(page.getByRole('region',{name:'Competitielobby'})).toContainText('Noor Dart');await expect(page.getByRole('region',{name:'Competitielobby'})).toContainText('Wacht op bevestiging');await expect(page.getByRole('region',{name:'Competitielobby'}).locator('input')).toHaveCount(0);await expect(page.locator('.score-form')).toHaveCount(0);
   for(const selector of ['.oche-headline h2','.oche-competition-lobby','.oche-qr']){const box=await page.locator(selector).boundingBox();expect(box).not.toBeNull();expect(box!.x).toBeGreaterThanOrEqual(-1);expect(box!.y).toBeGreaterThanOrEqual(-1);expect(box!.x+box!.width).toBeLessThanOrEqual(viewport.width+1);expect(box!.y+box!.height).toBeLessThanOrEqual(viewport.height+1);}
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);expect(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1)).toBe(true);
-  await info.attach(`competition-oche-${viewport.width}x${viewport.height}`,{body:await page.screenshot(),contentType:'image/png'});
+  await info.attach(`competition-oche-${viewport.width}x${viewport.height}-${viewport.rotation}`,{body:await page.screenshot(),contentType:'image/png'});
  }finally{await context.close();}
 });
