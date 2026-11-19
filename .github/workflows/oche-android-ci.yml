@@ -47,6 +47,14 @@ jobs:
             android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab
           retention-days: 14
           if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: oche-android-unit-tests-${{ github.sha }}
+          path: |
+            android/oche-live/app/build/test-results/testStagingDebugUnitTest/*.xml
+            android/oche-live/app/build/test-results/testProductionDebugUnitTest/*.xml
+          retention-days: 14
+          if-no-files-found: error
 
   ui:
     name: Android UI · ${{ matrix.target }}
