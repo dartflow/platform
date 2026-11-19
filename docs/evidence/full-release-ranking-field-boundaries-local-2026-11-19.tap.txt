@@ -1,0 +1,12 @@
+▶ national circuit finalization uses fifteen and thirty-two actual starters rather than registrations
+  ✔ 15 checked-in first-throw starters finalize 14 genuine matches with the national points table exactly once (5189.570775ms)
+  ✔ 32 checked-in first-throw starters finalize 31 genuine matches with the national points table exactly once (11396.745565ms)
+✔ national circuit finalization uses fifteen and thirty-two actual starters rather than registrations (16860.969284ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17225.17666

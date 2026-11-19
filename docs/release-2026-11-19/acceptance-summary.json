@@ -1,12 +1,12 @@
 {
-  "auditedAt": "2026-11-19T16:21:51.208346+00:00",
+  "auditedAt": "2026-11-19T16:45:51.034513+00:00",
   "scenarioCount": 71,
   "originalColumnsPreservedExactly": true,
   "wholeScenarioAccepted": 0,
   "statusesByPlatform": {
     "Status server": {
-      "partial": 43,
-      "local-only": 28
+      "partial": 42,
+      "local-only": 29
     },
     "Status desktopweb": {
       "partial": 69,
