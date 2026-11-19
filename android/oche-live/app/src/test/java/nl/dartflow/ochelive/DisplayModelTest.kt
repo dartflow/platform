@@ -5,6 +5,19 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DisplayModelTest {
+    @Test fun `two clear cap is optional and reflects the published rule`() {
+        val data = JSONObject("""{"apiVersion":1,"state":"live","serverNow":1000,"display":{"snapshot":{"match":{"id":"m1","status":"live","players":[{"name":"Danny"},{"name":"Rick"}],"settings":{"legWinByTwo":{"maximum":9},"setWinByTwo":{"maximum":5}}}}}}""")
+        val parsed = DisplaySnapshot.parse(data).match!!
+        assertEquals(9, parsed.legWinByTwo); assertEquals(5, parsed.setWinByTwo); assertTrue(parsed.winByTwoLabel.contains("Legs 2 verschil/cap 9")); assertTrue(parsed.winByTwoLabel.contains("Sets 2 verschil/cap 5"))
+        assertEquals("", parsed.copy(legWinByTwo = null, setWinByTwo = null).winByTwoLabel)
+    }
+    @Test fun `bull projection waits for both signatures and never becomes a score visit`() {
+        val data = JSONObject("""{"apiVersion":1,"state":"live","serverNow":1000,"display":{"snapshot":{"match":{"id":"m1","revision":3,"status":"live","players":[{"name":"Danny"},{"name":"Rick"}],"remaining":[501,501],"bull":{"reason":"deciding-leg","status":"throwing","round":2,"order":[1,0],"throws":[{"round":1,"side":0,"hit":"DB"},{"round":1,"side":1,"hit":"DB"}],"confirmed":[false,false]},"startDecision":{"procedure":"bull","starter":0,"ruleVersion":1}}}}}""")
+        var parsed = DisplaySnapshot.parse(data).match!!
+        assertFalse(parsed.canShowTurn); assertTrue(parsed.bullPending); assertTrue(parsed.bullLabel!!.contains("Rick")); assertEquals("Opnieuw bullen", parsed.statusLabel); assertTrue(parsed.visits.isEmpty())
+        data.getJSONObject("display").getJSONObject("snapshot").getJSONObject("match").getJSONObject("bull").put("status", "complete").put("winner", 1).put("confirmed", org.json.JSONArray(listOf(true,true)))
+        parsed = DisplaySnapshot.parse(data).match!!; assertTrue(parsed.canShowTurn); assertFalse(parsed.bullPending); assertEquals(0, parsed.startDecision!!.starter)
+    }
     private fun match(revision: Long = 1, visits: List<Visit> = emptyList(), events: List<ScoreEvent> = emptyList(), leg: Int = 1, key: String = "s1") = Match("m1", revision, "live", listOf(Player("Danny",148,0,0,null,0,0), Player("Rick",188,0,0,null,0,0)), 0, 501, leg, 1, visits, events, key)
     @Test fun `clock uses absolute server deadline including exact boundary`() {
         assertEquals(61, secondsRemaining(180_000,119_000))

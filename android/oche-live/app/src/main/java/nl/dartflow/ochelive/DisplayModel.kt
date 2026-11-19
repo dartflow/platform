@@ -7,22 +7,31 @@ import kotlin.math.ceil
 /** Public v1 only: never a player account, writer capability or private history. */
 data class Player(val name: String, val remaining: Int, val legs: Int, val sets: Int, val average: Double?, val maxima: Int, val highestFinish: Int, val partners: List<String> = emptyList())
 data class Cricket(val marks: List<List<Int>>, val points: List<Int>, val mpr: List<Double?>, val mode: String)
+data class Bull(val reason: String, val status: String, val round: Int, val order: List<Int>, val throws: List<Triple<Int, Int, String>>, val winner: Int?, val confirmed: List<Boolean>)
+data class StartDecision(val procedure: String, val starter: Int?)
 data class Visit(val player: Int, val score: Int, val remaining: Int, val bust: Boolean, val creditedMarks: Int? = null)
 data class ScoreEvent(val id: String, val revision: Long, val kind: String, val score: Int, val bust: Boolean, val checkout: Boolean, val player: String)
-data class Match(val id: String, val revision: Long, val status: String, val players: List<Player>, val turn: Int, val startScore: Int, val leg: Int, val set: Int, val visits: List<Visit>, val events: List<ScoreEvent>, val sessionKey: String, val paused: Boolean = false, val winnerName: String? = null, val resultPublished: Boolean = false, val checkout: String? = null, val inRule: String = "single", val outRule: String = "double", val sideStartScores: List<Int> = emptyList(), val currentThrowerName: String? = null, val cricket: Cricket? = null) {
+data class Match(val id: String, val revision: Long, val status: String, val players: List<Player>, val turn: Int, val startScore: Int, val leg: Int, val set: Int, val visits: List<Visit>, val events: List<ScoreEvent>, val sessionKey: String, val paused: Boolean = false, val winnerName: String? = null, val resultPublished: Boolean = false, val checkout: String? = null, val inRule: String = "single", val outRule: String = "double", val sideStartScores: List<Int> = emptyList(), val currentThrowerName: String? = null, val cricket: Cricket? = null, val bull: Bull? = null, val startDecision: StartDecision? = null, val legWinByTwo: Int? = null, val setWinByTwo: Int? = null) {
     val legKey get() = "$sessionKey:$set:$leg"
     fun startFor(index: Int) = sideStartScores.getOrNull(index) ?: startScore
     val startLabel get() = if (cricket != null) "CRICKET" else players.indices.map { startFor(it) }.distinct().joinToString(" / ")
     val startRow get() = if (players.size == 1) listOf("–", "${startFor(0)}") else listOf("–", "${startFor(0)}", "${startFor(1)}", "–")
     val rulesLabel get() = if (cricket != null) "Cricket · " + if (cricket.mode == "no-score") "zonder punten" else "met punten" else (if (inRule == "double") "Dubbel in · " else if (inRule != "single") "Inregel op telefoon · " else "") + when (outRule) { "straight" -> "Straight uit"; "double" -> "Dubbel uit"; "master" -> "Master uit"; else -> "Uitregel op telefoon" }
+    val winByTwoLabel get() = listOfNotNull(legWinByTwo?.let { "Legs 2 verschil/cap $it" }, setWinByTwo?.let { "Sets 2 verschil/cap $it" }).joinToString(" · ").let { if (it.isBlank()) "" else " · $it" }
     val finished get() = status in listOf("result", "confirmed", "disputed")
-    val canShowTurn get() = status == "live" && !paused
+    val bullPending get() = bull != null && bull.status != "complete"
+    val canShowTurn get() = status == "live" && !paused && !bullPending
+    val bullLabel get() = bull?.let { b ->
+        if (b.status == "confirming") "${players.getOrNull(b.winner ?: -1)?.name ?: "Beginnende zijde"} begint · bevestig op telefoon"
+        else { val count = b.throws.count { it.first == b.round }; "Ronde ${b.round} · ${players.getOrNull(b.order.getOrNull(count) ?: -1)?.name ?: "Speler"} werpt bull" }
+    }
     val statusLabel get() = when {
         status == "disputed" -> "Uitslag in behandeling"
         finished -> if (resultPublished) "Uitslag bevestigd" else "Voorlopige uitslag"
         status == "interrupted" -> "Onderbroken"
         status == "abandoned" -> "Partij beëindigd"
         paused -> "Gepauzeerd"
+        bullPending -> if (bull?.reason == "deciding-leg") "Opnieuw bullen" else "Bullen voor start"
         status == "live" -> "● Live"
         else -> "Wacht op start"
     }
@@ -69,7 +78,9 @@ data class DisplaySnapshot(val state: String, val serverNow: Long, val eventId: 
                     val allVisits = m.optJSONArray("visits").objects()
                     Cricket((0..1).map { c.optJSONArray("marks")?.optJSONArray(it)?.ints().orEmpty().map { value -> value.coerceIn(0,3) } }, c.optJSONArray("points")?.ints().orEmpty(), (0..1).map { side -> val own = allVisits.filter { it.optInt("playerIndex") == side && it.has("cricket") }; val darts = own.sumOf { it.optInt("darts") }; if (darts > 0) 3.0 * own.sumOf { it.optJSONObject("cricket")?.optInt("creditedMarks") ?: 0 } / darts else null }, settings?.optString("cricketMode", "standard") ?: "standard")
                 }
-                Match(m.getString("id"), m.optLong("revision"), m.optString("status"), players, m.optInt("turn"), startScore, leg, m.optInt("setNumber", 1), visits, events, snapshot.optString("sessionKey", m.getString("id")), m.optBoolean("paused"), winner, m.optBoolean("resultPublished"), m.optString("checkout").takeIf { it.isNotBlank() && it != "null" }, settings?.optString("inRule", "single") ?: "single", settings?.optString("outRule", "double") ?: "double", sideStarts, m.optJSONObject("currentThrower")?.let { it.optString("displayName").ifBlank { it.optString("name") } }?.takeIf { it.isNotBlank() }, cricket)
+                val bull = m.optJSONObject("bull")?.let { b -> Bull(b.optString("reason"), b.optString("status"), b.optInt("round", 1), b.optJSONArray("order")?.ints().orEmpty().filter { it in 0..1 }, b.optJSONArray("throws").objects().map { Triple(it.optInt("round"), it.optInt("side"), it.optString("hit")) }, b.optInt("winner", -1).takeIf { it in 0..1 }, (0..1).map { b.optJSONArray("confirmed")?.optBoolean(it) == true }) }
+                val decision = m.optJSONObject("startDecision")?.let { StartDecision(it.optString("procedure"), it.optInt("starter", -1).takeIf { n -> n in 0..1 }) }
+                Match(m.getString("id"), m.optLong("revision"), m.optString("status"), players, m.optInt("turn"), startScore, leg, m.optInt("setNumber", 1), visits, events, snapshot.optString("sessionKey", m.getString("id")), m.optBoolean("paused"), winner, m.optBoolean("resultPublished"), m.optString("checkout").takeIf { it.isNotBlank() && it != "null" }, settings?.optString("inRule", "single") ?: "single", settings?.optString("outRule", "double") ?: "double", sideStarts, m.optJSONObject("currentThrower")?.let { it.optString("displayName").ifBlank { it.optString("name") } }?.takeIf { it.isNotBlank() }, cricket, bull, decision, settings?.optJSONObject("legWinByTwo")?.optInt("maximum"), settings?.optJSONObject("setWinByTwo")?.optInt("maximum"))
             }
             val board = json.optJSONObject("board") ?: display?.optJSONObject("board")
             val activity = (snapshot?.optJSONObject("boardActivity") ?: snapshot?.optJSONObject("match")?.optJSONObject("boardActivity"))?.let { Activity(it.optLong("warningAt"), it.optLong("deadlineAt"), it.optInt("extensionsUsed")) }

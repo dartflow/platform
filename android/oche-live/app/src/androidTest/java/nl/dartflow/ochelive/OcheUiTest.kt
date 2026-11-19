@@ -19,6 +19,13 @@ import org.junit.Assert.assertTrue
 
 class OcheUiTest {
     @get:Rule val compose = createComposeRule()
+    @Test fun bullWaitsForActualPhoneConfirmationWithoutShowingAScoreTurn() {
+        val match = Match("bull-match", 3, "ready", listOf(Player("Danny",501,0,0,null,0,0),Player("Rick",501,0,0,null,0,0)), 0, 501, 1, 1, emptyList(), emptyList(), "bull-session", bull = Bull("match", "confirming", 1, listOf(0,1), listOf(Triple(1,0,"DB"),Triple(1,1,"SB")), 0, listOf(false,false)))
+        compose.setContent { MaterialTheme { Box(Modifier.fillMaxWidth().height(330.dp)) { LiveView(match, false, false) } } }
+        compose.onNodeWithText("BULL · GEEN SCORE").assertIsDisplayed()
+        compose.onNodeWithText("Danny begint · bevestig op telefoon").assertIsDisplayed()
+        compose.onNodeWithText("SCOREKAART").assertIsDisplayed()
+    }
     @Test fun pairingHasCodeAndNativeNewCodeAction() {
         var pressed=false
         compose.setContent { MaterialTheme { OcheApp(ConnectionState(DisplayUi.Pairing("K8G4–P7RW", "https://dartflow.nl/koppel-scherm#code=K8G4P7RW", 600000, 0, SystemClock.elapsedRealtime())), { pressed=true }) } }

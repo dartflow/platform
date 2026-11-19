@@ -110,7 +110,7 @@ if not files:
 suites = [ET.parse(path).getroot() for path in files]
 result = {key: sum(int(suite.get(key, '0')) for suite in suites) for key in ('tests', 'failures', 'errors', 'skipped')}
 Path('app/build/reports/androidTests/tv-runner/runtime-summary.json').write_text(json.dumps(result, indent=2) + '\n')
-if result != {'tests': 8, 'failures': 0, 'errors': 0, 'skipped': 0}:
-    raise SystemExit(f'Expected all eight instrumentation tests to pass: {result}')
-print('Android TV: all eight instrumentation tests passed, none skipped.')
+if result != {'tests': 10, 'failures': 0, 'errors': 0, 'skipped': 0}:
+    raise SystemExit(f'Expected all ten instrumentation tests to pass: {result}')
+print('Android TV: all ten instrumentation tests passed, none skipped.')
 PY
