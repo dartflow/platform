@@ -1,12 +1,18 @@
 package nl.dartflow.ochelive
 
 import android.os.SystemClock
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.assertTrue
@@ -71,6 +77,17 @@ class OcheUiTest {
         compose.onNodeWithText("Powered by DartFlow").assertIsDisplayed()
         compose.onNodeWithText("Dubbel in · Master uit").assertIsDisplayed()
         compose.onNodeWithText("301 / 701").assertIsDisplayed()
+        compose.onNodeWithText("301").assertIsDisplayed()
+        compose.onNodeWithText("701").assertIsDisplayed()
+    }
+    @Test fun shortScoreViewportKeepsWinnerAndHandicapsVisibleInBothLayouts() {
+        val landscape = mutableStateOf(true)
+        val match = Match("short-result", 6, "result", listOf(Player("Danny", 0, 1, 0, 70.6, 0, 0), Player("Rick", 188, 0, 0, 62.6, 0, 0)), 0, 501, 1, 1, emptyList(), emptyList(), "short-session", winnerName = "Danny", sideStartScores = listOf(301, 701))
+        compose.setContent { MaterialTheme { Box(Modifier.fillMaxWidth().height(330.dp)) { LiveView(match, landscape.value, true) } } }
+        compose.onNodeWithText("Winnaar: Danny").assertIsDisplayed()
+        compose.onNodeWithText("SCOREKAART").assertIsDisplayed()
+        compose.runOnIdle { landscape.value = false }
+        compose.onNodeWithText("Winnaar: Danny").assertIsDisplayed()
         compose.onNodeWithText("301").assertIsDisplayed()
         compose.onNodeWithText("701").assertIsDisplayed()
     }

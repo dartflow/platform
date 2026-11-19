@@ -1,17 +1,17 @@
 {
-  "collectedAt": "2026-11-19T16:06:40.893197+00:00",
+  "collectedAt": "2026-11-19T16:49:41.581807+00:00",
   "baselineEvidence": "docs/evidence/full-release-oche-local-validation-2026-11-19.json",
-  "status": "local_checks_passed_instrumentation_not_run",
+  "status": "local_checks_passed_compact_display_fix_awaits_main_instrumentation",
   "source": {
     "branch": "codex/full-release-20261119",
-    "baseHead": "62ca750738ac5db075b249a0fd5a49e767bdc5ee",
+    "baseHead": "fed15b563769b7b8b604c64c16d9482786bae15f",
     "uncommitted": true,
     "sha256": {
       "android/oche-live/app/src/main/AndroidManifest.xml": "6cbd33f7e9d02247bbd408e8526dc4d224231eeb78bd10c66042afe5c8e4787f",
       "android/oche-live/app/src/test/resources/live-snapshot.json": "036920f096a7f9aab8921b600e812a30ec72f63b57b02b6612dbf78457063df9",
       "android/oche-live/app/src/test/java/nl/dartflow/ochelive/DisplayModelTest.kt": "9ee544004cedd59502a3b582393056c2782d220c4f3a1aba5d26359693fa5790",
       "android/oche-live/app/src/androidTest/java/nl/dartflow/ochelive/SecureStoreTest.kt": "6f93a97d764e83d8bace01a1b311c8b123a0fb4d3acfdda776803539d131bc4e",
-      "android/oche-live/app/src/androidTest/java/nl/dartflow/ochelive/OcheUiTest.kt": "e044d7c5695497b0ebfbaecf4c4315f4a7fa924bf55295cc479ab23e09af790c",
+      "android/oche-live/app/src/androidTest/java/nl/dartflow/ochelive/OcheUiTest.kt": "549cd7bf802d2cbdea3fa0762fe5596fa9f160f15d44633fbba1d712a1eca50b",
       "android/oche-live/app/src/main/res/xml/data_extraction_rules.xml": "4675c7bf08b03d514d0cfb0299ab3d1c44d65aa9dd212857dd595ec825b0efe6",
       "android/oche-live/app/src/main/res/font/barlow_condensed_800.ttf": "724c9c25952d5f4a2d87185d9767aa006144c5f0d944dc05bf7d5d603551c260",
       "android/oche-live/app/src/main/res/font/dm_sans_700.ttf": "2a8e7f713ee79fbccdef3cef5c787aff47580299f7da60144961e7db2ec08211",
@@ -27,7 +27,7 @@
       "android/oche-live/app/src/main/res/drawable-nodpi/duindorp_crest.webp": "460676d680fe0196b66e4432968920dbbae5a579b725e686e8f61b082122a2df",
       "android/oche-live/app/src/main/res/drawable-nodpi/onzetrots_wordmark_white.webp": "2a79e9842c69eafb1af1937c52bc89fb6c5d5b7f635e5c9d86931e6ebfad95e5",
       "android/oche-live/app/src/main/java/nl/dartflow/ochelive/OcheApi.kt": "465719034c79ffe869a4c471d9850fa4294f5900703f238533d3f5223ac8a506",
-      "android/oche-live/app/src/main/java/nl/dartflow/ochelive/MainActivity.kt": "6a0bb0008173b8e796ab22c6c781b0d67e763f30ea7da26d38992051a088c665",
+      "android/oche-live/app/src/main/java/nl/dartflow/ochelive/MainActivity.kt": "6fa9e7fb0997d109715456cffa138402e52ecfa58e60f2c567782c22e2dc5b65",
       "android/oche-live/app/src/main/java/nl/dartflow/ochelive/OcheViewModel.kt": "b082fffff30717286ae44c8e4eaa9391892d2fb95677c23cca17c22a00d268e0",
       "android/oche-live/app/src/main/java/nl/dartflow/ochelive/SecureStore.kt": "259b182ad5cf4cfcb5427f15fb4d239b4d5a83c289827f6b100406d1d6f00b73",
       "android/oche-live/app/src/main/java/nl/dartflow/ochelive/DisplayModel.kt": "8a366deac3467bd24b126c31bf388ccfa2feb7aaa2a1c5a1c1a19960c8013bbc",
@@ -35,7 +35,8 @@
       "android/oche-live/app/src/main/assets/licenses/Barlow-Condensed-OFL.txt": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
       "android/oche-live/version.properties": "7712953f21f9015ecb74bad1fb2ddf67871f079a4590bdf917668948871bc5af",
       "android/oche-live/app/build.gradle.kts": "9bfd2727c8c8e76e9dbdceeff30e37b81ad7313fa85f74f6fc85867df89e1cd1"
-    }
+    },
+    "snapshotMatchesAfterBuild": true
   },
   "version": {
     "versionName": "1.1.0",
@@ -43,7 +44,7 @@
     "releaseCode": "CI explicit VERSION_CODE_BASE + GITHUB_RUN_NUMBER must exceed current Play artifact"
   },
   "checks": {
-    "gradleResult": "BUILD SUCCESSFUL in 1m 45s",
+    "gradleResult": "BUILD SUCCESSFUL in 1m 16s",
     "gradleTasks": [
       "lintStagingDebug",
       "testStagingDebugUnitTest",
@@ -70,20 +71,22 @@
     "lint": "both requested debug variants passed; production release lintVital passed",
     "instrumentation": {
       "compiled": true,
-      "declaredTests": 8,
+      "declaredTests": 9,
       "executedLocally": false,
-      "reason": "No connected Android device and /dev/kvm unavailable; actual phone/TV CI and physical checks remain required."
-    }
+      "reason": "No connected Android device and /dev/kvm unavailable; all nine tests compiled. Exact-main phone/TV execution is required after the compact display fix.",
+      "regression": "A 330dp match viewport retains the winner and handicap starting scores while switching between landscape and portrait layouts."
+    },
+    "productionBundleUnsignedVerified": true
   },
   "artifacts": {
     "android/oche-live/app/build/outputs/apk/staging/debug/app-staging-debug.apk": {
-      "sha256": "a9282a238d43125b31509303bdebd2e9748fae11a425ca82414d9f6fd5c3e584",
-      "bytes": 12049708,
+      "sha256": "15da56ee85df27a8d0b9d1b8c8525b2b0613d2813c2f8e4784f45aa7efc816d2",
+      "bytes": 12050675,
       "signing": "debug"
     },
     "android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab": {
-      "sha256": "9ed02c313af330e596983f272ccba4e69c5fb15adfbac1ac2f08b3d68c86c7be",
-      "bytes": 2775907,
+      "sha256": "56f8073271f724ab0be19db9ee45434d3fee1e235e5ad44a017398d2ceb5e01c",
+      "bytes": 2775449,
       "signing": "unsigned local validation artifact"
     }
   },
@@ -93,8 +96,49 @@
     "Nonstandard X01 rules and side starting scores",
     "Version1 theme allowlist, navy Onze Trots palette, supplied wordmark/crest, cache and DartFlow fallback",
     "Canonical encounter component points, actual legs and component number",
-    "Public optional next-fixture precall remains separate from the current match"
+    "Public optional next-fixture precall remains separate from the current match",
+    "Compact landscape/portrait player cards, explicit compact text line heights and short statistics row retain the winner and scorecard starting rows."
   ],
   "physicalCameraOrDisplayAcceptance": false,
-  "playPublished": false
+  "playPublished": false,
+  "localValidationHistory": [
+    {
+      "collectedAt": "2026-11-19T16:06:40.893197+00:00",
+      "gradleResult": "BUILD SUCCESSFUL in 1m 45s",
+      "declaredInstrumentationTests": 8,
+      "artifacts": {
+        "android/oche-live/app/build/outputs/apk/staging/debug/app-staging-debug.apk": {
+          "sha256": "15da56ee85df27a8d0b9d1b8c8525b2b0613d2813c2f8e4784f45aa7efc816d2",
+          "bytes": 12050675,
+          "signing": "debug"
+        },
+        "android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab": {
+          "sha256": "56f8073271f724ab0be19db9ee45434d3fee1e235e5ad44a017398d2ceb5e01c",
+          "bytes": 2775449,
+          "signing": "unsigned local validation artifact"
+        }
+      }
+    }
+  ],
+  "ciRegressionBaseline": {
+    "headSha": "f97292a9ec0ebb734f9c509b4613c254e78ea2a2",
+    "testedMergeSha": "059d661001d4e5c3744e343da4c111b8e13d2318",
+    "run": "https://github.com/dartflow/platform/actions/runs/44565789087",
+    "verify": "success",
+    "uiBeforeFix": {
+      "google_apis": {
+        "tests": 8,
+        "failures": 1,
+        "skipped": 0,
+        "failure": "The handicap startscore cell 301 existed but was outside the visible scorecard after the encounter header."
+      },
+      "android-tv": {
+        "tests": 8,
+        "failures": 1,
+        "skipped": 0,
+        "failure": "The provisional winner existed but was below the visible landscape player column."
+      }
+    },
+    "fixValidatedByMainCi": false
+  }
 }

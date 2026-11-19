@@ -268,30 +268,30 @@ class MainActivity : ComponentActivity() {
     } else Text("Begin een oefenpartij, speel samen op locatie of nodig iemand online uit.\nOpen deze baan met je telefoon.", color = Muted, fontSize = 18.sp, textAlign = TextAlign.Center)
 }
 
-@Composable private fun LiveView(match: Match, landscape: Boolean, result: Boolean) {
+@Composable internal fun LiveView(match: Match, landscape: Boolean, result: Boolean) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val small = maxHeight < 560.dp
         val rowHeight = if (small) 21.dp else 34.dp
         if (landscape) Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                MatchHeading(match, result)
-                Players(match, 90)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (small) 10.dp else 16.dp)) {
+                MatchHeading(match, result, small)
+                Players(match, if (small) 54 else 90, small)
                 LastVisit(match)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) { Scorecard(match, rowHeight, Modifier.weight(1f)); Text("SET ${match.set} · LEG ${match.leg}", color = Muted) }
         } else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(if (small) 10.dp else 18.dp)) {
-            MatchHeading(match, result)
-            Players(match, if (small) 54 else 80, small)
+            MatchHeading(match, result, small)
+            Players(match, if (small) 44 else 80, small)
             Scorecard(match, rowHeight, Modifier.weight(1f))
             LastVisit(match)
         }
     }
 }
-@Composable private fun MatchHeading(match: Match, result: Boolean) {
+@Composable private fun MatchHeading(match: Match, result: Boolean, compact: Boolean = false) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text("${match.startLabel}${if (result) " EINDSTAND" else ""}", fontFamily = Barlow, fontSize = 29.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(match.rulesLabel, color = Muted, fontSize = 12.sp, maxLines = 2)
+            Text("${match.startLabel}${if (result) " EINDSTAND" else ""}", fontFamily = Barlow, fontSize = if (compact) 24.sp else 29.sp, lineHeight = if (compact) 26.sp else 31.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(match.rulesLabel, color = Muted, fontSize = 12.sp, lineHeight = if (compact) 16.sp else 24.sp, maxLines = 2)
         }
         Text(match.statusLabel, color = Lime, fontSize = 14.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f, false))
     }
@@ -302,16 +302,20 @@ class MainActivity : ComponentActivity() {
             val active = match.canShowTurn && index == match.turn
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)) {
                 Row(Modifier.fillMaxWidth().border(1.dp, Outline, RoundedCornerShape(10.dp)).padding(if (compact) 4.dp else 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(initials(player.name), color = if (active) Lime else Color.White, fontFamily = Barlow, fontSize = if (compact) 16.sp else 24.sp, modifier = Modifier.background(if (active) Lime.copy(alpha = .16f) else Outline, RoundedCornerShape(6.dp)).padding(if (compact) 2.dp else 7.dp))
-                    Text(player.name, modifier = Modifier.semantics { contentDescription = (listOf(player.name) + player.partners).distinct().joinToString(" · ") }, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(initials(player.name), color = if (active) Lime else Color.White, fontFamily = Barlow, fontSize = if (compact) 16.sp else 24.sp, lineHeight = if (compact) 20.sp else 24.sp, modifier = Modifier.background(if (active) Lime.copy(alpha = .16f) else Outline, RoundedCornerShape(6.dp)).padding(if (compact) 2.dp else 7.dp))
+                    Text(player.name, modifier = Modifier.semantics { contentDescription = (listOf(player.name) + player.partners).distinct().joinToString(" · ") }, color = Color.White, fontSize = 17.sp, lineHeight = if (compact) 20.sp else 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Column(Modifier.fillMaxWidth().background(if (active) Lime.copy(alpha = .12f) else Panel, RoundedCornerShape(8.dp)).border(1.dp, if (active) Lime else Outline, RoundedCornerShape(8.dp)).padding(vertical = if (compact) 2.dp else 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (match.cricket != null) "PUNTEN" else "RESTEREND", color = Muted, fontSize = if (compact) 9.sp else 10.sp, letterSpacing = 1.sp)
+                    Text(if (match.cricket != null) "PUNTEN" else "RESTEREND", color = Muted, fontSize = if (compact) 9.sp else 10.sp, lineHeight = if (compact) 12.sp else 24.sp, letterSpacing = 1.sp)
                     Text("${match.cricket?.points?.getOrNull(index) ?: player.remaining}", fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, lineHeight = (size + 4).sp, color = if (active) Lime else Color.White, maxLines = 1)
-                    Text(if (active) match.currentThrowerName?.let { "WERPT: $it" } ?: "AAN DE BEURT" else if (!match.canShowTurn) match.statusLabel.uppercase(Locale.ROOT) else "WACHT", color = if (active) Lime else Muted, fontSize = if (compact) 9.sp else 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(if (active) match.currentThrowerName?.let { "WERPT: $it" } ?: "AAN DE BEURT" else if (!match.canShowTurn) match.statusLabel.uppercase(Locale.ROOT) else "WACHT", color = if (active) Lime else Muted, fontSize = if (compact) 9.sp else 10.sp, lineHeight = if (compact) 12.sp else 24.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).padding(if (compact) 2.dp else 6.dp), horizontalArrangement = Arrangement.SpaceAround) {
-                    if (match.cricket != null) Metric(match.cricket.mpr.getOrNull(index)?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–", "MPR", compact) else {
+                    if (compact) {
+                        val average = player.average?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–"
+                        val summary = if (match.cricket != null) "MPR ${match.cricket.mpr.getOrNull(index)?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–"}" else "AVG $average · FIN ${if (player.highestFinish > 0) player.highestFinish else "–"} · 180 ${player.maxima}"
+                        Text(summary, color = Color.White, fontSize = 9.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    } else if (match.cricket != null) Metric(match.cricket.mpr.getOrNull(index)?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–", "MPR", compact) else {
                     Metric(player.average?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–", "AVG", compact)
                     Metric(if (player.highestFinish > 0) "${player.highestFinish}" else "–", "H. FIN", compact)
                     Metric("${player.maxima}", "180's", compact)
@@ -351,9 +355,9 @@ private fun cricketMark(value: Int) = when (value.coerceIn(0,3)) { 0 -> "–"; 1
     }
     Column(modifier.fillMaxWidth().border(1.dp, Outline, RoundedCornerShape(10.dp)).clip(RoundedCornerShape(10.dp))) {
         Row(Modifier.fillMaxWidth().background(Panel).padding(10.dp, 5.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("SCOREKAART", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("SCOREKAART", color = Color.White, fontSize = 12.sp, lineHeight = if (rowHeight <= 22.dp) 16.sp else 24.sp, fontWeight = FontWeight.Bold)
             if (rows.size > 5 && list.canScrollForward) TextButton(onClick = { scope.launch { list.animateScrollToItem(rows.size - 5) } }, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(28.dp)) { Text("Terug naar live", color = Lime, fontSize = 11.sp) }
-            else Text("SET ${match.set} · LEG ${match.leg}", color = Muted, fontSize = 11.sp)
+            else Text("SET ${match.set} · LEG ${match.leg}", color = Muted, fontSize = 11.sp, lineHeight = if (rowHeight <= 22.dp) 16.sp else 24.sp)
         }
         CardRow(if (match.players.size == 1) listOf("WORP", "REST") else listOf("WORP", "REST", "REST", "WORP"), rowHeight, true)
         CardRow(match.startRow, rowHeight)
