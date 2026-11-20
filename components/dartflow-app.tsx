@@ -18,6 +18,8 @@ import {
   type ReactNode,
 } from "react";
 import PlatformWorkspace from "./platform-workspace";
+import DartflowMore from "./dartflow-more";
+import {ClubhouseThemeProvider,ClubhouseHeaderLogo} from "./clubhouse-theme";
 import SeasonWorkspace from './season-workspace';
 import FaqAdminWorkspace from './faq-admin';
 import MatchCorrectionPanel from './match-correction-panel';
@@ -31,7 +33,7 @@ import {FeedWorkspace} from './feed-workspace';
 import PlayerExperienceWorkspace from './player-experience';
 import type {PlayerExperience} from '@/lib/player-experience-types';
 import ScoreConsole from "./score-console";
-import {InstallDartflow} from "./pwa-install";
+
 import SprintDisplay from "./sprint-display";
 import OcheCelebration, {useOcheCelebration} from "./oche-celebration";
 import ClubBoardScreen from "./club-board-screen";
@@ -607,6 +609,7 @@ export default function DartflowApp() {
     ...(session.data.canManagePlatform
       ? [
           {href:"/app/help-beheer",label:"Helpbeheer",icon:"shield" as IconName},
+          {href:"/app/premium",label:"Premiumrechten",icon:"shield" as IconName},
           {href:"/app/blog",label:"Blogbeheer",icon:"shield" as IconName},
           {
             href: "/app/platform/integraties",
@@ -651,80 +654,20 @@ export default function DartflowApp() {
     setClubId(value);
     localStorage.setItem("dartflow-club", value);
   };
+  const routeClubId = platformPath.match(/^\/app\/clubs\/([^/]+)/)?.[1];
+  const themeClub = data?.clubs.find(c=>c.id===routeClubId);
+  const activeClub = themeClub || data?.clubs.find(c=>c.id===clubId);
+  const tabs = [nav[0],nav[1],nav.find(n=>n.href==='/app/competities')!,nav.find(n=>n.href==='/app/hall')!];
   return (
-    <div className="app-shell v15-shell">
-      {mobileOpen && (
-        <button
-          className="mobile-scrim"
-          aria-label="Menu sluiten"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-      <aside className={`sidebar ${mobileOpen ? "is-open" : ""}`}>
-        <a className="brand" href="/">
-          <img src="/assets/dartflow-logo.svg" alt="DartFlow" />
-        </a>
-        <p className="brand-caption">SPEEL. ONTMOET. COMPETEER.</p>
-        <div className="workspace-switch">
-          <a className={!organizing ? "active" : ""} href="/app">
-            Spelen
-          </a>
-          {canOrganize && (
-            <a className={organizing ? "active" : ""} href="/app/dashboard">
-              Organiseren
-            </a>
-          )}
-        </div>
-        <div className="nav-caption">
-          {organizing ? "ORGANISATIE" : "JOUW WERKRUIMTE"}
-        </div>
-        <nav aria-label="Hoofdnavigatie">
-          {navigation.map((n) => (
-            <a
-              key={n.href}
-              href={n.href}
-              className={`nav-item ${n.href === path ? "active" : ""}`}
-              aria-current={n.href === path ? "page" : undefined}
-            >
-              <Icon name={n.icon} />
-              <span>{n.label}</span>
-            </a>
-          ))}
-          {!organizing && <InstallDartflow kind="player" />}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="club-context">
-            <Icon name="club" />
-            <span>JOUW OMGEVING</span>
-            <strong>
-              {clubId
-                ? data?.clubs.find((c) => c.id === clubId)?.name || "Vereniging"
-                : "Wereldwijd"}
-            </strong>
-            <small>Eén account · al jouw darts</small>
-          </div>
-          <div className="sidebar-footer">
-            <span />
-            DartFlow · DG Webservices
-          </div>
-        </div>
-      </aside>
+    <ClubhouseThemeProvider clubId={themeClub?.id ?? routeClubId}>
+    <div className="app-shell v15-shell clubhouse-app-shell">
+      <DartflowMore open={mobileOpen} onClose={()=>setMobileOpen(false)} path={platformPath} club={activeClub} organizerLinks={canOrganize?organizeNav:[]} onLogout={()=>void logout()}/>
       <div className="main">
         <header className="topbar">
-          <button
-            className="icon-button mobile-menu"
-            aria-label="Menu openen"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Icon name="menu" />
-          </button>
-          <a className="mobile-brand" href="/">
-            <img src="/assets/dartflow-logo.svg" alt="DartFlow" />
+          <a className="mobile-brand" href="/app" aria-label="DartFlow · Vandaag">
+            <ClubhouseHeaderLogo />
           </a>
-          <div className="breadcrumb">
-            Mijn DartFlow <Icon name="chevron" />
-            <strong>{section}</strong>
-          </div>
+          <div className="breadcrumb"><strong>{section}</strong></div>
           <div className="topbar-right">
             <WorkspaceTools overview={data} />
             {environment !== "production" && (
@@ -732,21 +675,9 @@ export default function DartflowApp() {
                 {environment === "development" ? "DEVELOPMENT" : "STAGING"}
               </Badge>
             )}
-            <div className="profile">
+            <a className="profile" href="/app/settings" aria-label={`Profiel van ${user.name}`}>
               <Avatar name={user.name} />
-              <div>
-                <strong>{user.name}</strong>
-                <small>{organizing ? "Organiseren" : "Speler"}</small>
-              </div>
-            </div>
-            <button
-              className="icon-button"
-              title="Uitloggen"
-              aria-label="Uitloggen"
-              onClick={() => void logout()}
-            >
-              <Icon name="logout" />
-            </button>
+            </a>
           </div>
         </header>
         {session.data.local && (
@@ -870,27 +801,12 @@ export default function DartflowApp() {
           </footer>
         </main>
       </div>
-      <nav className="bottom-nav" aria-label="Mobiele navigatie">
-        {nav.slice(0, 3).map((n) => (
-          <a
-            key={n.href}
-            href={n.href}
-            className={n.href === path ? "active" : ""}
-          >
-            <Icon name={n.icon} />
-            <span>{n.label}</span>
-          </a>
-        ))}
-        <a href="/app/friends">
-          <Icon name="users" />
-          <span>Vrienden</span>
-        </a>
-        <button onClick={() => setMobileOpen(true)}>
-          <Icon name="menu" />
-          <span>Meer</span>
-        </button>
+      <nav className="bottom-nav" aria-label="Hoofdnavigatie">
+        {tabs.map(n=><a key={n.href} href={n.href} className={n.href===platformPath?'active':''} aria-current={n.href===platformPath?'page':undefined}><Icon name={n.icon}/><span>{n.label}</span></a>)}
+        <button onClick={()=>setMobileOpen(true)} aria-expanded={mobileOpen} aria-label="Meer"><Icon name="menu"/><span>Meer</span></button>
       </nav>
     </div>
+    </ClubhouseThemeProvider>
   );
 }
 

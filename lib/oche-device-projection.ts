@@ -1,4 +1,5 @@
 import {getPublicPlaySessionForOwner} from './play-sessions';
+import {resolveOcheDeviceTheme} from './oche-device-branding';
 import {publicTactics} from './tactics';
 import{publicBullStart}from'./bull-start';
 import {matchEventNotice} from './event-display-notice';
@@ -50,16 +51,17 @@ export async function getOcheDeviceSnapshot(token:string):Promise<OcheDisplaySna
   const serverNow=Number((await client.query<{now:string}>('select extract(epoch from clock_timestamp())*1000 as now')).rows[0].now);
   const location=device.location_id?(await client.query<{id:string;name:string}>('select id,name from dartflow_private.locations where id=$1',[device.location_id])).rows[0]??null:null;
   const display=device.scope==='home'?await homeProjection(client,device):device.board_id?await projectBoardScreenForDevice(client,device.board_id):null;
-  if(display)display.snapshot.theme={id:device.theme??'dartflow',version:1};
+  const theme=await resolveOcheDeviceTheme(client,device);if(display)display.snapshot.theme=theme;
   const activity=display?.snapshot.boardActivity;let state:OcheDisplaySnapshot['state']=display?display.status==='available'?'standby':display.status==='playing'?'live':display.status:'unassigned';
   if(activity?.phase==='warning')state='warning';
   if(display?.snapshot.match&&['result','confirmed','disputed'].includes(display.snapshot.match.status)||display?.snapshot.play?.status==='completed')state='result';
   const revision=display?.snapshot.play?.revision??display?.snapshot.match?.revision??0;
   // State, assignment and deadline mutations matter even when the score revision is unchanged.
-  const stableDisplay=display?{...display,snapshot:{...display.snapshot,...(display.snapshot.play?{play:{...display.snapshot.play,serverNow:0}}:{}),...(activity?{boardActivity:{...activity,serverNow:0}}:{})}}:null;
+  const stableTheme=theme.id==='club'?{...theme,validUntil:0}:theme;
+  const stableDisplay=display?{...display,snapshot:{...display.snapshot,theme:stableTheme,...(display.snapshot.play?{play:{...display.snapshot.play,serverNow:0}}:{}),...(activity?{boardActivity:{...activity,serverNow:0}}:{})}}:null;
   const group=opaque(JSON.stringify({device:device.id,grant:device.grant_version,scope:device.scope,location:device.location_id,board:device.board_id,session:display?.snapshot.sessionKey??'unassigned'}));
-  const eventId=`v1:${group}:${revision}:${opaque(JSON.stringify({name:device.name,location,display:stableDisplay,state}))}`;
-  return {apiVersion:1,serverNow,state,scope:device.scope,device:{id:device.id,name:device.name,platform:device.platform,grantVersion:device.grant_version},location,board:device.board_id&&display?{id:device.board_id,name:display.board.name}:null,display,eventId,revision,pollAfterMs:2000,permissions:{read:true,score:false,extend:false}};
+  const eventId=`v1:${group}:${revision}:${opaque(JSON.stringify({name:device.name,location,display:stableDisplay,theme:stableTheme,state}))}`;
+  return {apiVersion:1,serverNow,state,scope:device.scope,device:{id:device.id,name:device.name,platform:device.platform,grantVersion:device.grant_version},location,board:device.board_id&&display?{id:device.board_id,name:display.board.name}:null,display,theme,eventId,revision,pollAfterMs:2000,permissions:{read:true,score:false,extend:false}};
  });
 }
 export async function pollOcheDeviceEvents(token:string,after?:string):Promise<OcheEvents>{

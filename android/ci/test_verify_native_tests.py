@@ -75,22 +75,22 @@ class NativeTestReports(unittest.TestCase):
         for variant in config["variants"]:
             target = self.root / "player/app/build/test-results" / ("test" + variant + "DebugUnitTest")
             target.mkdir(parents=True)
-            self.report(133).rename(target / "TEST-fixture.xml")
+            self.report(145).rename(target / "TEST-fixture.xml")
         self.assertEqual(len(check.verify("player", "unit", self.root)), 3)
         next((self.root / "player/app/build/test-results/testStagingDebugUnitTest").glob("*.xml")).unlink()
         with self.assertRaises(ValueError):
             check.verify("player", "unit", self.root)
 
-    def test_ui_verification_requires_all_73_actual_source_methods(self):
+    def test_ui_verification_requires_all_reviewed_actual_source_methods(self):
         app = self.root / "player"
         source = app / "app/src/androidTest/java/Fixture.kt"
         source.parent.mkdir(parents=True)
-        source.write_text("package fixture\nclass Tests {\n" + "\n".join("@Test fun case" + str(i) + "() {}" for i in range(73)) + "\n}")
+        source.write_text("package fixture\nclass Tests {\n" + "\n".join("@Test fun case" + str(i) + "() {}" for i in range(81)) + "\n}")
         target = app / "app/build/outputs/androidTest-results/connected/device"
         target.mkdir(parents=True)
-        self.report(73).rename(target / "TEST-fixture.xml")
-        self.assertEqual(check.verify("player", "ui", self.root)["actualUniqueMethods"], 73)
-        source.write_text(source.read_text().replace("case72()", "replaced()"))
+        self.report(81).rename(target / "TEST-fixture.xml")
+        self.assertEqual(check.verify("player", "ui", self.root)["actualUniqueMethods"], 81)
+        source.write_text(source.read_text().replace("case80()", "replaced()"))
         with self.assertRaises(ValueError):
             check.verify("player", "ui", self.root)
 

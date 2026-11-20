@@ -22,6 +22,8 @@ import { MailPreferences } from "./mail-policy-panel";
 import {CommunityRulesGate,SafetyActions} from './player-safety';
 import {FeedSpace,ScopedChat} from './community-space';
 import {ClubWorkspace} from './club-ui';
+import ClubhouseWorkspace,{PlatformBrandingAdministration} from './clubhouse-workspace';
+import {ThemePreferencePicker} from './clubhouse-theme';
 import LocationWorkspace from './location-workspace';
 import type {ClubEntity} from '@/lib/club-types';
 import RankingEventPanel from './ranking-event-panel';
@@ -644,6 +646,8 @@ export default function PlatformWorkspace({
         />
       ) : page === "camera" ? (
         <CameraPreflight />
+      ) : page === "premium" ? (
+        <PlatformBrandingAdministration/>
       ) : page === "settings" ? (
         <Preferences data={data} command={command} busy={busy} />
       ) : [
@@ -1302,7 +1306,7 @@ function Clubs({
     (e) => e.id === id || text(e.state.code) === id,
   );
   if (entity) {
-    if('clubDetails' in entity&&section!=='banen')return <><ClubNavigation id={entity.id}/><ClubWorkspace entity={entity as unknown as ClubEntity} actorId={data.profile.id} players={data.players} command={(action,current)=>command(action as Action,current as unknown as Entity)} busy={busy}/></>;
+    if('clubDetails' in entity&&section!=='banen'){const club=entity as unknown as ClubEntity;return club.clubAccess.isMember&&club.clubDetails.lifecycle==='active'?<ClubhouseWorkspace clubId={entity.id} section={section} actorId={data.profile.id} players={data.players} legacyCommand={(action,current)=>command(action as Action,current as unknown as Entity)} legacyBusy={busy}/>:<><ClubNavigation id={entity.id}/><ClubWorkspace entity={club} actorId={data.profile.id} players={data.players} command={(action,current)=>command(action as Action,current as unknown as Entity)} busy={busy}/></>;}
     const own = entity.members.find((m) => m.id === data.profile.id);
     const manager = entity.canManage === true;
     if (section === "banen") return <>
@@ -3294,6 +3298,7 @@ function Preferences({
         Kies hoe anderen jou vinden en contact met je opnemen.
       </Title>
       <ProfileStatisticsLinks/>
+      <section className="panel"><ThemePreferencePicker/></section>
       <PlayerPinSettings user={data.profile}/>
       <Form
         title="Jouw profiel"

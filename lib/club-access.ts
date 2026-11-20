@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import {CLUB_PERMISSIONS,type ClubPermission} from './club-types';
+import {CLUB_PERMISSIONS,BASE_CLUB_ROLES,type ClubPermission} from './club-types';
 type Client=Pick<PoolClient,'query'>;
 export async function clubIsActiveMember(client:Client,clubId:string,actor:string):Promise<boolean>{
  const {rows}=await client.query(`select e.state,m.status,m.role,e.owner_id,c.user_id as core_member from dartflow_private.clubs c0 left join dartflow_private.platform_entities e on e.id=c0.id and e.kind='club' left join dartflow_private.platform_members m on m.entity_id=e.id and m.user_id=$2 left join dartflow_private.club_memberships c on c.club_id=c0.id and c.user_id=$2 where c0.id=$1`,[clubId,actor]);
@@ -11,6 +11,7 @@ export async function clubPermission(client:Client,clubId:string,actor:string,pe
  const row=rows[0];if(!row?.core_role)return false;if(!row.state)return row.core_role==='organizer';
  if(row.status!=='active'||['inactive','deleted'].includes(String(row.state.lifecycle)))return false;
  if(row.owner_id===actor||row.role==='admin')return true;
+ if(BASE_CLUB_ROLES.find(role=>role.id===row.role)?.permissions.includes(permission))return true;
  return Boolean((await client.query(`select 1 from dartflow_private.club_member_roles m join dartflow_private.club_roles r on r.club_id=m.club_id and r.id=m.role_id where m.club_id=$1 and m.user_id=$2 and $3=any(r.permissions)`,[clubId,actor,permission])).rowCount);
 }
 export async function clubReviewerMailApplicable(client:Client,clubId:string,recipient:string,eventId:string):Promise<boolean>{

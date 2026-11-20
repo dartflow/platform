@@ -43,6 +43,7 @@ async function applicable(client:Client,row:Inbox):Promise<boolean>{
  try{await assertAccountActive(row.recipient_id,client);}catch{return false;}
  if(Date.parse(row.expires_at)<=Date.now()||!await enabled(client,row.recipient_id,row.category)||!await domainMailApplicable(client,{...row.reference,recipientId:row.recipient_id}))return false;
  if(row.template_id==='competition-lobby-ready'&&row.reference.competitionLobby)return true;
+ const clubhouse=/^\/app\/clubs\/([0-9a-f-]{36})\/(agenda\?activity|taken\?task)=([0-9a-f-]{36})$/.exec(row.action_path);if(clubhouse){if(!await clubIsActiveMember(client,clubhouse[1],row.recipient_id))return false;return Boolean((await client.query(clubhouse[2]==='agenda?activity'?'select 1 from dartflow_private.club_activities where id=$1 and club_id=$2':'select 1 from dartflow_private.club_tasks where id=$1 and club_id=$2',[clubhouse[3],clubhouse[1]])).rowCount);}
  const match=/^\/wedstrijd\/([0-9a-f-]{36})$/.exec(row.action_path);if(match){try{await getMatch(row.recipient_id,match[1]);return true;}catch{return false;}}
  const season=/^\/app\/competities\/([0-9a-f-]{36})$/.exec(row.action_path);if(season){try{await getSeason(row.recipient_id,season[1]);return true;}catch{return false;}}
  const entity=/^\/app\/(?:clubs|leagues|tournaments|lobby|hall|community)\/([0-9a-f-]{36})$/.exec(row.action_path);if(entity){

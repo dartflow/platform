@@ -150,6 +150,7 @@ internal fun playerRankingsQuery(value: String?): String {
         actions.navigate(PlayerScreen.ORGANIZE, null)
     }
     if (access.optBoolean("isMember")) {
+        Action("Open Clubhouse") { actions.navigate(PlayerScreen.CLUBHOUSE, playerClubId(club.text("id"))) }
         Action("Verenigingschat", primary = false) { actions.navigate(PlayerScreen.CHAT, "club:${club.text("id")}") }
         PlayerCard("Leden") { club.rows("members").forEach { Text("${it.text("name")} · ${statusLabel(it.text("role"))}") } }
     }

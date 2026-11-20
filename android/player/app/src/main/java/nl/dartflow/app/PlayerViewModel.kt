@@ -24,6 +24,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val notificationOpenStore = PlayerSessionStore(application, "notification-open")
     private val helpCache = PlayerHelpCache(application)
     private val manualCache = PlayerManualCache(application)
+    private val themeCache = PlayerThemeCache(application)
+    private var themeReadAt = 0L
     val api = PlayerApi()
     private val state = MutableStateFlow(PlayerUiState())
     val ui = state.asStateFlow()
@@ -56,7 +58,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     init {
         if (hasSession()) {
             val destination = saved.obj("navigation").obj("active"); val cachedProfile = saved.optJSONObject("cachedProfile")?.let(PlayerProfile::parse)
-            state.update { it.copy(session = sessionMetadata(), profile = cachedProfile) }
+            state.update { it.copy(session = sessionMetadata(), profile = cachedProfile, theme = themeCache.read(saved.text("userId"), null, api.serverNow()) ?: JSONObject()) }
             if (destination.text("screen") == "MATCH") { val id = destination.text("id"); state.update { it.copy(screen = PlayerScreen.MATCH, activeId = id) }; matchQueue.restore(id) }
         }
         play.lastId()?.let { id -> runCatching { play.restore(id); state.update { it.copy(screen = PlayerScreen.PLAY_SESSION, activeId = id, loading = false) } } }
@@ -76,6 +78,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun resume() {
         foreground = true
+        themeReadAt = 0L
         if (loop?.isActive == true) return
         homePolls.reset()
         loop = viewModelScope.launch {
@@ -160,7 +163,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         if (saved.optString("userId").isNotBlank() && incomingId.isNotBlank() && incomingId != saved.optString("userId")) {
             PlayerPush.clearLocal(getApplication())
             identityGeneration++; pending = null; navigation.clear(); saved.remove("pendingCommand"); saved.remove("organizerDraft"); saved.remove("invitation"); saved.remove("navigation")
-            state.update { it.copy(profile = null, platform = JSONObject(), overview = JSONObject(), resource = JSONObject(), match = null, board = null, screen = PlayerScreen.HOME, activeId = null, hasPendingCommand = false, loading = true, organizerDraft = JSONObject(), organizerCloudDraft = JSONObject(), faqAdminReceipt = JSONObject(), invitation = JSONObject(), canManagePlatform = false, homeFeed = JSONObject(), homeFeedLoading = false, homeFeedError = null) }
+            themeCache.clear(); themeReadAt = 0L
+            state.update { it.copy(theme = JSONObject(), clubhouseContext = null, clubhousePages = emptyList(), profile = null, platform = JSONObject(), overview = JSONObject(), resource = JSONObject(), match = null, board = null, screen = PlayerScreen.HOME, activeId = null, hasPendingCommand = false, loading = true, organizerDraft = JSONObject(), organizerCloudDraft = JSONObject(), faqAdminReceipt = JSONObject(), invitation = JSONObject(), canManagePlatform = false, homeFeed = JSONObject(), homeFeedLoading = false, homeFeedError = null) }
         }
         saved.put("accessToken", token).put("refreshToken", refresh).put("local", false)
             .put("expiresAt", if (result.optLong("expires_at") > 0) result.getLong("expires_at") * 1000 else api.serverNow() + result.optLong("expires_in", 3600) * 1000)
@@ -191,7 +195,19 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         if (generation != identityGeneration || !hasSession() || !snapshots.accepts(ticket)) return
         state.update { it.copy(overview = overview, platform = platform, safety = safety, profile = platform.optJSONObject("profile")?.let(PlayerProfile::parse) ?: it.profile) }
     }
+    private suspend fun loadTheme(force: Boolean = false) {
+        val identity = requestIdentity() ?: return
+        val context = playerThemeContext(state.value.screen, state.value.activeId)
+        if (!force && themeReadAt != 0L && SystemClock.elapsedRealtime() - themeReadAt < 15_000 && playerBoundedTheme(state.value.theme, api.serverNow(), context) != null) return
+        val view = try { api.call("/theme" + (context?.let { "?clubId=${PlayerLinks.encode(it)}" } ?: "")) } catch (failure: PlayerApiFailure) { if (failure.status in listOf(401, 403)) { themeCache.clear(); state.update { it.copy(theme = JSONObject(), clubhousePages = emptyList()) } }; throw failure }
+        if (requestIdentity() != identity || playerThemeContext(state.value.screen, state.value.activeId) != context) return
+        val bounded = playerBoundedTheme(view, api.serverNow(), context) ?: throw java.io.IOException("De huisstijl kon niet actueel worden gevalideerd.")
+        themeReadAt = SystemClock.elapsedRealtime()
+        themeCache.write(identity.accountId, context, bounded)
+        state.update { it.copy(theme = bounded, themeClockOffset = api.serverNow() - System.currentTimeMillis()) }
+    }
     private suspend fun loadCurrent() {
+        if (hasSession()) loadTheme()
         if (state.value.screen in playerPublicPlayScreens) { play.load(state.value.screen, state.value.activeId); return }
         if (!hasSession() && state.value.screen !in listOf(PlayerScreen.HELP,PlayerScreen.MANUAL)) return
         val screen = state.value.screen
@@ -239,6 +255,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 if (parts.size == 2 && parts[0] == "room") api.call("/platform/rooms/${PlayerLinks.encode(parts[1])}/messages")
                 else if (parts.size == 2) api.call("/community/chat/${PlayerLinks.encode(parts[0])}/${PlayerLinks.encode(parts[1])}") else JSONObject()
             }
+            PlayerScreen.CLUB_CHAT -> playerClubRoute(id)?.let { route -> api.call("/clubhouse/${PlayerLinks.encode(route.clubId)}/channels/${PlayerLinks.encode(route.item ?: route.clubId)}") } ?: JSONObject()
+            PlayerScreen.CLUBHOUSE -> playerClubRoute(id)?.let { route -> api.call("/clubhouse/${PlayerLinks.encode(route.clubId)}?page=${route.page}") } ?: JSONObject()
+            PlayerScreen.CLUB_COMPETITION_WIZARD -> playerClubRoute(id)?.let { route -> api.call("/competition-wizard/${PlayerLinks.encode(route.clubId)}") } ?: JSONObject()
             PlayerScreen.LOCATIONS -> api.call("/locations")
             PlayerScreen.FAQ_ADMIN -> api.call("/faq/admin")
             PlayerScreen.ORGANIZE -> api.call("/organizer-drafts?kind=tournament")
@@ -278,6 +297,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         if(screen==PlayerScreen.TRAINING&&resource.obj("entity").obj("state").optBoolean("offlineSupported")) {trainingQueue.accept(resource.obj("entity"));state.update{it.copy(online=true)};return}
         if (screen == PlayerScreen.MATCH && resource.length() > 0 && PlayerMatch.parse(resource).raw.optBoolean("offlineSupported")) {
             matchQueue.accept(resource); state.update { it.copy(online = true) }; return
+        }
+        if (screen == PlayerScreen.CLUBHOUSE) {
+            state.update { it.copy(clubhouseContext = resource.obj("club").text("id"), clubhousePages = resource.optJSONArray("pages")?.strings().orEmpty()) }
         }
         state.update { current ->
             if (screen == PlayerScreen.TRAINING && id != null) {
@@ -344,6 +366,12 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         saved.put("navigation", json("active" to json("screen" to current.screen.name, "id" to current.activeId), "history" to org.json.JSONArray(navigation.map { json("screen" to it.screen.name, "id" to it.id) })))
     }
     private fun showDestination(screen: PlayerScreen, id: String?) {
+        val previousContext = playerThemeContext(state.value.screen, state.value.activeId)
+        val nextContext = playerThemeContext(screen, id)
+        if (previousContext != nextContext) {
+            themeReadAt = 0L
+            state.update { it.copy(theme = themeCache.read(saved.text("userId"), nextContext, api.serverNow()) ?: JSONObject(), clubhouseContext = nextContext ?: it.clubhouseContext, clubhousePages = if (nextContext != null && nextContext != it.clubhouseContext) emptyList() else it.clubhousePages) }
+        }
         state.update { it.copy(screen = screen, activeId = id, resource = JSONObject(), match = if (screen == PlayerScreen.MATCH) null else it.match, guestOperatorId = if (screen == PlayerScreen.MATCH && id == it.activeId) it.guestOperatorId else "", loading = hasSession() || screen == PlayerScreen.HELP, error = null, notice = null) }
         if (screen == PlayerScreen.MATCH && id != null) matchQueue.restore(id)
         if (screen == PlayerScreen.TRAINING && id != null) trainingQueue.restore(id)
@@ -479,6 +507,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private fun clearSession() {
         PlayerPush.clearLocal(getApplication())
         play.resetView()
+        themeCache.clear(); themeReadAt = 0L
         identityGeneration++; pending = null; pendingDestination = null; navigation.clear(); saved = JSONObject(); store.clear()
         state.update { PlayerUiState(loading = false, capabilities = it.capabilities, localUsers = it.localUsers) }
     }
@@ -676,7 +705,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             check(result.optBoolean("ok") && result.optString("status") in listOf("pending", "processing", "completed")) { "Het verwijderverzoek kon niet worden bevestigd. Probeer opnieuw." }
             // Acceptance invalidates access server-side. Erase tokens, queued actions, profile,
             // current match and return destination locally before any further authenticated call.
-            notificationOpenStore.clear(); pendingPushId = null; play.eraseAccount(saved.text("userId")); matchQueue.clear(); trainingQueue.clear(); clearSession()
+            notificationOpenStore.clear(); pendingPushId = null; playerEraseClubDrafts(getApplication(), saved.text("userId")); play.eraseAccount(saved.text("userId")); matchQueue.clear(); trainingQueue.clear(); clearSession()
             state.update { it.copy(notice = "Je verzoek om je account en gegevens te verwijderen is ontvangen. Je bent uitgelogd. Hulp of vragen: info@dartflow.nl.") }
             return
         }
@@ -685,6 +714,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             state.update { it.withoutHomeFeed() }
         }
         if (path.startsWith("/profile")) loadIdentity()
+        loadTheme(force = true)
         if (generation != identityGeneration || !hasSession()) return
         loadCommon()
         if (generation != identityGeneration || !hasSession()) return
@@ -746,7 +776,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private fun handleFailure(failure: Exception, polling: Boolean = false) {
         // Discard work from a previous login without changing the new login's feedback/state.
         if (failure is PlayerApiFailure && failure.code == "session_changed") return
-        if (failure is PlayerApiFailure && failure.code == "account_deleted") { play.eraseAccount(saved.text("userId")); matchQueue.clear(); trainingQueue.clear(); clearSession() }
+        if (failure is PlayerApiFailure && failure.code == "account_deleted") { playerEraseClubDrafts(getApplication(), saved.text("userId")); play.eraseAccount(saved.text("userId")); matchQueue.clear(); trainingQueue.clear(); clearSession() }
+        if (failure is PlayerApiFailure && failure.status in listOf(401, 403) && state.value.screen in listOf(PlayerScreen.CLUBHOUSE, PlayerScreen.CLUB_CHAT, PlayerScreen.CLUB_COMPETITION_WIZARD)) state.update { it.copy(resource = JSONObject(), theme = JSONObject(), clubhousePages = emptyList()) }
         val message = when (failure) {
             is PlayerApiFailure -> failure.feedback
             is IllegalArgumentException, is IllegalStateException -> failure.message?.takeIf { it.length in 1..200 } ?: "Controleer je invoer en probeer opnieuw."

@@ -57,13 +57,13 @@ internal fun tacticsDisplay(match:Match):PlayDisplay {
 
 private val PlayInk:Color @Composable get()=MaterialTheme.colorScheme.background
 private val PlayGreen:Color @Composable get()=MaterialTheme.colorScheme.primary
-private val PlayMuted = Color(0xFFADB5B0)
+private val PlayMuted: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 
 @Composable internal fun PlayDisplayView(play: PlayDisplay, landscape: Boolean, serverTime: Long, cached: Boolean) {
     if (!play.supported) {
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Text("WERK OCHE LIVE BIJ", color = PlayGreen, fontSize = 32.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Text("Deze spelvorm of regelversie wordt nog niet ondersteund. Gebruik de telefoon voor de actuele stand.", color = Color.White, textAlign = TextAlign.Center)
+            Text("Deze spelvorm of regelversie wordt nog niet ondersteund. Gebruik de telefoon voor de actuele stand.", color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center)
         }; return
     }
     if(play.x01Match!=null){LiveView(play.x01Match,landscape,play.x01Match.finished);return}
@@ -83,9 +83,9 @@ private val PlayMuted = Color(0xFFADB5B0)
                     val markSize=minOf(textSize.value,((availableHeight.value-115f).coerceAtLeast(55f)/(rows+2)/1.3f/scale)).coerceAtLeast(8f).sp
                     Row(Modifier.weight(1f).fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(10.dp)){
                         play.targets.indices.chunked(rows.coerceAtLeast(1)).forEach{indices->Column(Modifier.weight(1f).fillMaxHeight()){
-                            Row(Modifier.weight(1f),verticalAlignment=Alignment.CenterVertically){Text("DOEL",Modifier.weight(1f),color=PlayMuted,fontSize=markSize,lineHeight=markSize*1.2f,maxLines=1);play.names.forEach{Text(it,Modifier.weight(1f),color=Color.White,fontSize=markSize,lineHeight=markSize*1.2f,maxLines=1,overflow=TextOverflow.Ellipsis)}}
+                            Row(Modifier.weight(1f),verticalAlignment=Alignment.CenterVertically){Text("DOEL",Modifier.weight(1f),color=PlayMuted,fontSize=markSize,lineHeight=markSize*1.2f,maxLines=1);play.names.forEach{Text(it,Modifier.weight(1f),color=MaterialTheme.colorScheme.onSurface,fontSize=markSize,lineHeight=markSize*1.2f,maxLines=1,overflow=TextOverflow.Ellipsis)}}
                             indices.forEach{i->Row(Modifier.weight(1f).fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
-                                Text(if(play.targets[i]==25)"BULL" else "${play.targets[i]}",Modifier.weight(1f),color=Color.White,fontSize=markSize,lineHeight=markSize*1.2f,maxLines=1)
+                                Text(if(play.targets[i]==25)"BULL" else "${play.targets[i]}",Modifier.weight(1f),color=MaterialTheme.colorScheme.onSurface,fontSize=markSize,lineHeight=markSize*1.2f,maxLines=1)
                                 play.names.indices.forEach{side->val marks=play.marks.getOrNull(side)?.getOrNull(i)?:0;Text(if(marks>=play.requiredMarks)"✓" else "$marks/${play.requiredMarks}",Modifier.weight(1f),color=PlayGreen,fontSize=markSize,lineHeight=markSize*1.2f,fontWeight=FontWeight.Bold,maxLines=1)}
                             }}
                         }}
@@ -97,10 +97,10 @@ private val PlayMuted = Color(0xFFADB5B0)
                     Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)){
                         play.names.indices.chunked(if(play.names.size>1)2 else 1).forEach{sideRow->Row(Modifier.weight(1f).fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){
                             sideRow.forEach{side->Column(Modifier.weight(1f).fillMaxHeight().border(if(side==play.turn)2.dp else 1.dp,if(side==play.turn)PlayGreen else PlayMuted).padding(4.dp),verticalArrangement=Arrangement.spacedBy(3.dp)){
-                                Text("${if(side==play.turn)"▶ " else ""}${play.names[side]} · ${play.filled.getOrNull(side)?.count{it}?:0}/9",color=if(side==play.turn)PlayGreen else Color.White,fontSize=if(play.names.size>2)10.sp else 13.sp,lineHeight=if(play.names.size>2)12.sp else 16.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
+                                Text("${if(side==play.turn)"▶ " else ""}${play.names[side]} · ${play.filled.getOrNull(side)?.count{it}?:0}/9",color=if(side==play.turn)PlayGreen else MaterialTheme.colorScheme.onSurface,fontSize=if(play.names.size>2)10.sp else 13.sp,lineHeight=if(play.names.size>2)12.sp else 16.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
                                 play.card.chunked(3).forEachIndexed{row,targets->Row(Modifier.weight(1f).fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(3.dp)){targets.forEachIndexed{col,target->
                                     val done=play.filled.getOrNull(side)?.getOrNull(row*3+col)==true
-                                    Box(Modifier.weight(1f).fillMaxHeight().border(1.dp,if(done)PlayGreen else PlayMuted).background(if(done)PlayGreen.copy(alpha=.15f)else PlayInk),contentAlignment=Alignment.Center){Text("${if(done)"✓ " else ""}D$target",color=if(done)PlayGreen else Color.White,fontSize=if(play.names.size>2)14.sp else if(compact)24.sp else 34.sp,lineHeight=if(play.names.size>2)16.sp else if(compact)28.sp else 38.sp,fontWeight=FontWeight.Bold,maxLines=1)}
+                                    Box(Modifier.weight(1f).fillMaxHeight().border(1.dp,if(done)PlayGreen else PlayMuted).background(if(done)PlayGreen.copy(alpha=.15f)else PlayInk),contentAlignment=Alignment.Center){Text("${if(done)"✓ " else ""}D$target",color=if(done)PlayGreen else MaterialTheme.colorScheme.onSurface,fontSize=if(play.names.size>2)14.sp else if(compact)24.sp else 34.sp,lineHeight=if(play.names.size>2)16.sp else if(compact)28.sp else 38.sp,fontWeight=FontWeight.Bold,maxLines=1)}
                                 }}}
                             }}
                         }}
@@ -108,21 +108,21 @@ private val PlayMuted = Color(0xFFADB5B0)
                 }
                 "around" -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) { play.names.forEachIndexed { side, name ->
                     val index = play.targetIndex.getOrElse(side) { 0 }; val target = play.targets.getOrNull(index)
-                    Text(name, color = Color.White, fontSize = textSize)
+                    Text(name, color = MaterialTheme.colorScheme.onSurface, fontSize = textSize)
                     Text(if (target == null) "VOLTOOID" else if (target == 25) "BULL" else "$target", color = PlayGreen, fontSize = if (compact) 54.sp else 80.sp, fontWeight = FontWeight.Bold)
                     Text("${index.coerceAtMost(play.targets.size)}/${play.targets.size} doelen · ${play.targetHits.getOrElse(side) { 0 }}/${play.hitsPerTarget} treffers · ${play.darts.getOrElse(side){0}} pijlen", color = PlayMuted, fontSize = textSize)
                 } }
                 "leg-challenge" -> Row(Modifier.weight(1f).fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)){
                     listOf("JOUW POGING" to (play.remaining.firstOrNull()?:0),play.sourceName.ifBlank{"GESPEELDE LEG"} to play.sourceRemaining).forEachIndexed{side,(name,remaining)->Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)){
                         Text(name,color=if(side==0)PlayGreen else PlayMuted,fontSize=textSize,maxLines=2,overflow=TextOverflow.Ellipsis)
-                        Text("$remaining",color=if(side==0)PlayGreen else Color.White,fontSize=if(compact)48.sp else 74.sp)
+                        Text("$remaining",color=if(side==0)PlayGreen else MaterialTheme.colorScheme.onSurface,fontSize=if(compact)48.sp else 74.sp)
                         val visits=if(side==0)play.ownVisitRows else play.sourceVisits
                         visits.forEachIndexed{index,(score,rest)->Text("${index+1}. $score → $rest",color=PlayMuted,fontSize=textSize)}
                         if(visits.isEmpty())Text(if(side==0)"Nog geen verwerkte beurt." else "Historische worpen verschijnen na jouw verwerkte beurt.",color=PlayMuted,fontSize=textSize)
                     }}
                 }
                 else -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { play.names.forEachIndexed { side, name -> Column(Modifier.weight(1f)) { Text(name, color = Color.White, fontSize = textSize); Text("${play.remaining.getOrElse(side) { 0 }}", color = if (side == play.turn) PlayGreen else Color.White, fontSize = if (compact) 64.sp else 100.sp, fontWeight = FontWeight.Bold) } } }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { play.names.forEachIndexed { side, name -> Column(Modifier.weight(1f)) { Text(name, color = MaterialTheme.colorScheme.onSurface, fontSize = textSize); Text("${play.remaining.getOrElse(side) { 0 }}", color = if (side == play.turn) PlayGreen else MaterialTheme.colorScheme.onSurface, fontSize = if (compact) 64.sp else 100.sp, fontWeight = FontWeight.Bold) } } }
                     if (play.mode == "finish") { Text("DOEL ${play.finishTarget} · POGING ${play.attempt.coerceAtMost(play.attemptCount)}/${play.attemptCount} · ${play.dartsLeft} PIJLEN OVER", color = PlayGreen, fontSize = textSize); play.attempts.forEach { Text(it, color = PlayMuted, fontSize = textSize) } }
                     if (play.mode == "leg-challenge") { Text("${if(play.sourceName.isBlank())"GESPEELDE LEG" else play.sourceName}: ${play.sourceRemaining}", color = PlayMuted, fontSize = if (compact) 30.sp else 46.sp); Text("Jouw geaccepteerde beurten: ${play.ownVisits}", color = PlayMuted, fontSize = textSize); play.sourceVisits.forEach { (score, rest) -> Text("$score → $rest", color = PlayMuted, fontSize = textSize) }; if (play.sourceVisits.isEmpty()) Text("Historische worpen verschijnen na jouw verwerkte beurt.", color = PlayMuted, fontSize = textSize) }
                 }

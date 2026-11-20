@@ -18,6 +18,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.view.WindowCompat
 
 class MainActivity : ComponentActivity() {
     private val model: PlayerViewModel by viewModels()
@@ -26,14 +29,22 @@ class MainActivity : ComponentActivity() {
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // The app always uses its dark palette, including on light Android themes.
+        // A readable default is shown before the account's theme is resolved.
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.rgb(16, 18, 17)))
         intent?.data?.let { model.handleDeepLink(it.toString()) }
         intent?.getStringExtra("dartflowPushId")?.let(model::handlePushTap)
         setContent {
-            DartFlowPlayerTheme {
-                val state by model.ui.collectAsStateWithLifecycle()
+            val state by model.ui.collectAsStateWithLifecycle()
+            DartFlowPlayerTheme(state.theme, state.themeClockOffset) {
+                val background = PlayerInk
+                SideEffect {
+                    val controller = WindowCompat.getInsetsController(window, window.decorView)
+                    controller.isAppearanceLightStatusBars = background.luminance() > .5f
+                    controller.isAppearanceLightNavigationBars = background.luminance() > .5f
+                    @Suppress("DEPRECATION")
+                    window.navigationBarColor = background.toArgb()
+                }
                 var scanning by remember { mutableStateOf(false) }
                 LaunchedEffect(state.googleUrl) {
                     state.googleUrl?.let { url ->
@@ -56,6 +67,7 @@ class MainActivity : ComponentActivity() {
                         pushConsent = { enabled -> if (!enabled || PlayerPush.permitted(this@MainActivity)) model.setPushEnabled(enabled) else if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) else openNotificationSettings() },
                         pushSettings = ::openNotificationSettings,
                         openNotification = model::handlePushTap,
+                        download = { model.api.calendar(it) },
                         read = { if(it.startsWith("/play/"))model.api.play(it)else model.api.call(it) },
                         navigate = model::navigate, back = model::back, saveOrganizerDraft = model::saveOrganizerDraft, refresh = model::refresh, requestOtp = model::requestOtp,
                         verifyOtp = model::verifyOtp, google = model::startGoogle, localLogin = model::localLogin,

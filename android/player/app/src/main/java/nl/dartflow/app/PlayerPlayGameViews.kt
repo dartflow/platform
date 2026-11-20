@@ -24,7 +24,7 @@ import org.json.JSONObject
         "x01" -> {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { session.sides.indices.forEach { side -> PlayerCard(modifier = Modifier.weight(1f)) {
                 Text(session.sideName(side), fontWeight = FontWeight.Bold)
-                Text("${progress.optJSONArray("remaining")?.optInt(side) ?: session.rules.optInt("startScore")}", fontFamily = PlayerBarlow, fontSize = if (session.sides.size > 2) 34.sp else 56.sp, color = if (side == session.turn) PlayerLime else Color.White)
+                Text("${progress.optJSONArray("remaining")?.optInt(side) ?: session.rules.optInt("startScore")}", fontFamily = PlayerBarlow, fontSize = if (session.sides.size > 2) 34.sp else 56.sp, color = if (side == session.turn) PlayerLime else PlayerText)
                 if (session.rules.text("inRule") == "double") Text(if (progress.optJSONArray("opened")?.optBoolean(side) == true) "Geopend" else "Nog dubbel openen", color = PlayerMuted)
             } } }
             PlayVisits(session)
@@ -43,7 +43,7 @@ import org.json.JSONObject
                 val card = progress.optJSONArray("card").ints(); val filled = progress.optJSONArray("filled")?.optJSONArray(side)
                 if (session.sides.size <= 2 || side == session.turn || session.complete) card.chunked(3).forEachIndexed { rowIndex, row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { row.forEachIndexed { column, target ->
                     val index = rowIndex * 3 + column; val done = filled?.optBoolean(index) == true
-                    Box(Modifier.weight(1f).heightIn(min = 54.dp).border(1.dp, if (done) PlayerLime else PlayerBorder, RoundedCornerShape(8.dp)).background(if (done) PlayerLime.copy(alpha = .12f) else PlayerPanel).padding(12.dp).testTag("bingo-$side-$index")) { Text("${if (done) "✓ " else ""}D$target", color = if (done) PlayerLime else Color.White) }
+                    Box(Modifier.weight(1f).heightIn(min = 54.dp).border(1.dp, if (done) PlayerLime else PlayerBorder, RoundedCornerShape(8.dp)).background(if (done) PlayerLime.copy(alpha = .12f) else PlayerPanel).padding(12.dp).testTag("bingo-$side-$index")) { Text("${if (done) "✓ " else ""}D$target", color = if (done) PlayerLime else PlayerText) }
                 } } } else Text("${(0 until 9).count { filled?.optBoolean(it) == true }} / 9 vakken", color = PlayerMuted)
                 Text("${progress.optJSONArray("darts")?.optInt(side) ?: 0} pijlen", color = PlayerMuted)
             } }

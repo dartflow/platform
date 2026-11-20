@@ -39,11 +39,10 @@ export async function resolveReportTarget(client:Client,actor:string,a:Record<st
  }else if(kind==='post'||kind==='reply'){
   const {resolveFeedReportTarget}=await import('./feed');
   target=await resolveFeedReportTarget(client,actor,id,kind);
- }else if(kind==='message'){
-  const row=(await client.query('select author_id,scope_kind,scope_id,deleted from dartflow_private.community_messages where id=$1',[id])).rows[0];
-  if(!row||row.deleted)throw unavailable();
-  const {communityScope}=await import('./community');await communityScope(client,actor,row.scope_kind,row.scope_id,true);
-  target={targetId:id,targetType:kind,userId:row.author_id,roomId:row.scope_kind==='match'?null:row.scope_id,scopeKind:row.scope_kind,scopeId:row.scope_id};
+ }else if(kind==='message'||kind==='club-channel-message'){
+  const row=kind==='message'?(await client.query('select author_id,scope_kind,scope_id,deleted from dartflow_private.community_messages where id=$1',[id])).rows[0]:null;
+  if(row){if(row.deleted)throw unavailable();const {communityScope}=await import('./community');await communityScope(client,actor,row.scope_kind,row.scope_id,true);target={targetId:id,targetType:'message',userId:row.author_id,roomId:row.scope_kind==='match'?null:row.scope_id,scopeKind:row.scope_kind,scopeId:row.scope_id};}
+  else{const channelMessage=(await client.query('select m.author_id,m.channel_id,c.club_id from dartflow_private.club_channel_messages m join dartflow_private.club_channels c on c.id=m.channel_id where m.id=$1 and not m.deleted',[id])).rows[0];if(!channelMessage)throw unavailable();const {channelAccess}=await import('./clubhouse-chat');await channelAccess(client,actor,channelMessage.club_id,channelMessage.channel_id);target={targetId:id,targetType:'club-channel-message',userId:channelMessage.author_id,roomId:channelMessage.club_id,scopeKind:'club',scopeId:channelMessage.club_id};}
  }else if(kind==='room-message'){
   const row=(await client.query('select author_id,room_id,deleted from dartflow_private.platform_messages where id=$1',[id])).rows[0];
   if(!row||row.deleted)throw unavailable();const room=await entity(client,row.room_id);if(room.kind!=='room')throw unavailable();await requireAccess(client,room,actor);

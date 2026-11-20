@@ -88,7 +88,9 @@ object PlayerLinks {
                 if (id != null) help["id"] = id
                 PlayerDestination(PlayerScreen.HELP, help.entries.joinToString("&") { "${it.key}=${encode(it.value)}" }.ifBlank { null })
             }
-            "verenigingen", "clubs" -> PlayerDestination(if (id != null) PlayerScreen.CLUB else PlayerScreen.CLUBS, id)
+            "clubhouse" -> id?.let { PlayerDestination(PlayerScreen.CLUBHOUSE, playerClubId(it, playerClubPage(query(uri)["page"]) ?: playerClubPage(parts.getOrNull(2)) ?: "overview", query(uri)["item"] ?: query(uri)["activity"] ?: query(uri)["post"])) }
+            "competition-wizard" -> id?.let { PlayerDestination(PlayerScreen.CLUB_COMPETITION_WIZARD, playerClubId(it)) }
+            "verenigingen", "clubs" -> if (id != null && (playerClubPage(query(uri)["page"]) != null || playerClubPage(parts.getOrNull(2)) != null)) PlayerDestination(PlayerScreen.CLUBHOUSE, playerClubId(id, playerClubPage(query(uri)["page"]) ?: requireNotNull(playerClubPage(parts.getOrNull(2))), query(uri)["item"] ?: query(uri)["activity"] ?: query(uri)["post"])) else PlayerDestination(if (id != null) PlayerScreen.CLUB else PlayerScreen.CLUBS, id)
             "organiseren" -> PlayerDestination(PlayerScreen.ORGANIZE)
             "vrienden" -> PlayerDestination(PlayerScreen.FRIENDS)
             "historie" -> PlayerDestination(PlayerScreen.HISTORY)

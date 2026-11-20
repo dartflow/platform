@@ -182,7 +182,10 @@ test('locations, personal home boards and UTC event reservations have independen
    await run(manager,{type:'location.board.close',locationId:loc,boardId:board});await run(manager,{type:'location.board.force-release',locationId:loc,boardId:board,expectedSessionId:active.activity!.sessionId,confirmedSourceId:match.id,confirmedBoardName:active.name,reason:'Locatie sluit voor onderhoud'});
    const interrupted=await getMatch(p1,match.id);assert.equal(interrupted.status,'interrupted');assert.equal(interrupted.boardId,null);assert.equal(interrupted.remaining[0],241);assert.equal(interrupted.visits.length,1);assert.equal((await getBoardScreen(board)).status,'closed');
    assert.equal((await owner.query('select 1 from dartflow_private.match_results where match_id=$1',[match.id])).rowCount,0);assert.equal((await owner.query('select count(*)::int as n from dartflow_private.visits where match_id=$1',[match.id])).rows[0].n,1);
-   await run(manager,{type:'location.board.open',locationId:loc,boardId:board});assert.equal((await getBoardScreen(board)).status,'reserved');await owner.query("update dartflow_private.board_reservations set starts_at=now()-interval '2 minutes',ends_at=now()-interval '1 second' where id=$1",[r.id]);
+   await run(manager,{type:'location.board.open',locationId:loc,boardId:board});assert.equal((await getBoardScreen(board)).status,'reserved');
+   // Expire this synthetic window without moving its start into an earlier,
+   // legitimately retained reservation from another scenario in this suite.
+   await owner.query("update dartflow_private.board_reservations set ends_at=starts_at+interval '1 microsecond' where id=$1",[r.id]);
   });
   await t.test('a delegated manager is rechecked after a blocked location lock and loses replay rights immediately',async()=>{
    const req=randomUUID(),action={type:'location.board.update',locationId:loc,boardId:board,name:'Nieuwe fysieke baannaam'};await run(manager,action,undefined,req);

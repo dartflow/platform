@@ -3,7 +3,7 @@ import type {Fixture} from './platform-types';
 
 export type SeasonStatus='draft'|'registration'|'planned'|'active'|'completed'|'archived';
 export type SeasonFormat='singles'|'teams'|'doubles'|'cup'|'ladder'|'drop-in'|'champions';
-export type SeasonSettings={legWinByTwo?:Settings['legWinByTwo'];setWinByTwo?:Settings['setWinByTwo'];inRule?:Settings['inRule'];outRule?:Settings['outRule'];sideStartScores?:[number,number];slotRules?:Record<string,Partial<Settings>>;startProcedure?:Settings['startProcedure'];setOpener?:Settings['setOpener'];decidingLeg?:Settings['decidingLeg'];bestOfSets?:number;
+export type SeasonSettings={tiebreaks?:('points'|'leg-difference'|'legs-for'|'head-to-head')[];legWinByTwo?:Settings['legWinByTwo'];setWinByTwo?:Settings['setWinByTwo'];inRule?:Settings['inRule'];outRule?:Settings['outRule'];sideStartScores?:[number,number];slotRules?:Record<string,Partial<Settings>>;startProcedure?:Settings['startProcedure'];setOpener?:Settings['setOpener'];decidingLeg?:Settings['decidingLeg'];bestOfSets?:number;
  scheduleMode:'fixed'|'flex';playMode:'local'|'remote'|'hybrid';startDate:string;playTime:string;timezone:string;
  roundDays:number;windowDays:number;slotMinutes:number;boardCount:number;boardIds:string[];capacity:number;
  legMode:'bestOf'|'fixed';legs:number;startScore:301|501|701;pointsWin:number;pointsDraw:number;pointsLoss:number;

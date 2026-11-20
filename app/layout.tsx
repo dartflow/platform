@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "@/components/clubhouse.css";
 import "@/components/pwa-screens.css";
 import "@/components/oche-live.css";
 import "@/components/analytics-consent.css";

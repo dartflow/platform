@@ -1,3 +1,4 @@
+import {clubPermission} from './club-access';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { DomainError } from './domain';
@@ -53,19 +54,20 @@ export async function socialAction(client: PoolClient, actor: string, command: P
     if(!report.rows.length)throw new DomainError('not_found','Deze melding bestaat niet.',404);
     const item=report.rows[0];if(item.target_id===actor)throw new DomainError('forbidden','Je kunt een melding over jezelf niet beoordelen.',403);
     const platform=(await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in ('owner','admin')",[actor])).rowCount;
-    if(!platform) {if(!item.room_id)throw new DomainError('forbidden','Alleen bevoegd platformbeheer kan deze melding behandelen.',403);await requireAccess(client,await entity(client,item.room_id),actor,true);}
+    if(!platform&&!(item.scope_kind==='club'&&item.scope_id&&await clubPermission(client,item.scope_id,actor,'chat.moderate'))) {if(!item.room_id)throw new DomainError('forbidden','Alleen bevoegd platformbeheer kan deze melding behandelen.',403);await requireAccess(client,await entity(client,item.room_id),actor,true);}
     if(item.status==='resolved')throw new DomainError('report_resolved','Deze melding is al behandeld.',409);
     const reason=text(a.reason,2000),operation=String(a.operation??'no-action');
     if(!['no-action','warn','remove-content'].includes(operation))throw new DomainError('invalid_moderation','Kies een geldige moderatieactie.');
     if(operation==='remove-content'){
-      if(!item.content_id||!['post','reply','message','room-message'].includes(item.target_type))throw new DomainError('invalid_moderation','Deze melding heeft geen verwijderbare berichtinhoud.');
+      if(!item.content_id||!['post','reply','message','club-channel-message','room-message'].includes(item.target_type))throw new DomainError('invalid_moderation','Deze melding heeft geen verwijderbare berichtinhoud.');
       if(item.target_type==='post'){
         await client.query('update dartflow_private.feed_items set deleted=true where id=$1',[item.content_id]);
         await client.query('update dartflow_private.community_posts set deleted=true where id=$1',[item.content_id]);
       }else if(item.target_type==='reply'){
         await client.query('delete from dartflow_private.feed_replies where id=$1',[item.content_id]);
         await client.query('update dartflow_private.community_posts set deleted=true where id=$1',[item.content_id]);
-      }else if(item.target_type==='message')await client.query('update dartflow_private.community_messages set deleted=true,sequence=default where id=$1 and not deleted',[item.content_id]);
+      }else if(item.target_type==='club-channel-message')await client.query('update dartflow_private.club_channel_messages set deleted=true,sequence=default where id=$1 and not deleted',[item.content_id]);
+      else if(item.target_type==='message')await client.query('update dartflow_private.community_messages set deleted=true,sequence=default where id=$1 and not deleted',[item.content_id]);
       else await client.query('update dartflow_private.platform_messages set deleted=true where id=$1',[item.content_id]);
     }
     await client.query("update dartflow_private.platform_reports set status='resolved',decision=$2,reviewed_by=$3 where id=$1",[item.id,`${operation}: ${reason}`,actor]);
