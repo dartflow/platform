@@ -6,12 +6,13 @@ import type {OcheDisplaySnapshot,OcheManagement,OchePairing} from '../../lib/och
 const origin='http://localhost:3000';
 async function login(page:Page,name='Michael de Groot',next='/app/schermen'){await page.goto(`/inloggen?next=${encodeURIComponent(next)}`);await page.getByRole('button',{name:new RegExp(name)}).click();await expect(page).toHaveURL(new URL(next,origin).href);}
 async function api<T>(context:BrowserContext,path:string,body?:unknown):Promise<T>{
+ let waited=0;
  for(let retry=0;;retry++){
   const response=body===undefined?await context.request.get(`/api/oche/v1/${path}`):await context.request.post(`/api/oche/v1/${path}`,{headers:{Origin:origin},data:body});
   if(response.status()===429&&retry<2){
    const header=response.headers()['retry-after'];
    const seconds=Number(header);
-   if(header&&Number.isFinite(seconds)&&seconds>=0&&seconds<=30){await new Promise(resolve=>setTimeout(resolve,Math.ceil(seconds*1000)+100));continue;}
+   if(header&&Number.isFinite(seconds)&&seconds>=0&&seconds<=60&&waited+seconds<=60){waited+=seconds;await new Promise(resolve=>setTimeout(resolve,Math.ceil(seconds*1000)+100));continue;}
   }
   expect(response.ok(),await response.text()).toBe(true);return response.json();
  }

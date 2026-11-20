@@ -279,6 +279,15 @@ export default function CompetitionWizard({
           throw new Error(
             "De server heeft geen opgeslagen concept teruggegeven.",
           );
+        if (
+          command.action.type === "wizard.save" &&
+          wizardConfigKey(current.current) ===
+            wizardConfigKey(command.action.config)
+        ) {
+          const accepted = structuredClone(response.draft.config);
+          current.current = accepted;
+          setConfig(accepted);
+        }
         pending.current = null;
         draftRef.current = response.draft;
         setDraft(response.draft);

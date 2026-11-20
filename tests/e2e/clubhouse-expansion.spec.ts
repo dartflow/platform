@@ -159,10 +159,16 @@ test("six real wizard steps publish one canonical club competition using only an
     const wizard = page.getByRole("region", { name: "Competitiewizard" });
     await wizard
       .getByLabel("Competitienaam", { exact: true })
-      .fill(`Vrijdag singles ${c.suffix}`);
+      .fill(`  Vrijdag singles ${c.suffix}  `);
     await wizard
       .getByLabel("Seizoen / editie", { exact: true })
       .fill("Zomer 2090");
+    await wizard
+      .getByRole("button", { name: "Concept opslaan", exact: true })
+      .click();
+    await expect(
+      wizard.getByLabel("Competitienaam", { exact: true }),
+    ).toHaveValue(`Vrijdag singles ${c.suffix}`);
     await next(page);
     await wizard.getByRole("checkbox", { name: /Danny Goldenbelt/ }).check();
     await wizard.getByRole("checkbox", { name: /Michael de Groot/ }).check();
@@ -345,6 +351,24 @@ test("wizard drafts survive reload and offline editing, and a real concurrent re
         exact: true,
       }),
     ).toBeVisible();
+    const noticeContrast = await b.locator(".notice.error").evaluate((node) => {
+      const style = getComputedStyle(node);
+      const luminance = (color: string) => {
+        const rgb = color
+          .match(/[\d.]+/g)!
+          .slice(0, 3)
+          .map(Number)
+          .map((v) => {
+            const n = v / 255;
+            return n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
+          });
+        return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+      };
+      const a = luminance(style.color),
+        c = luminance(style.backgroundColor);
+      return (Math.max(a, c) + 0.05) / (Math.min(a, c) + 0.05);
+    });
+    expect(noticeContrast).toBeGreaterThanOrEqual(4.5);
     await screenshot(b, info, "wizard-concurrent-safe-copy");
     await b
       .getByRole("button", {
