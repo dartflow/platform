@@ -3,6 +3,9 @@ package nl.dartflow.app
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -92,11 +95,26 @@ class PlayerControlUiTest {
     }
     @Test fun missingExternalPushConfigurationKeepsInboxReadableWithoutPermissionPrompt() {
         var prompted = false
-        val state = PlayerUiState(loading = false, resource = json("push" to json("transportConfigured" to false, "items" to JSONArray(listOf(json("id" to "n1", "category" to "Wedstrijden", "body" to "Er is een wedstrijdmelding.", "available" to false))))))
-        compose.setContent { DartFlowPlayerTheme { Column(Modifier.verticalScroll(rememberScrollState())) { PlayerPushControls(state, PlayerActions(pushConsent = { prompted = true })) } } }
-        compose.onNodeWithText("Systeemmeldingen toestaan op dit toestel").assertIsDisplayed()
+        var opened: String? = null
+        val notificationId = "00000000-0000-4000-8000-000000000701"
+        var state by mutableStateOf(PlayerUiState(loading = false,
+            session = PlayerSession("push-fixture", "fixture@example.test", Long.MAX_VALUE, true),
+            profile = PlayerProfile("push-fixture", "Noor", "noor", "Noor", true, true, true),
+            screen = PlayerScreen.NOTIFICATIONS,
+            resource = json("items" to JSONArray(listOf(json("id" to notificationId, "category" to "Wedstrijden", "body" to "Er is een wedstrijdmelding.", "available" to false))))))
+        val actions = PlayerActions(pushConsent = { prompted = true }, openNotification = { opened = it }, navigate = { screen, id ->
+            state = state.copy(screen = screen, activeId = id, resource = json("push" to json("transportConfigured" to false)))
+        })
+        compose.setContent { DartFlowPlayerTheme { PlayerApp(state, actions) } }
         compose.onNodeWithText("Er is een wedstrijdmelding.").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Controleer en open actuele melding").assertIsNotEnabled()
+        // Availability must be checked again by notification.open, even for an unavailable cached row.
+        compose.onNodeWithTag("notification-row-$notificationId").assertHasClickAction().performClick()
+        compose.runOnIdle { assertEquals(notificationId, opened); assertFalse(prompted) }
+        compose.onNodeWithText("Meldingsinstellingen").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(PlayerScreen.NOTIFICATION_SETTINGS, state.screen) }
+        compose.onNodeWithText("Systeemmeldingen toestaan op dit toestel").performScrollTo().assertIsDisplayed()
+        compose.onAllNodes(isToggleable()).onFirst().assertIsNotEnabled()
+        compose.onNodeWithText("Stuur testmelding naar dit toestel").performScrollTo().assertIsDisplayed().assertIsNotEnabled()
         compose.runOnIdle { assertFalse(prompted) }
     }
 }
