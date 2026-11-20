@@ -810,10 +810,12 @@
 .clubhouse-app-shell .mobile-brand {
   display: block;
   margin-right: auto;
+  min-width: 0;
 }
 .clubhouse-app-shell .mobile-brand img {
   display: block;
   width: 112px;
+  max-width: 100%;
   height: 32px;
   object-fit: contain;
 }
@@ -822,6 +824,13 @@
 }
 .clubhouse-app-shell .topbar-right {
   gap: 12px;
+}
+.clubhouse-app-shell .workspace-tools .workspace-notifications-button {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
 }
 .clubhouse-app-shell .profile {
   padding: 0;
