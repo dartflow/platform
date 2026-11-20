@@ -31,4 +31,5 @@ done
 if (( ui_test_status != 0 )); then
   exit "$ui_test_status"
 fi
+python3 -B ../ci/verify_native_tests.py --app player --kind ui
 exit "$screenshot_status"

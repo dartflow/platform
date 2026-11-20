@@ -17,7 +17,7 @@ test('an overview never combines an old tournament revision with a newly approve
  let resumeRead=()=>{};
  let pendingOverview:ReturnType<typeof getPlatformOverview>|undefined;
  try{
-  await owner.query('insert into dartflow_private.profiles(id,name,display_name_confirmed) values($1,$2,true),($3,$4,true)',[host,'Snapshot organizer fixture',applicant,'Snapshot applicant fixture']);
+  await owner.query('insert into dartflow_private.profiles(id,name,display_name,display_name_confirmed) values($1,$2,$3,true),($4,$5,$6,true)',[host,`snapshot${host.slice(0,8)}`,'Snapshot organizer fixture',applicant,`snapshot${applicant.slice(0,8)}`,'Snapshot applicant fixture']);
   const club=(await run(host,{type:'club.create',name:'Snapshot coherence fixture club'})).id!;
   const tournament=await run(host,{type:'tournament.create',clubId:club,name:'Snapshot approval fixture',eligibility:'all',approvalRequired:true,boards:1});
   await run(applicant,{type:'competition.register',id:tournament.id});

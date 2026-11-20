@@ -1,10 +1,11 @@
 "use client";
 import { useEffect } from "react";
-import { legacyDestination } from "@/lib/routes";
+import { legacyDestination,ownsPrivatePlayFragment } from "@/lib/routes";
 export default function LegacyLink() {
   useEffect(() => {
     const apply = () => {
       // Pairing and privacy fragments belong to their page, never prototype routing.
+      if(ownsPrivatePlayFragment(location.pathname,location.hash))return;
       if (location.pathname === '/koppel-scherm' || location.pathname === '/privacy') return;
       if (!location.hash) return;
       const route = location.hash.replace(/^#\/?/, "");

@@ -14,7 +14,7 @@ const active=(row:EntityRow)=>!['inactive','deleted'].includes(String(row.state.
 async function requireGrant(client:Client,row:EntityRow,actor:string,grant:ClubPermission){if(!await clubPermission(client,row.id,actor,grant))throw new DomainError('forbidden','Je hebt hiervoor geen actueel verenigingsrecht.',403);}
 async function requireOwner(client:Client,row:EntityRow,actor:string,allowInactive=false){if(row.owner_id!==actor||(await member(client,row.id,actor))?.status!=='active'||(!allowInactive&&!active(row))||row.state.lifecycle==='deleted')throw new DomainError('owner_required','Alleen de huidige verenigingseigenaar kan dit wijzigen.',403);}
 async function intake(client:Client,row:EntityRow){const {rows}=await client.query('select version,introduction,questions from dartflow_private.club_intake_versions where club_id=$1 order by version desc limit 1',[row.id]);return rows[0] as {version:number;introduction:string;questions:IntakeQuestion[]};}
-async function mail(client:PoolClient,id:string,templateId:string,row:EntityRow,recipientId:string,variables:Record<string,string>={}){return enqueueDomainMail(client,{id,templateId,scope:`club:${row.id}`,recipientId,entityId:row.id,variables:{clubName:row.state.name,actionUrl:`/app/clubs/${row.id}`,...variables}});}
+async function mail(client:PoolClient,id:string,templateId:string,row:EntityRow,recipientId:string,variables:Record<string,string>={},actorId?:string){return enqueueDomainMail(client,{id,templateId,scope:`club:${row.id}`,recipientId,actorId,entityId:row.id,variables:{clubName:row.state.name,actionUrl:`/app/clubs/${row.id}`,...variables}});}
 async function makeActive(client:Client,row:EntityRow,user:string){await available(client,row);await addMember(client,row.id,user,'member','active');await client.query("insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,'player') on conflict(club_id,user_id) do update set role='player'",[row.id,user]);}
 async function submitted(client:PoolClient,row:EntityRow,user:string,version:number,kind:'open'|'invite'|'intake',answers:unknown,status:'pending'|'approved'){
  const id=randomUUID();await client.query('insert into dartflow_private.club_join_requests(id,club_id,user_id,version,kind,answers,status,reviewed_at) values($1,$2,$3,$4,$5,$6,$7,case when $7=\'approved\' then now() else null end)',[id,row.id,user,version,kind,JSON.stringify(answers),status]);
@@ -23,7 +23,7 @@ async function submitted(client:PoolClient,row:EntityRow,user:string,version:num
   await mail(client,`club-request:${id}:received`,'club-request-received',row,user);
   const name=(await client.query('select name from dartflow_private.profile_labels where id=$1',[user])).rows[0]?.name||'Een speler';
   const members=await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='active'",[row.id]);
-  for(const reviewer of members.rows)if(await clubPermission(client,row.id,reviewer.user_id,'members.approve'))await mail(client,`club-request:${id}:reviewers`,'club-request',row,reviewer.user_id,{actorName:name});
+  for(const reviewer of members.rows)if(await clubPermission(client,row.id,reviewer.user_id,'members.approve'))await mail(client,`club-request:${id}:reviewers`,'club-request',row,reviewer.user_id,{actorName:name},user);
  }
  return id;
 }
@@ -96,7 +96,7 @@ export async function clubAction(client:PoolClient,actor:string,command:Platform
   if((await member(client,row.id,target))?.status==='banned')throw new DomainError('forbidden','Deze speler kan niet worden uitgenodigd.',403);
   await client.query("update dartflow_private.club_invites set status='expired',decided_at=now() where club_id=$1 and user_id=$2 and status='pending' and expires_at<=now()",[row.id,target]);
   const existing=(await client.query("select id from dartflow_private.club_invites where club_id=$1 and user_id=$2 and status='pending'",[row.id,target])).rows[0];
-  if(!existing){const inviteId=randomUUID();await client.query('insert into dartflow_private.club_invites(id,club_id,user_id,invited_by) values($1,$2,$3,$4)',[inviteId,row.id,target,actor]);await addMember(client,row.id,target,'member','invited');const name=(await client.query('select name from dartflow_private.profile_labels where id=$1',[actor])).rows[0].name;await mail(client,`club-invite:${inviteId}`,'club-invite',row,target,{actorName:name});}
+  if(!existing){const inviteId=randomUUID();await client.query('insert into dartflow_private.club_invites(id,club_id,user_id,invited_by) values($1,$2,$3,$4)',[inviteId,row.id,target,actor]);await addMember(client,row.id,target,'member','invited');const name=(await client.query('select name from dartflow_private.profile_labels where id=$1',[actor])).rows[0].name;await mail(client,`club-invite:${inviteId}`,'club-invite',row,target,{actorName:name},actor);}
  }else if(type==='club.invite.accept'||type==='club.invite.reject'){
   const invite=(await client.query('select * from dartflow_private.club_invites where id=$1 and club_id=$2 and user_id=$3 for update',[uuid(a.inviteId),row.id,actor])).rows[0];if(!invite)throw new DomainError('not_found','Deze uitnodiging is niet voor jou.',404);
   if(invite.status!=='pending')return {ok:true,id:row.id,entity:await clubView(client,row,actor)};

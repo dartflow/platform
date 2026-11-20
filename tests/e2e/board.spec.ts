@@ -122,13 +122,17 @@ test("one physical QR binds persisted solo and two real local players to its rea
   const grant = await issued.json();
   await screen.goto(grant.url);
   await login(a, "Michael de Groot", `/baan/${boardId}`);
-  await expect(
-    a.getByRole("heading", { name: "Vrij spelen op deze baan" }),
-  ).toBeVisible();
-  await a
+  // This case uses the canonical account-bound board form. The separate
+  // guest QR scenarios cover the new first-name free-play form on this page.
+  const boardStart = a.locator("form").filter({
+    has: a.getByRole("heading", { name: "Vrij spelen op deze baan", exact: true }),
+  });
+  await expect(boardStart).toHaveCount(1);
+  await expect(boardStart).toBeVisible();
+  await boardStart
     .getByRole("combobox", { name: "Spelvorm", exact: true })
     .selectOption("solo");
-  await a
+  await boardStart
     .getByRole("button", { name: "Op deze baan starten", exact: true })
     .click();
   await expect(a).toHaveURL(/\/app\/training\/[a-f0-9-]{36}$/);
@@ -179,18 +183,18 @@ test("one physical QR binds persisted solo and two real local players to its rea
   ).toBeVisible();
   await a.goto(`/baan/${boardId}`);
   await expect(
-    a.getByRole("button", { name: "Op deze baan starten", exact: true }),
+    boardStart.getByRole("button", { name: "Op deze baan starten", exact: true }),
   ).toBeVisible();
-  await a
+  await boardStart
     .getByRole("combobox", { name: "Spelvorm", exact: true })
     .selectOption("local");
-  await a
+  await boardStart
     .getByRole("combobox", { name: "Best of legs", exact: true })
     .selectOption("1");
   // This case verifies physical-board binding and persistence. The separate
   // release-bull-start case exercises the two-identity bull procedure.
-  await a.locator('select[name="startProcedure"]').selectOption('home-first');
-  await a
+  await boardStart.locator('select[name="startProcedure"]').selectOption('home-first');
+  await boardStart
     .getByRole("button", { name: "Op deze baan starten", exact: true })
     .click();
   await expect(a).toHaveURL(/\/app\/lobby\/[a-f0-9-]{36}/);

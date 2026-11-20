@@ -210,10 +210,10 @@ class MainActivity : ComponentActivity() {
 @Composable private fun ScreenView(screen: DisplayUi.Screen, now: Long, landscape: Boolean, offline: Boolean) {
     val snapshot = screen.snapshot
     val serverTime = screen.serverAtReceipt + if (screen.cached) 0 else now - screen.monotonicAtReceipt
-    val activity = snapshot.activity
-    val warning = !screen.cached && activity != null && serverTime >= activity.warningAt && snapshot.match?.canShowTurn == true && snapshot.state in listOf("live", "warning")
+    val activity = snapshot.activity?:snapshot.play?.takeIf{it.x01Match!=null&&it.deadlineAt>0}?.let{Activity(it.warningAt,it.deadlineAt,it.extensionsUsed)}
+    val warning = !screen.cached && activity != null && serverTime >= activity.warningAt && (snapshot.match?:snapshot.play?.x01Match)?.canShowTurn == true && snapshot.state in listOf("live", "warning")
     Box(Modifier.fillMaxSize()) {
-        if (snapshot.match != null) LiveView(snapshot.match, landscape, snapshot.match.finished) else Standby(snapshot, landscape, now)
+        if (snapshot.play != null) PlayDisplayView(snapshot.play, landscape, serverTime, screen.cached) else if (snapshot.match?.cricket?.targets?.size == 12 && !snapshot.match.bullPending) PlayDisplayView(tacticsDisplay(snapshot.match),landscape,serverTime,screen.cached) else if (snapshot.match != null) LiveView(snapshot.match, landscape, snapshot.match.finished) else Standby(snapshot, landscape, now, snapshot.competitionLobby?.takeIf { !offline && !screen.cached && serverTime < it.expiresAt })
         val cue = screen.cue
         var visibleCue by remember { mutableStateOf<ScoreEvent?>(null) }
         LaunchedEffect(cue?.id, offline) { visibleCue = if (offline) null else cue; if (visibleCue != null) { delay(1_800); visibleCue = null } }
@@ -235,13 +235,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-@Composable private fun Standby(snapshot: DisplaySnapshot, landscape: Boolean, now: Long) {
+@Composable private fun Standby(snapshot: DisplaySnapshot, landscape: Boolean, now: Long, lobby: CompetitionLobby? = null) {
     var started by remember { mutableLongStateOf(now) }
     LaunchedEffect(snapshot.state, snapshot.boardName) { started = SystemClock.elapsedRealtime() }
     val free = snapshot.publicStandby
     val slide = if (free) standbySlide(now - started) else -1
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
-        if (slide == 0) {
+        if (lobby != null) {
+            CompetitionLobbyView(lobby, snapshot.playUrl, landscape)
+        } else if (slide == 0) {
             OcheBrand(true, Modifier.size(if (landscape) 190.dp else 170.dp))
             OcheBrand(false, Modifier.fillMaxWidth(.8f).height(110.dp))
         } else if (free || snapshot.state == "reserved") {
@@ -258,8 +260,21 @@ class MainActivity : ComponentActivity() {
             Headline(when (snapshot.state) { "closed" -> "BAAN GESLOTEN"; "blocked" -> "BAAN NIET BESCHIKBAAR"; "unassigned" -> "SCHERM GEKOPPELD"; else -> "KLAAR OM TE SPELEN" })
             Text(if (snapshot.state == "unassigned") "Kies in DartFlow → Schermen een baan voor dit scherm." else "${snapshot.displayName} · Wacht op de volgende partij.", color = Muted, fontSize = 18.sp, textAlign = TextAlign.Center)
         }
-        if (free) Text("0${slide + 1} / 03", color = Muted, fontSize = 12.sp)
+        if (free && lobby == null) Text("0${slide + 1} / 03", color = Muted, fontSize = 12.sp)
     }
+}
+@Composable internal fun CompetitionLobbyView(lobby: CompetitionLobby, playUrl: String?, landscape: Boolean) {
+    val text: @Composable () -> Unit = {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(if (landscape) 6.dp else 12.dp)) {
+            Headline("COMPETITIELOBBY", if (landscape) 26 else 30)
+            Text("${lobby.competitionName} · ronde ${lobby.round}", color = Color.White, fontSize = 16.sp, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            lobby.players.forEach { (name, confirmed) -> Text("$name · ${if (confirmed) "bevestigd" else "wacht op deelname"}", color = if (confirmed) Lime else Color.White, fontSize = if (landscape) 16.sp else 18.sp, maxLines = if (landscape) 1 else 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center) }
+            Text("Schrijver: ${lobby.writerName}", color = Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("Geplande tegenstander: scan dezelfde baan-QR met je eigen account, of bevestig met je eigen pincode op het gedeelde toestel.", color = Muted, fontSize = 13.sp, textAlign = TextAlign.Center)
+        }
+    }
+    if (landscape) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) { Box(Modifier.weight(1f)) { text() }; playUrl?.let { Qr(it, Modifier.size(140.dp)) } }
+    else Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) { text(); playUrl?.let { Qr(it, Modifier.size(150.dp)) } }
 }
 @Composable private fun StandbyText(slide: Int, snapshot: DisplaySnapshot) {
     if (snapshot.state == "reserved") Text(snapshot.reservation ?: "Alleen de gereserveerde spelers kunnen aansluiten.", color = Muted, textAlign = TextAlign.Center)
@@ -343,16 +358,17 @@ class MainActivity : ComponentActivity() {
     }
 }
 @Composable private fun Metric(value: String, title: String, compact: Boolean = false) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(value, fontFamily = Barlow, fontSize = if (compact) 18.sp else 22.sp, color = Color.White); Text(title, fontSize = if (compact) 9.sp else 10.sp, color = Muted) } }
+private fun ocheMarks(value: Int, required: Int) = if (required == 3) cricketMark(value) else if (value >= required) "✓" else "$value/$required"
 private fun cricketMark(value: Int) = when (value.coerceIn(0,3)) { 0 -> "–"; 1 -> "/"; 2 -> "X"; else -> "⊗" }
 @Composable private fun Scorecard(match: Match, rowHeight: Dp, modifier: Modifier) {
     match.cricket?.let { cricket ->
         Column(modifier.fillMaxWidth().border(1.dp, Outline, RoundedCornerShape(10.dp)).padding(10.dp), verticalArrangement = Arrangement.SpaceEvenly) {
-            Text("MARKS · / één · X twee · ⊗ gesloten", color = Muted, fontSize = 12.sp)
-            listOf(20,19,18,17,16,15,25).forEachIndexed { index, target ->
+            Text(if (cricket.requiredMarks == 3) "MARKS · / één · X twee · ⊗ gesloten" else "MARKS · ${cricket.requiredMarks} treffers sluit een doel", color = Muted, fontSize = 12.sp)
+            cricket.targets.forEachIndexed { index, target ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                    Text(cricketMark(cricket.marks.getOrNull(0)?.getOrNull(index) ?: 0), color = Lime, fontSize = 24.sp)
-                    Text(if (target == 25) "BULL" else "$target", color = Color.White, fontSize = 20.sp)
-                    if (match.players.size > 1) Text(cricketMark(cricket.marks.getOrNull(1)?.getOrNull(index) ?: 0), color = Lime, fontSize = 24.sp)
+                    Text(ocheMarks(cricket.marks.getOrNull(0)?.getOrNull(index) ?: 0, cricket.requiredMarks), color = Lime, fontSize = if (cricket.targets.size > 7) 18.sp else 24.sp)
+                    Text(if (target == 25) "BULL" else "$target", color = Color.White, fontSize = if (cricket.targets.size > 7) 16.sp else 20.sp)
+                    if (match.players.size > 1) Text(ocheMarks(cricket.marks.getOrNull(1)?.getOrNull(index) ?: 0, cricket.requiredMarks), color = Lime, fontSize = if (cricket.targets.size > 7) 18.sp else 24.sp)
                 }
             }
         }

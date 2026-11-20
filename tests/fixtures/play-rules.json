@@ -1,0 +1,4212 @@
+{
+  "version": 1,
+  "contract": "Accepted pure engine state only; no actor authorization, offline persistence or hosted/device proof.",
+  "cases": [
+    {
+      "id": "301-opening-undo",
+      "rules": {
+        "mode": "x01",
+        "startScore": 301
+      },
+      "sides": [
+        {
+          "id": "a",
+          "playerIds": [
+            "alice"
+          ]
+        }
+      ],
+      "starter": 0,
+      "initial": {
+        "mode": "x01",
+        "progress": {
+          "mode": "x01",
+          "remaining": [
+            301
+          ],
+          "opened": [
+            false
+          ]
+        },
+        "turn": 0,
+        "status": "live",
+        "legs": [
+          0
+        ],
+        "sets": [
+          0
+        ],
+        "attempt": 1,
+        "currentThrowerId": "alice",
+        "result": null
+      },
+      "steps": [
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "S20",
+                "D16",
+                "T20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "x01",
+            "progress": {
+              "mode": "x01",
+              "remaining": [
+                209
+              ],
+              "opened": [
+                true
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "undo"
+          },
+          "expected": {
+            "mode": "x01",
+            "progress": {
+              "mode": "x01",
+              "remaining": [
+                301
+              ],
+              "opened": [
+                false
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "S20",
+                "D16",
+                "T20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "x01",
+            "progress": {
+              "mode": "x01",
+              "remaining": [
+                209
+              ],
+              "opened": [
+                true
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "score": 60
+            }
+          },
+          "expected": {
+            "mode": "x01",
+            "progress": {
+              "mode": "x01",
+              "remaining": [
+                149
+              ],
+              "opened": [
+                true
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "cricket-overshoot",
+      "rules": {
+        "mode": "cricket"
+      },
+      "sides": [
+        {
+          "id": "a",
+          "playerIds": [
+            "alice"
+          ]
+        },
+        {
+          "id": "b",
+          "playerIds": [
+            "bob"
+          ]
+        }
+      ],
+      "starter": 0,
+      "initial": {
+        "mode": "cricket",
+        "progress": {
+          "mode": "cricket",
+          "targets": [
+            20,
+            19,
+            18,
+            17,
+            16,
+            15,
+            25
+          ],
+          "requiredMarks": 3,
+          "marks": [
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "points": [
+            0,
+            0
+          ],
+          "creditedMarks": [
+            0,
+            0
+          ]
+        },
+        "turn": 0,
+        "status": "live",
+        "legs": [
+          0,
+          0
+        ],
+        "sets": [
+          0,
+          0
+        ],
+        "attempt": 1,
+        "currentThrowerId": "alice",
+        "result": null
+      },
+      "steps": [
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "D20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "cricket",
+            "progress": {
+              "mode": "cricket",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                25
+              ],
+              "requiredMarks": 3,
+              "marks": [
+                [
+                  2,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                2,
+                0
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "MISS"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "cricket",
+            "progress": {
+              "mode": "cricket",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                25
+              ],
+              "requiredMarks": 3,
+              "marks": [
+                [
+                  2,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                2,
+                0
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "cricket",
+            "progress": {
+              "mode": "cricket",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                25
+              ],
+              "requiredMarks": 3,
+              "marks": [
+                [
+                  3,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                40,
+                0
+              ],
+              "creditedMarks": [
+                5,
+                0
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "cricket",
+            "progress": {
+              "mode": "cricket",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                25
+              ],
+              "requiredMarks": 3,
+              "marks": [
+                [
+                  3,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  3,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                40,
+                0
+              ],
+              "creditedMarks": [
+                5,
+                3
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "cricket",
+            "progress": {
+              "mode": "cricket",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                25
+              ],
+              "requiredMarks": 3,
+              "marks": [
+                [
+                  3,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  3,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                40,
+                0
+              ],
+              "creditedMarks": [
+                5,
+                3
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "tactics-five-replay",
+      "rules": {
+        "mode": "tactics"
+      },
+      "sides": [
+        {
+          "id": "a",
+          "playerIds": [
+            "alice"
+          ]
+        },
+        {
+          "id": "b",
+          "playerIds": [
+            "bob"
+          ]
+        }
+      ],
+      "starter": 0,
+      "initial": {
+        "mode": "tactics",
+        "progress": {
+          "mode": "tactics",
+          "targets": [
+            20,
+            19,
+            18,
+            17,
+            16,
+            15,
+            14,
+            13,
+            12,
+            11,
+            10,
+            25
+          ],
+          "requiredMarks": 5,
+          "marks": [
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "points": [
+            0,
+            0
+          ],
+          "creditedMarks": [
+            0,
+            0
+          ]
+        },
+        "turn": 0,
+        "status": "live",
+        "legs": [
+          0,
+          0
+        ],
+        "sets": [
+          0,
+          0
+        ],
+        "attempt": 1,
+        "currentThrowerId": "alice",
+        "result": null
+      },
+      "steps": [
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T20",
+                "D20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                5,
+                0
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T20",
+                "D20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                5,
+                5
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T19",
+                "D19"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                10,
+                5
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T19",
+                "D19"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                10,
+                10
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T18",
+                "D18"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                15,
+                10
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T18",
+                "D18"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                15,
+                15
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T17",
+                "D17"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                20,
+                15
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T17",
+                "D17"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                20,
+                20
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T16",
+                "D16"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                25,
+                20
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T16",
+                "D16"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                25,
+                25
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T15",
+                "D15"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                30,
+                25
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T15",
+                "D15"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                30,
+                30
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T14",
+                "D14"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                35,
+                30
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T14",
+                "D14"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                35,
+                35
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T13",
+                "D13"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                40,
+                35
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T13",
+                "D13"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                40,
+                40
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T12",
+                "D12"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                45,
+                40
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T12",
+                "D12"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                45,
+                45
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T11",
+                "D11"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                50,
+                45
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T11",
+                "D11"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                50,
+                50
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T10",
+                "D10"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                55,
+                50
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T10",
+                "D10"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                55,
+                55
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "DB",
+                "DB",
+                "SB"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                60,
+                55
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "DB",
+                "DB",
+                "SB"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5
+                ],
+                [
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5,
+                  5
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                60,
+                60
+              ]
+            },
+            "turn": 1,
+            "status": "replay-required",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "restart",
+            "starter": 1
+          },
+          "expected": {
+            "mode": "tactics",
+            "progress": {
+              "mode": "tactics",
+              "targets": [
+                20,
+                19,
+                18,
+                17,
+                16,
+                15,
+                14,
+                13,
+                12,
+                11,
+                10,
+                25
+              ],
+              "requiredMarks": 5,
+              "marks": [
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "points": [
+                0,
+                0
+              ],
+              "creditedMarks": [
+                0,
+                0
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 2,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "around-targets",
+      "rules": {
+        "mode": "around",
+        "hitsPerTarget": 1
+      },
+      "sides": [
+        {
+          "id": "a",
+          "playerIds": [
+            "alice"
+          ]
+        },
+        {
+          "id": "b",
+          "playerIds": [
+            "bob"
+          ]
+        }
+      ],
+      "starter": 0,
+      "initial": {
+        "mode": "around",
+        "progress": {
+          "mode": "around",
+          "targets": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            25
+          ],
+          "targetIndex": [
+            0,
+            0
+          ],
+          "targetHits": [
+            0,
+            0
+          ],
+          "successes": [
+            0,
+            0
+          ],
+          "darts": [
+            0,
+            0
+          ]
+        },
+        "turn": 0,
+        "status": "live",
+        "legs": [
+          0,
+          0
+        ],
+        "sets": [
+          0,
+          0
+        ],
+        "attempt": 1,
+        "currentThrowerId": "alice",
+        "result": null
+      },
+      "steps": [
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T1",
+                "S2",
+                "D3"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "around",
+            "progress": {
+              "mode": "around",
+              "targets": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                25
+              ],
+              "targetIndex": [
+                3,
+                0
+              ],
+              "targetHits": [
+                0,
+                0
+              ],
+              "successes": [
+                3,
+                0
+              ],
+              "darts": [
+                3,
+                0
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "MISS",
+                "S1",
+                "T2"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "around",
+            "progress": {
+              "mode": "around",
+              "targets": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                25
+              ],
+              "targetIndex": [
+                3,
+                2
+              ],
+              "targetHits": [
+                0,
+                0
+              ],
+              "successes": [
+                3,
+                2
+              ],
+              "darts": [
+                3,
+                3
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "undo"
+          },
+          "expected": {
+            "mode": "around",
+            "progress": {
+              "mode": "around",
+              "targets": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                25
+              ],
+              "targetIndex": [
+                3,
+                0
+              ],
+              "targetHits": [
+                0,
+                0
+              ],
+              "successes": [
+                3,
+                0
+              ],
+              "darts": [
+                3,
+                0
+              ]
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "bingo-team-order",
+      "rules": {
+        "mode": "bingo",
+        "cardCode": "DFB1-010203040506070809"
+      },
+      "sides": [
+        {
+          "id": "a",
+          "playerIds": [
+            "alice",
+            "alex"
+          ]
+        },
+        {
+          "id": "b",
+          "playerIds": [
+            "bob",
+            "bea"
+          ]
+        }
+      ],
+      "starter": 0,
+      "initial": {
+        "mode": "bingo",
+        "progress": {
+          "mode": "bingo",
+          "card": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "cardCode": "DFB1-010203040506070809",
+          "filled": [
+            [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ]
+          ],
+          "darts": [
+            0,
+            0
+          ],
+          "winningPattern": null
+        },
+        "turn": 0,
+        "status": "live",
+        "legs": [
+          0,
+          0
+        ],
+        "sets": [
+          0,
+          0
+        ],
+        "attempt": 1,
+        "currentThrowerId": "alice",
+        "result": null
+      },
+      "steps": [
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "D1",
+                "D1",
+                "S2"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "bingo",
+            "progress": {
+              "mode": "bingo",
+              "card": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "cardCode": "DFB1-010203040506070809",
+              "filled": [
+                [
+                  true,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ],
+                [
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ]
+              ],
+              "darts": [
+                3,
+                0
+              ],
+              "winningPattern": null
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bob",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "MISS"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "bingo",
+            "progress": {
+              "mode": "bingo",
+              "card": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "cardCode": "DFB1-010203040506070809",
+              "filled": [
+                [
+                  true,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ],
+                [
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ]
+              ],
+              "darts": [
+                3,
+                1
+              ],
+              "winningPattern": null
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alex",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "D2"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "bingo",
+            "progress": {
+              "mode": "bingo",
+              "card": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "cardCode": "DFB1-010203040506070809",
+              "filled": [
+                [
+                  true,
+                  true,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ],
+                [
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ]
+              ],
+              "darts": [
+                4,
+                1
+              ],
+              "winningPattern": null
+            },
+            "turn": 1,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "bea",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "MISS"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "bingo",
+            "progress": {
+              "mode": "bingo",
+              "card": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "cardCode": "DFB1-010203040506070809",
+              "filled": [
+                [
+                  true,
+                  true,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ],
+                [
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ]
+              ],
+              "darts": [
+                4,
+                2
+              ],
+              "winningPattern": null
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "D3"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "bingo",
+            "progress": {
+              "mode": "bingo",
+              "card": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "cardCode": "DFB1-010203040506070809",
+              "filled": [
+                [
+                  true,
+                  true,
+                  true,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ],
+                [
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false,
+                  false
+                ]
+              ],
+              "darts": [
+                5,
+                2
+              ],
+              "winningPattern": [
+                0,
+                1,
+                2
+              ]
+            },
+            "turn": 0,
+            "status": "finished",
+            "legs": [
+              0,
+              0
+            ],
+            "sets": [
+              0,
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": {
+              "kind": "win",
+              "winnerSideId": "a",
+              "reason": "De gekozen bingoregel is voltooid."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "finish-bust-five-attempts",
+      "rules": {
+        "mode": "finish",
+        "target": 40
+      },
+      "sides": [
+        {
+          "id": "a",
+          "playerIds": [
+            "alice"
+          ]
+        }
+      ],
+      "starter": 0,
+      "initial": {
+        "mode": "finish",
+        "progress": {
+          "mode": "finish",
+          "remaining": 40,
+          "dartsLeft": 3,
+          "attemptNumber": 1,
+          "completed": []
+        },
+        "turn": 0,
+        "status": "live",
+        "legs": [
+          0
+        ],
+        "sets": [
+          0
+        ],
+        "attempt": 1,
+        "currentThrowerId": "alice",
+        "result": null
+      },
+      "steps": [
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "S20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "finish",
+            "progress": {
+              "mode": "finish",
+              "remaining": 20,
+              "dartsLeft": 2,
+              "attemptNumber": 1,
+              "completed": []
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "T20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "finish",
+            "progress": {
+              "mode": "finish",
+              "remaining": 40,
+              "dartsLeft": 3,
+              "attemptNumber": 2,
+              "completed": [
+                {
+                  "number": 1,
+                  "success": false,
+                  "bust": true,
+                  "remaining": 40,
+                  "darts": 2,
+                  "doubleAttempts": null,
+                  "visitNumber": 2
+                }
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 2,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "D20"
+              ],
+              "intendedTargets": [
+                "D20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "finish",
+            "progress": {
+              "mode": "finish",
+              "remaining": 40,
+              "dartsLeft": 3,
+              "attemptNumber": 3,
+              "completed": [
+                {
+                  "number": 1,
+                  "success": false,
+                  "bust": true,
+                  "remaining": 40,
+                  "darts": 2,
+                  "doubleAttempts": null,
+                  "visitNumber": 2
+                },
+                {
+                  "number": 2,
+                  "success": true,
+                  "bust": false,
+                  "remaining": 0,
+                  "darts": 1,
+                  "doubleAttempts": 1,
+                  "visitNumber": 3
+                }
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 3,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "D20"
+              ],
+              "intendedTargets": [
+                "D20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "finish",
+            "progress": {
+              "mode": "finish",
+              "remaining": 40,
+              "dartsLeft": 3,
+              "attemptNumber": 4,
+              "completed": [
+                {
+                  "number": 1,
+                  "success": false,
+                  "bust": true,
+                  "remaining": 40,
+                  "darts": 2,
+                  "doubleAttempts": null,
+                  "visitNumber": 2
+                },
+                {
+                  "number": 2,
+                  "success": true,
+                  "bust": false,
+                  "remaining": 0,
+                  "darts": 1,
+                  "doubleAttempts": 1,
+                  "visitNumber": 3
+                },
+                {
+                  "number": 3,
+                  "success": true,
+                  "bust": false,
+                  "remaining": 0,
+                  "darts": 1,
+                  "doubleAttempts": 1,
+                  "visitNumber": 4
+                }
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 4,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "D20"
+              ],
+              "intendedTargets": [
+                "D20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "finish",
+            "progress": {
+              "mode": "finish",
+              "remaining": 40,
+              "dartsLeft": 3,
+              "attemptNumber": 5,
+              "completed": [
+                {
+                  "number": 1,
+                  "success": false,
+                  "bust": true,
+                  "remaining": 40,
+                  "darts": 2,
+                  "doubleAttempts": null,
+                  "visitNumber": 2
+                },
+                {
+                  "number": 2,
+                  "success": true,
+                  "bust": false,
+                  "remaining": 0,
+                  "darts": 1,
+                  "doubleAttempts": 1,
+                  "visitNumber": 3
+                },
+                {
+                  "number": 3,
+                  "success": true,
+                  "bust": false,
+                  "remaining": 0,
+                  "darts": 1,
+                  "doubleAttempts": 1,
+                  "visitNumber": 4
+                },
+                {
+                  "number": 4,
+                  "success": true,
+                  "bust": false,
+                  "remaining": 0,
+                  "darts": 1,
+                  "doubleAttempts": 1,
+                  "visitNumber": 5
+                }
+              ]
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 5,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "D20"
+              ],
+              "intendedTargets": [
+                "D20"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "finish",
+            "progress": {
+              "mode": "finish",
+              "remaining": 0,
+              "dartsLeft": 2,
+              "attemptNumber": 5,
+              "completed": [
+                {
+                  "number": 1,
+                  "success": false,
+                  "bust": true,
+                  "remaining": 40,
+                  "darts": 2,
+                  "doubleAttempts": null,
+                  "visitNumber": 2
+                },
+                {
+                  "number": 2,
+                  "success": true,
+                  "bust": false,
+                  "remaining": 0,
+                  "darts": 1,
+                  "doubleAttempts": 1,
+                  "visitNumber": 3
+                },
+                {
+                  "number": 3,
+                  "success": true,
+                  "bust": false,
+                  "remaining": 0,
+                  "darts": 1,
+                  "doubleAttempts": 1,
+                  "visitNumber": 4
+                },
+                {
+                  "number": 4,
+                  "success": true,
+                  "bust": false,
+                  "remaining": 0,
+                  "darts": 1,
+                  "doubleAttempts": 1,
+                  "visitNumber": 5
+                },
+                {
+                  "number": 5,
+                  "success": true,
+                  "bust": false,
+                  "remaining": 0,
+                  "darts": 1,
+                  "doubleAttempts": 1,
+                  "visitNumber": 6
+                }
+              ]
+            },
+            "turn": 0,
+            "status": "finished",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 5,
+            "currentThrowerId": "alice",
+            "result": {
+              "kind": "completed",
+              "winnerSideId": "a",
+              "reason": "Alle finishpogingen zijn geregistreerd."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "challenge-legacy-turn-comparison",
+      "rules": {
+        "mode": "leg-challenge",
+        "source": {
+          "matchId": "source",
+          "version": "v1",
+          "playerId": "historic",
+          "startScore": 301,
+          "inRule": "single",
+          "outRule": "double",
+          "valid": true,
+          "visits": [
+            {
+              "score": 180,
+              "remainingBefore": 301,
+              "remainingAfter": 121,
+              "bust": false,
+              "checkout": false,
+              "actualDarts": 3
+            },
+            {
+              "score": 121,
+              "remainingBefore": 121,
+              "remainingAfter": 0,
+              "bust": false,
+              "checkout": true
+            }
+          ]
+        }
+      },
+      "sides": [
+        {
+          "id": "a",
+          "playerIds": [
+            "alice"
+          ]
+        }
+      ],
+      "starter": 0,
+      "initial": {
+        "mode": "leg-challenge",
+        "progress": {
+          "mode": "leg-challenge",
+          "remaining": 301,
+          "opened": true,
+          "revealedSourceVisits": 0,
+          "sourceVisitCount": 2,
+          "sourceRemaining": 301,
+          "comparison": "visits",
+          "sourceDarts": null,
+          "ownDarts": 0,
+          "ownVisits": 0,
+          "sourceChanged": false,
+          "sourceInvalidated": false
+        },
+        "turn": 0,
+        "status": "live",
+        "legs": [
+          0
+        ],
+        "sets": [
+          0
+        ],
+        "attempt": 1,
+        "currentThrowerId": "alice",
+        "result": null
+      },
+      "steps": [
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "score": 180
+            }
+          },
+          "expected": {
+            "mode": "leg-challenge",
+            "progress": {
+              "mode": "leg-challenge",
+              "remaining": 121,
+              "opened": true,
+              "revealedSourceVisits": 1,
+              "sourceVisitCount": 2,
+              "sourceRemaining": 121,
+              "comparison": "visits",
+              "sourceDarts": null,
+              "ownDarts": 0,
+              "ownVisits": 1,
+              "sourceChanged": false,
+              "sourceInvalidated": false
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "score": 121,
+              "darts": 3,
+              "doubleConfirmed": true
+            }
+          },
+          "expected": {
+            "mode": "leg-challenge",
+            "progress": {
+              "mode": "leg-challenge",
+              "remaining": 0,
+              "opened": true,
+              "revealedSourceVisits": 2,
+              "sourceVisitCount": 2,
+              "sourceRemaining": 0,
+              "comparison": "visits",
+              "sourceDarts": null,
+              "ownDarts": 3,
+              "ownVisits": 2,
+              "sourceChanged": false,
+              "sourceInvalidated": false
+            },
+            "turn": 0,
+            "status": "finished",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": {
+              "kind": "draw",
+              "winnerSideId": null,
+              "reason": "Vergelijking op beurten; dezelfde finishbeurt is gelijkspel."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "challenge-dart-loss-boundary",
+      "rules": {
+        "mode": "leg-challenge",
+        "source": {
+          "matchId": "source",
+          "version": "v1",
+          "playerId": "historic",
+          "startScore": 301,
+          "inRule": "single",
+          "outRule": "double",
+          "valid": true,
+          "visits": [
+            {
+              "score": 180,
+              "remainingBefore": 301,
+              "remainingAfter": 121,
+              "bust": false,
+              "checkout": false,
+              "actualDarts": 3
+            },
+            {
+              "score": 121,
+              "remainingBefore": 121,
+              "remainingAfter": 0,
+              "bust": false,
+              "checkout": true,
+              "actualDarts": 3
+            }
+          ]
+        }
+      },
+      "sides": [
+        {
+          "id": "a",
+          "playerIds": [
+            "alice"
+          ]
+        }
+      ],
+      "starter": 0,
+      "initial": {
+        "mode": "leg-challenge",
+        "progress": {
+          "mode": "leg-challenge",
+          "remaining": 301,
+          "opened": true,
+          "revealedSourceVisits": 0,
+          "sourceVisitCount": 2,
+          "sourceRemaining": 301,
+          "comparison": "darts",
+          "sourceDarts": 6,
+          "ownDarts": 0,
+          "ownVisits": 0,
+          "sourceChanged": false,
+          "sourceInvalidated": false
+        },
+        "turn": 0,
+        "status": "live",
+        "legs": [
+          0
+        ],
+        "sets": [
+          0
+        ],
+        "attempt": 1,
+        "currentThrowerId": "alice",
+        "result": null
+      },
+      "steps": [
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "MISS",
+                "MISS",
+                "MISS"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "leg-challenge",
+            "progress": {
+              "mode": "leg-challenge",
+              "remaining": 301,
+              "opened": true,
+              "revealedSourceVisits": 1,
+              "sourceVisitCount": 2,
+              "sourceRemaining": 121,
+              "comparison": "darts",
+              "sourceDarts": 6,
+              "ownDarts": 3,
+              "ownVisits": 1,
+              "sourceChanged": false,
+              "sourceInvalidated": false
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "MISS",
+                "MISS"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "leg-challenge",
+            "progress": {
+              "mode": "leg-challenge",
+              "remaining": 301,
+              "opened": true,
+              "revealedSourceVisits": 2,
+              "sourceVisitCount": 2,
+              "sourceRemaining": 0,
+              "comparison": "darts",
+              "sourceDarts": 6,
+              "ownDarts": 5,
+              "ownVisits": 2,
+              "sourceChanged": false,
+              "sourceInvalidated": false
+            },
+            "turn": 0,
+            "status": "live",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": null
+          }
+        },
+        {
+          "action": {
+            "type": "visit",
+            "input": {
+              "dartHits": [
+                "MISS"
+              ]
+            }
+          },
+          "expected": {
+            "mode": "leg-challenge",
+            "progress": {
+              "mode": "leg-challenge",
+              "remaining": 301,
+              "opened": true,
+              "revealedSourceVisits": 2,
+              "sourceVisitCount": 2,
+              "sourceRemaining": 0,
+              "comparison": "darts",
+              "sourceDarts": 6,
+              "ownDarts": 6,
+              "ownVisits": 3,
+              "sourceChanged": false,
+              "sourceInvalidated": false
+            },
+            "turn": 0,
+            "status": "finished",
+            "legs": [
+              0
+            ],
+            "sets": [
+              0
+            ],
+            "attempt": 1,
+            "currentThrowerId": "alice",
+            "result": {
+              "kind": "loss",
+              "winnerSideId": null,
+              "reason": "Vergelijking op werkelijk geregistreerde pijlen."
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -25,7 +25,7 @@ test('blog revisions, routes, scheduler, private media and SocialHero credential
  const actor=randomUUID(),outsider=randomUUID(),prefix=`blog-${randomUUID()}`,postIds:string[]=[],tokenIds:string[]=[];let mediaId='';
  const key=()=>`${prefix}:${randomUUID()}`;
  try{
-  await owner.query('insert into dartflow_private.profiles(id,name) values($1,$2),($3,$4)',[actor,'Blog fixture beheer',outsider,'Blog fixture speler']);
+  await owner.query("insert into dartflow_private.profiles(id,name,display_name) values($1,replace($2,' ',''),$2),($3,replace($4,' ',''),$4)",[actor,'Blog fixture beheer',outsider,'Blog fixture speler']);
   await owner.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'admin')",[actor]);
   const png=await sharp({create:{width:1200,height:1800,channels:3,background:'#76a800'}}).png().toBuffer();
   const uploadKey=key(),asset=await storeBlogMedia({actor},png,'image/png',uploadKey);mediaId=asset.assetId;

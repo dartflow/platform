@@ -38,13 +38,24 @@ jobs:
       - name: Test veilige Play-promotie zonder credentials
         run: python3 -B ci/test_play_release.py
       - name: Controleer en bouw
-        run: ./gradlew --no-daemon :app:lintStagingDebug :app:testStagingDebugUnitTest :app:assembleStagingDebug :app:lintProductionDebug :app:testProductionDebugUnitTest :app:bundleProductionRelease
+        run: |
+          python3 -B ../ci/test_verify_native_tests.py
+          ./gradlew --no-daemon :app:lintStagingDebug :app:testStagingDebugUnitTest :app:assembleStagingDebug :app:lintProductionDebug :app:testProductionDebugUnitTest :app:bundleProductionRelease
+          python3 -B ../ci/verify_native_tests.py --app oche --kind unit
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: oche-android-build-${{ github.sha }}
           path: |
             android/oche-live/app/build/outputs/apk/staging/debug/app-staging-debug.apk
             android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab
+          retention-days: 14
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: oche-android-unit-tests-${{ github.sha }}
+          path: |
+            android/oche-live/app/build/test-results/testStagingDebugUnitTest/*.xml
+            android/oche-live/app/build/test-results/testProductionDebugUnitTest/*.xml
           retention-days: 14
           if-no-files-found: error
 
@@ -94,7 +105,9 @@ jobs:
           arch: x86_64
           working-directory: android/oche-live
           disable-animations: true
-          script: ./gradlew --no-daemon :app:connectedStagingDebugAndroidTest
+          script: |
+            ./gradlew --no-daemon :app:connectedStagingDebugAndroidTest
+            python3 -B ../ci/verify_native_tests.py --app oche --kind ui
       - name: Test Android TV na begrensde service-readiness
         if: matrix.target == 'android-tv'
         working-directory: android/oche-live

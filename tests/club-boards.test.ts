@@ -18,7 +18,7 @@ test('standalone club boards persist without competitions and isolate open play 
  const run=(actor:string,action:PlatformCommand['action'],requestId=randomUUID(),expectedRevision?:number)=>executePlatformCommand(actor,{requestId,action,...(expectedRevision===undefined?{}:{expectedRevision})});
  const create=async(clubId:string,name:string,access:'all'|'club'='all')=>(await run(admin,{type:'club-board.create',clubId,name,access})).board as ClubBoardView;
  try{
-  for(const [i,id] of people.entries())await owner.query('insert into dartflow_private.profiles(id,name,email) values($1,$2,$3)',[id,`Club board fixture ${i}`,`board-fixture-${i}@example.test`]);
+  for(const [i,id] of people.entries())await owner.query("insert into dartflow_private.profiles(id,name,display_name,email) values($1,replace($2,' ',''),$2,$3)",[id,`Club board fixture ${i}`,`board-fixture-${i}@example.test`]);
   const club=(await run(admin,{type:'club.create',name:'Standalone board fixture club'})).id!;clubs.push(club);
   const otherClub=(await run(otherOwner,{type:'club.create',name:'Standalone board unrelated club'})).id!;clubs.push(otherClub);
   await run(admin,{type:'location.enable-venue'});

@@ -5,6 +5,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DisplayModelTest {
+    @Test fun `competition lobby is optional public state with absolute expiry`() {
+        val root = JSONObject("""{"apiVersion":1,"state":"standby","serverNow":1000,"display":{"snapshot":{"competitionLobby":{"competitionName":"Clubleague","round":3,"players":[{"name":"De Pijl","confirmed":true,"pin":"never projected"},{"name":"Noor","confirmed":false}],"writerName":"De Pijl","expiresAt":"2026-11-19T12:00:00Z"}}}}""")
+        val parsed = DisplaySnapshot.parse(root)
+        assertNull(parsed.match); assertEquals("Clubleague", parsed.competitionLobby!!.competitionName)
+        assertEquals(listOf("De Pijl" to true, "Noor" to false), parsed.competitionLobby.players)
+        assertEquals(java.time.Instant.parse("2026-11-19T12:00:00Z").toEpochMilli(), parsed.competitionLobby.expiresAt)
+        assertFalse(parsed.competitionLobby.toString().contains("pin"))
+        root.getJSONObject("display").getJSONObject("snapshot").getJSONObject("competitionLobby").put("expiresAt", "invalid")
+        assertNull(DisplaySnapshot.parse(root).competitionLobby)
+    }
     @Test fun `two clear cap is optional and reflects the published rule`() {
         val data = JSONObject("""{"apiVersion":1,"state":"live","serverNow":1000,"display":{"snapshot":{"match":{"id":"m1","status":"live","players":[{"name":"Danny"},{"name":"Rick"}],"settings":{"legWinByTwo":{"maximum":9},"setWinByTwo":{"maximum":5}}}}}}""")
         val parsed = DisplaySnapshot.parse(data).match!!

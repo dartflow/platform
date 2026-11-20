@@ -313,7 +313,7 @@ class PlayerUiTest {
 
     @Test fun onboardingRequiresNamesAndSixAsciiDigitsWithConfirmation() {
         var saved: List<String>? = null
-        compose.setContent { DartFlowPlayerTheme { PlayerApp(signedIn(profile(false, false)), PlayerActions(completeProfile = { u, d, p, c -> saved = listOf(u, d, p, c) })) } }
+        compose.setContent { DartFlowPlayerTheme { PlayerApp(signedIn(profile(false, false)), PlayerActions(read = { json("valid" to true, "available" to true, "username" to "danny") }, completeProfile = { f, u, d, p, c -> saved = listOf(f, u, d, p, c) })) } }
         compose.onNodeWithText("Begin met spelen").performScrollTo().assertIsNotEnabled()
         compose.onNodeWithText("Spelerspincode").performScrollTo().performTextInput("012345")
         compose.onNodeWithText("Herhaal spelerspincode").performScrollTo().performTextInput("012344")
@@ -321,7 +321,9 @@ class PlayerUiTest {
         compose.onNodeWithText("Herhaal spelerspincode").performScrollTo().performTextClearance()
         compose.onNodeWithText("Herhaal spelerspincode").performTextInput("012345")
         compose.onNodeWithText("Begin met spelen").performScrollTo().assertIsEnabled().performClick()
-        compose.runOnIdle { assertEquals(listOf("danny", "Danny", "012345", "012345"), saved) }
+        compose.runOnIdle { assertNull(saved) }
+        compose.onNodeWithText("Definitief vastleggen").performClick()
+        compose.runOnIdle { assertEquals(listOf("", "danny", "Danny", "012345", "012345"), saved) }
     }
 
     @Test fun scoreKeypadAndConfirmFit360By640WithoutScrolling() {

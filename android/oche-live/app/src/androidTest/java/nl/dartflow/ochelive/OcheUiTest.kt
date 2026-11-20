@@ -19,6 +19,18 @@ import org.junit.Assert.assertTrue
 
 class OcheUiTest {
     @get:Rule val compose = createComposeRule()
+    @Test fun competitionLobbyKeepsPublicConfirmationsAndJoiningQrVisibleInBothLayouts() {
+        val landscape = mutableStateOf(false)
+        val lobby = CompetitionLobby("Clubleague", 3, listOf("De Pijl" to true, "Noor" to false), "De Pijl", Long.MAX_VALUE)
+        compose.setContent { MaterialTheme { Box(Modifier.fillMaxWidth().height(if (landscape.value) 240.dp else 480.dp)) { CompetitionLobbyView(lobby, "https://dartflow.nl/baan/synthetic-board", landscape.value) } } }
+        compose.onNodeWithText("COMPETITIELOBBY").assertIsDisplayed()
+        compose.onNodeWithText("De Pijl · bevestigd").assertIsDisplayed()
+        compose.onNodeWithText("Noor · wacht op deelname").assertIsDisplayed()
+        compose.onNodeWithContentDescription("QR-code").assertIsDisplayed()
+        compose.runOnIdle { landscape.value = true }
+        compose.onNodeWithText("Noor · wacht op deelname").assertIsDisplayed()
+        compose.onNodeWithContentDescription("QR-code").assertIsDisplayed()
+    }
     @Test fun bullWaitsForActualPhoneConfirmationWithoutShowingAScoreTurn() {
         val match = Match("bull-match", 3, "ready", listOf(Player("Danny",501,0,0,null,0,0),Player("Rick",501,0,0,null,0,0)), 0, 501, 1, 1, emptyList(), emptyList(), "bull-session", bull = Bull("match", "confirming", 1, listOf(0,1), listOf(Triple(1,0,"DB"),Triple(1,1,"SB")), 0, listOf(false,false)))
         compose.setContent { MaterialTheme { Box(Modifier.fillMaxWidth().height(330.dp)) { LiveView(match, false, false) } } }

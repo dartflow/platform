@@ -2,7 +2,8 @@
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {Profile} from '@/lib/types';
 import type {PlayerStatisticsResponse,StatisticsMatchRow} from '@/lib/player-statistics-types';
-import {normalizeUsername,validDisplayName,validUsername} from '@/lib/display-name';
+import ProfileIdentityFields from './profile-identity-fields';
+import PlayStatisticsPanel from './play-statistics';
 import './player-profile.css';
 
 async function api<T>(path:string,data?:unknown):Promise<T>{
@@ -23,26 +24,22 @@ function PinFields({pin,confirmation,setPin,setConfirmation,disabled}:PinFieldsP
  </>;}
 
 export function ProfileCompletion({user,onComplete}:{user:Profile;onComplete:()=>void}){
- const [username,setUsername]=useState(validUsername(user.username??user.name)?normalizeUsername(user.username??user.name):'');
- const [displayName,setDisplayName]=useState(validDisplayName(user.displayName??user.name)?user.displayName??user.name:'');
+ const [identityValid,setIdentityValid]=useState(false);
  const [pin,setPin]=useState(''),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const requestId=useRef<string|null>(null),needsPin=!user.pinConfigured;
  useEffect(()=>{const clear=()=>{setPin('');setConfirmation('');};window.addEventListener('pagehide',clear);return()=>window.removeEventListener('pagehide',clear);},[]);
  async function submit(event:FormEvent){event.preventDefault();setError('');setBusy(true);requestId.current??=crypto.randomUUID();
-  try{await api('/api/profile/complete',{requestId:requestId.current,username,displayName,...(needsPin?{pin,pinConfirmation:confirmation}:{})});onComplete();}
+  try{const fields=new FormData(event.currentTarget as HTMLFormElement);await api('/api/profile/complete',{requestId:requestId.current,username:fields.get('username'),displayName:fields.get('displayName'),fullName:fields.get('fullName'),...(needsPin?{pin,pinConfirmation:confirmation}:{})});onComplete();}
   catch(error){setError(error instanceof Error?error.message:'Opslaan is niet gelukt.');}
   finally{setBusy(false);setPin('');setConfirmation('');}
  }
  return <form className="auth-card player-profile-form" onSubmit={submit}>
   <span className="eyebrow">REGISTRATIE AFRONDEN</span><h1>Maak je spelersprofiel compleet</h1>
-  <p>Kies een unieke gebruikersnaam en de naam die andere spelers op het scorebord zien. Een Google-naam is een voorstel: bevestig of wijzig die hier.</p>
-  <label className="field">Gebruikersnaam<input name="username" autoComplete="username" required maxLength={81} value={username} onChange={e=>setUsername(e.target.value)} disabled={busy}/></label>
-  <small>Uniek in DartFlow. Met of zonder één voorloop-@.</small>
-  {username&&!validUsername(username)&&<p className="field-error">Kies een geldige gebruikersnaam van maximaal 80 tekens.</p>}
-  <label className="field">Weergavenaam<input name="displayName" autoComplete="nickname" required maxLength={80} value={displayName} onChange={e=>setDisplayName(e.target.value)} disabled={busy}/></label>
+  <p>Kies je openbare displaynaam en bevestig één vaste gebruikersnaam. Je volledige naam blijft privé.</p>
+  <ProfileIdentityFields user={user}disabled={busy}onValidity={setIdentityValid}/>
   {needsPin?<PinFields pin={pin} confirmation={confirmation} setPin={setPin} setConfirmation={setConfirmation} disabled={busy}/>:<p>Spelerspincode: ingesteld.</p>}
   {error&&<div className="notice error" role="alert">{error}</div>}
-  <button className="button gold full" disabled={busy||!validUsername(username)||!validDisplayName(displayName)||needsPin&&(!validPin(pin)||pin!==confirmation)}>{busy?'Profiel opslaan…':'Profiel opslaan en verder'}</button>
+  <button className="button gold full" disabled={busy||!identityValid||needsPin&&(!validPin(pin)||pin!==confirmation)}>{busy?'Profiel opslaan…':'Profiel opslaan en verder'}</button>
  </form>;
 }
 
@@ -71,28 +68,30 @@ export function PlayerPinSettings({user}:{user:Profile}){
  </section>;
 }
 
-type View='matches'|'opponents'|'tournaments'|'practice';
-const views:{id:View;label:string}[]=[{id:'matches',label:'Wedstrijden'},{id:'opponents',label:'Tegenstanders'},{id:'tournaments',label:'Toernooien'},{id:'practice',label:'Oefenen'}];
+type View='matches'|'opponents'|'tournaments'|'practice'|'play';
+const views:{id:View;label:string}[]=[{id:'matches',label:'Wedstrijden'},{id:'opponents',label:'Tegenstanders'},{id:'tournaments',label:'Toernooien'},{id:'practice',label:'Oefenen'},{id:'play',label:'Spelvormen'}];
 export function ProfileStatisticsLinks(){return <nav className="profile-stat-nav" aria-label="Profielstatistieken">{views.map(v=><a className="button ghost" href={`/app/statistics?view=${v.id}`} key={v.id}>{v.label}</a>)}</nav>;}
 function Matches({rows}:{rows:StatisticsMatchRow[]}){return rows.length?<div className="table-scroll"><table><thead><tr><th>Datum</th><th>Tegenstander</th><th>Uitslag</th><th>Speltype</th><th>AVG</th><th>Evenement</th><th>Delen</th></tr></thead><tbody>{rows.map(row=><tr key={row.id}><td><a href={`/wedstrijd/${row.id}`}>{date(row.completedAt)}</a></td><td>{row.opponent?.name??'Speler'}</td><td><abbr title={row.result==='W'?'Gewonnen':row.result==='V'?'Verloren':'Gelijk'}>{row.result}</abbr> · {row.legs.join('–')}</td><td>{row.startScore} {row.outRule==='master-out'?'master uit':row.outRule==='straight-out'?'straight uit':'dubbel uit'}</td><td>{number(row.average)}</td><td>{row.competition?.name??'Vrij spel'}</td><td><a href={`/app/feed/share/${row.id}`}>Delen / revanche</a></td></tr>)}</tbody></table></div>:<p>Er zijn nog geen gespeelde, afgeronde wedstrijden.</p>;}
 function Pager({offset,total,onChange}:{offset:number;total:number;onChange:(offset:number)=>void}){return <div className="button-row"><button className="button ghost small" disabled={offset===0} onClick={()=>onChange(Math.max(0,offset-25))}>Vorige</button><span>{total?`${offset+1}–${Math.min(offset+25,total)} van ${total}`:'0 resultaten'}</span><button className="button ghost small" disabled={offset+25>=total} onClick={()=>onChange(offset+25)}>Volgende</button></div>;}
 export function PlayerStatisticsPanel(){
- const [view,setView]=useState<View>('matches'),[score,setScore]=useState(501),[offset,setOffset]=useState(0),[opponentOffset,setOpponentOffset]=useState(0),[practiceOffset,setPracticeOffset]=useState(0),[search,setSearch]=useState(''),[opponent,setOpponent]=useState(''),[outRule,setOutRule]=useState('double-out'),[inRule,setInRule]=useState('single'),[handicap,setHandicap]=useState(false);
+ const [view,setView]=useState<View>('matches'),[score,setScore]=useState(501),[offset,setOffset]=useState(0),[opponentOffset,setOpponentOffset]=useState(0),[practiceOffset,setPracticeOffset]=useState(0),[search,setSearch]=useState(''),[opponent,setOpponent]=useState(''),[source,setSource]=useState(''),[outRule,setOutRule]=useState('double-out'),[inRule,setInRule]=useState('single'),[handicap,setHandicap]=useState(false);
  const [data,setData]=useState<PlayerStatisticsResponse|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[refresh,setRefresh]=useState(0);
  useEffect(()=>{const v=new URLSearchParams(location.search).get('view');if(views.some(x=>x.id===v))setView(v as View);},[]);
- useEffect(()=>{let active=true;setBusy(true);const q=new URLSearchParams({startScore:String(score),outRule,inRule,handicap:String(handicap),offset:String(offset),opponentOffset:String(opponentOffset),practiceOffset:String(practiceOffset)});if(search)q.set('search',search);if(opponent)q.set('opponent',opponent);
+ useEffect(()=>{let active=true;setBusy(true);const q=new URLSearchParams({startScore:String(score),outRule,inRule,handicap:String(handicap),offset:String(offset),opponentOffset:String(opponentOffset),practiceOffset:String(practiceOffset)});if(source)q.set('source',source);if(search)q.set('search',search);if(opponent)q.set('opponent',opponent);
   void api<PlayerStatisticsResponse>('/api/player-statistics?'+q).then(value=>{if(active){setData(value);setError('');}}).catch(error=>{if(active)setError(error instanceof Error?error.message:'Statistieken ophalen is niet gelukt.');}).finally(()=>{if(active)setBusy(false);});return()=>{active=false;};
- },[score,outRule,inRule,handicap,offset,opponentOffset,practiceOffset,search,opponent,refresh]);
+ },[score,source,outRule,inRule,handicap,offset,opponentOffset,practiceOffset,search,opponent,refresh]);
  const s=data?.summary,m=s?.measures;
  function changeView(value:View){setView(value);history.replaceState(null,'',`/app/statistics?view=${value}`);}
  const trend=s?.last50.trend??[],measured=trend.flatMap((point,index)=>point.average===null?[]:[{index,value:point.average}]);
  const max=Math.max(100,...measured.map(p=>p.value)),points=measured.map(p=>`${10+(trend.length<2?0:p.index/(trend.length-1))*580},${110-p.value/max*100}`).join(' ');
+ if(view==='play')return <section className="player-statistics"><header><h1>Jouw spelersprofiel</h1><ProfileStatisticsLinks/></header><div className="profile-stat-nav" role="tablist" aria-label="Statistiekweergave">{views.map(v=><button type="button" className={'button '+(view===v.id?'gold':'ghost')} role="tab" aria-selected={view===v.id} key={v.id} onClick={()=>changeView(v.id)}>{v.label}</button>)}</div><PlayStatisticsPanel/></section>;
  return <section className="player-statistics" aria-busy={busy}><header><h1>Jouw spelersprofiel</h1><ProfileStatisticsLinks/></header>
   <div className="profile-stat-nav" role="tablist" aria-label="Statistiekweergave">{views.map(v=><button type="button" className={'button '+(view===v.id?'gold':'ghost')} role="tab" aria-selected={view===v.id} key={v.id} onClick={()=>changeView(v.id)}>{v.label}</button>)}</div>
-  <div className="profile-stat-filter"><label>Speltype <select value={score} onChange={e=>{setScore(Number(e.target.value));setOffset(0);setOpponentOffset(0);setPracticeOffset(0);}}><option value={501}>501</option><option value={301}>301</option><option value={701}>701</option></select></label><label>Openen <select value={inRule} onChange={e=>{setInRule(e.target.value);setOffset(0);setOpponentOffset(0);}}><option value="single">Open in</option><option value="double">Double in</option></select></label><label>Uitgooien <select value={outRule} onChange={e=>{setOutRule(e.target.value);setOffset(0);setOpponentOffset(0);}}><option value="double-out">Double out</option><option value="straight-out">Straight out</option><option value="master-out">Master out</option></select></label><label><input type="checkbox" checked={handicap} onChange={e=>{setHandicap(e.target.checked);setOffset(0);setOpponentOffset(0);}}/>Met handicap</label><button className="button ghost small" onClick={()=>setRefresh(v=>v+1)}>Vernieuwen</button></div>
+  <div className="profile-stat-filter"><label>Wedstrijdbron<select value={source} onChange={e=>{setSource(e.target.value);setOffset(0);setOpponentOffset(0);}}><option value="">Alle wedstrijdbronnen</option><option value="free">Vrijspel</option><option value="league">Competitie</option><option value="tournament">Toernooi</option></select></label><label>Speltype <select value={score} onChange={e=>{setScore(Number(e.target.value));setOffset(0);setOpponentOffset(0);setPracticeOffset(0);}}><option value={501}>501</option><option value={301}>301</option><option value={701}>701</option></select></label><label>Openen <select value={inRule} onChange={e=>{setInRule(e.target.value);setOffset(0);setOpponentOffset(0);}}><option value="single">Open in</option><option value="double">Double in</option></select></label><label>Uitgooien <select value={outRule} onChange={e=>{setOutRule(e.target.value);setOffset(0);setOpponentOffset(0);}}><option value="double-out">Double out</option><option value="straight-out">Straight out</option><option value="master-out">Master out</option></select></label><label><input type="checkbox" checked={handicap} onChange={e=>{setHandicap(e.target.checked);setOffset(0);setOpponentOffset(0);}}/>Met handicap</label><button className="button ghost small" onClick={()=>setRefresh(v=>v+1)}>Vernieuwen</button></div>
   {error&&<div className="notice error" role="alert">{error}</div>}{!data&&<p>{busy?'Statistieken ophalen…':'Geen statistieken beschikbaar.'}</p>}
+  {data?.tactics&&data.tactics.matches>0&&<section className="panel"><h2>Tactics</h2><p>{data.tactics.matches} partijen · {data.tactics.won} gewonnen · {data.tactics.creditedMarks} getelde marks met {data.tactics.darts} pijlen · {number(data.tactics.marksPerRound)} marks per beurt.</p><p>Treffers om te sluiten en geldige scorende treffers; doelen die door beide kanten gesloten zijn leveren geen extra marks op.</p></section>}
   {data?.cricket&&data.cricket.matches>0&&<section className="panel"><h2>Cricket</h2><p>{data.cricket.matches} partijen · {data.cricket.won} gewonnen · {data.cricket.creditedMarks} getelde marks met {data.cricket.darts} pijlen · {number(data.cricket.marksPerRound)} marks per beurt.</p><p>Cricket heeft een eigen telling en wordt afzonderlijk van X01 weergegeven.</p></section>}
-  {!!data?.teamContributions?.length&&<details className="panel"><summary>Mijn worpbijdragen in koppels en teamgames</summary><p>Alleen aan jou toegeschreven beurten tellen mee. De teamuitslag staat bij het duo of team.</p>{data.teamContributions.map(item=><article key={item.matchId}><h3><a href={`/wedstrijd/${item.matchId}`}>{item.sideName} · {date(item.completedAt)}</a></h3><p>Met {item.partners.join(', ')} · {item.measures.visits} beurten · {item.measures.darts} pijlen · {item.discipline==='cricket'?`${item.measures.creditedMarks} marks · ${number(item.measures.marksPerRound)} MPR`:`${item.measures.points} punten · ${number(item.measures.average)} AVG · ${item.measures.oneEighties} × 180 · hoogste finish ${item.measures.highestFinish||'—'}`}</p></article>)}</details>}
+  {!!data?.teamContributions?.length&&<details className="panel"><summary>Mijn worpbijdragen in koppels en teamgames</summary><p>Alleen aan jou toegeschreven beurten tellen mee. De teamuitslag staat bij het duo of team.</p>{data.teamContributions.map(item=><article key={item.matchId}><h3><a href={`/wedstrijd/${item.matchId}`}>{item.sideName} · {date(item.completedAt)}</a></h3><p>Met {item.partners.join(', ')} · {item.measures.visits} beurten · {item.measures.darts} pijlen · {['cricket','tactics'].includes(item.discipline)?`${item.measures.creditedMarks} marks · ${number(item.measures.marksPerRound)} MPR`:`${item.measures.points} punten · ${number(item.measures.average)} AVG · ${item.measures.oneEighties} × 180 · hoogste finish ${item.measures.highestFinish||'—'}`}</p></article>)}</details>}
   {data&&s&&m&&view==='matches'&&<>
    <div className="profile-stat-grid">{[['Gespeeld',s.played],['Gewonnen',s.won],['Verloren',s.lost],['Gelijk',s.drawn],['Winstpercentage',s.winPercentage===null?'Onbekend':number(s.winPercentage,1)+'%'],['Legs gewonnen / verloren',`${s.legsWon} / ${s.legsLost}`]].map(([label,value])=><div className="panel" key={label}><small>{label}</small><strong>{value}</strong></div>)}</div>
    <section className="panel"><h2>Vorm · laatste vijf</h2><p>Van meest recent naar ouder. W = gewonnen, V = verloren, G = gelijk.</p><div className="profile-form-strip">{s.form.map(row=><a href={`/wedstrijd/${row.id}`} key={row.id} title={`${date(row.completedAt)} · ${row.opponent?.name??'Speler'}`} aria-label={`${row.result==='W'?'Gewonnen':row.result==='V'?'Verloren':'Gelijk'} op ${date(row.completedAt)}`}>{row.result}</a>)}{!s.form.length&&<p>Nog geen vorm beschikbaar.</p>}</div></section>

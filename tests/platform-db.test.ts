@@ -20,7 +20,7 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
   const admin = randomUUID(), alice = randomUUID(), bob = randomUUID(), carol = randomUUID(), outsider = randomUUID(), people = [admin, alice, bob, carol, outsider];
   const run = (actor: string, action: PlatformCommand['action'], expectedRevision?: number, requestId = randomUUID()) => executePlatformCommand(actor, { requestId, action, ...(expectedRevision === undefined ? {} : { expectedRevision }) });
   try {
-    for (const [i, id] of people.entries()) await owner.query('insert into dartflow_private.profiles(id,name) values($1,$2)', [id, `Platform fixture ${i}`]);
+    for (const [i, id] of people.entries()) await owner.query('insert into dartflow_private.profiles(id,name,display_name) values($1,$2,$3)', [id, `platform${id.slice(0,8)}`, `Platform fixture ${i}`]);
     for(const id of people)await owner.query("insert into dartflow_private.player_safety_acceptances(user_id,version,age_confirmed) values($1,'2026-11-18',true)",[id]);
     await owner.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'owner')", [admin]);
     const club = (await run(admin, { type: 'club.create', name: 'Platform fixture club', capacity: 8 })).id!;
@@ -43,7 +43,7 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
       const lock=new pg.Client({connectionString:process.env.DARTFLOW_DATABASE_ADMIN_URL});await lock.connect();await lock.query('begin');await lock.query('select id from dartflow_private.events where id=$1 for update',[event.entity!.state.eventId]);
       await owner.query("update dartflow_private.board_activity_sessions set activity_at=to_timestamp(($2::double precision-180000)/1000),deadline_at=to_timestamp($2::double precision/1000) where source_id=$1 and status='active'",[first.id,Date.now()+120]);
       const renewal=run(player,{type:'training.score',id:first.id,score:60},scored.entity!.revision),newClaim=run(other,{type:'board.start',boardId:board,mode:'solo'}),settled=Promise.allSettled([renewal,newClaim]);await new Promise(resolve=>setTimeout(resolve,160));await lock.query('commit');await lock.end();
-      const outcomes=await settled;assert.equal(outcomes[0].status,'rejected');assert.equal(outcomes[1].status,'fulfilled');const next=(outcomes[1] as PromiseFulfilledResult<Awaited<ReturnType<typeof run>>>).value;
+      const outcomes=await settled;assert.equal(outcomes[0].status,'rejected');assert.equal(outcomes[1].status,'fulfilled',outcomes[1].status==='rejected'?`${outcomes[1].reason?.code??'error'}: ${outcomes[1].reason?.message??'Baanclaim mislukt'}`:undefined);const next=(outcomes[1] as PromiseFulfilledResult<Awaited<ReturnType<typeof run>>>).value;
       await assert.rejects(getPublicSnapshot(token),{status:404});await assert.rejects(run(player,{type:'training.undo',id:first.id},scored.entity!.revision),{code:'board_session_expired'});
       await assert.rejects(run(player,{type:'training.finish',id:first.id},scored.entity!.revision),{code:'board_session_expired'});assert.equal((await getBoardForActor(other,board)).practiceId,next.id);
       await run(other,{type:'training.finish',id:next.id},next.entity!.revision);assert.equal((await getBoardForActor(alice,board)).canStart,true);
@@ -289,7 +289,7 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
       await assert.rejects(getPlatformCast(String(share.token)), { status: 404 });
     });
     await t.test('registration review, report privacy, external writers and call expiry use current server state',async()=>{
-      await run(alice,{type:'profile.update',name:'=Platform formula fixture'});await run(alice,{type:'registration.request'});await assert.rejects(run(bob,{type:'registration.review',userId:alice,approved:true,reason:'Forged'}),{status:403});
+      await run(alice,{type:'profile.update',displayName:'=Platform formula fixture'});await run(alice,{type:'registration.request'});await assert.rejects(run(bob,{type:'registration.review',userId:alice,approved:true,reason:'Forged'}),{status:403});
       await run(admin,{type:'registration.review',userId:alice,approved:true,reason:'Identiteit gecontroleerd'});assert.equal((await getPlatformOverview(alice)).registrations[0].status,'approved');
       const csv=await exportPlatformCsv(admin,'players',club);assert.ok(csv.includes("'=Platform formula fixture"));
       const report=await run(alice,{type:'report.create',userId:bob,reason:'Werkelijke testmelding'});assert.equal((await getPlatformOverview(bob)).reports.some(r=>r.id===report.id),false);assert.equal((await getPlatformOverview(admin)).reports.some(r=>r.id===report.id),true);await assert.rejects(run(bob,{type:'report.resolve',reportId:report.id,reason:'Onbevoegd'}),{status:403});await run(admin,{type:'report.resolve',reportId:report.id,reason:'Beoordeeld'});

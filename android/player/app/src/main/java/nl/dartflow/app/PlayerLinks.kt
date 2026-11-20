@@ -76,9 +76,13 @@ object PlayerLinks {
                 if (Regex("[A-Z0-9]{8}").matches(code)) PlayerDestination(PlayerScreen.SCREENS, "paircode:$code") else PlayerDestination(PlayerScreen.SCREENS)
             }
             "profiel" -> PlayerDestination(PlayerScreen.PROFILE)
-            "spelen", "speler" -> PlayerDestination(PlayerScreen.PLAY)
+            "spelen" -> PlayerDestination(if (id != null) PlayerScreen.PLAY_SESSION else PlayerScreen.PLAY_START, id)
+            "oefenen" -> PlayerDestination(PlayerScreen.PRACTICE)
+            "uitdagingen" -> PlayerDestination(PlayerScreen.CHALLENGES, id)
+            "speler" -> PlayerDestination(PlayerScreen.PLAY)
             "evenementen", "toernooien", "tournaments", "leagues" -> PlayerDestination(if (id != null) PlayerScreen.EVENT else PlayerScreen.EVENTS, id, invitation)
             "rankings" -> PlayerDestination(PlayerScreen.RANKINGS)
+            "handleiding" -> PlayerDestination(PlayerScreen.MANUAL,id)
             "help", "faq" -> {
                 val help = query(uri).filter { (key, input) -> key in listOf("q", "category", "id") && input.length <= 200 && input.none { it.code < 32 } }.toMutableMap()
                 if (id != null) help["id"] = id

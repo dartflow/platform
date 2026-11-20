@@ -23,7 +23,7 @@ internal fun playerDartCommand(hits: List<String>): JSONObject {
     require(hits.size in 1..3) { "Een beurt bevat één tot drie pijlen." }
     return json("score" to hits.sumOf(::playerDartValue), "darts" to hits.size, "dartHits" to JSONArray(hits))
 }
-internal fun playerNeedsDartDetail(settings: JSONObject): Boolean = settings.text("discipline", "x01") == "cricket" || settings.text("inRule", "single") == "double" || settings.text("outRule", "double") != "double"
+internal fun playerNeedsDartDetail(settings: JSONObject): Boolean = settings.text("discipline", "x01") in listOf("cricket", "tactics") || settings.text("inRule", "single") == "double" || settings.text("outRule", "double") != "double"
 
 /** Only records observed targets; the server applies opening, finish and bust rules. */
 @Composable internal fun PlayerDartScoreEntry(match: PlayerMatch, state: PlayerUiState, actions: PlayerActions) {
@@ -31,7 +31,7 @@ internal fun playerNeedsDartDetail(settings: JSONObject): Boolean = settings.tex
     var multiplier by rememberSaveable { mutableStateOf("S") }
     var previousRevision by rememberSaveable(match.id) { mutableIntStateOf(match.revision) }
     LaunchedEffect(match.revision) { if (match.revision != previousRevision) { hits = emptyList(); previousRevision = match.revision } }
-    val enabled = match.permissions.optBoolean("canScore") && !state.busy && state.online && !state.hasPendingCommand
+    val enabled = match.permissions.optBoolean("canScore") && !state.busy && (state.online || match.raw.optBoolean("offlineSupported")) && !state.hasPendingCommand
     val settings = match.raw.obj("settings")
     if (playerIsCricket(match)) PlayerCricketTable(match) else Text("${if (settings.text("inRule", "single") == "double") "Dubbel in" else "Single in"} · ${when (settings.text("outRule", "double")) { "master" -> "Master uit"; "straight" -> "Straight uit"; else -> "Dubbel uit" }}", color = PlayerLime)
     Text("Voer de geraakte vakken in volgorde in. Stop na een finish of bust.", color = PlayerMuted)

@@ -2,6 +2,7 @@
 """Offline real-filesystem/lock/transaction tests; no sudo, systemd or providers run."""
 import array
 import base64
+import contextlib
 import hashlib
 import importlib.util
 import importlib.machinery
@@ -10,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import shlex
 import select
 import signal
 import socket
@@ -49,6 +51,26 @@ TOKEN = 'synthetic-not-a-real-github-token'
 
 def public():
     return {'DARTFLOW_APP_ORIGIN': 'https://staging.dartflow.nl', 'DARTFLOW_DATA_MODE': 'supabase', 'NEXT_PUBLIC_SUPABASE_URL': f'https://{REF}.supabase.co', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY': 'sb_publishable_synthetic_fixture'}
+
+
+def firebase_sdk(package='nl.dartflow.app.staging'):
+    return [{'projectId': 'dartflow', 'applicationId': '1:123456789:android:abcdef123456', 'senderId': '123456789', 'apiKey': 'synthetic_public_android_config_key', 'packageName': package}]
+
+
+def firebase_account():
+    # Deliberately non-operational PEM-shaped bytes; no private key is generated/read.
+    encoded = base64.b64encode(b'\x30' + b'synthetic-not-a-private-key-' * 10).decode()
+    email = 'dartflow-fcm@dartflow.iam.gserviceaccount.com'
+    return {'type': 'service_account', 'project_id': 'dartflow', 'private_key_id': 'a' * 40,
+            'private_key': '-----BEGIN PRIVATE KEY-----\n' + encoded + '\n-----END PRIVATE KEY-----\n',
+            'client_email': email, 'client_id': '123456789012345678901',
+            'auth_uri': 'https://accounts.google.com/o/oauth2/auth', 'token_uri': 'https://oauth2.googleapis.com/token',
+            'auth_provider_x509_cert_url': 'https://www.googleapis.com/oauth2/v1/certs',
+            'client_x509_cert_url': 'https://www.googleapis.com/robot/v1/metadata/x509/' + email.replace('@', '%40'), 'universe_domain': 'googleapis.com'}
+
+
+def firebase_line(key, value):
+    return key + "='" + json.dumps(value) + "'\n"
 
 
 def archive(entries):
@@ -196,6 +218,94 @@ class NativeBoundaries(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr.decode())
 
 
+class FirebaseRuntimeBoundaries(unittest.TestCase):
+    def setUp(self):
+        self.database = f'DARTFLOW_DATABASE_URL=postgresql://dartflow_app:synthetic-only@db.{REF}.supabase.co:5432/postgres?sslmode=verify-full\n'
+        self.base = self.database + 'DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY=' + base64.b64encode(bytes([71]) * 32).decode() + '\n'
+
+    def test_optional_configuration_keeps_old_bundles_and_accepts_exact_environment(self):
+        self.assertEqual(set(deploy.runtime_values(self.database, public())), {'DARTFLOW_DATABASE_URL'})
+        for environment, package in [('staging', 'nl.dartflow.app.staging'), ('production', 'nl.dartflow.app')]:
+            text = self.base + firebase_line('DARTFLOW_FIREBASE_ANDROID_CONFIG', firebase_sdk(package)) + firebase_line('DARTFLOW_FCM_SERVICE_ACCOUNT_JSON', firebase_account())
+            with self.subTest(environment=environment), patch.object(deploy, 'SITE', 'dartflow-' + environment):
+                values = deploy.runtime_values(text, public())
+                self.assertEqual(json.loads(values['DARTFLOW_FIREBASE_ANDROID_CONFIG']), firebase_sdk(package))
+                self.assertEqual(json.loads(values['DARTFLOW_FCM_SERVICE_ACCOUNT_JSON']), firebase_account())
+
+    def test_json_spaces_and_escaped_pem_newlines_survive_literal_environment_quoting(self):
+        for key, value in [('DARTFLOW_FIREBASE_ANDROID_CONFIG', firebase_sdk()), ('DARTFLOW_FCM_SERVICE_ACCOUNT_JSON', firebase_account())]:
+            line = firebase_line(key, value)
+            self.assertIn(': ', line)
+            parsed = deploy.runtime_values(self.base + line, public())[key]
+            self.assertEqual(json.loads(parsed), value)
+            self.assertEqual(shlex.split(line, comments=False)[0], key + '=' + parsed)
+        self.assertIn('\\n', firebase_line('DARTFLOW_FCM_SERVICE_ACCOUNT_JSON', firebase_account()))
+
+    def test_public_options_reject_wrong_project_package_fields_identifiers_and_duplicates(self):
+        original = firebase_sdk()[0]
+        invalid = [[], [original, original], {}, [None], [{**original, 'projectId': 'other-project'}],
+                   [{**original, 'packageName': 'nl.dartflow.app'}], [{**original, 'packageName': 'nl.dartflow.app.dev'}],
+                   [{**original, 'senderId': '999'}], [{**original, 'senderId': 123456789}],
+                   [{**original, 'applicationId': 'not-an-android-app'}], [{**original, 'apiKey': 'short'}],
+                   [{**original, 'private_key': firebase_account()['private_key']}], [{**original, 'unknown': True}]]
+        for value in invalid:
+            with self.subTest(case=invalid.index(value)), self.assertRaises(ValueError):
+                deploy.runtime_values(self.base + firebase_line('DARTFLOW_FIREBASE_ANDROID_CONFIG', value), public())
+
+    def test_service_identity_and_google_metadata_are_fixed_and_private(self):
+        valid = firebase_account()
+        invalid = [{**valid, 'project_id': 'other-project'}, {**valid, 'type': 'authorized_user'},
+                   {**valid, 'client_email': 'sender@other.iam.gserviceaccount.com'},
+                   {**valid, 'token_uri': 'https://other.invalid/token'}, {**valid, 'universe_domain': 'other.invalid'},
+                   {**valid, 'private_key_id': 'not-a-key-id'}, {**valid, 'client_id': 'not-numeric'},
+                   {**valid, 'client_x509_cert_url': 'https://other.invalid/cert'}, {**valid, 'unknown': 'private-marker'}]
+        for value in invalid:
+            with self.subTest(case=invalid.index(value)), self.assertRaises(ValueError):
+                deploy.runtime_values(self.base + firebase_line('DARTFLOW_FCM_SERVICE_ACCOUNT_JSON', value), public())
+        required = {k: valid[k] for k in ['type', 'project_id', 'client_email', 'private_key']}
+        deploy.runtime_values(self.base + firebase_line('DARTFLOW_FCM_SERVICE_ACCOUNT_JSON', required), public())
+        with self.assertRaises(ValueError):
+            deploy.runtime_values(self.database + firebase_line('DARTFLOW_FCM_SERVICE_ACCOUNT_JSON', valid), public())
+
+    def test_credential_encoding_and_ambiguous_environment_forms_fail_closed(self):
+        valid = firebase_account()
+        for key in ['', valid['private_key'].replace('PRIVATE KEY', 'RSA PRIVATE KEY'), valid['private_key'].replace('-----END PRIVATE KEY-----', ''), '-----BEGIN PRIVATE KEY-----\n!\n-----END PRIVATE KEY-----\n', 'x' * 16385]:
+            with self.subTest(size=len(key)), self.assertRaises(ValueError):
+                deploy.runtime_values(self.base + firebase_line('DARTFLOW_FCM_SERVICE_ACCOUNT_JSON', {**valid, 'private_key': key}), public())
+        payload = json.dumps(firebase_sdk())
+        for encoded in [payload, json.dumps(payload), "'" + payload, "'" + payload + "' extra", "'" + payload + "' 'extra'", "'" + payload + "\n'", "'" + payload.replace(': ', ':\t') + "'"]:
+            with self.subTest(size=len(encoded)), self.assertRaises(ValueError):
+                deploy.runtime_values(self.base + 'DARTFLOW_FIREBASE_ANDROID_CONFIG=' + encoded + '\n', public())
+
+    def test_duplicate_json_keys_nonjson_constants_and_bounded_input_are_rejected(self):
+        payload = json.dumps(firebase_sdk())
+        for raw in [payload.replace('"projectId": "dartflow"', '"projectId":"dartflow","projectId":"dartflow"'),
+                    '[NaN]', '[Infinity]', '[' * 1200 + '0' + ']' * 1200, ' ' * 16384, '{broken}']:
+            with self.subTest(size=len(raw)), self.assertRaises(ValueError):
+                deploy.runtime_values(self.base + "DARTFLOW_FIREBASE_ANDROID_CONFIG='" + raw + "'\n", public())
+        line = firebase_line('DARTFLOW_FIREBASE_ANDROID_CONFIG', firebase_sdk())
+        with self.assertRaises(ValueError):
+            deploy.runtime_values(self.base + line + line, public())
+
+    def test_errors_never_disclose_credentials_and_public_build_values_refuse_them(self):
+        marker = 'private-sentinel-do-not-print'
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            try:
+                deploy.runtime_values(self.base + firebase_line('DARTFLOW_FCM_SERVICE_ACCOUNT_JSON', {**firebase_account(), 'project_id': marker}), public())
+            except ValueError as error:
+                self.assertNotIn(marker, str(error))
+                self.assertNotIn(firebase_account()['private_key'], str(error))
+            else:
+                self.fail('Wrong-project credential was accepted')
+        self.assertEqual(stdout.getvalue() + stderr.getvalue(), '')
+        for key in deploy.FIREBASE_RUNTIME_KEYS:
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                deploy.public_values({**public(), key: marker})
+            with self.assertRaises(ValueError):
+                deploy.runtime_values(self.base + 'NEXT_PUBLIC_' + key + '=' + marker + '\n', public())
+
+
 class V19PinUpgradeBoundaries(unittest.TestCase):
     def test_new_runtime_preserves_original_bytes_and_rotations_require_review(self):
         encoded = base64.b64encode(bytes([71]) * 32).decode()
@@ -325,6 +435,16 @@ class FixedEnvironmentRendering(unittest.TestCase):
                 production.arguments(args)
         with self.assertRaises(ValueError):
             production.request_body(io.BytesIO(json.dumps({'githubToken': TOKEN, 'environment': 'staging'}).encode()), 'deploy')
+
+    def test_both_rendered_helpers_bind_optional_firebase_options_to_their_own_package(self):
+        database = f'DARTFLOW_DATABASE_URL=postgresql://dartflow_app:synthetic-only@db.{REF}.supabase.co:5432/postgres?sslmode=verify-full\n'
+        for environment, package in [('staging', 'nl.dartflow.app.staging'), ('production', 'nl.dartflow.app')]:
+            module, _ = self.modules[environment]
+            values = module.runtime_values(database + firebase_line('DARTFLOW_FIREBASE_ANDROID_CONFIG', firebase_sdk(package)), public())
+            self.assertEqual(json.loads(values['DARTFLOW_FIREBASE_ANDROID_CONFIG'])[0]['packageName'], package)
+            other = 'nl.dartflow.app' if environment == 'staging' else 'nl.dartflow.app.staging'
+            with self.assertRaises(ValueError):
+                module.runtime_values(database + firebase_line('DARTFLOW_FIREBASE_ANDROID_CONFIG', firebase_sdk(other)), public())
 
     def test_each_fixed_policy_refuses_cross_environment_identity_before_build(self):
         for environment, (output, manifest) in self.outputs.items():
@@ -674,6 +794,9 @@ class BuildIsolation(unittest.TestCase):
         self.assertEqual(run.call_args.args[0][1:3], ['is-active', '--quiet'])
         with self.assertRaises(ValueError):
             deploy.build_command(['npm', 'ci'], Path('/unused'), policy, RUN, 'install', values={'GITHUB_TOKEN': TOKEN})
+        for key in deploy.FIREBASE_RUNTIME_KEYS:
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                deploy.build_command(['npm', 'ci'], Path('/unused'), policy, RUN, 'install', values={**values, key: 'synthetic-private-config'})
 
     def test_build_failure_stops_cgroup_and_refuses_to_seal_if_it_stays_active(self):
         policy = {'node': '/opt/node/bin/node', 'npm': '/opt/npm/bin/npm', 'buildTimeoutSeconds': 60, 'buildMemoryMax': '3G', 'buildCpuQuota': '100%'}
@@ -768,6 +891,7 @@ class CompleteReleaseFixture(unittest.TestCase):
         self.assertNotIn('DARTFLOW_MAIL_ALLOWED_REPLY_TO', str(values))
         self.assertNotIn('support@dartflow.nl', str(values))
         self.assertFalse(deploy.PLAYER_PIN_RUNTIME_KEYS & set(values or {}))
+        self.assertFalse(deploy.FIREBASE_RUNTIME_KEYS & set(values or {}))
         self.assertNotIn(base64.b64encode(bytes([71]) * 32).decode(), str(values))
         if stage == 'extract':
             extractor.extract(stdin, work / 'source', policy['maxSourceBytes'], policy['maxSourceFiles'])
@@ -805,8 +929,11 @@ class CompleteReleaseFixture(unittest.TestCase):
             stream.write('DARTFLOW_MAIL_ALLOWED_FROM=noreply@dartflow.nl\n'
                          'DARTFLOW_MAIL_ALLOWED_REPLY_TO=support@dartflow.nl\n'
                          'DARTFLOW_MAIL_TEST_RECIPIENTS=info@dgwebservices.nl\n'
+                         'DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY=' + base64.b64encode(bytes([71]) * 32).decode() + '\n'
                          'DARTFLOW_PLAYER_PIN_PEPPERS=v1:' + base64.b64encode(bytes([71]) * 32).decode() + '\n'
                          'DARTFLOW_PLAYER_PIN_PEPPER_VERSION=v1\n')
+            stream.write(firebase_line('DARTFLOW_FIREBASE_ANDROID_CONFIG', firebase_sdk()))
+            stream.write(firebase_line('DARTFLOW_FCM_SERVICE_ACCOUNT_JSON', firebase_account()))
         result = self.run_release()
         self.assertEqual(result['status'], 'passed')
         self.assertEqual(self.events, ['gate', 'download', 'extract', 'versions', 'install', 'build', 'activate', 'restart'])
@@ -818,6 +945,10 @@ class CompleteReleaseFixture(unittest.TestCase):
         self.assertEqual(meta['toolchain']['npm'], '11.16.0')
         active_runtime = (self.site / 'current' / '.runtime.env').read_text()
         self.assertEqual(deploy.runtime_values(active_runtime, public())['DARTFLOW_MAIL_ALLOWED_REPLY_TO'], 'support@dartflow.nl')
+        self.assertEqual(json.loads(deploy.runtime_values(active_runtime, public())['DARTFLOW_FCM_SERVICE_ACCOUNT_JSON']), firebase_account())
+        self.assertEqual(json.loads(deploy.runtime_values(active_runtime, public())['DARTFLOW_FIREBASE_ANDROID_CONFIG']), firebase_sdk())
+        self.assertNotIn(firebase_account()['private_key'], json.dumps(result))
+        self.assertNotIn('private_key', json.dumps(meta))
         self.assertEqual(meta['runtimeConfigHash'], hashlib.sha256(active_runtime.encode()).hexdigest())
         self.assertEqual(list(self.build_root.iterdir()), [])
         for path in self.root.rglob('*'):

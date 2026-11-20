@@ -19,7 +19,7 @@ test('v17 club ownership, scoped grants, intake, targeted invitations and durabl
  const run=(actor:string,action:PlatformCommand['action'],expectedRevision?:number,requestId=randomUUID())=>executePlatformCommand(actor,{requestId,action,...(expectedRevision===undefined?{}:{expectedRevision})});
  const project=async(actor:string,id:string)=>(await getPlatformOverview(actor)).clubs.find(c=>c.id===id) as ClubEntity;
  try{
-  for(const [index,id]of people.entries())await admin.query('insert into dartflow_private.profiles(id,name) values($1,$2)',[id,`Club v17 fixture ${index}`]);
+  for(const [index,id]of people.entries())await admin.query('insert into dartflow_private.profiles(id,name,display_name) values($1,$2,$3)',[id,`clubv17${id.slice(0,8)}`,`Club v17 fixture ${index}`]);
   const created=await run(owner,{type:'club.create',name:'V17 transactional club',capacity:8}),club=created.id!;clubs.push(club);
   const other=(await run(outsider,{type:'club.create',name:'V17 separate club'})).id!;clubs.push(other);
   for(const target of [reviewer,bob]){await run(target,{type:'club.request',id:club});await run(owner,{type:'club.approve',id:club,userId:target});}

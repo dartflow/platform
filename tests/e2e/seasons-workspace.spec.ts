@@ -5,7 +5,7 @@ import {seasonSettings,generateSeasonFixtures} from '../../lib/seasons-domain';
 
 const actor='00000000-0000-4000-8000-000000000002',club='00000000-0000-4000-8000-000000000010',board='00000000-0000-4000-8000-000000000020',division='00000000-0000-4000-8000-000000000030';
 const uuid=(number:number)=>`11111111-1111-4111-8111-${String(number).padStart(12,'0')}`;
-const profile:Profile={id:actor,name:'Rick de Jong',username:'rick',displayNameConfirmed:true,onboardingComplete:true,pinConfigured:true};
+const profile:Profile={id:actor,name:'Rick de Jong',username:'rick',displayName:'Rick de Jong',usernameLocked:true,displayNameConfirmed:true,onboardingComplete:true,pinConfigured:true};
 const overview:Overview={profile,clubs:[],currentClub:null,events:[],matches:[],boards:[],participants:[],history:[],standings:[],permissions:{canManage:false}};
 function localOnly(baseURL:string|undefined){if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Season UI fixtures require the loopback application.');}
 function fixture(id=uuid(1),national=false,manage=true):SeasonView{

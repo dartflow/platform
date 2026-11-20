@@ -26,6 +26,7 @@ internal fun playerHelpItems(resource: JSONObject, query: String, category: Stri
 }
 
 @Composable internal fun PlayerHelpScreen(state: PlayerUiState, actions: PlayerActions) {
+    Action("Volledige handleiding",primary=false){actions.navigate(PlayerScreen.MANUAL,null)}
     if (state.canManagePlatform) Action("Beheer gedeelde hulp", primary = false) { actions.navigate(PlayerScreen.FAQ_ADMIN, null) }
     val params = playerHelpQuery(state.activeId)
     var query by rememberSaveable { mutableStateOf(params["q"].orEmpty()) }

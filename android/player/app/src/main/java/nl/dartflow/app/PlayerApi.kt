@@ -34,6 +34,18 @@ class PlayerApi(val origin: String = BuildConfig.API_ORIGIN) {
             request = { token -> request(url, method, body, token) },
         )
     }
+    /** A play capability authorizes only its play session and never replaces the signed-in account. */
+    suspend fun play(path: String, body: JSONObject? = null, capability: String? = null, challengeLink: String? = null): JSONObject {
+        require(path.startsWith("/play/") && !path.contains("..") && !path.contains('#') && !path.contains("://"))
+        require(capability == null || capability.length in 16..2048 && capability.all { it.isLetterOrDigit() || it in "-_.~" })
+        require(challengeLink == null || challengeLink.length in 16..2048 && challengeLink.all { it.isLetterOrDigit() || it in "-_.~" })
+        val method = if (body == null) "GET" else "POST"
+        if (identityProvider?.invoke() == null) return request("${origin.trimEnd('/')}/api$path", method, body, null, playCapability = capability, challengeLink = challengeLink)
+        return withPlayerRequestAuthorization(
+            currentIdentity = { identityProvider?.invoke() }, bearer = { identity -> bearerProvider?.invoke(identity) }, unauthorized = unauthorized,
+            request = { token -> request("${origin.trimEnd('/')}/api/player/v1$path", method, body, token, playCapability = capability, challengeLink = challengeLink) },
+        )
+    }
     suspend fun authCall(auth: JSONObject, path: String, body: JSONObject? = null, token: String? = null, method: String = "POST"): JSONObject {
         val authUrl = auth.optString("url").trimEnd('/')
         val uri = URI(authUrl)
@@ -45,7 +57,7 @@ class PlayerApi(val origin: String = BuildConfig.API_ORIGIN) {
         require(!key.startsWith("sb_secret_"))
         return request("$authUrl/auth/v1$path", method, body, token, key, authRequest = true)
     }
-    private suspend fun request(url: String, method: String, body: JSONObject?, token: String?, apiKey: String? = null, authRequest: Boolean = false): JSONObject = withContext(Dispatchers.IO) {
+    private suspend fun request(url: String, method: String, body: JSONObject?, token: String?, apiKey: String? = null, authRequest: Boolean = false, playCapability: String? = null, challengeLink: String? = null): JSONObject = withContext(Dispatchers.IO) {
         val connection = URL(url).openConnection() as HttpURLConnection
         try {
             connection.instanceFollowRedirects = false
@@ -55,6 +67,8 @@ class PlayerApi(val origin: String = BuildConfig.API_ORIGIN) {
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Cache-Control", "no-store")
             token?.let { connection.setRequestProperty("Authorization", "Bearer $it") }
+            playCapability?.let { connection.setRequestProperty("X-DartFlow-Play-Capability", it) }
+            challengeLink?.let { connection.setRequestProperty("X-DartFlow-Challenge-Link", it) }
             apiKey?.let { connection.setRequestProperty("apikey", it) }
             if (body != null) {
                 val bytes = body.toString().toByteArray(Charsets.UTF_8)

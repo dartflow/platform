@@ -111,7 +111,7 @@ test('private player PIN lifecycle and atomic one-phone local coupling',{skip:!c
    for(const stem of ['ΟΣ\u1C89','\u1C89Σ','ΟΣ\u{10D50}','ΟΣ\u{16EA0}']){
     const username=`${stem}-${suffix}`,canonical=(await admin.query<{key:string}>('select dartflow_private.username_key($1) as key',[username])).rows[0].key;
     assert.notEqual(username.toLocaleLowerCase('nl'),canonical);
-    await admin.query('update dartflow_private.profiles set name=$2 where id=$1',[second,username]);
+    const unicodeTarget=randomUUID();people.push(unicodeTarget);await admin.query('insert into dartflow_private.profiles(id,name,display_name_confirmed)values($1,$2,true)',[unicodeTarget,username]);await admin.query("insert into dartflow_private.club_memberships(club_id,user_id,role)values($1,$2,'player')",[club,unicodeTarget]);await setPin(unicodeTarget,'012345');
     const lobby=await create();process.env.DARTFLOW_PLAYER_PIN_TARGET_LIMIT='2';
     const targetBucket=`pin:link:target:${createHmac('sha256',Buffer.alloc(32,113)).update('dartflow-player-pin:').update(canonical).digest('hex')}`;
     try{
@@ -122,9 +122,9 @@ test('private player PIN lifecycle and atomic one-phone local coupling',{skip:!c
      await admin.query("update dartflow_private.auth_limits set reset_at=clock_timestamp()-interval '1 second' where key=$1",[targetBucket]);
      process.env.DARTFLOW_PLAYER_PIN_TARGET_LIMIT='50';
      const requestId=randomUUID(),accepted=await add(lobby.id!,username,'012345',requestId),retry=await add(lobby.id!,`@${canonical}`,'',requestId);
-     assert.equal(accepted.entity!.members.find(p=>p.id===second)?.status,'active');assert.equal(retry.id,accepted.id);
+     assert.equal(accepted.entity!.members.find(p=>p.id===unicodeTarget)?.status,'active');assert.equal(retry.id,accepted.id);
      assert.equal((await admin.query("select count(*)::int n from dartflow_private.player_pin_receipts where actor_id=$1 and request_id=$2 and kind='lobby-add'",[first,requestId])).rows[0].n,1);
-    }finally{process.env.DARTFLOW_PLAYER_PIN_TARGET_LIMIT='50';await cancel(lobby.id!);await admin.query('update dartflow_private.profiles set name=$2 where id=$1',[second,names[1]]);}
+    }finally{process.env.DARTFLOW_PLAYER_PIN_TARGET_LIMIT='50';await cancel(lobby.id!);}
    }
   });
   await t.test('PIN and normal QR scan race for one second seat, and successful empty-PIN retry restores the lobby',async()=>{

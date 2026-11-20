@@ -16,7 +16,7 @@ def fixture():
         origin = f'https://{host}'
         data[(host, '/api/health')] = {'status': 'ok', 'mode': 'supabase', 'sha': SHA}
         data[(host, '/api/ready')] = {'status': 'ready', 'database': 'ok', 'auth': 'reachable', 'sha': SHA}
-        data[(host, '/api/player/v1/capabilities')] = {'apiVersion': 1, 'origin': origin, 'environment': environment, 'local': False, 'localUsers': [], 'authentication': 'Bearer', 'permissions': 'existing-player-domain-rights', 'auth': {'url': f'https://{reference}.supabase.co', 'redirectScheme': package, 'callbackUrl': f'{origin}/auth/callback?native_client={package}'}}
+        data[(host, '/api/player/v1/capabilities')] = {'apiVersion': 1, 'origin': origin, 'environment': environment, 'local': False, 'localUsers': [], 'features': sorted(ready.REQUIRED_FEATURES), 'authentication': 'Bearer', 'permissions': 'existing-player-domain-rights', 'auth': {'url': f'https://{reference}.supabase.co', 'redirectScheme': package, 'callbackUrl': f'{origin}/auth/callback?native_client={package}'}}
     data[('dartflow.nl', '/.well-known/assetlinks.json')] = [{'relation': ['delegate_permission/common.handle_all_urls'], 'target': {'namespace': 'android_app', 'package_name': ready.PACKAGE, 'sha256_cert_fingerprints': [ready.PLAY_FINGERPRINT]}}]
     for path in ready.LEGAL_PATHS:
         data[('dartflow.nl', path)] = '<html><body>DartFlow info@dartflow.nl</body></html>'
@@ -50,6 +50,11 @@ class Readiness(unittest.TestCase):
         for field, value in [('url', 'https://dsnqnvbckkqpzadblshu.supabase.co'), ('redirectScheme', 'nl.dartflow.ochelive'), ('callbackUrl', 'https://example.invalid/callback')]:
             data = fixture();data[('dartflow.nl', '/api/player/v1/capabilities')]['auth'][field] = value
             with self.subTest(field=field), self.assertRaises(ValueError):self.run_fixture(data)
+
+    def test_rejects_backend_without_each_new_native_feature(self):
+        for feature in ready.REQUIRED_FEATURES:
+            data=fixture();data[('dartflow.nl','/api/player/v1/capabilities')]['features'].remove(feature)
+            with self.subTest(feature=feature),self.assertRaises(ValueError):self.run_fixture(data)
 
     def test_rejects_missing_or_upload_only_association_and_wrong_cli_identity(self):
         for associations in [[], {}, [{'target': {'package_name': 'nl.dartflow.ochelive'}}]]:

@@ -100,17 +100,4 @@ for animation in window_animation_scale transition_animation_scale animator_dura
 done
 
 ./gradlew --no-daemon :app:connectedStagingDebugAndroidTest
-python3 - <<'PY'
-from pathlib import Path
-import json
-import xml.etree.ElementTree as ET
-files = list(Path('app/build/outputs/androidTest-results/connected').rglob('TEST-*.xml'))
-if not files:
-    raise SystemExit('Android TV produced no instrumentation XML results.')
-suites = [ET.parse(path).getroot() for path in files]
-result = {key: sum(int(suite.get(key, '0')) for suite in suites) for key in ('tests', 'failures', 'errors', 'skipped')}
-Path('app/build/reports/androidTests/tv-runner/runtime-summary.json').write_text(json.dumps(result, indent=2) + '\n')
-if result != {'tests': 10, 'failures': 0, 'errors': 0, 'skipped': 0}:
-    raise SystemExit(f'Expected all ten instrumentation tests to pass: {result}')
-print('Android TV: all ten instrumentation tests passed, none skipped.')
-PY
+python3 -B ../ci/verify_native_tests.py --app oche --kind ui --summary app/build/reports/androidTests/tv-runner/runtime-summary.json

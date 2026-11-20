@@ -9,8 +9,8 @@ import { acceptsCode, addMember, available, blocked, createEntity, entity, isClu
 import type { PlatformCommand, PlatformResponse } from './platform-types';
 
 type Action = PlatformCommand['action'];
-async function notify(client: PoolClient, requestId: string, templateId: string, recipientId: string, variables: Record<string, string>, clubId?: string | null, entityId?: string) {
-  await enqueueDomainMail(client, { id: `platform:${requestId}:${templateId}:${recipientId}`, templateId, scope: clubId ? `club:${clubId}` : 'platform', recipientId, variables, entityId });
+async function notify(client: PoolClient, requestId: string, templateId: string, recipientId: string, variables: Record<string, string>, clubId?: string | null, entityId?: string, actorId?: string) {
+  await enqueueDomainMail(client, { id: `platform:${requestId}:${templateId}:${recipientId}`, templateId, scope: clubId ? `club:${clubId}` : 'platform', recipientId, variables, entityId, actorId });
 }
 export async function socialAction(client: PoolClient, actor: string, command: PlatformCommand): Promise<PlatformResponse | null> {
   const a = command.action, type = a.type;
@@ -23,7 +23,7 @@ export async function socialAction(client: PoolClient, actor: string, command: P
   }
   if(type==='profile.update'){
     if(a.showPublicStatistics!==undefined&&typeof a.showPublicStatistics!=='boolean')throw new DomainError('invalid_preferences','Gebruik een geldige keuze voor openbare statistieken.');
-    await saveScoreboardName(client,actor,a.username??a.name,a.displayName);
+    await saveScoreboardName(client,actor,a.username??a.name,a.displayName,a.fullName);
     if(typeof a.showPublicStatistics==='boolean')await client.query('update dartflow_private.profiles set show_public_statistics=$2 where id=$1',[actor,a.showPublicStatistics]);
     return {ok:true};
   }
@@ -116,7 +116,7 @@ export async function socialAction(client: PoolClient, actor: string, command: P
     const target = await member(client, row.id, user);
     if (target?.status === 'banned') throw new DomainError('room_banned', 'Deze speler is verbannen.', 403);
     if (target?.status !== 'active') await addMember(client, row.id, user, 'member', 'invited');
-    await notify(client, command.requestId, 'room-invite', user, { roomName: row.state.name, actionUrl: `/app#community/${row.id}` }, row.club_id??(typeof row.state.organizerClubId==='string'?row.state.organizerClubId:null), row.id);
+    await notify(client, command.requestId, 'room-invite', user, { roomName: row.state.name, actionUrl: `/app#community/${row.id}` }, row.club_id??(typeof row.state.organizerClubId==='string'?row.state.organizerClubId:null), row.id, actor);
   } else if (type === 'room.leave') {
     await requireAccess(client, row, actor);
     await client.query("update dartflow_private.platform_members set status='left' where entity_id=$1 and user_id=$2", [row.id, actor]);
@@ -177,14 +177,15 @@ async function friendAction(client: PoolClient, actor: string, command: Platform
     if (privacy.rows[0]?.allow_requests === false) throw new DomainError('privacy_restricted', 'Deze speler ontvangt geen vriendschapsverzoeken.', 403);
     const friend = await client.query("select 1 from dartflow_private.platform_relationships where kind='friend' and source_id=$1 and target_id=$2", [actor, user]);
     if (friend.rowCount) return { ok: true };
-    await client.query("insert into dartflow_private.platform_relationships(source_id,target_id,kind) values($1,$2,'request') on conflict do nothing", [actor, user]);
-    await notify(client, command.requestId, 'friend-request', user, { actionUrl: '/app#friends' });
+    const inserted=await client.query("insert into dartflow_private.platform_relationships(source_id,target_id,kind) values($1,$2,'request') on conflict do nothing returning source_id", [actor, user]);
+    if(!inserted.rowCount)return {ok:true};
+    await notify(client, command.requestId, 'friend-request', user, { actionUrl: '/app#friends' }, null, undefined, actor);
   } else if (a.type === 'friend.accept') {
     const result = await client.query("delete from dartflow_private.platform_relationships where source_id=$1 and target_id=$2 and kind='request' returning source_id", [user, actor]);
     if (!result.rowCount) throw new DomainError('request_missing', 'Dit verzoek bestaat niet meer.', 409);
     await client.query("delete from dartflow_private.platform_relationships where source_id=$1 and target_id=$2 and kind='request'", [actor, user]);
     for (const [source, target] of [[actor, user], [user, actor]]) await client.query("insert into dartflow_private.platform_relationships(source_id,target_id,kind) values($1,$2,'friend') on conflict do nothing", [source, target]);
-    await notify(client, command.requestId, 'friend-accepted', user, { actionUrl: '/app#friends' });
+    await notify(client, command.requestId, 'friend-accepted', user, { actionUrl: '/app#friends' }, null, undefined, actor);
   } else if (a.type === 'friend.reject') await client.query("delete from dartflow_private.platform_relationships where source_id=$1 and target_id=$2 and kind='request'", [user, actor]);
   else if (a.type === 'friend.remove') await client.query("delete from dartflow_private.platform_relationships where ((source_id=$1 and target_id=$2) or (source_id=$2 and target_id=$1)) and kind in ('friend','request','favorite')", [actor, user]);
   else if (a.type === 'friend.favorite') {
