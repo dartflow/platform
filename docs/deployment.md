@@ -1,6 +1,15 @@
 # DartFlow: staging en productie
 
-**Actuele productuitgifte vóór 0.6.0:** [DartFlow 0.5.0](releases/0.5.0.md), bron `fac47bf5304a7c46ce3f06178debc74d8df462f5`, staat sinds 20 november 2026 op staging en productie. [Staging 44679510938](https://github.com/dartflow/platform/actions/runs/44679510938) en [productie 44680079520](https://github.com/dartflow/platform/actions/runs/44680079520) bewaren de uitrol; Player 0.5.0/code 8 staat op de interne en productietrack. De voortgang en latere uitrolbewijzen van [0.6.0](releases/0.6.0.md) staan in het [releaseoverzicht](releases/README.md). De gedateerde onderzoeken hieronder blijven historisch.
+**Actuele uitgifte: [DartFlow 0.6.0](releases/0.6.0.md).** Productbron `f527ed618b18a12d588b8bdc6fa12edc6f47cbdb` is normaal gemerged en alle drie volledige MAIN-workflows zijn groen. Staging en productie draaien dezelfde gecontroleerde bron. Player 0.6.0/code9 heeft elf geverifieerde GitHub-bestanden en staat volgens de [verse Play-uitlezing](https://github.com/dartflow/platform/actions/runs/44784005053) intern/productie op `completed`. Het [uitgiftebewijs](evidence/release-0.6.0-2026-11-20.json) bewaart bron, configuraties, run/poging, migraties, hashes en verificatiegrenzen.
+
+| Omgeving | Normale deploy | Actieve release/configuratie | Acceptatie |
+| --- | --- | --- | --- |
+| Staging | [44780539631](https://github.com/dartflow/platform/actions/runs/44780539631) | `44780539631-1` / `staging-2026-11-18-play-safety-1` | Backup, twee migraties, 35 PG17-checks, 36 sportfingerprints, HTTP/review-GET/browser PASS |
+| Productie | [44781772780](https://github.com/dartflow/platform/actions/runs/44781772780) | `44781772780-1` / `production-2026-11-20-firebase-fcm-1` | Dezelfde controles PASS; echte Play App Links bevestigd |
+
+Per omgeving zijn twaalf echte openbare browserbeelden op desktop/mobiel bekeken, met correcte loginreturn, toetsenbord en terugnavigatie. De normale beschermde review-accountcontrole verifieert afzonderlijk native GETs en beheer403. Dit is geen uitgevoerde hosted ticket-/campagne-mutatie, nieuwe OTP-/Google-aanmelding of fysieke pushproef. Technisch deployen, redactioneel publiceren en een campagne bevestigen blijven afzonderlijke handelingen. Bronrollback behoudt de nieuwe private gegevens; zie de releasebeschrijving voor backupscope en workerreconciliatie.
+
+**Vorige geverifieerde uitgifte (0.5.0):** bron `fac47bf5304a7c46ce3f06178debc74d8df462f5`, sinds 20 november 2026 op staging en productie. [Staging 44679510938](https://github.com/dartflow/platform/actions/runs/44679510938) en [productie 44680079520](https://github.com/dartflow/platform/actions/runs/44680079520) bewaren die historische uitrol; Player 0.5.0/code 8 stond op de interne en productietrack. De actuele afzonderlijke status komt uit het [releaseoverzicht](releases/README.md), niet uit de gedateerde onderzoeken hieronder.
 
 **Stand 18 november 2026:** de web-backend inclusief `/api/player/v1` is op staging uitgerold vanaf maincommit `092c8c1e1cca403fbc29ab0679f7efcfc7bb915a`. [Stagingworkflow 44221218169](https://github.com/dartflow/platform/actions/runs/44221218169) is geslaagd; 23/23 rookproeven slagen. Productiepromotie: geslaagd via [workflow 44221637689](https://github.com/dartflow/platform/actions/runs/44221637689), release `44221637689-1`, dezelfde bron-SHA en 23/23 geslaagde rookproeven. Het [uitrolbewijs voor de native spelersapp-backend](evidence/native-player-deployed-2026-11-18.json) bewaart de actuele workflow- en endpointcontroles. Echte native OTP-/Google-aanmelding en fysieke toestelproeven zijn afzonderlijk en nog niet uitgevoerd.
 
@@ -10,7 +19,7 @@ De vastgelegde repository is **[dartflow/platform](https://github.com/dartflow/p
 
 De native hostcontracten zijn op 11 november 2026 geïnstalleerd en geverifieerd; beide policies hebben `nativeEnabled: true`. De daadwerkelijke accounts, rootbestanden, twee online runners, databaseverbindingen, overdracht van lockdescriptors, afgebroken helpers en geblokkeerde cleanup met gericht rootherstel zijn vastgelegd in `docs/evidence/*-2026-11-11.json`. Dit installatiebewijs staat los van de CI- en applicatierelease: ook de ingeschakelde broncommit moet eerst groene CI krijgen en door de beide deployworkflows lopen.
 
-De actuele v15-projectrefs, configuratie-ID's, services en providerstatus staan in [v15-omgevingen.md](v15-omgevingen.md). De stappen voor de eigenaar om OTP/SMTP, Google en Resend werkelijk te activeren staan in [v15-integraties.md](v15-integraties.md). Dit document beschrijft de bron-, database- en hostrelease die deze instellingen gebruikt.
+De historische v15-projectrefs, configuratie-ID's, services en providerstatus staan in [v15-omgevingen.md](v15-omgevingen.md). De stappen voor de eigenaar om OTP/SMTP, Google en Resend werkelijk te activeren staan in [v15-integraties.md](v15-integraties.md). Dit document beschrijft de bron-, database- en hostrelease die deze instellingen gebruikt.
 
 ## Ontwikkeling en v15-architectuur
 
