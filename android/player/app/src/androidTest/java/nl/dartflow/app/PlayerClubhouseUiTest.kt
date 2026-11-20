@@ -40,7 +40,14 @@ class PlayerClubhouseUiTest {
         val bitmap = compose.onNodeWithTag(tag).captureToImage().asAndroidBitmap(); val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
         ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("mkdir -p /data/local/tmp/dartflow-ui-fixtures")).use { it.readBytes() }
         val pipes = automation.executeShellCommandRw("dd of=/data/local/tmp/dartflow-ui-fixtures/$name")
-        ParcelFileDescriptor.AutoCloseInputStream(pipes[0]).use { result -> ParcelFileDescriptor.AutoCloseOutputStream(pipes[1]).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }; result.readBytes() }; pipes[2].close()
+        // This API returns stdout and stdin only. Closing stdin completes dd;
+        // consuming stdout to EOF waits until the shell-owned PNG is durable.
+        ParcelFileDescriptor.AutoCloseInputStream(pipes[0]).use { result ->
+            ParcelFileDescriptor.AutoCloseOutputStream(pipes[1]).use { output ->
+                assertTrue("Could not export synthetic UI screenshot $name", bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+            }
+            assertTrue("PNG export produced unexpected stdout", result.readBytes().isEmpty())
+        }
     }
     @Test fun expandedMoreMenuKeepsListFlingAfterNotificationsBackAndReopen() {
         var current by mutableStateOf(state().copy(screen = PlayerScreen.HOME, resource = JSONObject()))
@@ -143,7 +150,7 @@ class PlayerClubhouseUiTest {
         val post = json("id" to "post", "scopeKind" to "club", "scopeId" to club, "extras" to json("canEdit" to false, "canPin" to false, "revision" to 1, "poll" to poll))
         var vote: JSONObject? = null
         compose.setContent { DartFlowPlayerTheme { Column(Modifier.verticalScroll(rememberScrollState())) { PlayerFeedExtras(post, state(), PlayerActions(command = { _, body -> vote = body })) } } }
-        compose.onNodeWithText("Dinsdag · 1 stemmen").performClick(); compose.onNodeWithText("Mijn stem opslaan").assertIsEnabled().performClick(); compose.runOnIdle { assertEquals("poll.vote", vote?.obj("action")?.text("type")); assertEquals(listOf("option-a"), vote?.obj("action")?.optJSONArray("optionIds")?.strings()) }
+        compose.onNodeWithText("Dinsdag · 1 stemmen").assertIsOff().performClick(); compose.onNodeWithText("Dinsdag · 1 stemmen").assertIsOn(); compose.onNodeWithText("Mijn stem opslaan").assertIsEnabled().performClick(); compose.runOnIdle { assertEquals("poll.vote", vote?.obj("action")?.text("type")); assertEquals(listOf("option-a"), vote?.obj("action")?.optJSONArray("optionIds")?.strings()) }
         compose.onNodeWithText("Bericht bewerken").assertDoesNotExist(); compose.onNodeWithText("Peiling sluiten").assertDoesNotExist()
     }
     @Test fun privateChatRefusesMissingChannelAndDoesNotRenderStaleMessages() {
