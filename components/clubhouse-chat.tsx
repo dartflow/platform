@@ -436,7 +436,7 @@ export default function ClubhouseChat({
                     )}
                   {!item.deleted && item.authorId !== actorId && (
                     <SafetyActions
-                      targetType="club-channel-message"
+                      targetType="message"
                       targetId={item.id}
                       userId={item.authorId}
                       scopeKind="club"

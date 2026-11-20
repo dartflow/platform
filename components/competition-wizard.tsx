@@ -1,5 +1,7 @@
 "use client";
 
+import { wizardConfigKey } from "@/lib/competition-wizard-client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Settings } from "@/lib/types";
 import type {
@@ -164,7 +166,7 @@ export default function CompetitionWizard({
       setDraft(next);
       setConfig(value);
       setStep(nextStep);
-      savedConfig.current = JSON.stringify(
+      savedConfig.current = wizardConfigKey(
         next?.config ?? initial(ctx.club.name),
       );
       setPreview(null);
@@ -284,7 +286,7 @@ export default function CompetitionWizard({
         url.searchParams.set("concept", response.draft.id);
         url.searchParams.delete("nieuw");
         history.replaceState(history.state, "", url.pathname + url.search);
-        savedConfig.current = JSON.stringify(response.draft.config);
+        savedConfig.current = wizardConfigKey(response.draft.config);
         setSaved(
           new Date().toLocaleTimeString("nl-NL", {
             hour: "2-digit",
@@ -328,7 +330,7 @@ export default function CompetitionWizard({
       saving ||
       conflict ||
       published ||
-      savedConfig.current === JSON.stringify(config)
+      savedConfig.current === wizardConfigKey(config)
     )
       return;
     const timer = setTimeout(() => void save(), 800);
@@ -368,7 +370,7 @@ export default function CompetitionWizard({
     let stored = await save();
     if (
       stored &&
-      JSON.stringify(stored.config) !== JSON.stringify(current.current)
+      wizardConfigKey(stored.config) !== wizardConfigKey(current.current)
     )
       stored = await save();
     if (!stored) return;
@@ -385,7 +387,7 @@ export default function CompetitionWizard({
       if (
         response.preview &&
         draftRef.current?.revision === stored.revision &&
-        JSON.stringify(current.current) === JSON.stringify(stored.config)
+        wizardConfigKey(current.current) === wizardConfigKey(stored.config)
       ) {
         setPreview(response.preview);
         setWarnings([]);
@@ -501,7 +503,7 @@ export default function CompetitionWizard({
           onClick={async () => {
             if (
               editable &&
-              JSON.stringify(current.current) !== savedConfig.current &&
+              wizardConfigKey(current.current) !== savedConfig.current &&
               !(await save())
             )
               return;
@@ -1538,7 +1540,7 @@ export default function CompetitionWizard({
                         if (
                           current.current &&
                           savedConfig.current !==
-                            JSON.stringify(current.current) &&
+                            wizardConfigKey(current.current) &&
                           !(await save())
                         )
                           return;

@@ -5,7 +5,17 @@ import type {OcheDisplaySnapshot,OcheManagement,OchePairing} from '../../lib/och
 
 const origin='http://localhost:3000';
 async function login(page:Page,name='Michael de Groot',next='/app/schermen'){await page.goto(`/inloggen?next=${encodeURIComponent(next)}`);await page.getByRole('button',{name:new RegExp(name)}).click();await expect(page).toHaveURL(new URL(next,origin).href);}
-async function api<T>(context:BrowserContext,path:string,body?:unknown):Promise<T>{const response=body===undefined?await context.request.get(`/api/oche/v1/${path}`):await context.request.post(`/api/oche/v1/${path}`,{headers:{Origin:origin},data:body});expect(response.ok(),await response.text()).toBe(true);return response.json();}
+async function api<T>(context:BrowserContext,path:string,body?:unknown):Promise<T>{
+ for(let retry=0;;retry++){
+  const response=body===undefined?await context.request.get(`/api/oche/v1/${path}`):await context.request.post(`/api/oche/v1/${path}`,{headers:{Origin:origin},data:body});
+  if(response.status()===429&&retry<2){
+   const header=response.headers()['retry-after'];
+   const seconds=Number(header);
+   if(header&&Number.isFinite(seconds)&&seconds>=0&&seconds<=30){await new Promise(resolve=>setTimeout(resolve,Math.ceil(seconds*1000)+100));continue;}
+  }
+  expect(response.ok(),await response.text()).toBe(true);return response.json();
+ }
+}
 async function command(context:BrowserContext,action:Record<string,unknown>,revision?:number){const response=await context.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action,...(revision===undefined?{}:{expectedRevision:revision})}});expect(response.status(),await response.text()).toBe(200);return response.json();}
 async function pending(page:Page){await expect(page.locator('.oche-device-code')).toBeVisible({timeout:60000});return page.locator('.oche-device-code').innerText();}
 async function confirm(page:Page,code:string,name:string,locationId?:string,boardId?:string){await page.bringToFront();await page.goto(`/koppel-scherm#code=${encodeURIComponent(code)}`);await expect(page).toHaveURL('/koppel-scherm');await page.getByLabel('Koppelcode',{exact:true}).fill(code);await page.getByLabel('Schermnaam',{exact:true}).fill(name);if(locationId)await page.getByLabel('Waar gebruik je dit scherm?').selectOption(locationId);if(boardId)await page.getByLabel('Baan',{exact:true}).selectOption(boardId);await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Dit scherm koppelen',exact:true}).click();await expect(page.getByRole('heading',{name:'Koppeling bevestigd',exact:true})).toBeVisible();}

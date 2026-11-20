@@ -193,6 +193,20 @@ test("six real wizard steps publish one canonical club competition using only an
       }),
     ).toBeVisible();
     await expect(wizard.locator(".ch-preview tbody tr")).toHaveCount(1);
+    let idleSaves = 0;
+    const countIdleSave = (request: import("@playwright/test").Request) => {
+      if (
+        request.method() === "POST" &&
+        request.url().endsWith("/api/competition-wizard") &&
+        request.postDataJSON()?.action?.type === "wizard.save"
+      )
+        idleSaves++;
+    };
+    page.on("request", countIdleSave);
+    await page.waitForTimeout(1800);
+    page.off("request", countIdleSave);
+    expect(idleSaves).toBe(0);
+    await expect(wizard.locator(".ch-preview tbody tr")).toHaveCount(1);
     await expect(
       wizard.getByRole("button", {
         name: "Competitie definitief publiceren",
@@ -658,7 +672,7 @@ test("real club tasks, wait-list, private feed poll and exact message links stay
     expect(message).toBeTruthy();
     await command(owner, "/api/platform/actions", {
       type: "report.create",
-      targetType: "club-channel-message",
+      targetType: "message",
       targetId: message.id,
       scopeKind: "club",
       scopeId: id,
@@ -745,6 +759,31 @@ test("premium theme preview stays local, published club contexts override person
           exact: true,
         }),
       });
+      const settledTheme: ThemeView = await (
+        await owner.request.get(`/api/theme?clubId=${c.id}`)
+      ).json();
+      const colorMode =
+        settledTheme.preference.colorMode === "system"
+          ? await manager.evaluate(() =>
+              matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light",
+            )
+          : settledTheme.preference.colorMode;
+      await expect
+        .poll(() =>
+          manager.evaluate(
+            () => document.documentElement.dataset.dartflowTheme,
+          ),
+        )
+        .toBe(colorMode);
+      await expect
+        .poll(() =>
+          manager.evaluate(() =>
+            document.documentElement.style.getPropertyValue("--ch-primary"),
+          ),
+        )
+        .toBe(settledTheme.effective.tokens[colorMode].primary);
       const beforeTokens = await manager.evaluate(() =>
         document.documentElement.style.getPropertyValue("--ch-primary"),
       );
