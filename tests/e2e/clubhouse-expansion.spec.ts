@@ -8,6 +8,7 @@ import {
 import { randomUUID } from "node:crypto";
 import type { ThemeView, ClubhouseView } from "../../lib/clubhouse-types";
 import type { CompetitionWizardContext } from "../../lib/competition-wizard-types";
+import type { SeasonView } from "../../lib/seasons-types";
 const origin = "http://localhost:3000";
 const actors = {
   owner: "00000000-0000-4000-8000-000000000001",
@@ -111,7 +112,8 @@ test("six real wizard steps publish one canonical club competition using only an
       viewport: { width: 1440, height: 1000 },
     }),
     player = await browser.newContext();
-  let id = "";
+  let id = "",
+    draftId = "";
   try {
     await local(owner, baseURL);
     await login(owner);
@@ -162,7 +164,7 @@ test("six real wizard steps publish one canonical club competition using only an
       .fill(`  Vrijdag singles ${c.suffix}  `);
     await wizard
       .getByLabel("Seizoen / editie", { exact: true })
-      .fill("Zomer 2090");
+      .fill("Zomer 2091");
     await wizard
       .getByRole("button", { name: "Concept opslaan", exact: true })
       .click();
@@ -184,10 +186,10 @@ test("six real wizard steps publish one canonical club competition using only an
       .getByRole("checkbox", { name: `Wizardbaan ${c.suffix}`, exact: true })
       .check();
     await next(page);
-    await wizard.getByLabel("Startdatum", { exact: true }).fill("2090-06-02");
+    await wizard.getByLabel("Startdatum", { exact: true }).fill("2091-06-01");
     await wizard
       .getByLabel("Uiterste einddatum", { exact: true })
-      .fill("2090-07-30");
+      .fill("2091-07-30");
     await next(page);
     await wizard
       .getByRole("button", { name: "Programma controleren", exact: true })
@@ -234,6 +236,7 @@ test("six real wizard steps publish one canonical club competition using only an
     const draft = context.drafts.find(
       (d) => d.config.title === `Vrijdag singles ${c.suffix}`,
     )!;
+    draftId = draft.id;
     expect(draft.config.playerIds.sort()).toEqual(
       [actors.owner, actors.player].sort(),
     );
@@ -286,8 +289,61 @@ test("six real wizard steps publish one canonical club competition using only an
     await page.keyboard.press("Escape");
     await expect(more).not.toBeVisible();
   } finally {
-    if (id) await deactivate(owner, id);
-    await Promise.allSettled([owner.close(), player.close()]);
+    try {
+      if (id && draftId) {
+        const response = await owner.request.get(
+          `/api/competition-wizard/${id}`,
+        );
+        expect(response.status(), await response.text()).toBe(200);
+        const current: CompetitionWizardContext = await response.json();
+        const published = current.drafts.find((draft) => draft.id === draftId);
+        expect(published).toBeTruthy();
+        if (published!.publishedSeasonId) {
+          const snapshot = await owner.request.get(
+            `/api/seasons/${published!.publishedSeasonId}`,
+          );
+          expect(snapshot.status(), await snapshot.text()).toBe(200);
+          let season: SeasonView = (await snapshot.json()).season;
+          expect(season.id).toBe(published!.publishedSeasonId);
+          expect(season.clubId).toBe(id);
+          expect(season.ownerId).toBe(actors.owner);
+          const fixtureIds = season.fixtures.map((fixture) => fixture.id);
+          for (const fixtureId of fixtureIds) {
+            const fixture = season.fixtures.find(
+              (entry) => entry.id === fixtureId,
+            )!;
+            expect(fixture.slots.every((slot) => !slot.matchId)).toBe(true);
+            if (fixture.status === "canceled") continue;
+            const canceled = await command(
+              owner,
+              "/api/seasons/actions",
+              {
+                type: "season.decide",
+                seasonId: season.id,
+                fixtureId,
+                decision: "cancel",
+                reason:
+                  "Eigen browserproef afgerond; uitsluitend de eigen onbegonnen ontmoeting en reservering annuleren.",
+              },
+              season.revision,
+            );
+            season = canceled.season;
+          }
+          expect(season.fixtures.map((fixture) => fixture.id)).toEqual(
+            fixtureIds,
+          );
+          expect(season.fixtures.every((f) => f.status === "canceled")).toBe(
+            true,
+          );
+        }
+      }
+    } finally {
+      try {
+        if (id) await deactivate(owner, id);
+      } finally {
+        await Promise.allSettled([owner.close(), player.close()]);
+      }
+    }
   }
 });
 
