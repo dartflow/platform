@@ -34,7 +34,10 @@ const groups = [
     label: "Jouw account",
     links: [
       ["Profiel & instellingen", "/app/settings"],
-      ["Meldingen", "/app/settings#meldingen"],
+      ["Jouw meldingen", "/app/notifications"],
+      ["Meldingsinstellingen", "/app/settings/notifications"],
+      ["Mijn supporttickets", "/app/support"],
+      ["Wat is nieuw?", "/app/whats-new"],
       ["Handleiding", "/handleiding"],
       ["Help & FAQ", "/help"],
     ],

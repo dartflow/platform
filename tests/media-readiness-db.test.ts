@@ -6,6 +6,7 @@ import {closeDatabase,executeMatchCommand,getMatch} from '../lib/db';
 import {newGame,validateSettings} from '../lib/domain';
 import {sendMatchSignal} from '../lib/platform';
 import type {MatchState,MatchCommand} from '../lib/types';
+import {cleanupNotificationFixtures} from './helpers/cleanup-v17';
 try{process.loadEnvFile('.env.local');}catch{}
 const local=(value?:string)=>{try{return !!value&&['127.0.0.1','localhost','[::1]'].includes(new URL(value).hostname);}catch{return false;}};
 test('mandatory camera enforces two fresh authorized endpoint observations before start and every new score',{skip:process.env.DARTFLOW_DATA_MODE!=='local'||!local(process.env.DARTFLOW_DATABASE_ADMIN_URL)||!local(process.env.DARTFLOW_DATABASE_URL)},async()=>{
@@ -35,6 +36,7 @@ test('mandatory camera enforces two fresh authorized endpoint observations befor
   await heartbeat(players[1],{peerVideo:false});await assert.rejects(executeMatchCommand(players[0],await command({type:'score',score:60})),{code:'camera_required'});
  }finally{
   try{
+   await cleanupNotificationFixtures(admin,players);
    await admin.query('delete from dartflow_private.platform_receipts where request_id=any($1::uuid[])',[receipts]);
    await admin.query('delete from dartflow_private.platform_signals where match_id=$1',[id]);
    for(const table of ['action_receipts','visits','match_players'])await admin.query(`delete from dartflow_private.${table} where match_id=$1`,[id]);

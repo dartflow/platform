@@ -1877,5 +1877,119 @@
       "handleiding"
     ],
     "manualId": "account-meldingen-hulp"
+  },
+  {
+    "id": "support-ticket",
+    "category": "Hulp & support",
+    "question": "Hoe stel ik een vraag aan DartFlow Support?",
+    "answer": "Doorzoek eerst Help & FAQ of de handleiding. Kies Nieuw ticket en meld je aan met je eigen DartFlow-account. Kies een categorie en vul een onderwerp en omschrijving in. Na opslaan krijgt je vraag een vast DF-nummer en een eigen gesprek onder Mijn supporttickets. Deel geen wachtwoord, pincode of inlogcode.",
+    "keywords": [
+      "support",
+      "helpdesk",
+      "ticket",
+      "DF-nummer",
+      "vraag"
+    ],
+    "manualId": "supporttickets"
+  },
+  {
+    "id": "support-opvolging",
+    "category": "Hulp & support",
+    "question": "Waar zie ik wie aan zet is bij mijn supportticket?",
+    "answer": "Open Mijn supporttickets en kies het ticketnummer. Daar staan de status, het gesprek en de zichtbare opvolging met tijdstippen. Bij Wacht op gebruiker ben jij aan zet; je reactie zet het ticket terug bij support. Je kunt sluiten of heropenen wanneer die actie beschikbaar is. Het DF-nummer blijft hetzelfde. Interne supportnotities zijn niet onderdeel van jouw gesprek.",
+    "keywords": [
+      "support",
+      "status",
+      "reactie",
+      "sluiten",
+      "heropenen"
+    ],
+    "manualId": "supporttickets"
+  },
+  {
+    "id": "support-melding",
+    "category": "Hulp & support",
+    "question": "Hoe open ik een melding over mijn supportticket?",
+    "answer": "Open Jouw meldingen en tik op het hele item met het DF-nummer. Na aanmelden kom je terug bij het bedoelde ticket. DartFlow controleert opnieuw of je toegang hebt. Meldingen op een vergrendelscherm bevatten geen onderwerp, berichttekst of privénotities. Stel de categorie Supporttickets in onder Instellingen → Meldingen.",
+    "keywords": [
+      "support",
+      "push",
+      "inbox",
+      "melding",
+      "DF-nummer"
+    ],
+    "manualId": "meldingen-instellen"
+  },
+  {
+    "id": "updates-bekijken",
+    "category": "Account & instellingen",
+    "question": "Waar lees ik wat er nieuw is in DartFlow en Oche Live?",
+    "answer": "Open Wat is nieuw? via Meer en kies het product en kanaal. Je ziet alleen gepubliceerde releases. Een release publiceren is een andere handeling dan een updatebericht versturen. Onder Instellingen → Meldingen kies je welke productupdates je volgt en via welke beschikbare kanalen je meldingen ontvangt.",
+    "keywords": [
+      "release",
+      "updates",
+      "nieuw",
+      "Oche Live",
+      "Android"
+    ],
+    "manualId": "productupdates"
+  },
+  {
+    "id": "meldingen-kanalen",
+    "category": "Account & instellingen",
+    "question": "Hoe kies ik tussen inbox, e-mail en push?",
+    "answer": "Open Instellingen → Meldingen. Per categorie staan de toepasselijke kanalen compact naast elkaar. Je persoonlijke keuze blijft bewaard als platformbeheer een kanaal tijdelijk aan of uit bepaalt. Bij Volg spelersvoorkeur geldt je bewaarde keuze; zonder eerdere keuze staat een toepasselijk kanaal standaard aan. Inlogcodes en accountherstel hebben hun eigen systeemmailflow.",
+    "keywords": [
+      "melding",
+      "voorkeur",
+      "inbox",
+      "email",
+      "push",
+      "beheerregel"
+    ],
+    "manualId": "meldingen-instellen"
+  },
+  {
+    "id": "meldingen-toestel",
+    "category": "Account & instellingen",
+    "question": "Waarom ontvang ik geen push terwijl de accountvoorkeur aanstaat?",
+    "answer": "Een accountvoorkeur of beheerregel geeft je telefoon of browser geen toesteltoestemming. Controleer onder Instellingen → Meldingen of dit toestel is aangemeld en toestemming heeft. In de browser wijzig je geweigerde toestemming via de site-instellingen naast het webadres. Op Android gebruik je de meldingsinstellingen van de app. De inbox blijft beschikbaar wanneer toestelpush uitstaat. Wachtrij, provideracceptatie, ontvangst en openen zijn verschillende meetpunten.",
+    "keywords": [
+      "push",
+      "toestemming",
+      "browser",
+      "Android",
+      "toestel"
+    ],
+    "manualId": "meldingen-instellen"
+  },
+  {
+    "id": "support-beheer",
+    "category": "Organiseren & beheren",
+    "question": "Wie mag supporttickets en interne notities beheren?",
+    "answer": "Alleen medewerkers met actuele platformbevoegdheid zien Supportbeheer. Een verenigingsbeheerder krijgt daardoor geen toegang tot tickets van spelers. Support kan behandelen, toewijzen, prioriteit wijzigen en interne notities bewaren. Een openbare reactie of publieke statuswijziging kan de gebruiker informeren; interne notities, toewijzingen en prioriteit gaan niet naar de gebruiker.",
+    "keywords": [
+      "support",
+      "platformbeheer",
+      "intern",
+      "privacy",
+      "toewijzen"
+    ],
+    "audience": "platform"
+  },
+  {
+    "id": "release-beheer",
+    "category": "Organiseren & beheren",
+    "question": "Hoe publiceer en kondig ik een productrelease aan?",
+    "answer": "Maak in Releasebeheer een concept met product, versie, kanaal, titel en tekst. Sla het op, controleer het voorbeeld en publiceer de opgeslagen versie. Daarna staat het in Wat is nieuw zonder automatische push. Gebruik apart Push versturen: controleer doelgroep en bereik, stuur desgewenst een test naar één proefontvanger en bevestig vervolgens de echte campagne. De verzendgeschiedenis toont de kanaaluitkomsten. Deze redactionele publicatie voert geen deployment of Play Store-uitgifte uit.",
+    "keywords": [
+      "releasebeheer",
+      "publiceren",
+      "campagne",
+      "testmelding",
+      "push"
+    ],
+    "audience": "platform",
+    "manualId": "productupdates"
   }
 ]

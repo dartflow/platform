@@ -12,7 +12,7 @@ import java.util.Locale
 internal class PlayerManualCache(private val context: Context) {
     private val prefs=context.getSharedPreferences("dartflow-public-manual-v1",Context.MODE_PRIVATE)
     fun read():JSONObject = runCatching { prefs.getString("published",null)?.takeIf{it.length<=400_000}?.let(::JSONObject)?.takeIf{it.has("version")&&it.has("articles")} }.getOrNull()
-        ?: json("version" to "2026.11.19-play.1","articles" to JSONArray(context.assets.open("manual.nl.json").bufferedReader().use{it.readText()}))
+        ?: json("version" to "2026.11.20-support.1","articles" to JSONArray(context.assets.open("manual.nl.json").bufferedReader().use{it.readText()}))
     fun write(value:JSONObject){val raw=value.toString();if(raw.length<=400_000&&value.has("version")&&value.has("articles"))prefs.edit().putString("published",raw).apply()}
 }
 internal fun playerManualArticles(resource:JSONObject,query:String,category:String):List<JSONObject>{
@@ -43,5 +43,6 @@ internal fun playerManualArticles(resource:JSONObject,query:String,category:Stri
         if(articles.isEmpty()&&!state.loading)Text("Geen hoofdstukken gevonden. Probeer andere woorden.",color=PlayerMuted)
         articles.forEach{article->PlayerCard(article.text("title")){Text(article.text("intro"),color=PlayerMuted);Action("Lees stappen",primary=false){actions.navigate(PlayerScreen.MANUAL,article.text("id"))}}}
     }
+    Action("Stel een supportvraag", primary = false) { actions.openLink("/app/support/new") }
     Action("Veelgestelde vragen",primary=false){actions.navigate(PlayerScreen.HELP,null)}
 }

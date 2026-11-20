@@ -11,6 +11,7 @@ import {executeClubhouseCommand} from '../lib/clubhouse';
 import type {ClubhouseView} from '../lib/clubhouse-types';
 import type {ClubEntity} from '../lib/club-types';
 import type {PlatformCommand} from '../lib/platform-types';
+import {cleanupNotificationFixtures} from './helpers/cleanup-v17';
 try{process.loadEnvFile('.env.local');}catch{/* Explicit loopback-only database required. */}
 const local=(input:string|undefined)=>{try{return Boolean(input&&['localhost','127.0.0.1','[::1]'].includes(new URL(input).hostname));}catch{return false;}};
 const configured=process.env.DARTFLOW_DATA_MODE==='local'&&local(process.env.DARTFLOW_DATABASE_URL)&&local(process.env.DARTFLOW_DATABASE_ADMIN_URL);
@@ -85,8 +86,9 @@ test('v17 club ownership, scoped grants, intake, targeted invitations and durabl
    await run(record.owner_id,{type:'club.deactivate',id:club});assert.equal(await clubPermission(database(),club,reviewer,'members.approve'),false);await assert.rejects(run(bob,{type:'club.request',id:club}),{code:'club_inactive'});await run(record.owner_id,{type:'club.restore',id:club});assert.equal((await project(record.owner_id,club)).clubDetails.lifecycle,'active');
    await run(record.owner_id,{type:'club.deactivate',id:club});await admin.query("update dartflow_private.platform_entities set state=jsonb_set(state,'{deleteAfter}',to_jsonb('2000-01-01T00:00:00Z'::text)) where id=$1",[club]);await assert.rejects(run(record.owner_id,{type:'club.restore',id:club}),{code:'restore_expired'});
   });
- }finally{
+ }finally{try{
+  await cleanupNotificationFixtures(admin,people);
   for(const club of clubs){for(const table of ['mail_outbox','mail_events','mail_templates','mail_template_versions','mail_policies'])await admin.query(`delete from dartflow_private.${table} where scope_key=$1`,[`club:${club}`]);await admin.query('delete from dartflow_private.club_join_requests where club_id=$1',[club]);await admin.query('delete from dartflow_private.club_invites where club_id=$1',[club]);await admin.query('delete from dartflow_private.platform_audit where entity_id=$1',[club]);await admin.query('delete from dartflow_private.platform_entities where id=$1',[club]);await admin.query('delete from dartflow_private.club_memberships where club_id=$1',[club]);await admin.query('delete from dartflow_private.club_intake_versions where club_id=$1',[club]);await admin.query('delete from dartflow_private.clubs where id=$1',[club]);}
-  await admin.query('delete from dartflow_private.platform_audit where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);await admin.end();await closeDatabase();
+  await admin.query('delete from dartflow_private.platform_audit where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);}finally{await admin.end();await closeDatabase();}
  }
 });

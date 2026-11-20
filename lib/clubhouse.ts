@@ -1,6 +1,7 @@
 import type {PoolClient} from 'pg';
 import {socialAction} from './platform-social';
 import {notifyClubhouse} from './clubhouse-notifications';
+import {enqueueAuditedNotification} from './notification-audit-source';
 import {randomUUID} from 'node:crypto';
 import {DomainError} from './domain';
 import {clubIsActiveMember,clubPermission} from './club-access';
@@ -95,7 +96,8 @@ async function activityAction(client:Client,actor:string,clubId:string,a:Record<
  // Hold the activity row lock while filling places in stable wait-list order.
  const current=(await client.query('select capacity from dartflow_private.club_activities where id=$1',[id])).rows[0];
  const count=(await client.query("select count(*)::int as n from dartflow_private.club_activity_entries where activity_id=$1 and status='registered'",[id])).rows[0].n;
- await client.query("update dartflow_private.club_activity_entries set status='registered' where (activity_id,user_id) in(select activity_id,user_id from dartflow_private.club_activity_entries where activity_id=$1 and status='waitlisted' order by created_at,user_id limit $2)",[id,Math.max(0,current.capacity-count)]);
+ const promoted=(await client.query("update dartflow_private.club_activity_entries set status='registered' where (activity_id,user_id) in(select activity_id,user_id from dartflow_private.club_activity_entries where activity_id=$1 and status='waitlisted' order by created_at,user_id limit $2)returning user_id,created_at::text as joined",[id,Math.max(0,current.capacity-count)])).rows;
+ for(const member of promoted)await enqueueAuditedNotification(client,{eventId:`activity-promoted:${id}:${member.user_id}:${member.joined}`,templateId:'club-activity-promoted',actorId:actor,recipientIds:[member.user_id],source:{kind:'club-activity',activityId:id,clubId},href:`/app/clubs/${clubId}/agenda?activity=${id}`,status:'Je hebt nu een bevestigde plaats voor deze activiteit.'});
 }
 async function taskAction(client:Client,actor:string,clubId:string,a:Record<string,unknown>,expected?:number){
  const id=a.id?uuid(a.id):randomUUID(),old=(await client.query('select * from dartflow_private.club_tasks where id=$1 and club_id=$2 for update',[id,clubId])).rows[0];if(a.id&&!old)throw new DomainError('task_missing','Deze taak hoort niet bij deze vereniging.',404);
@@ -164,6 +166,9 @@ export async function executeClubhouseCommand(actor:string,command:ClubhouseComm
    else if(type.startsWith('ownership.'))await ownershipAction(client,actor,row,a);
    else if(type.startsWith('branding.')||type.startsWith('entitlement.'))await brandingAction(client,actor,clubId,a,command.expectedRevision);
    else throw new DomainError('invalid_action','Deze Clubhouse-actie bestaat niet.');
+   if(type==='ownership.offer'){const offer=(await client.query("select id,recipient_id from dartflow_private.club_ownership_transfers where club_id=$1 and owner_id=$2 and status='pending' order by expires_at desc,id limit 1",[clubId,actor])).rows[0];if(offer)await enqueueAuditedNotification(client,{eventId:`ownership-offer:${offer.id}`,templateId:'club-ownership-offer',actorId:actor,recipientIds:[offer.recipient_id],source:{kind:'ownership-offer',transferId:offer.id},href:`/app/clubs/${clubId}`,status:'Je moet de aangeboden overdracht zelf aanvaarden voordat het eigenaarschap verandert.'});}
+   if(type==='ownership.accept'){const offer=(await client.query('select owner_id from dartflow_private.club_ownership_transfers where id=$1',[uuid(a.transferId)])).rows[0];if(offer)await enqueueAuditedNotification(client,{eventId:`ownership-accepted:${request}`,templateId:'club-role',actorId:actor,recipientIds:[offer.owner_id],source:{kind:'club-member',clubId,playerId:offer.owner_id},href:`/app/clubs/${clubId}`,variables:{clubName:row.state.name,role:'Lid; eigendom overgedragen'},status:'De aangeboden eigendomsoverdracht is door de ontvanger aanvaard.'});}
+   if(type.startsWith('member.')){const target=uuid(a.userId),status=(await client.query('select status from dartflow_private.platform_members where entity_id=$1 and user_id=$2',[clubId,target])).rows[0]?.status;if(status)await enqueueAuditedNotification(client,{eventId:`club-membership:${request}`,templateId:'club-membership-changed',actorId:actor,recipientIds:[target],source:{kind:'club-membership-status',clubId,playerId:target,status},href:'/app/clubs',status:status==='active'?'Je verenigingstoegang is hersteld.':status==='banned'?'Je verenigingstoegang is geschorst.':'Je verenigingslidmaatschap is beëindigd.'});}
    await client.query('insert into dartflow_private.clubhouse_receipts(user_id,request_id,club_id,payload_hash)values($1,$2,$3,$4)',[actor,request,clubId,digest]);
    await client.query('insert into dartflow_private.clubhouse_audit(id,club_id,actor_id,action,detail)values($1,$2,$3,$4,$5)',[randomUUID(),clubId,actor,type,JSON.stringify({requestId:request,resourceId:a.id??a.reportId??null,revision:command.expectedRevision??null,...(type.startsWith('branding.')||type.startsWith('entitlement.')?{branding:await readClubBranding(client,actor,clubId).then(b=>({revision:b.revision,publishedRevision:b.publishedRevision,entitlement:b.entitlement}))}:{})})]);
   }

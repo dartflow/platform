@@ -17,19 +17,22 @@ import java.util.Locale
 internal fun playerHelpQuery(value: String?): Map<String, String> = runCatching { PlayerLinks.query(URI("https://native.invalid/?${value.orEmpty().removePrefix("?")}")) }
     .getOrDefault(emptyMap()).filter { (key, input) -> key in listOf("q", "category", "id") && input.length <= 200 && input.none { it.code < 32 } }
 
-internal fun playerHelpItems(resource: JSONObject, query: String, category: String): List<JSONObject> {
+internal fun playerHelpItems(resource: JSONObject, query: String, category: String, audience: String = ""): List<JSONObject> {
     fun normalize(value: String) = Normalizer.normalize(value, Normalizer.Form.NFD).replace(Regex("[\\u0300-\\u036f]"), "").lowercase(Locale.forLanguageTag("nl"))
     val terms = normalize(query.trim().take(200)).split(Regex("\\s+")).filter { it.isNotBlank() }
     return resource.rows("items").filter { article ->
-        (category.isBlank() || article.text("category") == category) && terms.all { term -> normalize((listOf(article.text("question"), article.text("answer")) + article.optJSONArray("keywords")?.strings().orEmpty()).joinToString(" ")).contains(term) }
+        (category.isBlank() || article.text("category") == category) && (audience.isBlank() || article.text("audience") in listOf("", "all", audience)) && terms.all { term -> normalize((listOf(article.text("question"), article.text("answer")) + article.optJSONArray("keywords")?.strings().orEmpty()).joinToString(" ")).contains(term) }
     }
 }
 
 @Composable internal fun PlayerHelpScreen(state: PlayerUiState, actions: PlayerActions) {
+    Action("Vraag niet gevonden? Stel een supportvraag", primary = false) { actions.openLink("/app/support/new") }
     Action("Volledige handleiding",primary=false){actions.navigate(PlayerScreen.MANUAL,null)}
     if (state.canManagePlatform) Action("Beheer gedeelde hulp", primary = false) { actions.navigate(PlayerScreen.FAQ_ADMIN, null) }
     val params = playerHelpQuery(state.activeId)
     var query by rememberSaveable { mutableStateOf(params["q"].orEmpty()) }
+    var audience by rememberSaveable { mutableStateOf("") }
+    val audiences = listOf("player" to "Spelers", "captain" to "Captains", "organizer" to "Organisatoren", "club" to "Clubbeheer", "platform" to "Platformbeheer")
     var category by rememberSaveable { mutableStateOf(params["category"].orEmpty().takeIf { value -> state.resource.rows("items").any { it.text("category") == value } }.orEmpty()) }
     val resource = state.resource
     val selected = params["id"]?.let { id -> resource.rows("items").find { it.text("id") == id } }
@@ -42,6 +45,7 @@ internal fun playerHelpItems(resource: JSONObject, query: String, category: Stri
         PlayerCard(selected.text("question")) {
             Text(selected.text("category"), color = PlayerLime)
             Text(selected.text("answer"))
+            selected.text("manualId").takeIf { it.isNotBlank() }?.let { chapter -> Action("Stap-voor-stap handleiding", primary = false) { actions.navigate(PlayerScreen.MANUAL, chapter) } }
             Action("Deel dit artikel", primary = false) {
                 context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${selected.text("question")}\n${BuildConfig.API_ORIGIN}/help/${selected.text("id")}"), "Deel hulp"))
             }
@@ -54,10 +58,11 @@ internal fun playerHelpItems(resource: JSONObject, query: String, category: Stri
         Field("Zoek in vragen en antwoorden", query, { query = it }, max = 200)
         val categories = resource.rows("items").map { it.text("category") }.distinct().sorted()
         Choice("Categorie", category, listOf("" to "Alle onderwerpen") + categories.map { it to it }, { category = it })
-        val items = playerHelpItems(resource, query, category)
+        Choice("Voor wie", audience, listOf("" to "Alle doelgroepen") + audiences, { audience = it })
+        val items = playerHelpItems(resource, query, category, audience)
         if (items.isEmpty() && !state.loading) {
             Text("Geen vragen gevonden. Probeer een ander zoekwoord of wis de filters.", color = PlayerMuted)
-            Action("Wis filters", primary = false) { query = ""; category = "" }
+            Action("Wis filters", primary = false) { query = ""; category = ""; audience = "" }
         }
         items.forEach { article -> PlayerCard(article.text("question")) {
             Text(article.text("category"), color = PlayerMuted)

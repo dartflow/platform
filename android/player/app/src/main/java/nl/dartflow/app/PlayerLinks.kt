@@ -63,9 +63,10 @@ object PlayerLinks {
             if (code.length == 4) code.uppercase() else code
         }
         when (parts.firstOrNull()) {
+            null -> PlayerDestination(PlayerScreen.HOME)
             "w" -> id?.takeIf { it.length in listOf(4, 24) }?.let { PlayerDestination(PlayerScreen.PLAY, invitationCode = if (it.length == 4) it.uppercase() else it) }
             "wedstrijd", "match" -> id?.let { PlayerDestination(PlayerScreen.MATCH, it) }
-            "baan", "baan-phone" -> id?.let { PlayerDestination(PlayerScreen.BOARD, it) }
+            "baan", "baan-phone" -> if (id == null) PlayerDestination(PlayerScreen.BOARDS) else PlayerDestination(PlayerScreen.BOARD, id)
             "lobby" -> id?.let { PlayerDestination(PlayerScreen.LOBBY, it, invitation) }
             "training" -> PlayerDestination(PlayerScreen.TRAINING, id)
             "seasons", "competities" -> PlayerDestination(if (id != null) PlayerScreen.SEASON else PlayerScreen.SEASONS, id)
@@ -75,12 +76,22 @@ object PlayerLinks {
                 val code = query(URI("https://native.invalid/?${uri.rawFragment.orEmpty()}"))["code"].orEmpty().uppercase().replace("-", "")
                 if (Regex("[A-Z0-9]{8}").matches(code)) PlayerDestination(PlayerScreen.SCREENS, "paircode:$code") else PlayerDestination(PlayerScreen.SCREENS)
             }
-            "profiel" -> PlayerDestination(PlayerScreen.PROFILE)
+            "profiel", "settings" -> if (parts.getOrNull(1) == "notifications") PlayerDestination(PlayerScreen.NOTIFICATION_SETTINGS) else PlayerDestination(PlayerScreen.PROFILE)
+            "notifications" -> PlayerDestination(PlayerScreen.NOTIFICATIONS, id)
+            "support" -> if (id == "new") PlayerDestination(PlayerScreen.SUPPORT, "new=1") else PlayerDestination(if (id != null) PlayerScreen.SUPPORT_TICKET else PlayerScreen.SUPPORT, id ?: if (query(uri)["new"] == "1") "new=1" else null)
+            "whats-new" -> PlayerDestination(if (id != null) PlayerScreen.RELEASE_DETAIL else PlayerScreen.RELEASES, id)
+            "platform-messages" -> id?.let { PlayerDestination(PlayerScreen.PLATFORM_MESSAGE, it) }
+            "admin" -> when (parts.getOrNull(1)) {
+                "support" -> parts.getOrNull(2)?.takeIf { Regex("[A-Za-z0-9_-]{1,128}").matches(it) }?.let { PlayerDestination(PlayerScreen.SUPPORT_ADMIN_TICKET, it) } ?: PlayerDestination(PlayerScreen.SUPPORT_ADMIN)
+                "releases" -> PlayerDestination(PlayerScreen.RELEASE_ADMIN)
+                "notifications" -> PlayerDestination(PlayerScreen.NOTIFICATION_ADMIN)
+                else -> null
+            }
             "spelen" -> PlayerDestination(if (id != null) PlayerScreen.PLAY_SESSION else PlayerScreen.PLAY_START, id)
             "oefenen" -> PlayerDestination(PlayerScreen.PRACTICE)
             "uitdagingen" -> PlayerDestination(PlayerScreen.CHALLENGES, id)
             "speler" -> PlayerDestination(PlayerScreen.PLAY)
-            "evenementen", "toernooien", "tournaments", "leagues" -> PlayerDestination(if (id != null) PlayerScreen.EVENT else PlayerScreen.EVENTS, id, invitation)
+            "evenementen", "toernooien", "tournaments", "leagues", "hall" -> PlayerDestination(if (id != null) PlayerScreen.EVENT else PlayerScreen.EVENTS, id, invitation)
             "rankings" -> PlayerDestination(PlayerScreen.RANKINGS)
             "handleiding" -> PlayerDestination(PlayerScreen.MANUAL,id)
             "help", "faq" -> {
@@ -92,7 +103,9 @@ object PlayerLinks {
             "competition-wizard" -> id?.let { PlayerDestination(PlayerScreen.CLUB_COMPETITION_WIZARD, playerClubId(it)) }
             "verenigingen", "clubs" -> if (id != null && (playerClubPage(query(uri)["page"]) != null || playerClubPage(parts.getOrNull(2)) != null)) PlayerDestination(PlayerScreen.CLUBHOUSE, playerClubId(id, playerClubPage(query(uri)["page"]) ?: requireNotNull(playerClubPage(parts.getOrNull(2))), query(uri)["item"] ?: query(uri)["activity"] ?: query(uri)["post"])) else PlayerDestination(if (id != null) PlayerScreen.CLUB else PlayerScreen.CLUBS, id)
             "organiseren" -> PlayerDestination(PlayerScreen.ORGANIZE)
-            "vrienden" -> PlayerDestination(PlayerScreen.FRIENDS)
+            "vrienden", "friends" -> PlayerDestination(PlayerScreen.FRIENDS)
+            "community" -> PlayerDestination(PlayerScreen.FRIENDS, id)
+            "mymatches" -> PlayerDestination(PlayerScreen.HISTORY)
             "historie" -> PlayerDestination(PlayerScreen.HISTORY)
             else -> null
         }

@@ -2,6 +2,8 @@
 
 Native Next.js-app met lokale ontwikkeling en afzonderlijke omgevingen op **https://staging.dartflow.nl** en **https://dartflow.nl**. De actuele versies, uitrolbewijzen en vergelijking met de vorige versie staan in [het releaseoverzicht](docs/releases/README.md). Gebruik voor volgende uitgiften [het releasetemplate](docs/releases/TEMPLATE.md). De oorspronkelijke v15-ontwerpbron en historische uitrolbewijzen blijven bewaard in `docs/evidence/` en [het v15-opleverrapport](voorbeelden/opleverrapport-v15.md).
 
+De support- en communicatievoorzieningen van 0.6.0 gebruiken dezelfde private domeinservices op web en Android. Zie [supporttickets](docs/support-tickets.md), [de volledige meldingentriggermatrix](docs/notification-trigger-matrix.md) en [de audit van hulp, support en releasebeheer](docs/support-release-audit.md). Redactioneel publiceren, een test versturen en een campagne bevestigen zijn afzonderlijke beheeracties.
+
 ## Lokaal starten
 
 Vereist: Node **24.18.0**, npm **11.16.0**, PostgreSQL 16-serverbinaries en een vrije lokale poort 55432. De toolchain, projectafhankelijkheden en lockfile zijn vastgelegd.

@@ -1,3 +1,4 @@
+import {handleCommunicationApi} from '@/lib/communication-api';
 import {clubCalendar,readClubCalendarFeed,updateClubCalendarFeed} from '@/lib/clubhouse-calendar';
 import {PlayRuleError} from '@/lib/play-rules';
 import {getClubhouse,getClubhouseChannel,executeClubhouseCommand} from '@/lib/clubhouse';
@@ -35,6 +36,7 @@ import { releaseIdentity } from '@/lib/release';
 import { database, checkDatabaseReady, getProfile, getOverview, getMatch, getMatchInvitation, getBoardForActor, executeMatchCommand, executeEventCommand, getPublicSnapshot, createScreen, revokeScreen, consumeRateLimit } from '@/lib/db';
 import { DomainError } from '@/lib/domain';
 import {getPublishedFaq,getFaqAdmin,executeFaqAdminCommand} from '@/lib/faq-publication';
+import {handleSupportApi} from '@/lib/support-api';
 import type {FaqAdminCommand} from '@/lib/faq-publication';
 import {getEventBoards} from '@/lib/event-boards';
 import {getRankings} from '@/lib/rankings';
@@ -235,6 +237,8 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if(method==='GET'&&parts[0]==='feed'&&parts[1]==='result'&&parts.length===3)return json(await getFeedResult(await actorId(request),parts[2]));
   if(method==='GET'&&parts[0]==='clubhouse'&&parts[1]==='calendar-feed'&&parts.length===3)return new NextResponse(await readClubCalendarFeed(parts[2],appConfig().origin),{headers:{'Content-Type':'text/calendar; charset=utf-8','Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
   const actor=await requireActor(request);
+  const communication=await handleCommunicationApi(request,parts,actor.id,body);if(communication)return communication;
+  const supportResponse=await handleSupportApi(request,parts,actor.id,body);if(supportResponse)return supportResponse;
   if(parts[0]==='clubhouse'&&uuid(parts[1])){
    if(method==='GET'&&parts.length===3&&parts[2]==='calendar.ics')return new NextResponse(await clubCalendar(actor.id,parts[1],appConfig().origin),{headers:{'Content-Type':'text/calendar; charset=utf-8','Content-Disposition':'attachment; filename="dartflow-clubagenda.ics"','Cache-Control':'private, no-store'}});
    if(method==='POST'&&parts.length===3&&parts[2]==='calendar-feed'){await limit(`calendar-feed:${actor.id}`,10,60);const input=await body(request);return json(await updateClubCalendarFeed(actor.id,parts[1],appConfig().origin,input.revoke===true));}

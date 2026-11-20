@@ -2,9 +2,16 @@ import content from './content/faq.nl.json';
 
 export type FaqItem={id:string;category:string;question:string;answer:string;keywords:string[];manualId?:string;audience?:'all'|'player'|'captain'|'organizer'|'club'|'platform'};
 export type FaqSnapshot={version:string;publishedAt:string;categories:string[];items:FaqItem[]};
-export const FAQ_VERSION='2026.11.19-play.1';
-export const FAQ_PUBLISHED_AT='2026-11-19T22:10:00.000Z';
-const items:readonly FaqItem[]=content;
+export const FAQ_VERSION='2026.11.20-support.1';
+export const FAQ_PUBLISHED_AT='2026-11-20T14:31:35.489Z';
+const audiences=['all','player','captain','organizer','club','platform'] as const;
+const items:readonly FaqItem[]=content.map(item=>{
+ const {audience,...rest}=item;
+ if(audience===undefined)return rest;
+ const selected=audiences.find(value=>value===audience);
+ if(!selected)throw new Error(`Onbekende FAQ-doelgroep voor ${item.id}.`);
+ return {...rest,audience:selected};
+});
 const normalized=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('nl-NL');
 
 /** The same versioned source serves the public help, contextual links and native app. */

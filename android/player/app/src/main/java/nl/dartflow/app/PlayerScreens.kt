@@ -196,7 +196,17 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
                     PlayerScreen.HISTORY -> HistoryScreen(state, actions)
                     PlayerScreen.STATISTICS -> StatisticsScreen(state, actions)
                     PlayerScreen.PROFILE -> ProfileScreen(state, actions)
-                    PlayerScreen.NOTIFICATIONS -> NotificationsScreen(state, actions)
+                    PlayerScreen.NOTIFICATIONS -> PlayerNotificationInbox(state, actions)
+                    PlayerScreen.NOTIFICATION_SETTINGS -> PlayerNotificationSettings(state, actions)
+                    PlayerScreen.NOTIFICATION_ADMIN -> PlayerNotificationAdministration(state, actions)
+                    PlayerScreen.SUPPORT -> PlayerSupportList(state, actions)
+                    PlayerScreen.SUPPORT_ADMIN -> PlayerSupportList(state, actions, true)
+                    PlayerScreen.SUPPORT_TICKET -> PlayerSupportDetail(state, actions)
+                    PlayerScreen.SUPPORT_ADMIN_TICKET -> PlayerSupportDetail(state, actions, true)
+                    PlayerScreen.RELEASES -> PlayerReleaseList(state, actions)
+                    PlayerScreen.RELEASE_DETAIL -> PlayerReleaseDetail(state, actions)
+                    PlayerScreen.RELEASE_ADMIN -> PlayerReleaseAdministration(state, actions)
+                    PlayerScreen.PLATFORM_MESSAGE -> PlayerPlatformMessage(state, actions)
                     PlayerScreen.SCREENS -> ScreensScreen(state, actions)
                     PlayerScreen.ORGANIZE -> PlayerOrganizerScreen(state, actions)
                     PlayerScreen.DIRECTOR -> PlayerDirectorScreen(state, actions)
@@ -782,6 +792,18 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     if (seasons.isEmpty() && !state.loading) Text("Geen toegankelijke competities gevonden.", color = PlayerMuted)
 }
 @Composable private fun FriendsScreen(state: PlayerUiState, actions: PlayerActions) {
+    if (state.activeId?.let { runCatching { UUID.fromString(it).toString() == it }.getOrDefault(false) } == true) {
+        val room = state.platform.rows("rooms").find { it.text("id") == state.activeId }
+        Heading(room?.text("name") ?: "Spelerskamer", "KAMERUITNODIGING")
+        Action("Terug naar meldingen", primary = false, onClick = actions.back)
+        if (room == null) { if (!state.loading) Notice("Deze kamer is niet meer beschikbaar of je hebt geen actuele toegang.", true); return }
+        PlayerCard(room.text("name")) {
+            Text(room.obj("state").text("description", "Overleg met de spelers in deze kamer."), color = PlayerMuted)
+            if (room.rows("members").any { it.text("id") == state.profile?.id && it.text("status") == "active" }) Action("Open kamerchat", primary = false) { actions.navigate(PlayerScreen.CHAT, "room:${room.text("id")}") }
+            else Action("Kamer openen", !state.busy && !state.hasPendingCommand) { entityCommand(actions, room, json("type" to "room.join", "id" to room.text("id"))) }
+        }
+        return
+    }
     Heading("Samen is beter", "VRIENDEN", "Vind spelers, beheer uitnodigingen en overleg in de chat.")
     PlayerFriendSearch(state, actions)
     val friends = state.platform.rows("friends")
@@ -1073,21 +1095,10 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
         Text("Privacy- en veiligheidsvragen: info@dartflow.nl", color = PlayerMuted, fontSize = 12.sp)
     }
     PlayerThemePreference(state, actions)
+    PlayerCard("Instellingen") { Action("Meldingen", primary = false) { actions.navigate(PlayerScreen.NOTIFICATION_SETTINGS, null) }; Action("Mijn supporttickets", primary = false) { actions.navigate(PlayerScreen.SUPPORT, null) }; Action("Wat is nieuw?", primary = false) { actions.navigate(PlayerScreen.RELEASES, null) } }
     if (state.canManagePlatform) PlayerPremiumAdministration(state, actions)
     PlayerCard("Jouw account") { Text(state.session?.email ?: ""); Text("DartFlow ${BuildConfig.VERSION_NAME}", color = PlayerMuted, fontSize = 12.sp); Action("Uitloggen", !state.busy, false, Modifier.fillMaxWidth(), actions.logout) }
     AccountDeletionCard(state, actions)
-}
-
-@Composable private fun NotificationsScreen(state: PlayerUiState, actions: PlayerActions) {
-    Heading("Jouw meldingen", "DARTFLOW", "Baanoproepen, verzoeken en acties die op je wachten.")
-    PlayerPushControls(state, actions)
-    PlayerGuestClaims(state, actions)
-    val entries = state.resource.rows("notifications")
-    entries.forEach { n -> PlayerCard(n.text("title", n.text("label", "Melding"))) { Text(n.text("body", n.text("detail")), color = PlayerMuted); if (n.text("href").isNotBlank()) Action("Openen", primary = false) { actions.openLink(n.text("href")) } } }
-    state.platform.rows("friends").filter { it.text("status") == "incoming" }.forEach { f -> PlayerCard("Vriendschapsverzoek") { Text("${name(f)} wil jouw vriend worden."); Action("Bekijk verzoek", primary = false) { actions.navigate(PlayerScreen.FRIENDS, null) } } }
-    state.resource.rows("actions").forEach { a -> PlayerCard(a.text("label")) { Text(a.text("detail"), color = PlayerMuted); Action("Openen", primary = false) { actions.openLink(a.text("href")) } } }
-    state.resource.rows("fixtures").forEach { FixtureCard(it, actions, state.busy) }
-    if (entries.isEmpty() && state.resource.obj("push").rows("items").isEmpty() && state.resource.rows("actions").isEmpty() && state.resource.rows("fixtures").isEmpty() && state.platform.rows("friends").none { it.text("status") == "incoming" }) Text("Je bent helemaal bij.", color = PlayerMuted)
 }
 
 @Composable private fun ScreensScreen(state: PlayerUiState, actions: PlayerActions) {

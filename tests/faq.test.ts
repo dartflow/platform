@@ -25,6 +25,7 @@ test('an earlier published FAQ gains all new game help without losing unrelated 
 });
 test('an editor can revise the upgraded help after release without the bundled baseline overriding it',()=>{
  const base=getFaq(),items=base.items.map(item=>item.id==='baan-offline'?{...item,answer:'Nieuwe gepubliceerde uitleg.',manualId:'hervatten-offline'}:item);
- const result=mergePublishedFaq({version:'nieuwe-publicatie',createdAt:'2026-11-20T00:00:00Z',items});
- assert.deepEqual(result.items,items);assert.equal(result.version,'nieuwe-publicatie');assert.equal(result.publishedAt,'2026-11-20T00:00:00.000Z');
+ const createdAt=new Date(Date.parse(base.publishedAt)+3600000).toISOString();
+ const result=mergePublishedFaq({version:'nieuwe-publicatie',createdAt,items});
+ assert.deepEqual(result.items,items);assert.equal(result.version,'nieuwe-publicatie');assert.equal(result.publishedAt,createdAt);
 });

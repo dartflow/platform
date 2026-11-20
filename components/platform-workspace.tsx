@@ -18,7 +18,6 @@ import LocalPlayerAdd from "./local-player-add";
 import ScreenDeviceManager from "./screen-device-manager";
 import IntegrationsPanel from "./integrations-panel";
 import BlogWorkspace from "./blog-workspace";
-import { MailPreferences } from "./mail-policy-panel";
 import {CommunityRulesGate,SafetyActions} from './player-safety';
 import {FeedSpace,ScopedChat} from './community-space';
 import {ClubWorkspace} from './club-ui';
@@ -3344,7 +3343,7 @@ function Preferences({
           Vriendschapsverzoeken ontvangen
         </label>
       </Form>
-      <MailPreferences />
+      <section className="panel" id="meldingen"><h2>Meldingen</h2><p>Beheer inbox, e-mail en push in één compact overzicht.</p><a className="button" href="/app/settings/notifications">Meldingsinstellingen openen</a><a className="button ghost" href="/app/notifications">Jouw meldingen</a></section>
       <section className="panel">
         <h2>Jouw account</h2>
         <p>{data.profile.name}</p>

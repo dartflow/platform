@@ -6,6 +6,7 @@ import {clubIsActiveMember,clubPermission} from './club-access';
 import {blocked,entity,member,requireAccess,text,transaction,uuid,type Client} from './platform-store';
 import type {PlatformCommand,PlatformResponse} from './platform-types';
 import type {ChatPage,CommunityKind,CommunityScope,FeedPage,FeedPost} from './community-types';
+import {enqueueAuditedNotification} from './notification-audit-source';
 
 export const PLATFORM_FEED_ID='00000000-0000-4000-8000-000000000017';
 const kinds=['platform','club','league','tournament','match'];
@@ -137,7 +138,8 @@ export async function communityAction(client:Client,actor:string,command:Platfor
  if(kind==='platform')throw new DomainError('invalid_scope','Gebruik de platformfeed.');
  if(a.type==='community.message'){
   if(!scope.canWrite)throw new DomainError('chat_muted','Je kunt tijdelijk geen bericht plaatsen.',403);
-  const id=randomUUID();await client.query('insert into dartflow_private.community_messages(id,scope_kind,scope_id,author_id,body) values($1,$2,$3,$4,$5)',[id,kind,scopeId,actor,text(a.body,2000)]);return {ok:true,id};
+  const id=randomUUID();await client.query('insert into dartflow_private.community_messages(id,scope_kind,scope_id,author_id,body) values($1,$2,$3,$4,$5)',[id,kind,scopeId,actor,text(a.body,2000)]);
+  if(kind==='match'){const match=(await client.query<{state:{players:{id:string}[]}}>('select state from dartflow_private.matches where id=$1',[scopeId])).rows[0];await enqueueAuditedNotification(client,{eventId:`chat:${id}`,templateId:'chat-message',actorId:actor,recipientIds:match?.state.players.map(p=>p.id)??[],source:{kind:'chat-message',store:'community',messageId:id},href:`/wedstrijd/${scopeId}`});}return {ok:true,id};
  }
  if(a.type==='community.message.delete'){
   const row=await client.query('select author_id from dartflow_private.community_messages where id=$1 and scope_kind=$2 and scope_id=$3 for update',[uuid(a.messageId),kind,scopeId]);

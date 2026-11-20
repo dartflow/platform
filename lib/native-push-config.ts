@@ -2,7 +2,7 @@ import {createCipheriv,createDecipheriv,createHash,randomBytes,createSign} from 
 import {DomainError} from './domain';
 import {integrationRuntime} from './integrations-core';
 
-export const PUSH_CATEGORIES=['Sociaal','Wedstrijden','Competitie','Toernooien'] as const;
+export const PUSH_CATEGORIES=['Sociaal','Wedstrijden','Competitie','Toernooien','Vereniging','Supporttickets','Productreleases','Platformberichten','Beveiliging','Reserveringen','Moderatie','Chat'] as const;
 export type PushSdkConfig={projectId:'dartflow';applicationId:string;senderId:string;apiKey:string;packageName:string};
 export function pushPackage(){return {production:'nl.dartflow.app',staging:'nl.dartflow.app.staging',development:'nl.dartflow.app.dev'}[integrationRuntime().environment];}
 export function publicPushConfig():PushSdkConfig|null{
@@ -39,6 +39,6 @@ export async function fcmAccessToken(fetcher:typeof fetch=fetch):Promise<string>
  const value=await response.json();if(typeof value.access_token!=='string'||value.access_token.length>16384||!Number.isFinite(value.expires_in))throw new Error('Invalid FCM OAuth response');
  oauth={binding,token:value.access_token,expires:Date.now()+Math.min(3600,Number(value.expires_in))*1000};return oauth.token;
 }
-export const pushMessage=(id:string,deviceId:string,category:string,target:string|PushTarget,ttlSeconds=300)=>({message:{...(typeof target==='string'||target.kind==='TOKEN'?{token:typeof target==='string'?target:target.value}:{fid:target.value}),data:{id,deviceId,category},android:{priority:'HIGH',ttl:`${Math.max(0,Math.min(300,Math.floor(ttlSeconds)))}s`,collapse_key:category,restricted_package_name:pushPackage()}}});
+export const pushMessage=(id:string,deviceId:string,category:string,target:string|PushTarget,ttlSeconds=300,safeData:Record<string,string>={})=>({message:{...(typeof target==='string'||target.kind==='TOKEN'?{token:typeof target==='string'?target:target.value}:{fid:target.value}),data:{id,deviceId,category,...safeData},android:{priority:'HIGH',ttl:`${Math.max(0,Math.min(300,Math.floor(ttlSeconds)))}s`,collapse_key:category,restricted_package_name:pushPackage()}}});
 /** Only FCM's structured target error proves a registration is no longer valid. */
 export function fcmTargetUnregistered(value:unknown):boolean{const error=(value as {error?:{details?:unknown[]}}|null)?.error;return Array.isArray(error?.details)&&error.details.some(detail=>!!detail&&typeof detail==='object'&&(detail as Record<string,unknown>)['@type']==='type.googleapis.com/google.firebase.fcm.v1.FcmError'&&(detail as Record<string,unknown>).errorCode==='UNREGISTERED');}

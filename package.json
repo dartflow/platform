@@ -1,6 +1,6 @@
 {
   "name": "dartflow",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -43,7 +43,8 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "resend": "6.38.0",
-    "sharp": "0.35.5"
+    "sharp": "0.35.5",
+    "web-push": "4.0.0"
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",
@@ -52,6 +53,7 @@
     "@types/qrcode": "1.5.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@types/web-push": "3.6.4",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.6",
     "tsx": "4.23.15",
