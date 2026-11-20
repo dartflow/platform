@@ -696,9 +696,15 @@ test("a club membership and room message are shared between separate accounts", 
   await b
     .getByRole("button", { name: "Aanvraag versturen", exact: true })
     .click();
-  await a.getByRole("navigation", { name: "Verenigingsonderdelen" }).getByRole("button", { name: "Aanvragen", exact: true }).click();
+  await a.getByRole("navigation", { name: "Verenigingsonderdelen" }).getByRole("link", { name: "Leden", exact: true }).click();
   await a.getByRole("button", { name: "Accepteren", exact: true }).click();
-  await expect(b.locator(".club-workspace .pill")).toHaveText("Clublid");
+  await expect.poll(async () => {
+    const platform = await (await member.request.get('/api/platform')).json();
+    return platform.clubs.find((club: {id:string}) => club.id === clubPath.split('/').at(-1))?.clubAccess.isMember;
+  }).toBe(true);
+  await b.reload();
+  await expect(b.locator('.ch-workspace')).toBeVisible();
+  await expect(b.getByRole('heading',{name:clubName,exact:true})).toBeVisible();
   await a.goto("/app/community");
   const roomName = `V15 browserkamer ${randomUUID().slice(0, 8)}`;
   const createRoom = a.locator("form").filter({

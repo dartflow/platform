@@ -75,7 +75,7 @@ export function ClubhouseThemeProvider({
   children: ReactNode;
 }) {
   const [view, setView] = useState<ThemeView | null>(null),
-    [loaded, setLoaded] = useState(""),
+    [loaded, setLoaded] = useState("\u0000"),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [systemDark, setSystemDark] = useState(true);
