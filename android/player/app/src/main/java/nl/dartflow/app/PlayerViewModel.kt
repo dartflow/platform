@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
+import org.json.JSONArray
 
 /** Native screen state. The server remains the only scoring/authorization authority. */
 class PlayerViewModel(application: Application) : AndroidViewModel(application) {
@@ -164,7 +165,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             PlayerPush.clearLocal(getApplication())
             identityGeneration++; pending = null; navigation.clear(); saved.remove("pendingCommand"); saved.remove("organizerDraft"); saved.remove("invitation"); saved.remove("navigation")
             themeCache.clear(); themeReadAt = 0L
-            state.update { it.copy(theme = JSONObject(), clubhouseContext = null, clubhousePages = emptyList(), profile = null, platform = JSONObject(), overview = JSONObject(), resource = JSONObject(), match = null, board = null, screen = PlayerScreen.HOME, activeId = null, hasPendingCommand = false, loading = true, organizerDraft = JSONObject(), organizerCloudDraft = JSONObject(), faqAdminReceipt = JSONObject(), invitation = JSONObject(), canManagePlatform = false, homeFeed = JSONObject(), homeFeedLoading = false, homeFeedError = null) }
+            state.update { it.copy(theme = JSONObject(), clubhouseContext = null, clubhousePages = emptyList(), profile = null, platform = JSONObject(), overview = JSONObject(), resource = JSONObject(), match = null, board = null, screen = PlayerScreen.HOME, activeId = null, hasPendingCommand = false, loading = true, organizerDraft = JSONObject(), organizerCloudDraft = JSONObject(), faqAdminReceipt = JSONObject(), communicationReceipt = JSONObject(), invitation = JSONObject(), canManagePlatform = false, homeFeed = JSONObject(), homeFeedLoading = false, homeFeedError = null) }
         }
         saved.put("accessToken", token).put("refreshToken", refresh).put("local", false)
             .put("expiresAt", if (result.optLong("expires_at") > 0) result.getLong("expires_at") * 1000 else api.serverNow() + result.optLong("expires_in", 3600) * 1000)
@@ -220,7 +221,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val ticket = snapshots.capture()
         val resource = when (screen) {
             PlayerScreen.BOARDS -> api.call("/player-experience")
-            PlayerScreen.NOTIFICATIONS -> api.call("/player-experience").also { it.put("push", api.call("/push").also { push -> if (generation == identityGeneration) PlayerPush.updatePreferences(getApplication(), state.value.profile?.id, push) }) }
+            PlayerScreen.NOTIFICATIONS -> api.call("/notifications")
+            PlayerScreen.NOTIFICATION_SETTINGS -> api.call("/notifications/settings").also { it.put("push", api.call("/push").also { push -> if (generation == identityGeneration) PlayerPush.updatePreferences(getApplication(), state.value.profile?.id, push) }) }
+            PlayerScreen.NOTIFICATION_ADMIN -> api.call("/notifications/admin").also { it.put("releases", api.call("/product-releases/admin").optJSONArray("published") ?: JSONArray()) }
+            PlayerScreen.SUPPORT -> api.call("/support/tickets" + playerSupportQuery(id, false))
+            PlayerScreen.SUPPORT_ADMIN -> api.call("/support/admin/tickets" + playerSupportQuery(id, true))
+            PlayerScreen.SUPPORT_TICKET -> id?.let { api.call("/support/tickets/${PlayerLinks.encode(it)}") } ?: JSONObject()
+            PlayerScreen.SUPPORT_ADMIN_TICKET -> id?.let { api.call("/support/admin/tickets/${PlayerLinks.encode(it)}") } ?: JSONObject()
+            PlayerScreen.RELEASES -> api.call("/product-releases?product=${if (id == "oche-live") "oche-live" else "dartflow"}&channel=android")
+            PlayerScreen.RELEASE_DETAIL -> id?.let { api.call("/product-releases/${PlayerLinks.encode(it)}") } ?: JSONObject()
+            PlayerScreen.RELEASE_ADMIN -> api.call("/product-releases/admin")
+            PlayerScreen.PLATFORM_MESSAGE -> id?.let { api.call("/notifications/messages/${PlayerLinks.encode(it)}") } ?: JSONObject()
             PlayerScreen.SCREENS -> {
                 val experience = api.call("/player-experience")
                 val context = api.call("/oche/v1/context")
@@ -458,13 +469,14 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val destination = PlayerLinks.destination(value, api.origin)
         if (destination == null) { state.update { it.copy(error = "Deze link hoort niet bij deze DartFlow-omgeving.") }; return }
         if (destination.screen == PlayerScreen.BOARD && !hasSession()) { navigate(PlayerScreen.PLAY_START, destination.id); return }
+        if (destination.screen == PlayerScreen.NOTIFICATIONS && destination.id != null) { handlePushTap(destination.id); return }
         if (destination.screen in playerPublicPlayScreens) { navigate(destination.screen, destination.id); return }
         if (destination.screen in listOf(PlayerScreen.HELP,PlayerScreen.MANUAL) && !hasSession()) { navigate(destination.screen, destination.id); return }
         pendingDestination = destination
         // Persist only the safe route identity so login/process recreation returns to the requested board.
         saved.put("destination", JSONObject().put("screen", destination.screen.name).put("id", destination.id).put("code", destination.invitationCode)); persist()
         if (hasSession()) launchTask { restoreDestination(); loadCurrent() }
-        else {showDestination(PlayerScreen.HOME,null);state.update { it.copy(notice = "Log in om deze baan of wedstrijd te openen.") }}
+        else {showDestination(PlayerScreen.HOME,null);state.update { it.copy(notice = if (destination.screen in listOf(PlayerScreen.SUPPORT, PlayerScreen.SUPPORT_TICKET)) "Log in om je supportvraag te stellen of je ticket te openen. Daarna ga je hier verder." else "Log in om deze bestemming te openen.") }}
     }
     private suspend fun restoreDestination() {
         val destination = pendingDestination ?: saved.optJSONObject("destination")?.let { item ->
@@ -481,11 +493,12 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
     private suspend fun signedIn() {
         identityGeneration++
+        val openingNotification = pendingPushId != null || playerPendingNotification(notificationOpenStore.read(), api.origin) != null
         // Review/local login replies need not identify the account until /session.
         // Clear private home data before that first suspended identity request as well.
         state.update { it.withoutHomeFeed() }
         loadIdentity(); loadCommon(); restoreDestination(); loadCurrent()
-        state.update { it.copy(online = true, loading = false, notice = "Je bent ingelogd.") }
+        state.update { it.copy(online = true, loading = false, notice = it.notice.takeIf { openingNotification } ?: "Je bent ingelogd.") }
     }
     fun localLogin(id: String) = launchTask {
         require(BuildConfig.LOCAL_FIXTURES && state.value.capabilities.optBoolean("local") && state.value.localUsers.any { it.id == id }) { "Lokale testlogin is hier niet beschikbaar." }
@@ -528,14 +541,21 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
     private suspend fun openPush(id: String) {
         val identity = requestIdentity() ?: return
-        val result = api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to json("type" to "notification.open", "id" to id)))
-        if (requestIdentity() != identity) return
-        notificationOpenStore.clear()
+        val result = playerResolveNotificationOpen(
+            request = { api.call("/notifications/actions", json("requestId" to UUID.randomUUID().toString(), "action" to json("type" to "notification.open", "id" to id))) },
+            isCurrent = { requestIdentity() == identity },
+            clearPending = { notificationOpenStore.clear() },
+        ) ?: return
         if (result.optBoolean("available")) {
             val settings = PlayerPush.settings(getApplication())
             if (settings.text("deviceId").isNotBlank()) runCatching { api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to json("type" to "delivery.ack", "id" to id, "deviceId" to settings.text("deviceId"), "stage" to "opened"))) }
-            handleDeepLink(result.text("href"))
-        } else state.update { it.copy(notice = result.text("message", "Deze melding is verlopen of ingetrokken. Open Vandaag voor de actuele informatie.")) }
+            val destination = playerNotificationDestination(result, api.origin)
+            if (destination.screen != PlayerScreen.NOTIFICATIONS) {
+                navigation.addLast(PlayerDestination(PlayerScreen.NOTIFICATIONS))
+                while (navigation.size > 30) navigation.removeFirst()
+                showDestination(destination.screen, destination.id)
+            } else { navigate(PlayerScreen.NOTIFICATIONS, null); state.update { it.copy(notice = "De bestemming wordt niet door deze app ondersteund. Bekijk je actuele meldingen.") } }
+        } else { navigate(PlayerScreen.NOTIFICATIONS, null); state.update { it.copy(notice = result.text("message", "Deze melding is verlopen of ingetrokken. Je kunt hieronder terug naar je actuele meldingen.")) } }
     }
     fun completeProfile(fullName: String, username: String, displayName: String, pin: String, confirm: String) {
         if (!PlayerValidation.validFullName(fullName) || !PlayerValidation.validUsername(username) || !PlayerValidation.validName(displayName)) { state.update { it.copy(error = "Controleer je privénaam, openbare displaynaam en vaste gebruikersnaam.") }; return }
@@ -680,6 +700,20 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private suspend fun afterCommand(path: String, input: JSONObject, result: JSONObject, generation: Int) {
         if (generation != identityGeneration || !hasSession()) return
         snapshots.advance()
+        if (path in listOf("/support/actions", "/notifications/actions", "/notifications/admin/actions", "/product-releases/admin/actions")) {
+            state.update { it.copy(communicationReceipt = json("path" to path, "input" to input, "result" to result)) }
+            if (path == "/support/actions" && input.obj("action").text("type") == "ticket.create") {
+                navigate(PlayerScreen.SUPPORT_TICKET, result.obj("ticket").text("id")); return
+            }
+            loadCurrent()
+            state.update { it.copy(notice = result.text("message").ifBlank { when (input.obj("action").text("type")) {
+                "release.publish" -> "Releasebericht gepubliceerd. Er is geen campagne verstuurd."
+                "campaign.preview" -> "Controleer het campagnevoorbeeld en de bereikbare ontvangers."
+                "campaign.test" -> "De proefmelding is aangeboden. Bekijk de werkelijke verzendstatus."
+                "campaign.send" -> "Campagne aangeboden. De verzendhistorie toont de verdere verwerking."
+                else -> "Opgeslagen."
+            } }) }; return
+        }
         if(path=="/play/legacy-actions"){if(input.text("action")=="resolve-offline")trainingQueue.resolved(input.text("sourceId"));loadCurrent();state.update{it.copy(notice="Dezelfde partij is opnieuw aan de gecontroleerde baan gekoppeld.")};return}
         if (path == "/competition-lobbies/actions" || path == "/competition-lobbies/player-pin") {
             val url = result.text("url").ifBlank { if (result.obj("lobby").text("status") == "started") result.obj("lobby").text("matchUrl") else "" }
@@ -778,6 +812,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         if (failure is PlayerApiFailure && failure.code == "session_changed") return
         if (failure is PlayerApiFailure && failure.code == "account_deleted") { playerEraseClubDrafts(getApplication(), saved.text("userId")); play.eraseAccount(saved.text("userId")); matchQueue.clear(); trainingQueue.clear(); clearSession() }
         if (failure is PlayerApiFailure && failure.status in listOf(401, 403) && state.value.screen in listOf(PlayerScreen.CLUBHOUSE, PlayerScreen.CLUB_CHAT, PlayerScreen.CLUB_COMPETITION_WIZARD)) state.update { it.copy(resource = JSONObject(), theme = JSONObject(), clubhousePages = emptyList()) }
+        if (failure is PlayerApiFailure && failure.status in listOf(401, 403, 404) && state.value.screen in playerCommunicationPrivateScreens + PlayerScreen.RELEASE_DETAIL) state.update { it.copy(resource = JSONObject(), communicationReceipt = JSONObject()) }
         val message = when (failure) {
             is PlayerApiFailure -> failure.feedback
             is IllegalArgumentException, is IllegalStateException -> failure.message?.takeIf { it.length in 1..200 } ?: "Controleer je invoer en probeer opnieuw."

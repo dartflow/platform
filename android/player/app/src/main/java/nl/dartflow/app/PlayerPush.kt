@@ -28,16 +28,26 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 internal object PlayerAuthCoordinator { val refresh = Mutex() }
-internal val playerPushCategories = listOf("Sociaal", "Wedstrijden", "Competitie", "Toernooien")
+internal val playerPushCategories = listOf("Sociaal", "Wedstrijden", "Competitie", "Toernooien", "Vereniging", "Supporttickets", "Productreleases", "Platformberichten", "Beveiliging", "Reserveringen", "Moderatie", "Chat")
 internal fun playerPushChannelId(category: String) = "dartflow-${playerPushCategories.indexOf(category)}"
 internal fun playerPushCategoryEnabled(binding: JSONObject, category: String): Boolean = category in playerPushCategories && binding.rows("preferences").none { it.text("category") == category && !it.optBoolean("enabled", true) }
 internal fun playerPushRegistration(installation: String, packageName: String, fid: String) = json("type" to "device.register", "installationId" to installation, "packageName" to packageName, "firebaseInstallationId" to fid, "sdkVersion" to "26.0.2")
 internal fun playerPendingNotification(value: JSONObject, origin: String): String? = value.text("id").takeIf { value.text("origin") == origin && runCatching { UUID.fromString(it).toString() == it }.getOrDefault(false) }
 internal suspend fun <T> Task<T>.playerAwait(): T = suspendCancellableCoroutine { continuation -> addOnSuccessListener { if (continuation.isActive) continuation.resume(it) }; addOnFailureListener { if (continuation.isActive) continuation.resumeWithException(it) }; addOnCanceledListener { continuation.cancel() } }
+internal val playerSupportPushEvents = mapOf("support-created" to "Nieuw supportticket", "support-user-replied" to "Nieuwe reactie op supportticket", "support-reopened" to "Ticket heropend", "support-answered" to "Reactie van DartFlow Support", "support-status-changed" to "Ticketstatus gewijzigd")
 internal fun playerPushPayload(data: Map<String, String>): Triple<String, String, String>? {
-    if (data.keys != setOf("id", "deviceId", "category") || data["category"] !in playerPushCategories) return null
+    val category = data["category"] ?: return null
+    val base = setOf("id", "deviceId", "category")
+    val expected = when (category) {
+        "Supporttickets" -> base + setOf("ticketNumber", "eventType")
+        "Productreleases", "Platformberichten" -> base + setOf("campaignTitle", "campaignBody")
+        else -> base
+    }
+    if (data.keys != expected || category !in playerPushCategories) return null
+    if (category == "Supporttickets" && (!Regex("DF-[1-9][0-9]{0,14}").matches(data["ticketNumber"].orEmpty()) || data["eventType"] !in playerSupportPushEvents)) return null
+    if (category in listOf("Productreleases", "Platformberichten") && listOf("campaignTitle" to 80, "campaignBody" to 180).any { (key, max) -> data[key].orEmpty().let { it.isBlank() || it.length > max || it.any { char -> Character.isISOControl(char) } } }) return null
     val id = data["id"].orEmpty(); val device = data["deviceId"].orEmpty()
-    if (runCatching { UUID.fromString(id).toString() == id && UUID.fromString(device).toString() == device }.getOrDefault(false)) return Triple(id, device, data["category"]!!)
+    if (runCatching { UUID.fromString(id).toString() == id && UUID.fromString(device).toString() == device }.getOrDefault(false)) return Triple(id, device, category)
     return null
 }
 internal fun playerPushBody(category: String) = when (category) {
@@ -46,7 +56,17 @@ internal fun playerPushBody(category: String) = when (category) {
     "Wedstrijden" -> "Er is een wedstrijdmelding. Open DartFlow voor de actuele informatie."
     else -> "Er staat een nieuwe melding voor je klaar. Open DartFlow voor de actuele informatie."
 }
+internal fun playerPushPresentation(data: Map<String, String>): Pair<String, String>? {
+    val (_, _, category) = playerPushPayload(data) ?: return null
+    return when (category) {
+        "Supporttickets" -> "DartFlow Support" to "${playerSupportPushEvents.getValue(data.getValue("eventType"))} · ${data.getValue("ticketNumber")}"
+        "Productreleases", "Platformberichten" -> data.getValue("campaignTitle") to data.getValue("campaignBody")
+        else -> "DartFlow" to playerPushBody(category)
+    }
+}
 internal fun playerPushBindingAllowed(binding: JSONObject, session: JSONObject, actor: String?, origin: String, permitted: Boolean): Boolean = binding.optBoolean("enabled") && !actor.isNullOrBlank() && binding.text("actorId") == actor && session.text("userId") == actor && session.text("accessToken").isNotBlank() && binding.text("origin") == origin && permitted
+
+internal fun playerPushShouldReceive(binding: JSONObject, session: JSONObject, actor: String?, origin: String, permitted: Boolean, deviceId: String, notificationId: String): Boolean = playerPushBindingAllowed(binding, session, actor, origin, permitted) && binding.text("deviceId") == deviceId && binding.optJSONArray("seen")?.strings()?.contains(notificationId) != true
 
 class PlayerApplication : Application() { override fun onCreate() { super.onCreate(); PlayerPush.initializeCached(this) } }
 
@@ -62,7 +82,7 @@ internal object PlayerPush {
     fun channels(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val labels = listOf("Sociaal en uitdagingen", "Wedstrijden en baanoproepen", "Competities en verenigingsupdates", "Toernooien")
-        playerPushCategories.forEachIndexed { index, category -> manager.createNotificationChannel(NotificationChannel(playerPushChannelId(category), "DartFlow · ${labels[index]}", NotificationManager.IMPORTANCE_DEFAULT).apply { description = "Open DartFlow voor de actuele informatie en je categorievoorkeuren."; lockscreenVisibility = Notification.VISIBILITY_PRIVATE }) }
+        playerPushCategories.forEachIndexed { index, category -> manager.createNotificationChannel(NotificationChannel(playerPushChannelId(category), "DartFlow · ${labels.getOrElse(index) { category }}", NotificationManager.IMPORTANCE_DEFAULT).apply { description = "Open DartFlow voor de actuele informatie en je categorievoorkeuren."; lockscreenVisibility = Notification.VISIBILITY_PRIVATE }) }
     }
     fun channelAllowed(context: Context, category: String): Boolean = (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).getNotificationChannel(playerPushChannelId(category))?.importance != NotificationManager.IMPORTANCE_NONE
     fun updatePreferences(context: Context, actor: String?, data: JSONObject) {
@@ -168,14 +188,17 @@ internal object PlayerPush {
     fun receive(context: Context, data: Map<String, String>) = synchronized(receiptLock) {
         val (id, device, category) = playerPushPayload(data) ?: return@synchronized
         val current = settings(context)
-        if (!isEnabled(context, current.text("actorId")) || current.text("deviceId") != device || !playerPushCategoryEnabled(current, category) || current.optJSONArray("seen")?.strings()?.contains(id) == true) return@synchronized
+        if (!playerPushShouldReceive(current, PlayerSessionStore(context).read(), current.text("actorId"), BuildConfig.API_ORIGIN, permitted(context), device, id)) return@synchronized
         store(context).update { value -> value.put("seen", JSONArray((value.optJSONArray("seen")?.strings().orEmpty() + id).takeLast(200))).put("acks", JSONArray((value.rows("acks") + json("requestId" to UUID.randomUUID().toString(), "id" to id, "deviceId" to device, "stage" to "received")).takeLast(200))) }
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channel = playerPushChannelId(category)
         channels(context)
         val intent = Intent(context, MainActivity::class.java).putExtra("dartflowPushId", id).putExtra("dartflowPushDevice", device).setAction("nl.dartflow.PUSH.$id").addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         val pending = PendingIntent.getActivity(context, id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val notification = Notification.Builder(context, channel).setSmallIcon(R.drawable.ic_notification).setContentTitle("DartFlow").setContentText(playerPushBody(category)).setStyle(Notification.BigTextStyle().bigText(playerPushBody(category))).setContentIntent(pending).setAutoCancel(true).setVisibility(Notification.VISIBILITY_PRIVATE).build()
+        // The server already applied current personal and administrative rules. A stale local
+        // category preference must not override a forced-on rule; OS/device consent still gates receipt.
+        val presentation = playerPushPresentation(data) ?: return@synchronized
+        val notification = Notification.Builder(context, channel).setSmallIcon(R.drawable.ic_notification).setContentTitle(presentation.first).setContentText(presentation.second).setStyle(Notification.BigTextStyle().bigText(presentation.second)).setContentIntent(pending).setAutoCancel(true).setVisibility(Notification.VISIBILITY_PRIVATE).build()
         if (channelAllowed(context, category)) try { manager.notify(id, 1, notification) } catch (_: SecurityException) { /* Receipt remains real; Android did not allow a visible notification. */ }
         background.launch { runCatching { backgroundApi(context)?.let { (api, actor) -> sync(context, api, actor) } } }
     }

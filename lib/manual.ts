@@ -1,6 +1,6 @@
 import content from './content/manual.nl.json';
 export type ManualArticle={id:string;title:string;category:string;href:string;intro:string;steps:string[];examples:string[];notes:string[];keywords:string[]};
-export const MANUAL_VERSION='2026.11.19-play.1';
+export const MANUAL_VERSION='2026.11.20-support.1';
 export const manualArticles:readonly ManualArticle[]=content;
 const normalize=(text:string)=>text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('nl-NL');
 export function getManual(input:{q?:string|null;id?:string|null;category?:string|null}={}){

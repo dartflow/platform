@@ -1,4 +1,5 @@
 import{test}from'node:test';
+import{cleanupNotificationFixtures}from'./helpers/cleanup-v17';
 import assert from'node:assert/strict';
 import{randomUUID}from'node:crypto';
 import pg from'pg';
@@ -92,6 +93,7 @@ test('published national seven-component encounters book selected singles only a
   });
 
  }finally{try{
+  await cleanupNotificationFixtures(admin,people);
   const matchIds=(await admin.query<{id:string}>('select id from dartflow_private.matches where event_id=any($1::uuid[])',[events])).rows.map(row=>row.id);
   await admin.query('delete from dartflow_private.ranking_lists where id=any($1::uuid[])',[lists]);await admin.query('delete from dartflow_private.feed_items where author_id=any($1::uuid[])',[people]);for(const table of['mail_outbox','mail_events'])await admin.query(`delete from dartflow_private.${table} where recipient_key=any($1::text[])`,[people.map(id=>`user:${id}`)]);
   await admin.query('delete from dartflow_private.competition_seasons where id=any($1::uuid[])',[entities]);for(const table of['player_match_kickoffs','match_results','match_confirmations','action_receipts','visits','match_players','platform_match_links'])await admin.query(`delete from dartflow_private.${table} where match_id=any($1::uuid[])`,[matchIds]);await admin.query('delete from dartflow_private.board_activity_sessions where event_id=any($1::uuid[])',[events]);await admin.query('delete from dartflow_private.audit_events where event_id=any($1::uuid[])',[events]);await admin.query('delete from dartflow_private.matches where event_id=any($1::uuid[])',[events]);await admin.query('delete from dartflow_private.platform_audit where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.platform_entities where id=any($1::uuid[])',[entities]);await admin.query('delete from dartflow_private.club_boards where board_id=any($1::uuid[])',[boards]);for(const table of['standings','entries','boards','event_staff'])await admin.query(`delete from dartflow_private.${table} where event_id=any($1::uuid[])`,[events]);await admin.query('delete from dartflow_private.events where id=any($1::uuid[])',[events]);await admin.query('delete from dartflow_private.club_memberships where club_id=any($1::uuid[])',[[...clubs,...extraClubs]]);await admin.query('delete from dartflow_private.clubs where id=any($1::uuid[])',[[...clubs,...extraClubs]]);await admin.query('delete from dartflow_private.platform_roles where user_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);

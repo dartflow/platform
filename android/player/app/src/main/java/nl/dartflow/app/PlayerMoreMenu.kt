@@ -68,8 +68,8 @@ import kotlin.math.roundToInt
                 "Spelen & voortgang" to listOf(PlayerScreen.BOARDS to "Banen & favorieten", PlayerScreen.LOCATIONS to "Mijn locaties & reserveringen", PlayerScreen.PRACTICE to "Oefenen", PlayerScreen.CHALLENGES to "Uitdagingen", PlayerScreen.PLAY_HISTORY to "Vrije partijen & traininghistorie", PlayerScreen.TRAINING to "Bestaande trainingen", PlayerScreen.HISTORY to "Wedstrijdhistorie", PlayerScreen.STATISTICS to "Statistieken"),
                 "Community & evenementen" to listOf(PlayerScreen.RANKINGS to "Rankings", PlayerScreen.FEED to "Mijn feed", PlayerScreen.CLUBS to "Verenigingen", PlayerScreen.FRIENDS to "Vrienden & spelerskamers", PlayerScreen.ORGANIZE to "Toernooi organiseren"),
                 "Schermbeheer" to listOf(PlayerScreen.SCREENS to "Oche Live-schermen"),
-                "Jouw account" to listOf(PlayerScreen.PROFILE to "Profiel & instellingen", PlayerScreen.NOTIFICATIONS to "Meldingen", PlayerScreen.HELP to "Help & FAQ"),
-            ).forEach { (group, entries) ->
+                "Jouw account" to listOf(PlayerScreen.PROFILE to "Profiel & instellingen", PlayerScreen.NOTIFICATIONS to "Meldingen", PlayerScreen.HELP to "Help & FAQ", PlayerScreen.SUPPORT to "Mijn supporttickets", PlayerScreen.RELEASES to "Wat is nieuw?"),
+            ).plus(if (state.canManagePlatform) listOf("Platformbeheer" to listOf(PlayerScreen.SUPPORT_ADMIN to "Supportbeheer", PlayerScreen.RELEASE_ADMIN to "Releasebeheer", PlayerScreen.NOTIFICATION_ADMIN to "Meldingsbeheer")) else emptyList()).forEach { (group, entries) ->
                 Text(group.uppercase(Locale.ROOT), Modifier.padding(top = 10.dp, start = 12.dp), color = PlayerMuted, fontSize = 10.sp, letterSpacing = 1.sp)
                 entries.forEach { (route, label) -> TextButton(onClick = { close(); actions.navigate(route, null) }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                     Text(label, Modifier.weight(1f), color = if (state.screen == route) PlayerLime else PlayerText, textAlign = TextAlign.Start)

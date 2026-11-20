@@ -8,6 +8,7 @@ import { enqueueDomainMail } from './integrations-mail';
 import {clubAction} from './club-domain';
 import { acceptsCode, addMember, available, blocked, createEntity, entity, isClubMember, member, number, requireAccess, save, text, uuid, view } from './platform-store';
 import type { PlatformCommand, PlatformResponse } from './platform-types';
+import {enqueueAuditedNotification} from './notification-audit-source';
 
 type Action = PlatformCommand['action'];
 async function notify(client: PoolClient, requestId: string, templateId: string, recipientId: string, variables: Record<string, string>, clubId?: string | null, entityId?: string, actorId?: string) {
@@ -71,14 +72,13 @@ export async function socialAction(client: PoolClient, actor: string, command: P
       else await client.query('update dartflow_private.platform_messages set deleted=true where id=$1',[item.content_id]);
     }
     await client.query("update dartflow_private.platform_reports set status='resolved',decision=$2,reviewed_by=$3 where id=$1",[item.id,`${operation}: ${reason}`,actor]);
-    if(item.reporter_id!==actor)await notify(client,command.requestId,'moderation-notice',item.reporter_id,{roomName:'DartFlow',reason,status:'Melding beoordeeld'});
-    if(item.target_id)await notify(client,command.requestId,'moderation-notice',item.target_id,{roomName:item.room_id?(await entity(client,item.room_id)).state.name:'DartFlow',reason,status:'Beoordeeld'});return {ok:true};
+    for(const[recipient,view]of[[item.reporter_id,'reporter'],[item.target_id,'subject']]as const)if(recipient)await enqueueAuditedNotification(client,{eventId:`moderation:${command.requestId}:${view}`,templateId:'moderation-notice',actorId:actor,recipientIds:[recipient],source:{kind:'moderation',reportId:item.id,view},href:'/app/reports',status:'Er is een besluit over een melding. Bekijk de eigen afhandeling in DartFlow.'});return {ok:true};
   }
   if (type === 'report.create') {
-    const report=await createSafetyReport(client,actor,a),{id,target,reason}=report;
+    const report=await createSafetyReport(client,actor,a),{id,target}=report;
     // Reports go to current platform reviewers; reporter identity is never sent to the reported player.
     const reviewers=await client.query("select user_id from dartflow_private.platform_roles where role in ('owner','admin')");
-    for(const reviewer of reviewers.rows)if(reviewer.user_id!==actor&&reviewer.user_id!==target.userId)await notify(client,command.requestId,'moderation-report',reviewer.user_id,{roomName:'DartFlow',actorName:'Speler',reason});
+    await enqueueAuditedNotification(client,{eventId:`moderation:${command.requestId}:review`,templateId:'moderation-report',actorId:actor,recipientIds:reviewers.rows.map(r=>r.user_id).filter(user=>user!==target.userId),source:{kind:'moderation',reportId:id,view:'reviewer'},href:'/app/reports',status:'Er staat een nieuwe melding ter beoordeling klaar.'});
     return { ok: true, id };
   }
   if(type.startsWith('club.'))return clubAction(client,actor,command);
@@ -156,7 +156,8 @@ export async function socialAction(client: PoolClient, actor: string, command: P
       const recent = await client.query("select 1 from dartflow_private.platform_messages where room_id=$1 and author_id=$2 and created_at>now()-$3*interval '1 second' limit 1", [row.id, actor, slow]);
       if (recent.rowCount) throw new DomainError('slow_mode', `Wacht ${slow} seconden tussen berichten.`, 429);
     }
-    await client.query('insert into dartflow_private.platform_messages(id,room_id,author_id,body) values($1,$2,$3,$4)', [randomUUID(), row.id, actor, text(a.body, 2000)]);
+    const messageId=randomUUID();await client.query('insert into dartflow_private.platform_messages(id,room_id,author_id,body) values($1,$2,$3,$4)', [messageId, row.id, actor, text(a.body, 2000)]);
+    if(row.visibility==='private'){const members=await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='active'",[row.id]);if(members.rows.length===2)await enqueueAuditedNotification(client,{eventId:`chat:${messageId}`,templateId:'chat-message',actorId:actor,recipientIds:members.rows.map(p=>p.user_id),source:{kind:'chat-message',store:'room',messageId:messageId},href:`/app/community/${row.id}`});}
   } else throw new DomainError('invalid_action', 'Onbekende club- of kameractie.');
   await save(client, row);
   return { ok: true, id: row.id, entity: await view(client, row, actor) };

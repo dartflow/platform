@@ -11,6 +11,7 @@ import{normalizeUsername,validUsername}from'../lib/display-name';
 import{newGame}from'../lib/domain';
 import{recordScoreEvents}from'../lib/score-events';
 import type{MatchState}from'../lib/types';
+import{cleanupNotificationFixtures}from'./helpers/cleanup-v17';
 try{process.loadEnvFile('.env.local');}catch{/* Explicit loopback fixture only. */}
 const loopback=(value:string|undefined)=>{try{return Boolean(value&&['localhost','127.0.0.1','[::1]'].includes(new URL(value).hostname));}catch{return false;}};
 const configured=process.env.DARTFLOW_DATA_MODE==='local'&&loopback(process.env.DARTFLOW_DATABASE_URL)&&loopback(process.env.DARTFLOW_DATABASE_ADMIN_URL);
@@ -86,7 +87,7 @@ test('immutable public identity works through real profile/auth/relationship/mat
    assert.equal((await admin.query('select 1 from dartflow_private.platform_roles where user_id=$1',[google])).rowCount,0);
   });
  }finally{
-  try{for(const table of ['platform_receipts','platform_audit'])await admin.query(`delete from dartflow_private.${table} where actor_id=any($1::uuid[])`,[people]);
+  try{await cleanupNotificationFixtures(admin,people);for(const table of ['platform_receipts','platform_audit'])await admin.query(`delete from dartflow_private.${table} where actor_id=any($1::uuid[])`,[people]);
    await admin.query('delete from dartflow_private.platform_preferences where user_id=any($1::uuid[])',[people]);
    await admin.query('delete from dartflow_private.platform_relationships where source_id=any($1::uuid[])or target_id=any($1::uuid[])',[people]);
    await admin.query('delete from dartflow_private.screen_capabilities where board_id=$1',[board]);await admin.query('delete from dartflow_private.board_score_events where board_id=$1',[board]);await admin.query('delete from dartflow_private.audit_events where event_id=$1',[event]);await admin.query('delete from dartflow_private.match_players where match_id=$1',[match]);await admin.query('delete from dartflow_private.matches where id=$1',[match]);await admin.query('delete from dartflow_private.boards where id=$1',[board]);await admin.query('delete from dartflow_private.event_staff where event_id=$1',[event]);await admin.query('delete from dartflow_private.events where id=$1',[event]);await admin.query('delete from dartflow_private.club_memberships where club_id=$1',[club]);await admin.query('delete from dartflow_private.clubs where id=$1',[club]);await admin.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);

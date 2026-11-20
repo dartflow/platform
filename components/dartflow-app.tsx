@@ -22,6 +22,10 @@ import DartflowMore from "./dartflow-more";
 import {ClubhouseThemeProvider,ClubhouseHeaderLogo} from "./clubhouse-theme";
 import SeasonWorkspace from './season-workspace';
 import FaqAdminWorkspace from './faq-admin';
+import SupportWorkspace from './support-workspace';
+import ProductReleasesWorkspace,{ProductReleaseAdminWorkspace,PlatformMessageWorkspace} from './product-releases';
+import NotificationSettingsWorkspace,{NotificationInboxPanel,NotificationOpenWorkspace} from './notifications-workspace';
+import NotificationAdminWorkspace from './notification-admin';
 import MatchCorrectionPanel from './match-correction-panel';
 import RankingsWorkspace from './rankings-workspace';
 import DartVisitInput from './dart-visit-input';
@@ -592,6 +596,9 @@ export default function DartflowApp() {
     { href: "/app/mymatches", label: "Mijn wedstrijden", icon: "history" },
     { href: "/app/statistics", label: "Mijn profiel", icon: "users" },
     { href: "/app/settings", label: "Instellingen", icon: "sliders" },
+    { href: "/app/support", label: "Mijn supporttickets", icon: "users" },
+    { href: "/app/whats-new", label: "Wat is nieuw?", icon: "bolt" },
+    { href: "/app/notifications", label: "Jouw meldingen", icon: "history" },
     { href: "/handleiding", label: "Handleiding", icon: "shield" },
     { href: "/help", label: "Help & FAQ", icon: "shield" },
   ];
@@ -609,6 +616,9 @@ export default function DartflowApp() {
     ...(session.data.canManagePlatform
       ? [
           {href:"/app/help-beheer",label:"Helpbeheer",icon:"shield" as IconName},
+          {href:"/app/admin/support",label:"Supportbeheer",icon:"users" as IconName},
+          {href:"/app/admin/releases",label:"Releasebeheer",icon:"bolt" as IconName},
+          {href:"/app/admin/notifications",label:"Meldingen beheren",icon:"shield" as IconName},
           {href:"/app/premium",label:"Premiumrechten",icon:"shield" as IconName},
           {href:"/app/blog",label:"Blogbeheer",icon:"shield" as IconName},
           {
@@ -628,6 +638,7 @@ export default function DartflowApp() {
       "/app/manage",
       "/app/mail",
       "/app/platform",
+      "/app/admin",
       "/app/blog",
       "/app/venue-cast",
       "/app/venue",
@@ -669,7 +680,7 @@ export default function DartflowApp() {
           </a>
           <div className="breadcrumb"><strong>{section}</strong></div>
           <div className="topbar-right">
-            <WorkspaceTools overview={data} />
+            <WorkspaceTools />
             {environment !== "production" && (
               <Badge>
                 {environment === "development" ? "DEVELOPMENT" : "STAGING"}
@@ -713,7 +724,7 @@ export default function DartflowApp() {
             <Connection stale={overview.stale} updated={overview.updated} />
           </div>
           {user.pinConfigured===false&&!/^\/(?:wedstrijd|baan)\//.test(path)&&!/^\/app\/(?:training|match|lobby)(?:\/|$)/.test(platformPath)&&platformPath!=='/app/settings'&&<div className="notice" role="status">Je spelerspincode moet nog worden ingesteld. <a href="/app/settings">Spelerspincode instellen</a>. Je kunt op je eigen telefoon blijven spelen.</div>}
-          {platformPath==="/app/uitdagingen"?<PlayChallengesWorkspace user={user}/>:platformPath==="/app/practice"?<PlayPracticeWorkspace user={user}/>:platformPath==="/app/play"?<><PlayWorkspace user={user}/><PlatformWorkspace path={platformPath} user={user} overview={data} clubId={clubId}/></>:path.startsWith("/wedstrijd/") ? (
+          {platformPath.startsWith('/app/notifications/')?<NotificationOpenWorkspace key={platformPath} id={platformPath.split('/')[3]}/>:platformPath==='/app/notifications'?<NotificationInboxPanel/>:platformPath==='/app/settings/notifications'?<NotificationSettingsWorkspace/>:platformPath.startsWith('/app/admin/support')?<SupportWorkspace path={platformPath} admin/>:platformPath.startsWith('/app/support')?<SupportWorkspace path={platformPath}/>:platformPath==='/app/admin/releases'?<ProductReleaseAdminWorkspace/>:platformPath==='/app/admin/notifications'?<NotificationAdminWorkspace/>:platformPath.startsWith('/app/whats-new')?<ProductReleasesWorkspace id={platformPath.split('/')[3]}/>:platformPath.startsWith('/app/platform-messages/')?<PlatformMessageWorkspace id={platformPath.split('/')[3]}/>:platformPath==="/app/uitdagingen"?<PlayChallengesWorkspace user={user}/>:platformPath==="/app/practice"?<PlayPracticeWorkspace user={user}/>:platformPath==="/app/play"?<><PlayWorkspace user={user}/><PlatformWorkspace path={platformPath} user={user} overview={data} clubId={clubId}/></>:path.startsWith("/wedstrijd/") ? (
             <MatchPage
               id={path.split("/")[2]}
               user={user}

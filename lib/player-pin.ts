@@ -3,6 +3,7 @@ import type {PoolClient} from 'pg';
 import {database,consumeRateLimit} from './db';
 import {DomainError} from './domain';
 import {canonical,transaction,uuid} from './platform-store';
+import {enqueueAuditedNotification} from './notification-audit-source';
 
 type Query=Pick<PoolClient,'query'>;
 type PinMode='initial'|'change'|'reset';
@@ -119,6 +120,7 @@ export async function savePreparedPlayerPin(client:PoolClient,actor:string,prepa
   on conflict(user_id) do update set version=excluded.version,pepper_version=excluded.pepper_version,salt=excluded.salt,verifier=excluded.verifier,memory=excluded.memory,passes=excluded.passes,parallelism=excluded.parallelism,changed_at=clock_timestamp()`,[actor,prepared.previousVersion+1,value.pepper_version,value.salt,value.verifier,value.memory,value.passes,value.parallelism]);
  await client.query("insert into dartflow_private.player_pin_receipts(actor_id,request_id,kind,fingerprint) values($1,$2,'update',$3)",[actor,prepared.requestId,prepared.fingerprint]);
  await client.query("insert into dartflow_private.platform_audit(actor_id,action,detail) values($1,'player-pin.updated',$2)",[actor,JSON.stringify({mode:prepared.mode,version:prepared.previousVersion+1})]);
+ if(previous)await enqueueAuditedNotification(client,{eventId:`player-pin:${actor}:${prepared.previousVersion+1}`,templateId:'player-pin-changed',actorId:actor,recipientIds:[actor],allowSelf:true,source:{kind:'account',accountId:actor},href:'/app/profiel',status:'Je spelerspincode is gewijzigd. Heb je dit niet gedaan, neem dan contact op met DartFlow Support.'});
 }
 export async function updatePlayerPin(actor:string,input:Parameters<typeof preparePlayerPinUpdate>[1],options:{recentAuth:boolean}):Promise<{ok:true;pinConfigured:true}>{
  const prepared=await preparePlayerPinUpdate(actor,input,options);await transaction(client=>savePreparedPlayerPin(client,actor,prepared));return {ok:true,pinConfigured:true};

@@ -1,7 +1,19 @@
+import {AUDIT_NOTIFICATION_TEMPLATES} from './notification-audit-catalog';
 // Verified v15 catalog; text data only. Auth OTP remains owned by Supabase.
 export type MailFields = {subject:string;preheader:string;title:string;body:string;cta:string};
 export type MailTemplate = {id:string;label:string;category:string;fields:MailFields;details:string[][];enabled:boolean;readOnly:boolean;trigger:string;variables:string[]};
 export const MAIL_CATALOG: readonly MailTemplate[] = [
+  ...AUDIT_NOTIFICATION_TEMPLATES,
+  ...[
+    ['support-created','Nieuw supportticket','Supporttickets','Een speler maakt een supportticket aan.'],
+    ['support-received','Supportticket ontvangen','Supporttickets','Ontvangstbevestiging aan de eigenaar van een nieuw ticket.'],
+    ['support-user-replied','Nieuwe reactie op supportticket','Supporttickets','De gebruiker reageert op het eigen ticket.'],
+    ['support-reopened','Ticket heropend','Supporttickets','De gebruiker heropent het eigen ticket.'],
+    ['support-answered','Reactie van DartFlow Support','Supporttickets','Support antwoordt openbaar op een ticket.'],
+    ['support-status-changed','Ticketstatus gewijzigd','Supporttickets','Support verandert handmatig de openbare ticketstatus.'],
+    ['product-release','Nieuwe productrelease','Productreleases','Een beheerder bevestigt een afzonderlijke releasecampagne.'],
+    ['platform-message','Bericht van DartFlow','Platformberichten','Een beheerder bevestigt een platformberichtcampagne.'],
+  ].map(([id,label,category,trigger]):MailTemplate=>({id,label,category,trigger,enabled:true,readOnly:false,variables:['ticketNumber'],details:[],fields:{subject:`${label}${id.startsWith('support-')?' · {{ticketNumber}}':''}`,preheader:'Open DartFlow voor de actuele informatie.',title:label,body:id.startsWith('support-')?'Er is een update over supportticket {{ticketNumber}}. Open DartFlow voor het gesprek en de actuele status.':'Er staat een update voor je klaar in DartFlow.',cta:'Open DartFlow'}})),
   {id:'club-activity-update',label:'Clubactiviteit gewijzigd',category:'Sociaal',fields:{subject:'Een activiteit van {{clubName}} is gewijzigd',preheader:'Controleer de actuele tijd en locatie in je clubagenda.',title:'Je clubagenda is bijgewerkt.',body:'Hoi {{name}},\nEen activiteit waarvoor je ingeschreven staat of op de wachtlijst staat is gewijzigd. Open je clubagenda en controleer de actuele gegevens. Je deelname is bewaard.',cta:'Open clubagenda'},details:[['Activiteit','{{eventName}}']],enabled:true,readOnly:false,trigger:'Een bevoegde organisator wijzigt tijd of locatie van een activiteit.',variables:['name','clubName','eventName']},
   {id:'club-activity-withdrawal',label:'Afmelding clubactiviteit',category:'Sociaal',fields:{subject:'Deelname aan {{eventName}} is aangepast',preheader:'Bekijk de actuele deelnemers en wachtlijst.',title:'Er is een afmelding.',body:'Hoi {{name}},\nEen deelnemer heeft zich afgemeld voor een activiteit die je organiseert. Vrijgekomen plaatsen zijn volgens de wachtlijst verdeeld. Open de clubagenda voor het actuele deelnemersoverzicht.',cta:'Bekijk clubagenda'},details:[['Vereniging','{{clubName}}']],enabled:true,readOnly:false,trigger:'Een deelnemer meldt zich af voor een toekomstige activiteit.',variables:['name','clubName','eventName']},
   {id:'club-task-update',label:'Vrijwilligersdienst gewijzigd',category:'Sociaal',fields:{subject:'Je dienst bij {{clubName}} is gewijzigd',preheader:'Controleer de actuele tijden en functie.',title:'Je vrijwilligersdienst is bijgewerkt.',body:'Hoi {{name}},\nDe organisator heeft de tijden of functie van je dienst gewijzigd. Je deelname blijft bewaard. Bekijk de actuele afspraak bij de taken van je vereniging.',cta:'Bekijk taken'},details:[['Taak','{{eventName}}']],enabled:true,readOnly:false,trigger:'Een organisator wijzigt het tijdvak of de functie van een taak met vrijwilligers.',variables:['name','clubName','eventName']},

@@ -5,6 +5,7 @@ import {activeSeasonOfficial,nationalSeasonAuthority,seasonDelegationAuthority,s
 import {seasonFixturePlayMode,seasonPlayModeMutable} from './season-play-mode';
 import {seasonSlotSettings,hasCustomSeasonRules} from './season-rules';
 import {notifySeasonSchedule,notifySeasonTeam,notifySeasonChange} from './season-reminders';
+import {enqueueSeasonAuditTransitions} from './notification-domain-triggers';
 import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {database,eventAccess} from './db';
@@ -287,9 +288,10 @@ export async function executeSeasonCommand(actor:string,input:SeasonCommand):Pro
   await client.query("select pg_advisory_xact_lock(hashtextextended('dartflow-season-planning',0))");
   const prior=(await client.query<{payload_hash:string;season_id:string;match_id:string|null}>('select * from dartflow_private.season_receipts where actor_id=$1 and request_id=$2',[actor,input.requestId])).rows[0];
   if(prior){if(prior.payload_hash!==payloadHash)throw new DomainError('request_reused','Dit aanvraag-ID is al voor andere gegevens gebruikt.',409);const s=await seasonRow(client,prior.season_id);if(managementActions.has(a.type))await requireManage(client,s,actor);if(a.type==='season.manager'&&!await seasonDelegationAuthority(client,s,actor))throw new DomainError('forbidden','Je hebt geen actueel recht om seizoensleiding aan te wijzen.',403);return {ok:true,id:s.id,season:await viewSeason(client,s,actor),...(prior.match_id?{matchId:prior.match_id}:{})};}
-  let s:SeasonState;let matchId:string|undefined;
+  let s:SeasonState;let matchId:string|undefined;let notificationBefore:SeasonState|undefined;
   if(a.type==='season.create')s=await newSeason(client,actor,a);else{
    const peek=await seasonRow(client,a.seasonId);await client.query('select id from dartflow_private.events where id=$1 for update',[peek.eventId]);s=await seasonRow(client,peek.id,true);await requireRead(client,s,actor);
+   notificationBefore=structuredClone(s);
    if(!Number.isInteger(input.expectedRevision)||input.expectedRevision!==s.revision)throw new DomainError('revision_conflict','Het seizoen is gewijzigd. Vernieuw en probeer opnieuw.',409);
    const manage=await canManage(client,s,actor);if(s.status==='archived'&&!['season.copy'].includes(a.type))throw new DomainError('season_archived','Dit seizoen is gearchiveerd en blijft alleen leesbaar.',409);
    if(!manage&&s.scope==='internal'&&(!s.clubId||!await clubIsActiveMember(client,s.clubId,actor)))throw new DomainError('forbidden','Je hebt geen actueel lidmaatschap van deze vereniging.',403);
@@ -455,7 +457,7 @@ export async function executeSeasonCommand(actor:string,input:SeasonCommand):Pro
    }
   }
   for(const f of s.fixtures)if(['confirmed','administrative','canceled'].includes(f.status)||Date.parse(f.windowEnd)>Date.now())delete f.overdue;
-  refreshLadder(s);refreshCup(s);refreshPromotionTies(s);await syncSeasonRanking(client,s,actor,typeof a.reason==='string'?a.reason:a.type);await saveSeason(client,s,actor);if(['season.confirm','season.decide','season.dispute','season.publish','season.status'].includes(a.type))await captureSeasonFeedSources(client,actor,s.id);
+  refreshLadder(s);refreshCup(s);refreshPromotionTies(s);await syncSeasonRanking(client,s,actor,typeof a.reason==='string'?a.reason:a.type);await saveSeason(client,s,actor);await enqueueSeasonAuditTransitions(client,notificationBefore,s,actor,input.requestId);if(['season.confirm','season.decide','season.dispute','season.publish','season.status'].includes(a.type))await captureSeasonFeedSources(client,actor,s.id);
   await client.query('insert into dartflow_private.season_receipts(actor_id,request_id,payload_hash,season_id,match_id) values($1,$2,$3,$4,$5)',[actor,input.requestId,payloadHash,s.id,matchId??null]);
   await client.query('insert into dartflow_private.platform_audit(actor_id,entity_id,action,detail) values($1,$2,$3,$4)',[actor,s.id,a.type,JSON.stringify({revision:s.revision,...(a.fixtureId?{fixtureId:a.fixtureId}:{})})]);
   return {ok:true,id:s.id,season:await viewSeason(client,s,actor),...(matchId?{matchId}:{})};
@@ -466,11 +468,12 @@ export async function executeSeasonCommand(actor:string,input:SeasonCommand):Pro
 export async function captureSeasonMatch(client:PoolClient,source:MatchState,next:MatchState,actorId=next.players[0]?.id):Promise<void>{
  const link=(await client.query<{entity_id:string;fixture_id:string}>(`select l.entity_id,l.fixture_id from dartflow_private.platform_match_links l join dartflow_private.competition_seasons s on s.id=l.entity_id where l.match_id=$1`,[next.id])).rows[0];if(!link)return;const s=await seasonRow(client,link.entity_id,true),f=s.fixtures.find(f=>f.slots.some(slot=>slot.id===link.fixture_id&&slot.matchId===next.id));if(!f)return;const slot=f.slots.find(x=>x.id===link.fixture_id)!;
  if(['canceled','administrative'].includes(f.status))return;
+ const notificationBefore=structuredClone(s);
  if(next.status==='confirmed'&&next.resultPublished&&next.confirmations.every(Boolean)){const score=matchView(next,'',false).legs as [number,number];if(slot.status==='confirmed'&&slot.resultRevision===next.resultRevision)return;slot.status='confirmed';slot.score=score;slot.winnerId=next.winnerId;slot.resultRevision=next.resultRevision??undefined;if(slotReady(f)&&!['disputed','canceled','administrative'].includes(f.status)){f.status='provisional';f.confirmations=[];if(!isTeamSeason(s)){f.status='confirmed';f.confirmations=[f.homeId,f.awayId];f.confirmedAt=new Date().toISOString();}}
   const activity=await readSourceBoardActivity(client,next.id);if(activity)await releaseBoardActivity(client,{sessionId:activity.sessionId,reason:'completed'});next.boardId=null;next.callRef=null;await client.query('update dartflow_private.matches set board_id=null,state=$2 where id=$1',[next.id,JSON.stringify(next)]);await client.query('update dartflow_private.platform_match_links set projected=true where match_id=$1',[next.id]);
  }else if(next.status==='interrupted'){slot.status='interrupted';f.status='interrupted';}else if(next.status==='disputed'){f.status='disputed';f.confirmations=[];}else{slot.status='live';if(f.status!=='disputed'||source.status==='disputed'&&!f.dispute)f.status='live';}
  for(const f of s.fixtures)if(['confirmed','administrative','canceled'].includes(f.status)||Date.parse(f.windowEnd)>Date.now())delete f.overdue;
-  refreshLadder(s);refreshCup(s);refreshPromotionTies(s);await syncSeasonRanking(client,s,actorId,'Canonieke officiële seizoensscorekaart gewijzigd');await saveSeason(client,s);
+  refreshLadder(s);refreshCup(s);refreshPromotionTies(s);await syncSeasonRanking(client,s,actorId,'Canonieke officiële seizoensscorekaart gewijzigd');await saveSeason(client,s);await enqueueSeasonAuditTransitions(client,notificationBefore,s,actorId,`${next.id}:${next.revision}`);
 }
 export async function getSeasonFeedSources(client:Client,actor:string|null):Promise<SeasonFeedSource[]>{
  const sources:SeasonFeedSource[]=[];for(const row of(await client.query<{state:SeasonState}>('select state from dartflow_private.competition_seasons where status<>\'draft\' order by updated_at desc,id limit 100')).rows){const s=row.state;if(!await readable(client,s,actor))continue;const manage=actor?await canManage(client,s,actor):false;for(const f of s.fixtures.filter(f=>!f.classification&&['confirmed','administrative'].includes(f.status))){const totals=fixtureTotals(f),participantIds=fixturePeople(s,f);sources.push({id:f.id,seasonId:s.id,revision:s.revision,name:s.name,scope:s.scope,clubId:s.clubId,visibility:s.settings.visibility,participantIds,home:{id:f.homeId,name:entryName(s,f.homeId)},away:{id:f.awayId,name:entryName(s,f.awayId)},score:isTeamSeason(s)?totals.score:totals.legs,legs:totals.legs,matchIds:f.slots.flatMap(x=>x.matchId?[x.matchId]:[]),confirmedAt:f.confirmedAt??s.createdAt,href:`/app/competities/${s.id}?fixture=${f.id}`,canShare:Boolean(actor&&(manage||participantIds.includes(actor))),settings:seasonSlotSettings(s.settings,f,f.slots[0]),setup:seasonFixturePlayMode(s,f)==='remote'?'remote':'localone',canRematch:s.format==='singles'&&f.status==='confirmed'&&Boolean(actor&&participantIds.includes(actor))});}}

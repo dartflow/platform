@@ -353,6 +353,7 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
       assert.equal(grants.rows[0].mutate_receipts, false); assert.equal(grants.rows[0].delete_audit, false);
     });
   } finally {
+   try{
   await beginFixtureCleanup(owner,people);
     // Delete this test's UUID-owned fixtures only; never touch pre-existing development data.
     const clubs = (await owner.query('select club_id from dartflow_private.club_memberships where user_id=any($1::uuid[])', [people])).rows.map(r => r.club_id);
@@ -381,6 +382,6 @@ test('v15 Postgres platform has real persistence, private scopes, capacity seria
     await owner.query('delete from dartflow_private.club_memberships where club_id=any($1::uuid[])', [clubs]);
     await owner.query('delete from dartflow_private.clubs where id=any($1::uuid[])', [clubs]);
     await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])', [people]);
-    await owner.query('commit');await owner.end(); await closeDatabase();
+    await owner.query('commit');}finally{await owner.query('rollback');await owner.end(); await closeDatabase();}
   }
 });

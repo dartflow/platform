@@ -450,5 +450,91 @@
       "Account, meldingen en probleemoplossing",
       "Ondersteuning"
     ]
+  },
+  {
+    "id": "supporttickets",
+    "title": "Een supportvraag stellen en opvolgen",
+    "category": "Hulp & account",
+    "href": "/app/support",
+    "intro": "Bewaar je vraag en de reacties op één plek met een vast DF-nummer.",
+    "steps": [
+      "Doorzoek Help & FAQ. Kies Nieuw ticket wanneer je vraag nog niet beantwoord is.",
+      "Meld je aan. DartFlow bewaart de bedoelde ticketbestemming tijdens het aanmelden.",
+      "Kies categorie, onderwerp en omschrijving en sla het ticket op. Noteer het vaste DF-nummer.",
+      "Open Mijn supporttickets voor status en gesprek. Kijk wie aan zet is voordat je reageert.",
+      "Sluit je ticket wanneer de vraag is afgehandeld, of heropen het als de beschikbare actie dat toestaat."
+    ],
+    "examples": [
+      "Een reactie van support kan de status op Wacht op gebruiker zetten. Jouw antwoord zet de vraag terug bij support."
+    ],
+    "notes": [
+      "Deel geen wachtwoorden, pincodes of inlogcodes.",
+      "Je ziet alleen eigen tickets en openbare opvolging; interne supportnotities blijven privé.",
+      "Is de ontvangst niet bevestigd? Probeer dezelfde aanvraag opnieuw. Je invoer blijft staan."
+    ],
+    "keywords": [
+      "support",
+      "helpdesk",
+      "ticket",
+      "DF-nummer",
+      "reactie"
+    ]
+  },
+  {
+    "id": "meldingen-instellen",
+    "title": "Meldingen openen en kanalen instellen",
+    "category": "Hulp & account",
+    "href": "/app/settings/notifications",
+    "intro": "Houd je inbox, persoonlijke kanaalkeuzes en toesteltoestemming uit elkaar.",
+    "steps": [
+      "Open Jouw meldingen en klik of tik op het hele item om de juiste bestemming te openen.",
+      "Kies Instellingen → Meldingen voor de compacte categorieën met inbox, e-mail en push.",
+      "Controleer bij een vaste beheerstand waarom een kanaal door het platform wordt bepaald. Je eigen keuze blijft bewaard.",
+      "Kies welke productupdates je volgt. Een productabonnement verandert je deelname aan wedstrijden niet.",
+      "Schakel push voor dit toestel bewust in. Geef daarnaast toestemming in Android of je browser."
+    ],
+    "examples": [
+      "Je kunt toestelpush weigeren en toch nieuwe supportreacties in je inbox lezen."
+    ],
+    "notes": [
+      "Een geforceerde beheerstand geeft geen toesteltoestemming of extra toegangsrechten.",
+      "Als een bestemming vervallen is, keer dan terug naar jouw meldingen of open de betreffende functie opnieuw."
+    ],
+    "keywords": [
+      "meldingen",
+      "inbox",
+      "voorkeuren",
+      "browserpush",
+      "toestemming"
+    ]
+  },
+  {
+    "id": "productupdates",
+    "title": "Wat is nieuw lezen en releases publiceren",
+    "category": "Hulp & account",
+    "href": "/app/whats-new",
+    "intro": "Bekijk gepubliceerde verbeteringen voor het product en kanaal dat je gebruikt.",
+    "steps": [
+      "Open Meer → Wat is nieuw?",
+      "Kies DartFlow of Oche Live en het kanaal Web/PWA of Android.",
+      "Open de release om de volledige tekst en publicatiedatum te lezen.",
+      "Bevoegde platformbeheerders maken een opgeslagen concept in Releasebeheer en bekijken het voorbeeld.",
+      "Publicatie maakt de release zichtbaar. Een afzonderlijk bevestigde campagne kondigt de update aan bij in aanmerking komende ontvangers."
+    ],
+    "examples": [
+      "Een release voor Alle kanalen verschijnt bij zowel Web/PWA als Android."
+    ],
+    "notes": [
+      "Een concept is niet zichtbaar voor spelers.",
+      "Een testmelding gaat uitsluitend naar de gekozen proefontvanger en is geen campagne.",
+      "Redactionele releaseberichten staan los van deployments en Play Store-workflows."
+    ],
+    "keywords": [
+      "release",
+      "updates",
+      "nieuw",
+      "campagne",
+      "publiceren"
+    ]
   }
 ]

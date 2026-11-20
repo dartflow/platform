@@ -1,0 +1,22 @@
+/** Shared wire contracts. Keep account preferences separate from device permission. */
+export const NOTIFICATION_CHANNELS=['inbox','email','push'] as const;
+export type NotificationChannel=typeof NOTIFICATION_CHANNELS[number];
+export type NotificationMode='follow'|'on'|'off';
+export const NOTIFICATION_CATEGORIES=['Sociaal','Wedstrijden','Competitie','Toernooien','Vereniging','Supporttickets','Productreleases','Platformberichten','Beveiliging','Reserveringen','Moderatie','Chat'] as const;
+export type NotificationCategory=typeof NOTIFICATION_CATEGORIES[number];
+export type NotificationEventDefinition={id:string;label:string;category:NotificationCategory;channels:NotificationChannel[];trigger:string};
+export type NotificationChannelSetting={channel:NotificationChannel;applicable:boolean;personalEnabled:boolean;effectiveEnabled:boolean;mode:NotificationMode|'mixed';events:{eventId:string;mode:NotificationMode;effectiveEnabled:boolean}[]};
+export type NotificationSettings={categories:{category:NotificationCategory;channels:NotificationChannelSetting[]}[];webPush:{supported:boolean;publicKey:string|null;registered:boolean};canManage:boolean;subscriptions:{product:'dartflow'|'oche-live';channel:'web'|'android';enabled:boolean}[]};
+export type NotificationInboxItem={id:string;category:string;title:string;body:string;createdAt:string;opened:boolean;available:boolean;href?:string};
+export type NotificationInbox={items:NotificationInboxItem[];unread:number};
+export type CampaignAudience={kind:'all'}|{kind:'selected';userIds:string[]};
+export type CampaignDraft={kind:'release'|'platform';releaseId?:string;title:string;body:string;audience:CampaignAudience;href?:string};
+export type CampaignPreview={id:string;expiresAt:string;title:string;body:string;href:string;product:'dartflow'|'oche-live';channel:'web'|'android'|'all';recipientCount:number;inboxCount:number;pushCount:number;unreachableCount:number;audience:CampaignAudience};
+export type CampaignSummary={id:string;kind:'release'|'platform';releaseId:string|null;title:string;body:string;href:string;product:'dartflow'|'oche-live';channel:'web'|'android'|'all';actorId:string;actorName?:string;audienceLabel?:string;createdAt:string;recipientCount:number;inboxCount:number;pushCount:number;statuses:{channel:NotificationChannel;status:string;count:number}[];errors:{category:string;count:number}[]};
+export type NotificationTestSummary={id:string;title:string;recipientId:string;recipientLabel:string;createdAt:string;statuses:{channel:NotificationChannel;status:string;count:number}[]};
+export type NotificationAdmin={events:(NotificationEventDefinition&{rules:{channel:NotificationChannel;mode:NotificationMode;revision:number}[]})[];campaigns:CampaignSummary[];tests?:NotificationTestSummary[];recipients:{id:string;label:string}[]};
+export type NotificationAction={type:'preference.set';category:NotificationCategory;channel:NotificationChannel;enabled:boolean}|{type:'product.subscribe';product:'dartflow'|'oche-live';channel:'web'|'android';enabled:boolean}|{type:'notification.open';id:string}|{type:'webpush.register';installationId:string;subscription:{endpoint:string;keys:{p256dh:string;auth:string}}}|{type:'webpush.revoke';installationId:string};
+export type NotificationAdminAction={type:'policy.set';eventId:string;channel:NotificationChannel;mode:NotificationMode;expectedRevision:number}|{type:'campaign.preview';draft:CampaignDraft}|{type:'campaign.test';draft:CampaignDraft;testRecipientId:string}|{type:'campaign.send';previewId:string;confirmation:'VERSTUREN'}|{type:'campaign.retry';campaignId:string};
+export type NotificationCommand={requestId:string;action:NotificationAction};
+export type NotificationAdminCommand={requestId:string;action:NotificationAdminAction};
+export type NotificationResult={ok:true;id?:string;available?:boolean;href?:string;message?:string;preview?:CampaignPreview;campaign?:CampaignSummary};

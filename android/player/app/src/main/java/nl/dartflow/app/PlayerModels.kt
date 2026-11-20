@@ -5,7 +5,7 @@ import java.util.Locale
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class PlayerScreen { HOME, PLAY, EVENTS, EVENT, FRIENDS, FEED, PROFILE, STATISTICS, HISTORY, BOARDS, MATCH, BOARD, LOBBY, TRAINING, CHAT, SEASONS, SEASON, NOTIFICATIONS, SCREENS, ORGANIZE, DIRECTOR, RANKINGS, HELP, CLUBS, CLUB, CLUBHOUSE, CLUB_CHAT, CLUB_COMPETITION_WIZARD, SEASON_CREATE, RANKING_EVENT, FAQ_ADMIN, LOCATIONS, PLAY_START, PLAY_SESSION, PLAY_HISTORY, PRACTICE, CHALLENGES, MANUAL }
+enum class PlayerScreen { HOME, PLAY, EVENTS, EVENT, FRIENDS, FEED, PROFILE, STATISTICS, HISTORY, BOARDS, MATCH, BOARD, LOBBY, TRAINING, CHAT, SEASONS, SEASON, NOTIFICATIONS, SCREENS, ORGANIZE, DIRECTOR, RANKINGS, HELP, CLUBS, CLUB, CLUBHOUSE, CLUB_CHAT, CLUB_COMPETITION_WIZARD, SEASON_CREATE, RANKING_EVENT, FAQ_ADMIN, LOCATIONS, PLAY_START, PLAY_SESSION, PLAY_HISTORY, PRACTICE, CHALLENGES, MANUAL, SUPPORT, SUPPORT_TICKET, SUPPORT_ADMIN, SUPPORT_ADMIN_TICKET, NOTIFICATION_SETTINGS, NOTIFICATION_ADMIN, RELEASES, RELEASE_DETAIL, RELEASE_ADMIN, PLATFORM_MESSAGE }
 
 /** UI session metadata intentionally contains no bearer or refresh credential. */
 data class PlayerSession(val userId: String, val email: String, val expiresAt: Long, val local: Boolean = false)
@@ -61,7 +61,7 @@ data class PlayerUiState(
     val safety: JSONObject = JSONObject(),
     val invitation: JSONObject = JSONObject(),
     val canManagePlatform: Boolean = false, val organizerDraft: JSONObject = JSONObject(), val organizerCloudDraft: JSONObject = JSONObject(), val faqAdminReceipt: JSONObject = JSONObject(),
-    val accountDeletion: JSONObject = JSONObject(),
+    val accountDeletion: JSONObject = JSONObject(), val communicationReceipt: JSONObject = JSONObject(),
     val homeFeed: JSONObject = JSONObject(), val homeFeedLoading: Boolean = false, val homeFeedError: String? = null,
     val guestOperatorId: String = "",
     val theme: JSONObject = JSONObject(), val themeClockOffset: Long = 0,

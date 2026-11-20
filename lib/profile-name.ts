@@ -3,6 +3,7 @@ import {DomainError} from './domain';
 import {normalizeDisplayName,normalizeUsername,requiresDisplayName,validDisplayName,validUsername} from './display-name';
 import type {MatchState} from './types';
 import {database} from './db';
+import {enqueueAuditedNotification} from './notification-audit-source';
 
 export async function requireScoreboardName(client: Pick<PoolClient,'query'>, actor: string): Promise<void> {
  const {rows}=await client.query('select name,name as username,display_name_confirmed as "displayNameConfirmed",onboarding_complete from dartflow_private.profiles where id=$1',[actor]);
@@ -36,6 +37,10 @@ export async function saveScoreboardName(client:PoolClient,actor:string,value:un
  if(fullValue!==undefined&&(fullValue!==null&&typeof fullValue!=='string'||(fullName??'').length>160||/[\p{Cc}\p{Cf}]/u.test(fullName)))throw new DomainError('full_name','Gebruik een volledige naam van maximaal 160 tekens zonder onzichtbare tekens.');
  try{await client.query('update dartflow_private.profiles set name=$2,display_name=$3,full_name=$4,display_name_confirmed=true,identity_needs_review=false where id=$1',[actor,name,displayName,fullName||null]);}
  catch(error){if(error&&typeof error==='object'&&'code'in error&&error.code==='23505')throw new DomainError('username_taken','Deze gebruikersnaam is al in gebruik. Kies een andere naam.',409);throw error;}
+ if(row.display_name_confirmed&&(row.name!==name||row.display_name!==displayName||(row.full_name??null)!==(fullName||null))){
+  const audit=(await client.query("insert into dartflow_private.platform_audit(actor_id,action,detail)values($1,'profile.identity-updated','{}')returning id::text",[actor])).rows[0].id;
+  await enqueueAuditedNotification(client,{eventId:`account-profile:${actor}:${audit}`,templateId:'account-profile-changed',actorId:actor,recipientIds:[actor],allowSelf:true,source:{kind:'account',accountId:actor},href:'/app/profiel',status:'Je profielgegevens zijn gewijzigd. Open je profiel om ze te controleren.'});
+ }
  const label=String((await client.query('select name from dartflow_private.profile_labels where id=$1',[actor])).rows[0].name);
  const {rows}=await client.query<{state:MatchState}>("select m.state from dartflow_private.matches m join dartflow_private.match_players p on p.match_id=m.id where p.user_id=$1 and m.state->>'status'<>'confirmed' order by m.id for update of m",[actor]);
  for(const {state}of rows){let changed=false;for(const player of [...state.players,...(state.sideParticipants?.flat()??[])])if(player.id===actor&&player.name!==label){player.name=label;changed=true;}if(changed){state.revision++;await client.query('update dartflow_private.matches set state=$2,revision=$3,updated_at=now() where id=$1',[state.id,JSON.stringify(state),state.revision]);}}

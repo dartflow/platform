@@ -22,6 +22,10 @@ class NativeTestReports(unittest.TestCase):
         ET.ElementTree(root).write(path)
         return path
 
+    def test_current_player_counts_remain_exact_and_oche_baseline_is_unchanged(self):
+        self.assertEqual((check.APPS["player"]["unit"], check.APPS["player"]["ui"]), (157, 89))
+        self.assertEqual((check.APPS["oche"]["unit"], check.APPS["oche"]["ui"]), (34, 16))
+
     def test_actual_unique_cases_pass(self):
         self.assertEqual(check.summarize([self.report()], 3), {"tests": 3, "failures": 0, "errors": 0, "skipped": 0})
 
@@ -75,7 +79,7 @@ class NativeTestReports(unittest.TestCase):
         for variant in config["variants"]:
             target = self.root / "player/app/build/test-results" / ("test" + variant + "DebugUnitTest")
             target.mkdir(parents=True)
-            self.report(145).rename(target / "TEST-fixture.xml")
+            self.report(157).rename(target / "TEST-fixture.xml")
         self.assertEqual(len(check.verify("player", "unit", self.root)), 3)
         next((self.root / "player/app/build/test-results/testStagingDebugUnitTest").glob("*.xml")).unlink()
         with self.assertRaises(ValueError):
@@ -85,12 +89,12 @@ class NativeTestReports(unittest.TestCase):
         app = self.root / "player"
         source = app / "app/src/androidTest/java/Fixture.kt"
         source.parent.mkdir(parents=True)
-        source.write_text("package fixture\nclass Tests {\n" + "\n".join("@Test fun case" + str(i) + "() {}" for i in range(81)) + "\n}")
+        source.write_text("package fixture\nclass Tests {\n" + "\n".join("@Test fun case" + str(i) + "() {}" for i in range(89)) + "\n}")
         target = app / "app/build/outputs/androidTest-results/connected/device"
         target.mkdir(parents=True)
-        self.report(81).rename(target / "TEST-fixture.xml")
-        self.assertEqual(check.verify("player", "ui", self.root)["actualUniqueMethods"], 81)
-        source.write_text(source.read_text().replace("case80()", "replaced()"))
+        self.report(89).rename(target / "TEST-fixture.xml")
+        self.assertEqual(check.verify("player", "ui", self.root)["actualUniqueMethods"], 89)
+        source.write_text(source.read_text().replace("case88()", "replaced()"))
         with self.assertRaises(ValueError):
             check.verify("player", "ui", self.root)
 

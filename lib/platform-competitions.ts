@@ -22,6 +22,7 @@ import {assertAccountActive} from './account-removal';
 import {publishTournamentDraw,manageTournamentRound,assertTournamentManagerReplay} from './tournament-management';
 import {tournamentFixtureReleased} from './tournament-pools';
 import {parseTournamentPlanning,buildTournamentPlan,type TournamentPlanningInput} from './tournament-planning';
+import {enqueueAuditedNotification} from './notification-audit-source';
 
 /** Receipt replay checks the original scope again, including a copy's independently authorized destination. */
 export async function revalidateCompetitionManagementCommand(client:PoolClient,actor:string,command:PlatformCommand):Promise<void>{
@@ -303,7 +304,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
   return { ok: true, id: row.id, ...(row.state.matchId ? { matchId: row.state.matchId } : {}), entity: await view(client, row, actor) };
 }
 async function lobbyAction(client: PoolClient, actor: string, command: PlatformCommand, row: EntityRow): Promise<PlatformResponse> {
-  const a = command.action;
+  const a = command.action,wasReady=row.state.ready?.[actor]===true;
   if (row.kind !== 'lobby') throw new DomainError('invalid_kind', 'Open eerst een wedstrijdlobby.');
   const boundBoard=typeof row.state.boardId==='string'?row.state.boardId:null;
   if(boundBoard){await eventAccess(client,actor,row.state.eventId!);if(!row.state.matchId&&Number(row.state.boardLeaseUntil??0)<=Date.now())throw new DomainError('board_session_expired','De wachtende baanopstelling is verlopen. Scan opnieuw.',409);}
@@ -380,6 +381,7 @@ async function lobbyAction(client: PoolClient, actor: string, command: PlatformC
     for(const other of others.rows)await enqueueDomainMail(client,{actorId:actor,id:`${command.requestId}:challenge-cancelled:${other.user_id}`,templateId:'challenge-cancelled',scope:'platform',recipientId:other.user_id,entityId:row.id,variables:{eventName:row.state.name,reason:'Uitnodiging ingetrokken'}});
   } else throw new DomainError('invalid_action', 'Onbekende lobbyactie.');
   await save(client, row);
+  if(a.type==='lobby.ready'&&!wasReady&&row.state.ready?.[actor]===true){const recipients=(await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='active'",[row.id])).rows.map(p=>p.user_id);await enqueueAuditedNotification(client,{eventId:`lobby-ready:${row.id}:${command.requestId}`,templateId:'match-ready',actorId:actor,recipientIds:recipients,source:{kind:'lobby-ready',lobbyId:row.id,readyPlayerId:actor},href:`/app/lobby/${row.id}`,expiresAt:new Date(Date.now()+5*60_000).toISOString()});}
   return { ok: true, id: row.id, ...(row.state.matchId ? { matchId: row.state.matchId } : {}), entity: await view(client, row, actor) };
 }
 async function fixtureAction(client: PoolClient, actor: string, command: PlatformCommand, row: EntityRow) {

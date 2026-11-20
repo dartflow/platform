@@ -4,6 +4,7 @@ De productversie volgt `major.minor.patch`. Web/desktop en Android Player krijge
 
 | Versie | Android Player | Status | Samenvatting |
 | --- | --- | --- | --- |
+| [0.6.0](0.6.0.md) | code 9 | In verificatie | Privésupport, redactioneel releasebeheer, kanaalregels, browserpush en gecontroleerde platformcampagnes |
 | [0.5.0](0.5.0.md) | code 8 | Web/Player uitgegeven; Oche 1.4.0 GitHub geleverd, Play geblokkeerd | Clubhouse, premium huisstijl, interne competitiewizard, veegscrollen en aanklikbare schakellabels |
 | [0.4.0](0.4.0.md) | code 7 | Uitgegeven | Speleridentiteit, uitnodigingen/QR, spelen, meldingen en Firebase-koppeling |
 
