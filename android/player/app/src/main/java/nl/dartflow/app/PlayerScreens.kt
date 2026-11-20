@@ -60,6 +60,7 @@ class PlayerActions(
     val playAction: (JSONObject) -> Unit = {},
     val selectGuestOperator: (String) -> Unit = {},
     val pushConsent: (Boolean) -> Unit = {}, val pushSettings: () -> Unit = {}, val openNotification: (String) -> Unit = {},
+    val download: suspend (String) -> ByteArray = { throw PlayerApiFailure(503, "unavailable", "Deze download is tijdelijk niet beschikbaar.") },
     val read: suspend (String) -> JSONObject = { throw PlayerApiFailure(503, "unavailable", "Deze gegevens zijn tijdelijk niet beschikbaar.") },
     val navigate: (PlayerScreen, String?) -> Unit = { _, _ -> },
     val back: () -> Unit = {}, val saveOrganizerDraft: (JSONObject) -> Unit = {},
@@ -85,6 +86,11 @@ private fun name(value: JSONObject) = playerPublicName(value)
 internal fun validPlayerName(value: String) = PlayerValidation.validName(value)
 internal fun validPlayerUsername(value: String) = PlayerValidation.validUsername(value)
 internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
+
+@Composable internal fun PlayerWordmark(modifier: Modifier = Modifier) {
+    val tint = playerWordmarkTint(LocalPlayerTokens.current)?.let { Color(0xFF000000 or it.removePrefix("#").toLong(16)) }
+    Image(painterResource(R.drawable.dartflow_logo), "DartFlow", modifier, contentScale = ContentScale.Fit, colorFilter = tint?.let { androidx.compose.ui.graphics.ColorFilter.tint(it) })
+}
 
 @Composable fun PlayerApp(state: PlayerUiState, actions: PlayerActions, media: @Composable (String) -> Unit = {}) = PlayerAppContent(playerGuestOperatorState(state), actions, media)
 @Composable private fun PlayerAppContent(state: PlayerUiState, actions: PlayerActions, media: @Composable (String) -> Unit) {
@@ -138,7 +144,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         topBar = {
             Column(Modifier.statusBarsPadding().fillMaxWidth().background(PlayerInk)) {
                 Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.width(112.dp).height(32.dp), contentScale = ContentScale.Fit)
+                    PlayerWordmark(Modifier.width(112.dp).height(32.dp))
                     Spacer(Modifier.weight(1f))
                     IconButton(onClick = { actions.navigate(PlayerScreen.NOTIFICATIONS, null) }, modifier = Modifier.semantics { contentDescription = "Meldingen" }) { PlayerIcon(PlayerNavIcon.BELL) }
                     Box(Modifier.size(48.dp).clickable { actions.navigate(PlayerScreen.PROFILE, null) }, contentAlignment = Alignment.Center) {
@@ -163,7 +169,9 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         Box(Modifier.fillMaxSize().padding(inset)) {
             PlayerRings(Modifier.fillMaxSize())
             destinations.SaveableStateProvider("${state.session.userId}:${state.screen}:${state.activeId.orEmpty()}") {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (state.screen == PlayerScreen.CLUB_COMPETITION_WIZARD) PlayerClubCompetitionWizard(state, actions)
+            else if (state.screen == PlayerScreen.CLUB_CHAT) PlayerClubChat(state, actions)
+            else Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (!state.online) Notice("Geen verbinding. De laatst ontvangen gegevens blijven zichtbaar.", true)
                 state.error?.takeIf { it.isNotBlank() }?.let { Notice(it, true, actions.retry) }
                 state.notice?.takeIf { it.isNotBlank() }?.let { Notice(it, false, actions.dismiss) }
@@ -200,30 +208,15 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
                     PlayerScreen.RANKINGS -> PlayerRankingsScreen(state, actions)
                     PlayerScreen.CLUBS -> PlayerClubsScreen(state, actions)
                     PlayerScreen.CLUB -> PlayerClubScreen(state, actions)
+                    PlayerScreen.CLUBHOUSE -> PlayerClubhouseScreen(state, actions)
+                    PlayerScreen.CLUB_COMPETITION_WIZARD, PlayerScreen.CLUB_CHAT -> Unit
                 }
                 Spacer(Modifier.height(8.dp))
             }
             }
         }
     }
-    if (more) ModalBottomSheet(onDismissRequest = { more = false }, containerColor = PlayerPanel) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Heading("Jouw DartFlow", "MEER")
-            listOf(
-                "Spelen & voortgang" to listOf(PlayerScreen.BOARDS to "Banen & favorieten", PlayerScreen.LOCATIONS to "Mijn locaties & reserveringen", PlayerScreen.PRACTICE to "Oefenen", PlayerScreen.CHALLENGES to "Uitdagingen", PlayerScreen.PLAY_HISTORY to "Vrije partijen & traininghistorie", PlayerScreen.TRAINING to "Bestaande trainingen", PlayerScreen.HISTORY to "Wedstrijdhistorie", PlayerScreen.STATISTICS to "Statistieken"),
-                "Community & evenementen" to listOf(PlayerScreen.RANKINGS to "Rankings", PlayerScreen.FEED to "Mijn feed", PlayerScreen.CLUBS to "Verenigingen", PlayerScreen.FRIENDS to "Vrienden & spelerskamers", PlayerScreen.ORGANIZE to "Toernooi organiseren"),
-                "Schermbeheer" to listOf(PlayerScreen.SCREENS to "Oche Live-schermen"),
-                "Jouw account" to listOf(PlayerScreen.PROFILE to "Profiel & instellingen", PlayerScreen.NOTIFICATIONS to "Meldingen", PlayerScreen.HELP to "Help & FAQ"),
-            ).forEach { (group, entries) ->
-                Text(group.uppercase(Locale.ROOT), Modifier.padding(top = 10.dp, start = 12.dp), color = PlayerMuted, fontSize = 10.sp, letterSpacing = 1.sp)
-                entries.forEach { (route, label) -> TextButton(onClick = { more = false; actions.navigate(route, null) }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                    Text(label, Modifier.weight(1f), color = if (state.screen == route) PlayerLime else PlayerText, textAlign = TextAlign.Start)
-                    PlayerIcon(PlayerNavIcon.FORWARD, modifier = Modifier.size(16.dp))
-                } }
-            }
-            Spacer(Modifier.height(12.dp))
-        }
-    }
+    if (more) PlayerMoreMenu(state, actions) { more = false }
 }
 
 @Composable internal fun Heading(title: String, eyebrow: String? = null, description: String? = null) {
@@ -243,7 +236,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     else OutlinedButton(onClick, modifier.heightIn(min = 48.dp), enabled = enabled, shape = RoundedCornerShape(12.dp)) { Text(label) }
 }
 @Composable internal fun Notice(message: String, error: Boolean = false, retry: (() -> Unit)? = null) {
-    Column(Modifier.fillMaxWidth().background(if (error) Color(0xFF352621) else PlayerPanel, RoundedCornerShape(12.dp)).padding(12.dp).semantics { liveRegion = LiveRegionMode.Polite }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(Modifier.fillMaxWidth().background(if (error) PlayerError.copy(alpha = .12f) else PlayerPanel, RoundedCornerShape(12.dp)).padding(12.dp).semantics { liveRegion = LiveRegionMode.Polite }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(message, color = if (error) PlayerError else PlayerLime, fontSize = 13.sp)
         retry?.let { TextButton(onClick = it) { Text(if (error) "Opnieuw proberen" else "Gereed") } }
     }
@@ -287,7 +280,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     var reviewPassword by remember { mutableStateOf("") }
     ClearSecretsOnBackground { code = ""; reviewPassword = "" }
     Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.width(152.dp).height(42.dp), contentScale = ContentScale.Fit)
+        PlayerWordmark(Modifier.width(152.dp).height(42.dp))
         Heading("Klaar voor jouw volgende leg?", "DARTFLOW SPELER", "Speel, ontmoet andere darters en volg iedere worp. Je baan of uitnodiging blijft klaarstaan na het inloggen.")
         if (state.loading || state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         state.error?.let { Notice(it, true) }
@@ -587,7 +580,7 @@ internal fun entityCommand(actions: PlayerActions, entity: JSONObject, action: J
     PlayerCard("Jullie opstelling") { Text(mapOf("localone" to "Samen aan één bord", "localtwo" to "Twee borden op locatie", "remote" to "Beide thuis", "hybrid" to "Hybride")[body.text("setup")] ?: "Vrij spelen"); Text("${playerRuleLabel(body.obj("settings"))} · best of ${body.obj("settings").optInt("bestOfLegs", 3)}", color = PlayerMuted) }
     if (owner && !closed && matchId.isBlank()) Action("Lobby sluiten en baan vrijgeven", !state.busy, false) { entityCommand(actions, entity, json("type" to "lobby.cancel", "id" to id)) }
 }
-@Composable private fun ShareButton(url: String) {
+@Composable internal fun ShareButton(url: String) {
     val context = LocalContext.current
     Action("Deel korte link", primary = false) { context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, url) }, "Deel je DartFlow-wedstrijd")) }
 }
@@ -636,7 +629,7 @@ internal fun entityCommand(actions: PlayerActions, entity: JSONObject, action: J
     PlayerGuestOperatorPicker(match, state, actions)
     Heading(match.players.indices.joinToString(" – ") { match.sideName(it) }, "${statusLabel(match.status)} · WEDSTRIJD", "Set ${match.setNumber} · Leg ${match.legNumber}")
     PlayerCard {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { match.players.forEachIndexed { index, p -> Column(Modifier.weight(1f)) { Text(match.sideName(index), fontWeight = FontWeight.Bold); if (match.sides.getOrNull(index).orEmpty().size > 1) Text(match.sides[index].joinToString(" · ") { it.displayName.ifBlank { it.name } }, color = PlayerMuted, fontSize = 12.sp); Text("${if (playerIsCricket(match)) match.raw.obj(if (match.raw.obj("settings").text("discipline") == "tactics") "tactics" else "cricket").optJSONArray("points")?.optInt(index) ?: 0 else match.remaining.getOrElse(index) { 0 }}", fontFamily = PlayerBarlow, fontSize = 56.sp, color = if (index == match.turn) PlayerLime else Color.White); Text(if (index == match.turn) match.currentThrower?.let { "Werpt: ${it.displayName.ifBlank { it.name }}" } ?: "Aan de beurt" else "Wacht", color = PlayerMuted, fontSize = 12.sp) } } }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { match.players.forEachIndexed { index, p -> Column(Modifier.weight(1f)) { Text(match.sideName(index), fontWeight = FontWeight.Bold); if (match.sides.getOrNull(index).orEmpty().size > 1) Text(match.sides[index].joinToString(" · ") { it.displayName.ifBlank { it.name } }, color = PlayerMuted, fontSize = 12.sp); Text("${if (playerIsCricket(match)) match.raw.obj(if (match.raw.obj("settings").text("discipline") == "tactics") "tactics" else "cricket").optJSONArray("points")?.optInt(index) ?: 0 else match.remaining.getOrElse(index) { 0 }}", fontFamily = PlayerBarlow, fontSize = 56.sp, color = if (index == match.turn) PlayerLime else PlayerText); Text(if (index == match.turn) match.currentThrower?.let { "Werpt: ${it.displayName.ifBlank { it.name }}" } ?: "Aan de beurt" else "Wacht", color = PlayerMuted, fontSize = 12.sp) } } }
         Text("Legs ${match.raw.optJSONArray("legs")?.strings()?.joinToString(" – ") ?: ""} · Sets ${match.raw.optJSONArray("sets")?.strings()?.joinToString(" – ") ?: ""}", color = PlayerMuted)
         if (match.status == "live") Action("Open score-invoer", modifier = Modifier.fillMaxWidth(), onClick = openConsole)
         if (match.permissions.optBoolean("canAccept")) Action("Ik ben aanwezig", !state.busy) { actions.matchAction("accept", JSONObject()) }
@@ -695,7 +688,7 @@ internal fun entityCommand(actions: PlayerActions, entity: JSONObject, action: J
     }
 }
 @Composable private fun ScoreRow(values: List<String>, latest: Boolean) {
-    Row(Modifier.fillMaxWidth().height(34.dp).background(if (latest) PlayerLime.copy(alpha = .12f) else Color.Transparent), verticalAlignment = Alignment.CenterVertically) { values.forEach { Text(it, Modifier.weight(1f), fontFamily = PlayerBarlow, fontSize = 24.sp, color = if (latest) PlayerLime else Color.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center) } }
+    Row(Modifier.fillMaxWidth().height(34.dp).background(if (latest) PlayerLime.copy(alpha = .12f) else Color.Transparent), verticalAlignment = Alignment.CenterVertically) { values.forEach { Text(it, Modifier.weight(1f), fontFamily = PlayerBarlow, fontSize = 24.sp, color = if (latest) PlayerLime else PlayerText, textAlign = androidx.compose.ui.text.style.TextAlign.Center) } }
     HorizontalDivider(color = PlayerBorder.copy(alpha = .4f))
 }
 internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { actions.command("/board-activity/continue", json("sessionId" to activity.text("sessionId"), "warningEpoch" to activity.text("warningEpoch"))) }
@@ -708,7 +701,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     if (current < activity.optLong("warningAt", Long.MAX_VALUE)) return
     val left = ((activity.optLong("deadlineAt") - current + 999) / 1000).coerceAtLeast(0)
     val extensions = maxOf(0, 2 - activity.optInt("extensionsUsed"))
-    Column(Modifier.fillMaxWidth().background(Color(0xFF322E18), RoundedCornerShape(10.dp)).padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(Modifier.fillMaxWidth().background(playerThemeColor("warning").copy(alpha = .12f), RoundedCornerShape(10.dp)).padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(if (left > 0) "Spelen jullie nog door? ${left / 60}:${(left % 60).toString().padStart(2, '0')}" else "De baansessie wordt vrijgegeven.", color = PlayerLime, fontWeight = FontWeight.Bold, fontSize = 13.sp)
         Text("De baan komt vrij als de aftelling afloopt. $extensions verlengingen over.", fontSize = 11.sp, color = PlayerMuted, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
         if (left > 0 && activity.optBoolean("canExtend")) TextButton(onClick = extend, enabled = online && !busy && extensions > 0, modifier = Modifier.heightIn(min = 40.dp)) { Text("Doorspelen") }
@@ -826,7 +819,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
 }
 
 /** The home stream and full feed use one composer and the same permissions. */
-@Composable private fun CommunityPostComposer(page: JSONObject, state: PlayerUiState, actions: PlayerActions, parentId: String? = null, replyScopeKey: String? = null) {
+@Composable internal fun CommunityPostComposer(page: JSONObject, state: PlayerUiState, actions: PlayerActions, parentId: String? = null, replyScopeKey: String? = null) {
     val scopes = page.rows("scopes")
     var draft by rememberSaveable(state.session?.userId, parentId) { mutableStateOf("") }
     var selected by rememberSaveable(state.session?.userId, parentId) { mutableStateOf("") }
@@ -846,7 +839,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
 }
 
 /** Real server posts, identical reply routes, moderation and write actions everywhere. */
-@Composable private fun CommunityPostCard(post: JSONObject, state: PlayerUiState, actions: PlayerActions, tagPrefix: String = "feed") {
+@Composable internal fun CommunityPostCard(post: JSONObject, state: PlayerUiState, actions: PlayerActions, tagPrefix: String = "feed") {
     val id = post.text("id")
     val authorId = post.text("authorId")
     val author = post.text("authorName", "Speler")
@@ -861,6 +854,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
             }
         }
         Text(post.text("body"), style = MaterialTheme.typography.bodyMedium)
+        PlayerFeedExtras(post, state, actions)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { actions.platformAction(json("type" to "community.like", "postId" to id, "liked" to !post.optBoolean("liked"))) }, enabled = !state.busy) {
                 Text("${if (post.optBoolean("liked")) "Leuk gevonden" else "Leuk"} · ${post.optInt("likes")}", fontSize = 12.sp)
@@ -1018,9 +1012,10 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
 @Composable private fun TrendChart(points: List<JSONObject>) {
     val values = points.mapIndexedNotNull { index, value -> if (value.isNull("average")) null else index to value.optDouble("average", Double.NaN).takeIf { it.isFinite() } }.mapNotNull { (index, value) -> value?.let { index to it } }
     if (values.isEmpty()) { Text("Nog geen trend beschikbaar.", color = PlayerMuted); return }
+    val accent = PlayerLime
     Canvas(Modifier.fillMaxWidth().height(100.dp).semantics { contentDescription = "Trend van het 3-dartgemiddelde over ${points.size} wedstrijden" }) {
         val max = maxOf(100.0, values.maxOf { it.second })
-        val path = Path(); values.forEachIndexed { i, (index, avg) -> val x = 8f + (if (points.size > 1) index.toFloat() / (points.size - 1) else .5f) * (size.width - 16); val y = size.height - 8 - (avg / max * (size.height - 16)).toFloat(); if (i == 0) path.moveTo(x, y) else path.lineTo(x, y); drawCircle(PlayerLime, 4f, androidx.compose.ui.geometry.Offset(x, y)) }; drawPath(path, PlayerLime, style = Stroke(3f))
+        val path = Path(); values.forEachIndexed { i, (index, avg) -> val x = 8f + (if (points.size > 1) index.toFloat() / (points.size - 1) else .5f) * (size.width - 16); val y = size.height - 8 - (avg / max * (size.height - 16)).toFloat(); if (i == 0) path.moveTo(x, y) else path.lineTo(x, y); drawCircle(accent, 4f, androidx.compose.ui.geometry.Offset(x, y)) }; drawPath(path, accent, style = Stroke(3f))
     }
 }
 
@@ -1077,6 +1072,8 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
         SafetyLink("Communityregels en melden", "/communityregels")
         Text("Privacy- en veiligheidsvragen: info@dartflow.nl", color = PlayerMuted, fontSize = 12.sp)
     }
+    PlayerThemePreference(state, actions)
+    if (state.canManagePlatform) PlayerPremiumAdministration(state, actions)
     PlayerCard("Jouw account") { Text(state.session?.email ?: ""); Text("DartFlow ${BuildConfig.VERSION_NAME}", color = PlayerMuted, fontSize = 12.sp); Action("Uitloggen", !state.busy, false, Modifier.fillMaxWidth(), actions.logout) }
     AccountDeletionCard(state, actions)
 }
@@ -1130,7 +1127,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
             Text(if (device.text("scope") == "home") "Eigen geselecteerde sessie" else device.text("boardName", "Geen baan toegewezen"), color = PlayerMuted)
             if (!device.optBoolean("revoked")) {
                 Field("Schermnaam", newName, { newName = it }, !state.busy, max = 80)
-                Choice("Huisstijl", device.text("theme", "dartflow"), listOf("dartflow" to "DartFlow", "onzetrots" to "Onze Trots"), { actions.command("/oche/v1/devices/${device.text("id")}", json("action" to "theme", "theme" to it)) }, !state.busy)
+                PlayerDeviceThemeChoice(device, locations, state, actions)
                 Action("Naam opslaan", !state.busy && newName.isNotBlank() && newName.trim() != device.text("name"), false) { actions.command("/oche/v1/devices/${device.text("id")}", json("action" to "rename", "name" to newName.trim())) }
                 if (device.text("scope") == "location") Choice("Toegewezen baan", device.text("boardId"), listOf("" to "Geen baan") + (locations.find { it.text("locationId") == device.text("locationId") }?.rows("boards") ?: emptyList()).map { it.text("id") to it.text("name") }, { actions.command("/oche/v1/devices/${device.text("id")}", json("action" to "assign", "boardId" to it.ifBlank { null })) }, !state.busy)
             }

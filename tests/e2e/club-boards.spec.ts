@@ -57,7 +57,9 @@ test("club boards provide permanent registration QR and live read-only scoring w
     await clubForm.getByRole("button", { name: "Vereniging aanmaken", exact: true }).click();
     await expect(manager).toHaveURL(/\/app\/clubs\/[a-f0-9-]{36}(?:\?|$)/);
     const clubId = new URL(manager.url()).pathname.split("/").at(-1)!;
-    await manager.getByRole("navigation", { name: "Vereniging", exact: true }).getByRole("link", { name: "Banen", exact: true }).click();
+    await manager.getByRole("navigation", { name: "Verenigingsonderdelen", exact: true }).getByRole("link", { name: "Locaties & banen", exact: true }).click();
+    await expect(manager).toHaveURL(`/app/clubs/${clubId}/locaties`);
+    await manager.getByRole("link", { name: "Verenigingsbanen beheren", exact: true }).click();
     await expect(manager).toHaveURL(`/app/clubs/${clubId}/banen`);
     await manager.getByRole("button", { name: "Baan toevoegen", exact: true }).click();
     let create = manager.locator("form").filter({ has: manager.getByRole("heading", { name: "Baan toevoegen", exact: true }) });

@@ -9,14 +9,14 @@ import { Resend } from 'resend';
 import { MAIL_CATALOG, type MailFields, type MailTemplate } from './integrations-catalog';
 import { database, consumeRateLimit } from './db';
 import { DomainError } from './domain';
-import {clubReviewerMailApplicable,clubInvitationMailApplicable} from './club-access';
+import {clubReviewerMailApplicable,clubInvitationMailApplicable,clubIsActiveMember} from './club-access';
 import { emailAddress, exactKeys, integrationRuntime, integrationTransaction, mailScopeAccess, readCredential, textField, type MailMode } from './integrations-core';
 
 const PLACEHOLDER=/{{\s*([A-Za-z][A-Za-z0-9_]*)\s*}}/g;
 const digest=(value:string)=>createHash('sha256').update(value).digest('hex');
 const escape=(value:string)=>value.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!));
 const fieldsKeys=['subject','preheader','title','body','cta'] as const;
-const OPTIONAL=new Set(['friend-request','friend-accepted','room-invite','challenge-invite','challenge-accepted','challenge-cancelled','fixture-reminder','fixture-overdue','season-team-role','season-reserve','season-completed','season-play-mode','competition-lobby-ready','tournament-reminder','board-call']);
+const OPTIONAL=new Set(['club-activity-update','club-activity-withdrawal','club-task-update','friend-request','friend-accepted','room-invite','challenge-invite','challenge-accepted','challenge-cancelled','fixture-reminder','fixture-overdue','season-team-role','season-reserve','season-completed','season-play-mode','competition-lobby-ready','tournament-reminder','board-call']);
 export function templateById(id:string):MailTemplate {const template=MAIL_CATALOG.find(row=>row.id===id);if(!template)throw new DomainError('mail_template','Dit sjabloon bestaat niet.',404);return template;}
 export function validateMailFields(id:string,value:unknown):MailFields {
  const template=templateById(id);if(template.readOnly)throw new DomainError('auth_template','Supabase Auth beheert inlogcodes en het bijbehorende sjabloon.',403);
@@ -26,7 +26,7 @@ export function validateMailFields(id:string,value:unknown):MailFields {
  return fields as MailFields;
 }
 const routeFor=(templateId:string)=>templateId.startsWith('result-')?'/app/mymatches':templateId.startsWith('friend-')?'/app/friends':templateId==='room-invite'||templateId.startsWith('moderation-')?'/app/community':templateId.startsWith('club-')?'/app/clubs':templateId.startsWith('tournament-')?'/app/hall':templateId.startsWith('fixture-')||templateId==='competition-entry'?'/app/leagues':templateId==='board-call'?'/app/baan':'/app';
-export function mailActionPath(templateId:string,entityId?:string,serverPath?:string) {const candidate=typeof serverPath==='string'?serverPath.replace(/^\/app#\/?/,'/app/'):'';if(templateId==='competition-lobby-ready'&&/^\/baan\/[0-9a-f-]{36}$/.test(candidate))return candidate;if(/^\/app(?:\/(?:lobby|clubs|community|leagues|competities|hall|tournaments|friends|mymatches)(?:\/[0-9a-f-]{36})?)?$/.test(candidate)||/^\/wedstrijd\/[0-9a-f-]{36}$/.test(candidate))return candidate;if(entityId&&/^[0-9a-f-]{36}$/.test(entityId)&&['/app/clubs','/app/leagues','/app/hall','/app/community'].includes(routeFor(templateId)))return `${routeFor(templateId)}/${entityId}`;return routeFor(templateId);}
+export function mailActionPath(templateId:string,entityId?:string,serverPath?:string) {const candidate=typeof serverPath==='string'?serverPath.replace(/^\/app#\/?/,'/app/'):'';if(/^\/app\/clubs\/[0-9a-f-]{36}\/(?:agenda\?activity|taken\?task)=[0-9a-f-]{36}$/.test(candidate))return candidate;if(templateId==='competition-lobby-ready'&&/^\/baan\/[0-9a-f-]{36}$/.test(candidate))return candidate;if(/^\/app(?:\/(?:lobby|clubs|community|leagues|competities|hall|tournaments|friends|mymatches)(?:\/[0-9a-f-]{36})?)?$/.test(candidate)||/^\/wedstrijd\/[0-9a-f-]{36}$/.test(candidate))return candidate;if(entityId&&/^[0-9a-f-]{36}$/.test(entityId)&&['/app/clubs','/app/leagues','/app/hall','/app/community'].includes(routeFor(templateId)))return `${routeFor(templateId)}/${entityId}`;return routeFor(templateId);}
 export function renderMail(templateId:string,fields:MailFields,variables:Record<string,string>,origin=integrationRuntime().origin,actionPath=routeFor(templateId)) {
  const template=templateById(templateId); const render=(text:string)=>{const greeting=variables.name?text:text.replace(/Hoi\s*{{\s*name\s*}}\s*,/g,'Hoi,');return greeting.replace(PLACEHOLDER,(_,key:string)=>variables[key]||(key==='actorName'?'een speler':key==='opponentName'?'je tegenstander':'')).replace(/(^|\n)een speler/g,'$1Een speler');};
  const subject=render(fields.subject).replace(/[\r\n]/g,' ').slice(0,240),preheader=render(fields.preheader),title=render(fields.title),body=render(fields.body),cta=render(fields.cta);
@@ -160,6 +160,7 @@ export async function domainMailApplicable(client:Pick<PoolClient,'query'>,event
  if(event.entityId&&['room-invite','challenge-invite'].includes(event.templateId)){const invitation=await client.query("select 1 from dartflow_private.platform_entities e join dartflow_private.platform_members m on m.entity_id=e.id and m.user_id=$2 where e.id=$1 and m.status='invited' and coalesce(e.state->>'closed','false')<>'true' and coalesce(e.state->>'lifecycle','active')not in('inactive','deleted') and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$2 and b.target_id=e.owner_id)or(b.source_id=e.owner_id and b.target_id=$2)))",[event.entityId,event.recipientId]);stale=stale||!invitation.rowCount;}
  if(event.templateId==='club-request')stale=stale||!event.recipientId||!event.entityId||!await clubReviewerMailApplicable(client,event.entityId,event.recipientId,event.eventId);
  if(event.templateId==='club-invite')stale=stale||!event.recipientId||!event.entityId||!await clubInvitationMailApplicable(client,event.entityId,event.recipientId,event.eventId);
+ if(['club-activity-update','club-activity-withdrawal','club-task-update'].includes(event.templateId))stale=stale||!event.entityId||!event.recipientId||!await clubIsActiveMember(client,event.entityId,event.recipientId);
  return !stale;
 }
 export async function processMailBatch() {

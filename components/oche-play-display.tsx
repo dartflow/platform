@@ -7,6 +7,8 @@ import SprintDisplay from './sprint-display';
 import OcheCelebration,{useOcheCelebration} from './oche-celebration';
 import BoardActivityNotice from './board-activity-notice';
 import {OcheBrand} from './oche-brand';
+import type {OcheScreenTheme} from '@/lib/oche-device-types';
+import {useOcheScreenTheme} from './oche-screen-theme';
 import {OcheFullscreen} from './oche-live-standby';
 import './oche-play-display.css';
 
@@ -17,11 +19,12 @@ function Scorecard({visits,title,leg,sessionKey}:{visits:Pick<PlayVisit,'number'
  useEffect(()=>{if(previous.current.leg!==leg||previous.current.sessionKey!==sessionKey){follow.current=true;previous.current={leg,sessionKey};}if(follow.current&&scroll.current)scroll.current.scrollTop=scroll.current.scrollHeight;},[leg,sessionKey,visits.length]);
  return <section className="oche-play-scorecard"><h3>{title}</h3><div ref={scroll} onScroll={event=>{const node=event.currentTarget;follow.current=node.scrollHeight-node.scrollTop-node.clientHeight<40;}} tabIndex={0} aria-label={`${title} scorekaart, scroll om terug te lezen`}><table><thead><tr><th>Beurt</th><th>Score</th><th>Over</th></tr></thead><tbody>{visits.map((v,index)=><tr key={v.number??index}><td>{index+1}</td><td>{v.bust?'Bust':v.score}{v.finish?' ✓':''}</td><td>{v.remainingAfter}</td></tr>)}</tbody></table>{!visits.length&&<p>Nog geen verwerkte beurten</p>}</div></section>;
 }
-function OcheX01Display({play,boardName,eventName,theme,stale,qr,controls}:{play:PublicPlaySession;boardName:string;eventName?:string;theme:'dartflow'|'onzetrots';stale:boolean;qr?:ReactNode;controls?:ReactNode}){
- const snapshot=playX01Snapshot(play,boardName,eventName,theme),cue=useOcheCelebration(snapshot,!stale);if(!snapshot)return null;
+function OcheX01Display({play,boardName,eventName,theme,stale,qr,controls}:{play:PublicPlaySession;boardName:string;eventName?:string;theme:OcheScreenTheme['id'];stale:boolean;qr?:ReactNode;controls?:ReactNode}){
+ const screenTheme=useOcheScreenTheme();
+ const snapshot=playX01Snapshot(play,boardName,eventName,screenTheme.id==='club'?screenTheme:theme==='club'?'dartflow':theme),cue=useOcheCelebration(snapshot,!stale);if(!snapshot)return null;
  return <div className="oche-play-x01-surface"><SprintDisplay snapshot={snapshot} stale={stale} qr={qr} controls={controls} overlay={<OcheCelebration cue={cue}/>} activityOverlay={<BoardActivityNotice activity={snapshot.boardActivity} display offline={stale}/>} scanInstruction={`Schrijver: ${play.writerName} · invoer en verlengen via de telefoon`}/></div>;
 }
-export default function OchePlayDisplay({play,boardName,eventName,stale=false,theme='dartflow',qr,controls}:{play:PublicPlaySession;boardName:string;eventName?:string;stale?:boolean;theme?:'dartflow'|'onzetrots';qr?:ReactNode;controls?:ReactNode}){
+export default function OchePlayDisplay({play,boardName,eventName,stale=false,theme='dartflow',qr,controls}:{play:PublicPlaySession;boardName:string;eventName?:string;stale?:boolean;theme?:OcheScreenTheme['id'];qr?:ReactNode;controls?:ReactNode}){
  const [clock,setClock]=useState({server:play.serverNow,received:0}),[now,setNow]=useState(play.serverNow);
  useEffect(()=>{setClock({server:play.serverNow,received:Date.now()});},[play.serverNow]);
  useEffect(()=>{if(!clock.received)return;const tick=()=>setNow(clock.server+Date.now()-clock.received);tick();const timer=setInterval(tick,1000);return()=>clearInterval(timer);},[clock]);

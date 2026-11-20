@@ -40,8 +40,13 @@ jobs:
       - name: Controleer en bouw
         run: |
           python3 -B ../ci/test_verify_native_tests.py
-          ./gradlew --no-daemon :app:lintStagingDebug :app:testStagingDebugUnitTest :app:assembleStagingDebug :app:lintProductionDebug :app:testProductionDebugUnitTest :app:bundleProductionRelease
+          python3 -B ../ci/test_diagnose_maven.py
+          ./gradlew --no-daemon --info :app:lintStagingDebug :app:testStagingDebugUnitTest :app:assembleStagingDebug :app:lintProductionDebug :app:testProductionDebugUnitTest :app:bundleProductionRelease
           python3 -B ../ci/verify_native_tests.py --app oche --kind unit
+      - name: Diagnose publieke Maven-POMs na mislukte controle
+        if: failure()
+        working-directory: android/oche-live
+        run: python3 -B ../ci/diagnose_maven.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: oche-android-build-${{ github.sha }}
@@ -106,12 +111,16 @@ jobs:
           working-directory: android/oche-live
           disable-animations: true
           script: |
-            ./gradlew --no-daemon :app:connectedStagingDebugAndroidTest
+            ./gradlew --no-daemon --info :app:connectedStagingDebugAndroidTest
             python3 -B ../ci/verify_native_tests.py --app oche --kind ui
       - name: Test Android TV na begrensde service-readiness
         if: matrix.target == 'android-tv'
         working-directory: android/oche-live
         run: bash ci/run_tv_ui.sh
+      - name: Diagnose publieke Maven-POMs na mislukte schermproef
+        if: failure()
+        working-directory: android/oche-live
+        run: python3 -B ../ci/diagnose_maven.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:

@@ -5,7 +5,7 @@ import java.util.Locale
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class PlayerScreen { HOME, PLAY, EVENTS, EVENT, FRIENDS, FEED, PROFILE, STATISTICS, HISTORY, BOARDS, MATCH, BOARD, LOBBY, TRAINING, CHAT, SEASONS, SEASON, NOTIFICATIONS, SCREENS, ORGANIZE, DIRECTOR, RANKINGS, HELP, CLUBS, CLUB, SEASON_CREATE, RANKING_EVENT, FAQ_ADMIN, LOCATIONS, PLAY_START, PLAY_SESSION, PLAY_HISTORY, PRACTICE, CHALLENGES, MANUAL }
+enum class PlayerScreen { HOME, PLAY, EVENTS, EVENT, FRIENDS, FEED, PROFILE, STATISTICS, HISTORY, BOARDS, MATCH, BOARD, LOBBY, TRAINING, CHAT, SEASONS, SEASON, NOTIFICATIONS, SCREENS, ORGANIZE, DIRECTOR, RANKINGS, HELP, CLUBS, CLUB, CLUBHOUSE, CLUB_CHAT, CLUB_COMPETITION_WIZARD, SEASON_CREATE, RANKING_EVENT, FAQ_ADMIN, LOCATIONS, PLAY_START, PLAY_SESSION, PLAY_HISTORY, PRACTICE, CHALLENGES, MANUAL }
 
 /** UI session metadata intentionally contains no bearer or refresh credential. */
 data class PlayerSession(val userId: String, val email: String, val expiresAt: Long, val local: Boolean = false)
@@ -64,6 +64,8 @@ data class PlayerUiState(
     val accountDeletion: JSONObject = JSONObject(),
     val homeFeed: JSONObject = JSONObject(), val homeFeedLoading: Boolean = false, val homeFeedError: String? = null,
     val guestOperatorId: String = "",
+    val theme: JSONObject = JSONObject(), val themeClockOffset: Long = 0,
+    val clubhouseContext: String? = null, val clubhousePages: List<String> = emptyList(),
     internal val play: PlayerPlayUi = PlayerPlayUi(),
 )
 

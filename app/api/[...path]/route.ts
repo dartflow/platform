@@ -1,4 +1,10 @@
+import {clubCalendar,readClubCalendarFeed,updateClubCalendarFeed} from '@/lib/clubhouse-calendar';
 import {PlayRuleError} from '@/lib/play-rules';
+import {getClubhouse,getClubhouseChannel,executeClubhouseCommand} from '@/lib/clubhouse';
+import {getClubhouseTheme,executeThemeCommand,getPlatformBranding} from '@/lib/clubhouse-theme';
+import {getCompetitionWizardContext,executeCompetitionWizardCommand} from '@/lib/competition-wizard-service';
+import type {ClubhouseCommand,ThemeCommand} from '@/lib/clubhouse-types';
+import type {CompetitionWizardCommand} from '@/lib/competition-wizard-types';
 import {searchPlayers}from'@/lib/player-search';
 import {handlePlayApi} from '@/lib/play-api';
 import {getManual} from '@/lib/manual';
@@ -57,7 +63,7 @@ import {getSeasons,getSeason,executeSeasonCommand,exportSeason} from '@/lib/seas
 import type {SeasonCommand} from '@/lib/seasons-types';
 import {acceptSeasonPlayerPin} from '@/lib/season-pin';
 import {seasonCalendar} from '@/lib/season-calendar';
-import {getFeedState,getFeedResult,executeFeedAction,getFeedReplies} from '@/lib/feed';
+import {getFeedState,getFeedPost,getFeedResult,executeFeedAction,getFeedReplies} from '@/lib/feed';
 import {handleNativePlayerApi} from '@/lib/native-player';
 import {nativePlayerPrincipal} from '@/lib/native-player-context';
 import {nativePlayerTrainingProjection} from '@/lib/native-player-projection';
@@ -227,7 +233,20 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if (method==='GET' && parts[0]==='club-boards' && uuid(parts[1]) && parts[2]==='screen' && parts.length===3) return json(await getClubBoardScreen(parts[1]));
   if (method==='GET' && parts[0]==='platform' && parts[1]==='cast' && parts.length===3) return json(await getPlatformCast(parts[2]));
   if(method==='GET'&&parts[0]==='feed'&&parts[1]==='result'&&parts.length===3)return json(await getFeedResult(await actorId(request),parts[2]));
+  if(method==='GET'&&parts[0]==='clubhouse'&&parts[1]==='calendar-feed'&&parts.length===3)return new NextResponse(await readClubCalendarFeed(parts[2],appConfig().origin),{headers:{'Content-Type':'text/calendar; charset=utf-8','Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
   const actor=await requireActor(request);
+  if(parts[0]==='clubhouse'&&uuid(parts[1])){
+   if(method==='GET'&&parts.length===3&&parts[2]==='calendar.ics')return new NextResponse(await clubCalendar(actor.id,parts[1],appConfig().origin),{headers:{'Content-Type':'text/calendar; charset=utf-8','Content-Disposition':'attachment; filename="dartflow-clubagenda.ics"','Cache-Control':'private, no-store'}});
+   if(method==='POST'&&parts.length===3&&parts[2]==='calendar-feed'){await limit(`calendar-feed:${actor.id}`,10,60);const input=await body(request);return json(await updateClubCalendarFeed(actor.id,parts[1],appConfig().origin,input.revoke===true));}
+   if(method==='GET'&&parts.length===4&&parts[2]==='channels'&&uuid(parts[3]))return json(await getClubhouseChannel(actor.id,parts[1],parts[3],Number(request.nextUrl.searchParams.get('after')??0),Number(request.nextUrl.searchParams.get('before')??0)));
+  }
+  if(method==='GET'&&path==='theme')return json(await getClubhouseTheme(actor.id,request.nextUrl.searchParams.get('clubId')??undefined));
+  if(method==='POST'&&path==='theme/actions'){await limit(`theme:${actor.id}`,60,60);return json(await executeThemeCommand(actor.id,await body(request) as ThemeCommand));}
+  if(method==='GET'&&path==='theme/admin')return json(await getPlatformBranding(actor.id));
+  if(method==='GET'&&parts[0]==='clubhouse'&&parts.length===2&&uuid(parts[1]))return json(await getClubhouse(actor.id,parts[1],request.nextUrl.searchParams.get('page')??'overview'));
+  if(method==='POST'&&path==='clubhouse/actions'){await limit(`clubhouse:${actor.id}`,120,60);return json(await executeClubhouseCommand(actor.id,await body(request,220000) as ClubhouseCommand));}
+  if(method==='GET'&&parts[0]==='competition-wizard'&&parts.length===2&&uuid(parts[1]))return json(await getCompetitionWizardContext(actor.id,parts[1]));
+  if(method==='POST'&&path==='competition-wizard'){await limit(`competition-wizard:${actor.id}`,120,60);return json(await executeCompetitionWizardCommand(actor.id,await body(request,200000) as CompetitionWizardCommand));}
   if(method==='GET'&&parts[0]==='boards'&&uuid(parts[1])&&parts[2]==='competition'&&parts.length===3)return json(await getCompetitionBoardContext(actor.id,parts[1]));
   if(method==='POST'&&path==='competition-lobbies/actions')return json(await executeCompetitionLobbyCommand(actor.id,await body(request)));
   if(method==='POST'&&path==='competition-lobbies/player-pin'){const address=(request.headers.get('x-forwarded-for')||'loopback').split(',').at(-1)!.trim();return json(await confirmCompetitionLobbyPin(actor.id,await body(request),digest(address)));}
@@ -249,8 +268,9 @@ async function handle(request:NextRequest,parts:string[],method:string) {
   if(method==='GET'&&parts[0]==='rankings'&&parts[1]==='events'&&uuid(parts[2])&&parts.length===3)return json(await getEventRankingDetails(actor.id,parts[2]));
   if(method==='GET'&&path==='rankings')return json(await getRankings(actor.id,{view:request.nextUrl.searchParams.get('view')==='around'?'around':'top',status:request.nextUrl.searchParams.get('status') as 'all'|'active'|'provisional'|'inactive'??'all',...(request.nextUrl.searchParams.get('listId')?{listId:request.nextUrl.searchParams.get('listId')!}:{})}));
   if(method==='GET'&&parts[0]==='events'&&uuid(parts[1])&&parts[2]==='boards'&&parts.length===3)return json(await getEventBoards(actor.id,parts[1]));
-  if(method==='GET'&&path==='feed'){const q=request.nextUrl.searchParams;return json(await getFeedState(actor.id,{mode:q.get('mode')==='discover'?'discover':'mine',filter:q.get('filter')??'all',channel:q.get('channel')??undefined,cursor:q.get('cursor')??undefined}));}
-  if(method==='POST'&&path==='feed/actions')return json(await executeFeedAction(actor.id,await body(request,16384)));
+  if(method==='GET'&&parts[0]==='feed'&&parts[1]==='post'&&parts.length===3&&uuid(parts[2]))return json(await getFeedPost(actor.id,parts[2],request.nextUrl.searchParams.get('channel')??undefined));
+  if(method==='GET'&&path==='feed'){const q=request.nextUrl.searchParams;return json(await getFeedState(actor.id,{mode:q.get('mode')==='discover'?'discover':'mine',sort:q.get('sort')??'recent',filter:q.get('filter')??'all',channel:q.get('channel')??undefined,cursor:q.get('cursor')??undefined}));}
+  if(method==='POST'&&path==='feed/actions')return json(await executeFeedAction(actor.id,await body(request,220000)));
   if(method==='GET'&&parts[0]==='feed'&&parts[1]==='replies'&&parts.length===3)return json(await getFeedReplies(actor.id,parts[2],request.nextUrl.searchParams.get('cursor')??undefined));
   if(method==='GET'&&path==='player-experience')return json(await getPlayerExperience(actor.id));
   if(method==='POST'&&path==='player-experience')return json(await updatePlayerExperience(actor.id,await body(request)));
@@ -322,7 +342,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     return json(nativePlayerPrincipal(request)?{entity:nativePlayerTrainingProjection(training.entity)}:training);
   }
   if(method==='GET' && path==='locations')return json(await getLocationOverview(actor.id));
-  if(method==='GET' && path==='community/feed')return json(await getCommunityFeed(actor.id,{kind:request.nextUrl.searchParams.get('kind')||'my',id:request.nextUrl.searchParams.get('id'),cursor:request.nextUrl.searchParams.get('cursor'),parentId:request.nextUrl.searchParams.get('parentId')}));
+  if(method==='GET' && path==='community/feed')return json(await getCommunityFeed(actor.id,{kind:request.nextUrl.searchParams.get('kind')||'my',id:request.nextUrl.searchParams.get('id'),cursor:request.nextUrl.searchParams.get('cursor'),parentId:request.nextUrl.searchParams.get('parentId'),sort:request.nextUrl.searchParams.get('sort')??'recent'}));
   if(method==='GET' && parts[0]==='community'&&parts[1]==='chat'&&parts.length===4)return json(await getCommunityChat(actor.id,parts[2],parts[3],Number(request.nextUrl.searchParams.get('after')||'0')));
   if(method==='POST' && path==='platform/actions'){
     const input=await body(request,196608);

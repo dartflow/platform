@@ -92,13 +92,13 @@ test('player start retains login intent, native prompt is used and standalone in
   try{
     const page=await context.newPage();await page.goto('/speler');await page.getByRole('link',{name:'Inloggen',exact:true}).click();expect(new URL(page.url()).searchParams.get('next')).toBe('/speler');
     await page.getByRole('button',{name:/Danny Goldenbelt/}).click();await expect(page).toHaveURL('/speler');expect((await manifest(page)).data.name).toBe('DartFlow Speler');
-    // The desktop/menu button is tested on a wide viewport; phone menus keep the same component.
-    await page.setViewportSize({width:1400,height:900});const button=page.getByRole('button',{name:'Installeer DartFlow',exact:true});await expect(button).toBeVisible();
+    // The shared More menu retains the existing install action on desktop and phone.
+    await page.setViewportSize({width:1400,height:900});await page.getByRole('button',{name:'Meer',exact:true}).click();const button=page.getByRole('dialog',{name:'Meer DartFlow',exact:true}).getByRole('button',{name:'Installeer DartFlow',exact:true});await button.scrollIntoViewIfNeeded();await expect(button).toBeVisible();
     await page.evaluate(()=>{const event=new Event('beforeinstallprompt',{cancelable:true}) as Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:string}>};(window as Window&{pwaPrompts?:number}).pwaPrompts=0;event.prompt=async()=>{(window as Window&{pwaPrompts?:number}).pwaPrompts!++;};event.userChoice=Promise.resolve({outcome:'dismissed'});window.dispatchEvent(event);});
     await button.click();expect(await page.evaluate(()=>(window as Window&{pwaPrompts?:number}).pwaPrompts)).toBe(1);await expect(page.getByRole('dialog',{name:'Installeer DartFlow'})).toHaveCount(0);
     await page.evaluate(()=>window.dispatchEvent(new Event('appinstalled')));await expect(button).toBeVisible();
     await button.click();await expect(page.getByRole('dialog',{name:'Installeer DartFlow'})).toBeVisible();await expect(page.getByRole('link',{name:'/speler',exact:true})).toBeVisible();
-    await standalone.addInitScript(()=>Object.defineProperty(navigator,'standalone',{get:()=>true}));const installed=await standalone.newPage();await login(installed,'/speler');await expect(installed.getByRole('button',{name:'Installeer DartFlow',exact:true})).toHaveCount(0);
+    await standalone.addInitScript(()=>Object.defineProperty(navigator,'standalone',{get:()=>true}));const installed=await standalone.newPage();await login(installed,'/speler');await installed.getByRole('button',{name:'Meer',exact:true}).click();await expect(installed.getByRole('button',{name:'Installeer DartFlow',exact:true})).toHaveCount(0);
     expect((await manifest(installed)).data.id).toBe('/speler');
   }finally{await Promise.allSettled([context.close(),standalone.close()]);}
 });

@@ -58,7 +58,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.delay
 import java.util.Locale
 
-private data class OchePalette(val id: String, val primary: Color, val ink: Color, val panel: Color, val muted: Color, val outline: Color)
+private data class OchePalette(val id: String, val primary: Color, val ink: Color, val panel: Color, val muted: Color, val outline: Color, val text: Color = Color.White, val onPrimary: Color = ink, val secondary: Color = primary, val focus: Color = primary, val warning: Color = Color(0xFFFFD47A), val error: Color = Color(0xFFFFADAD), val branding: ClubDisplayTheme? = null)
 private val DartFlowPalette = OchePalette("dartflow", Color(0xFFB5F52B), Color(0xFF101211), Color(0xFF172019), Color(0xFFB5BDB4), Color(0xFF3B4A39))
 private val OnzeTrotsPalette = OchePalette("onzetrots", Color(0xFFA8CEFF), Color(0xFF06182F), Color(0xFF0C2856), Color(0xFFC3D5EE), Color(0xFF335789))
 private val LocalOchePalette = staticCompositionLocalOf { DartFlowPalette }
@@ -67,6 +67,9 @@ private val Ink: Color @Composable get() = LocalOchePalette.current.ink
 private val Panel: Color @Composable get() = LocalOchePalette.current.panel
 private val Muted: Color @Composable get() = LocalOchePalette.current.muted
 private val Outline: Color @Composable get() = LocalOchePalette.current.outline
+private val OcheText: Color @Composable get() = LocalOchePalette.current.text
+private val Focus: Color @Composable get() = LocalOchePalette.current.focus
+private val Warning: Color @Composable get() = LocalOchePalette.current.warning
 private val Barlow = FontFamily(Font(R.font.barlow_condensed_800, FontWeight.ExtraBold))
 private val DmSans = FontFamily(Font(R.font.dm_sans_400), Font(R.font.dm_sans_700, FontWeight.Bold))
 
@@ -102,9 +105,13 @@ class MainActivity : ComponentActivity() {
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(Unit) { while (true) { now = SystemClock.elapsedRealtime(); delay(250) } }
     val theme = (connection.ui as? DisplayUi.Screen)?.snapshot?.theme
-    val palette = if (theme == "onzetrots") OnzeTrotsPalette else DartFlowPalette
+    val branding = (connection.ui as? DisplayUi.Screen)?.activeClubTheme(now)
+    val palette = if (theme == "club" && branding != null) {
+        fun color(key: String) = Color(0xFF000000 or branding.tokens.getValue(key).removePrefix("#").toLong(16))
+        OchePalette("club", color("primary"), color("background"), color("surface"), color("muted"), color("border"), color("text"), color("onPrimary"), color("secondary"), color("focus"), color("warning"), color("error"), branding)
+    } else if (theme == "onzetrots") OnzeTrotsPalette else DartFlowPalette
     CompositionLocalProvider(LocalOchePalette provides palette) {
-    MaterialTheme(colorScheme = darkColorScheme(primary = palette.primary, onPrimary = palette.ink, background = palette.ink, surface = palette.panel), typography = MaterialTheme.typography) {
+    MaterialTheme(colorScheme = darkColorScheme(primary = palette.primary, onPrimary = palette.onPrimary, secondary = palette.secondary, background = palette.ink, onBackground = palette.text, surface = palette.panel, onSurface = palette.text, onSurfaceVariant = palette.muted, outline = palette.outline, error = palette.error), typography = MaterialTheme.typography) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Ink).windowInsetsPadding(WindowInsets.safeDrawing)) {
         Rings(Modifier.fillMaxSize())
         val landscape = maxWidth > maxHeight
@@ -115,20 +122,20 @@ class MainActivity : ComponentActivity() {
             (connection.ui as? DisplayUi.Screen)?.snapshot?.pendingCall?.let { call ->
                 Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).border(1.dp, Outline, RoundedCornerShape(8.dp)).padding(10.dp)) {
                     Text(call.label, color = Lime, fontSize = 12.sp)
-                    Text(call.players.joinToString(" – "), color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(call.players.joinToString(" – "), color = OcheText, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     call.writerName?.let { Text("Schrijver: $it", color = Muted, fontSize = 11.sp) }
                 }
             }
-            if (connection.offline) Text("OFFLINE · ${connection.message ?: "Verbinding herstellen…"}", color = Lime, fontSize = 14.sp, modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite })
+            if (connection.offline) Text("OFFLINE · ${connection.message ?: "Verbinding herstellen…"}", color = Warning, fontSize = 14.sp, modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite })
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (val ui = connection.ui) {
-                    DisplayUi.Loading -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) { CircularProgressIndicator(color = Lime); Spacer(Modifier.height(20.dp)); Text("Scherm openen…", color = Color.White) }
+                    DisplayUi.Loading -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) { CircularProgressIndicator(color = Lime); Spacer(Modifier.height(20.dp)); Text("Scherm openen…", color = OcheText) }
                     is DisplayUi.Pairing -> PairingView(ui, now, newCode, landscape)
                     is DisplayUi.Disconnected -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) { Headline("Koppel dit scherm"); Text(ui.message, color = Muted, textAlign = TextAlign.Center); Spacer(Modifier.height(24.dp)); Action("Nieuwe code", newCode) }
                     is DisplayUi.Screen -> ScreenView(ui, now, landscape, connection.offline)
                 }
             }
-            Text(if (theme == "onzetrots") "Powered by DartFlow" else "DARTFLOW · OCHE LIVE", color = Muted, fontSize = 12.sp, letterSpacing = 2.sp)
+            Text(if (palette.id in listOf("onzetrots", "club")) "Powered by DartFlow" else "DARTFLOW · OCHE LIVE", color = Muted, fontSize = 12.sp, letterSpacing = 2.sp)
         }
     }
     }
@@ -157,10 +164,27 @@ class MainActivity : ComponentActivity() {
 }
 @Composable private fun Action(label: String, onClick: () -> Unit, compact: Boolean = false) {
     var focused by remember { mutableStateOf(false) }
-    Button(onClick = onClick, modifier = Modifier.onFocusChanged { focused = it.isFocused }.border(if (focused) 3.dp else 0.dp, if (focused) Color.White else Color.Transparent, RoundedCornerShape(14.dp)).heightIn(min = if (compact) 48.dp else 56.dp), contentPadding = PaddingValues(horizontal = if (compact) 16.dp else 28.dp, vertical = 10.dp)) { Text(label, fontFamily = DmSans, fontWeight = FontWeight.Bold) }
+    Button(onClick = onClick, modifier = Modifier.onFocusChanged { focused = it.isFocused }.border(if (focused) 3.dp else 0.dp, if (focused) Focus else Color.Transparent, RoundedCornerShape(14.dp)).heightIn(min = if (compact) 48.dp else 56.dp), contentPadding = PaddingValues(horizontal = if (compact) 16.dp else 28.dp, vertical = 10.dp)) { Text(label, fontFamily = DmSans, fontWeight = FontWeight.Bold) }
 }
-@Composable private fun Headline(text: String, size: Int = 42) = Text(text, fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, lineHeight = (size + 2).sp, color = Color.White, textAlign = TextAlign.Center)
+@Composable private fun Headline(text: String, size: Int = 42) = Text(text, fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, lineHeight = (size + 2).sp, color = OcheText, textAlign = TextAlign.Center)
 @Composable private fun OcheBrand(icon: Boolean, modifier: Modifier) {
+    val branding = LocalOchePalette.current.branding
+    if (branding != null) {
+        val bitmap = remember(branding.logoData) { runCatching {
+            val data = branding.logoData ?: return@runCatching null
+            require(ocheSafeLogo(data)); val bytes = java.util.Base64.getDecoder().decode(data.substringAfter(','))
+            val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }; android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            require(bounds.outWidth in 1..512 && bounds.outHeight in 1..512)
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+        }.getOrNull() }
+        if (icon && bitmap != null) Image(bitmap, branding.name, modifier, contentScale = ContentScale.Fit)
+        else if (icon) Image(painterResource(R.drawable.launcher_foreground), "DartFlow", modifier, contentScale = ContentScale.Fit)
+        else Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(painterResource(R.drawable.dartflow_logo), "DartFlow", Modifier.weight(1f).fillMaxWidth(), contentScale = ContentScale.Fit)
+            Text("${branding.name} via DartFlow", color = Muted, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        return
+    }
     val club = LocalOchePalette.current.id == "onzetrots"
     val asset = if (club) { if (icon) R.drawable.duindorp_crest else R.drawable.onzetrots_wordmark_white } else { if (icon) R.drawable.launcher_foreground else R.drawable.dartflow_logo }
     Image(painterResource(asset), if (club) { if (icon) "S.V. Duindorp" else "Onze Trots" } else "DartFlow", modifier, contentScale = ContentScale.Fit)
@@ -219,7 +243,7 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(cue?.id, offline) { visibleCue = if (offline) null else cue; if (visibleCue != null) { delay(1_800); visibleCue = null } }
         val reduced = Settings.Global.getFloat(LocalContext.current.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
         if (visibleCue != null && !warning) Box(Modifier.fillMaxSize().background(Ink.copy(alpha = .94f)), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) { Headline(if (visibleCue!!.checkout) "HOGE FINISH" else "MAXIMUM", if (reduced) 44 else 56); Text("${visibleCue!!.score}", fontFamily = Barlow, fontSize = 100.sp, color = Lime); Text(visibleCue!!.player, color = Color.White) }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) { Headline(if (visibleCue!!.checkout) "HOGE FINISH" else "MAXIMUM", if (reduced) 44 else 56); Text("${visibleCue!!.score}", fontFamily = Barlow, fontSize = 100.sp, color = Lime); Text(visibleCue!!.player, color = OcheText) }
         }
         if (warning) {
             val remaining = secondsRemaining(activity!!.deadlineAt, serverTime)
@@ -267,8 +291,8 @@ class MainActivity : ComponentActivity() {
     val text: @Composable () -> Unit = {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(if (landscape) 6.dp else 12.dp)) {
             Headline("COMPETITIELOBBY", if (landscape) 26 else 30)
-            Text("${lobby.competitionName} · ronde ${lobby.round}", color = Color.White, fontSize = 16.sp, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            lobby.players.forEach { (name, confirmed) -> Text("$name · ${if (confirmed) "bevestigd" else "wacht op deelname"}", color = if (confirmed) Lime else Color.White, fontSize = if (landscape) 16.sp else 18.sp, maxLines = if (landscape) 1 else 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center) }
+            Text("${lobby.competitionName} · ronde ${lobby.round}", color = OcheText, fontSize = 16.sp, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            lobby.players.forEach { (name, confirmed) -> Text("$name · ${if (confirmed) "bevestigd" else "wacht op deelname"}", color = if (confirmed) Lime else OcheText, fontSize = if (landscape) 16.sp else 18.sp, maxLines = if (landscape) 1 else 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center) }
             Text("Schrijver: ${lobby.writerName}", color = Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("Geplande tegenstander: scan dezelfde baan-QR met je eigen account, of bevestig met je eigen pincode op het gedeelde toestel.", color = Muted, fontSize = 13.sp, textAlign = TextAlign.Center)
         }
@@ -279,7 +303,7 @@ class MainActivity : ComponentActivity() {
 @Composable private fun StandbyText(slide: Int, snapshot: DisplaySnapshot) {
     if (snapshot.state == "reserved") Text(snapshot.reservation ?: "Alleen de gereserveerde spelers kunnen aansluiten.", color = Muted, textAlign = TextAlign.Center)
     else if (slide == 2) Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        listOf("Scan de QR-code.", "Maak een (oefen)wedstrijd aan.", "Laat spelers de QR-code scannen of speel op afstand.", "Start de wedstrijd.").forEachIndexed { i, text -> Text("${i + 1}  $text", color = Color.White, fontSize = 16.sp, modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).padding(10.dp)) }
+        listOf("Scan de QR-code.", "Maak een (oefen)wedstrijd aan.", "Laat spelers de QR-code scannen of speel op afstand.", "Start de wedstrijd.").forEachIndexed { i, text -> Text("${i + 1}  $text", color = OcheText, fontSize = 16.sp, modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).padding(10.dp)) }
     } else Text("Begin een oefenpartij, speel samen op locatie of nodig iemand online uit.\nOpen deze baan met je telefoon.", color = Muted, fontSize = 18.sp, textAlign = TextAlign.Center)
 }
 
@@ -309,8 +333,8 @@ class MainActivity : ComponentActivity() {
         match.players.forEachIndexed { index, player ->
             val active = match.canShowTurn && index == match.turn
             Column(Modifier.weight(1f).background(Panel, RoundedCornerShape(8.dp)).border(1.dp, if (active) Lime else Outline, RoundedCornerShape(8.dp)).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(player.name, modifier = Modifier.semantics { contentDescription = (listOf(player.name) + player.partners).distinct().joinToString(" · ") }, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp, lineHeight = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("${match.cricket?.points?.getOrNull(index) ?: player.remaining}", color = if (active) Lime else Color.White, fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, lineHeight = 34.sp, maxLines = 1)
+                Text(player.name, modifier = Modifier.semantics { contentDescription = (listOf(player.name) + player.partners).distinct().joinToString(" · ") }, color = OcheText, fontWeight = FontWeight.Bold, fontSize = 15.sp, lineHeight = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${match.cricket?.points?.getOrNull(index) ?: player.remaining}", color = if (active) Lime else OcheText, fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, lineHeight = 34.sp, maxLines = 1)
                 Text(if (active) match.currentThrowerName?.let { "WERPT: $it" } ?: "AAN DE BEURT" else if (!match.canShowTurn) match.statusLabel.uppercase(Locale.ROOT) else "WACHT", color = if (active) Lime else Muted, fontSize = 9.sp, lineHeight = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val average = player.average?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–"
                 Text(if (match.cricket != null) "MPR ${match.cricket.mpr.getOrNull(index)?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–"}" else "AVG $average · FIN ${if (player.highestFinish > 0) player.highestFinish else "–"} · 180 ${player.maxima}", color = Muted, fontSize = 9.sp, lineHeight = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -321,7 +345,7 @@ class MainActivity : ComponentActivity() {
 @Composable private fun MatchHeading(match: Match, result: Boolean, compact: Boolean = false) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text("${match.startLabel}${if (result) " EINDSTAND" else ""}", fontFamily = Barlow, fontSize = if (compact) 24.sp else 29.sp, lineHeight = if (compact) 26.sp else 31.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("${match.startLabel}${if (result) " EINDSTAND" else ""}", fontFamily = Barlow, fontSize = if (compact) 24.sp else 29.sp, lineHeight = if (compact) 26.sp else 31.sp, color = OcheText, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(match.rulesLabel + match.winByTwoLabel, color = Muted, fontSize = 12.sp, lineHeight = if (compact) 16.sp else 24.sp, maxLines = if (compact) 3 else 2)
         }
         Text(match.statusLabel, color = Lime, fontSize = 14.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f, false))
@@ -333,19 +357,19 @@ class MainActivity : ComponentActivity() {
             val active = match.canShowTurn && index == match.turn
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)) {
                 Row(Modifier.fillMaxWidth().border(1.dp, Outline, RoundedCornerShape(10.dp)).padding(if (compact) 4.dp else 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(initials(player.name), color = if (active) Lime else Color.White, fontFamily = Barlow, fontSize = if (compact) 16.sp else 24.sp, lineHeight = if (compact) 20.sp else 24.sp, modifier = Modifier.background(if (active) Lime.copy(alpha = .16f) else Outline, RoundedCornerShape(6.dp)).padding(if (compact) 2.dp else 7.dp))
-                    Text(player.name, modifier = Modifier.semantics { contentDescription = (listOf(player.name) + player.partners).distinct().joinToString(" · ") }, color = Color.White, fontSize = 17.sp, lineHeight = if (compact) 20.sp else 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(initials(player.name), color = if (active) Lime else OcheText, fontFamily = Barlow, fontSize = if (compact) 16.sp else 24.sp, lineHeight = if (compact) 20.sp else 24.sp, modifier = Modifier.background(if (active) Lime.copy(alpha = .16f) else Outline, RoundedCornerShape(6.dp)).padding(if (compact) 2.dp else 7.dp))
+                    Text(player.name, modifier = Modifier.semantics { contentDescription = (listOf(player.name) + player.partners).distinct().joinToString(" · ") }, color = OcheText, fontSize = 17.sp, lineHeight = if (compact) 20.sp else 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Column(Modifier.fillMaxWidth().background(if (active) Lime.copy(alpha = .12f) else Panel, RoundedCornerShape(8.dp)).border(1.dp, if (active) Lime else Outline, RoundedCornerShape(8.dp)).padding(vertical = if (compact) 2.dp else 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(if (match.cricket != null) "PUNTEN" else "RESTEREND", color = Muted, fontSize = if (compact) 9.sp else 10.sp, lineHeight = if (compact) 12.sp else 24.sp, letterSpacing = 1.sp)
-                    Text("${match.cricket?.points?.getOrNull(index) ?: player.remaining}", fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, lineHeight = (size + 4).sp, color = if (active) Lime else Color.White, maxLines = 1)
+                    Text("${match.cricket?.points?.getOrNull(index) ?: player.remaining}", fontFamily = Barlow, fontWeight = FontWeight.ExtraBold, fontSize = size.sp, lineHeight = (size + 4).sp, color = if (active) Lime else OcheText, maxLines = 1)
                     Text(if (active) match.currentThrowerName?.let { "WERPT: $it" } ?: "AAN DE BEURT" else if (!match.canShowTurn) match.statusLabel.uppercase(Locale.ROOT) else "WACHT", color = if (active) Lime else Muted, fontSize = if (compact) 9.sp else 10.sp, lineHeight = if (compact) 12.sp else 24.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).padding(if (compact) 2.dp else 6.dp), horizontalArrangement = Arrangement.SpaceAround) {
                     if (compact) {
                         val average = player.average?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–"
                         val summary = if (match.cricket != null) "MPR ${match.cricket.mpr.getOrNull(index)?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–"}" else "AVG $average · FIN ${if (player.highestFinish > 0) player.highestFinish else "–"} · 180 ${player.maxima}"
-                        Text(summary, color = Color.White, fontSize = 9.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(summary, color = OcheText, fontSize = 9.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     } else if (match.cricket != null) Metric(match.cricket.mpr.getOrNull(index)?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–", "MPR", compact) else {
                     Metric(player.average?.let { String.format(Locale.forLanguageTag("nl"), "%.1f", it) } ?: "–", "AVG", compact)
                     Metric(if (player.highestFinish > 0) "${player.highestFinish}" else "–", "H. FIN", compact)
@@ -357,7 +381,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-@Composable private fun Metric(value: String, title: String, compact: Boolean = false) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(value, fontFamily = Barlow, fontSize = if (compact) 18.sp else 22.sp, color = Color.White); Text(title, fontSize = if (compact) 9.sp else 10.sp, color = Muted) } }
+@Composable private fun Metric(value: String, title: String, compact: Boolean = false) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(value, fontFamily = Barlow, fontSize = if (compact) 18.sp else 22.sp, color = OcheText); Text(title, fontSize = if (compact) 9.sp else 10.sp, color = Muted) } }
 private fun ocheMarks(value: Int, required: Int) = if (required == 3) cricketMark(value) else if (value >= required) "✓" else "$value/$required"
 private fun cricketMark(value: Int) = when (value.coerceIn(0,3)) { 0 -> "–"; 1 -> "/"; 2 -> "X"; else -> "⊗" }
 @Composable private fun Scorecard(match: Match, rowHeight: Dp, modifier: Modifier) {
@@ -367,7 +391,7 @@ private fun cricketMark(value: Int) = when (value.coerceIn(0,3)) { 0 -> "–"; 1
             cricket.targets.forEachIndexed { index, target ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
                     Text(ocheMarks(cricket.marks.getOrNull(0)?.getOrNull(index) ?: 0, cricket.requiredMarks), color = Lime, fontSize = if (cricket.targets.size > 7) 18.sp else 24.sp)
-                    Text(if (target == 25) "BULL" else "$target", color = Color.White, fontSize = if (cricket.targets.size > 7) 16.sp else 20.sp)
+                    Text(if (target == 25) "BULL" else "$target", color = OcheText, fontSize = if (cricket.targets.size > 7) 16.sp else 20.sp)
                     if (match.players.size > 1) Text(ocheMarks(cricket.marks.getOrNull(1)?.getOrNull(index) ?: 0, cricket.requiredMarks), color = Lime, fontSize = if (cricket.targets.size > 7) 18.sp else 24.sp)
                 }
             }
@@ -387,13 +411,13 @@ private fun cricketMark(value: Int) = when (value.coerceIn(0,3)) { 0 -> "–"; 1
     }
     Column(modifier.fillMaxWidth().border(1.dp, Outline, RoundedCornerShape(10.dp)).clip(RoundedCornerShape(10.dp))) {
         Row(Modifier.fillMaxWidth().background(Panel).padding(10.dp, 5.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("SCOREKAART", color = Color.White, fontSize = 12.sp, lineHeight = if (rowHeight <= 22.dp) 16.sp else 24.sp, fontWeight = FontWeight.Bold)
+            Text("SCOREKAART", color = OcheText, fontSize = 12.sp, lineHeight = if (rowHeight <= 22.dp) 16.sp else 24.sp, fontWeight = FontWeight.Bold)
             if (rows.size > 5 && list.canScrollForward) TextButton(onClick = { scope.launch { list.animateScrollToItem(rows.size - 5) } }, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(28.dp)) { Text("Terug naar live", color = Lime, fontSize = 11.sp) }
             else Text("SET ${match.set} · LEG ${match.leg}", color = Muted, fontSize = 11.sp, lineHeight = if (rowHeight <= 22.dp) 16.sp else 24.sp)
         }
         CardRow(if (match.players.size == 1) listOf("WORP", "REST") else listOf("WORP", "REST", "REST", "WORP"), rowHeight, true)
         CardRow(match.startRow, rowHeight)
-        LazyColumn(state = list, modifier = Modifier.heightIn(max = rowHeight * 5).fillMaxWidth().onFocusChanged { focused = it.isFocused }.border(if (focused) 2.dp else 0.dp, if (focused) Color.White else Color.Transparent).onPreviewKeyEvent { event ->
+        LazyColumn(state = list, modifier = Modifier.heightIn(max = rowHeight * 5).fillMaxWidth().onFocusChanged { focused = it.isFocused }.border(if (focused) 2.dp else 0.dp, if (focused) Focus else Color.Transparent).onPreviewKeyEvent { event ->
                 val direction = when (event.key) { Key.DirectionDown -> 1; Key.DirectionUp -> -1; else -> 0 }
                 if (event.type == KeyEventType.KeyDown && direction != 0) {
                     val target = (list.firstVisibleItemIndex + direction).coerceIn(0, maxOf(0, rows.size - 5))
@@ -411,7 +435,7 @@ private fun cricketMark(value: Int) = when (value.coerceIn(0,3)) { 0 -> "–"; 1
 @Composable private fun CardRow(values: List<String>, height: Dp, heading: Boolean = false, highlights: Set<Int> = emptySet()) {
     Row(Modifier.fillMaxWidth().height(height).background(if (heading) Lime.copy(alpha = .12f) else Panel)) {
         values.forEachIndexed { index, value ->
-            Box(Modifier.weight(1f).fillMaxHeight().background(if (index in highlights) Lime.copy(alpha = .23f) else Color.Transparent).border(.5.dp, Outline), contentAlignment = Alignment.Center) { Text(value, color = if (index in highlights) Lime else Color.White, fontFamily = if (heading) DmSans else Barlow, fontWeight = if (heading) FontWeight.Bold else FontWeight.ExtraBold, fontSize = if (heading) 11.sp else if (height <= 22.dp) 20.sp else 23.sp, lineHeight = if (heading) 14.sp else if (height <= 22.dp) 20.sp else 26.sp, maxLines = 1, style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")) }
+            Box(Modifier.weight(1f).fillMaxHeight().background(if (index in highlights) Lime.copy(alpha = .23f) else Color.Transparent).border(.5.dp, Outline), contentAlignment = Alignment.Center) { Text(value, color = if (index in highlights) Lime else OcheText, fontFamily = if (heading) DmSans else Barlow, fontWeight = if (heading) FontWeight.Bold else FontWeight.ExtraBold, fontSize = if (heading) 11.sp else if (height <= 22.dp) 20.sp else 23.sp, lineHeight = if (heading) 14.sp else if (height <= 22.dp) 20.sp else 26.sp, maxLines = 1, style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum")) }
         }
     }
 }
@@ -427,7 +451,7 @@ private fun cricketMark(value: Int) = when (value.coerceIn(0,3)) { 0 -> "–"; 1
     }
     Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).border(1.dp, Outline, RoundedCornerShape(8.dp)).padding(if (compact) 6.dp else 10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, color = Lime, fontSize = if (compact) 9.sp else 11.sp, lineHeight = if (compact) 12.sp else 24.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-        Text(value, color = Color.White, fontFamily = Barlow, fontSize = if (compact) 16.sp else 18.sp, lineHeight = if (compact) 18.sp else 24.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1.5f), maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
+        Text(value, color = OcheText, fontFamily = Barlow, fontSize = if (compact) 16.sp else 18.sp, lineHeight = if (compact) 18.sp else 24.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1.5f), maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
     }
 }
 fun formatClock(seconds: Int): String = "%02d:%02d".format(Locale.ROOT, seconds / 60, seconds % 60)

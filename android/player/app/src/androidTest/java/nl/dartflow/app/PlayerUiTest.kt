@@ -116,8 +116,8 @@ class PlayerUiTest {
 
     @Test fun loginHeadingsRenderReadableColorsOnDarkBackgrounds() {
         compose.setContent { DartFlowPlayerTheme { PlayerApp(PlayerUiState(loading = false), PlayerActions()) } }
-        assertReadableText("Klaar voor jouw volgende leg?", PlayerInk)
-        assertReadableText("Welkom bij DartFlow", PlayerPanel)
+        assertReadableText("Klaar voor jouw volgende leg?", playerDefaultColor("background"))
+        assertReadableText("Welkom bij DartFlow", playerDefaultColor("surface"))
     }
 
     @Test fun loginGoogleActionFitsSmallPhoneWithoutScrolling() {
@@ -158,8 +158,8 @@ class PlayerUiTest {
         val name = compose.onNodeWithText("Schermnaam").getUnclippedBoundsInRoot()
         val navigation = compose.onNodeWithText("Vandaag", useUnmergedTree = true).getUnclippedBoundsInRoot()
         assertTrue("Screen-name entry must initially be visible above bottom navigation", name.bottom < navigation.top)
-        assertReadableText("Oche Live-schermen", PlayerInk)
-        assertReadableText("Scherm koppelen", PlayerPanel)
+        assertReadableText("Oche Live-schermen", playerDefaultColor("background"))
+        assertReadableText("Scherm koppelen", playerDefaultColor("surface"))
         saveFixtureScreenshot("compact-screens.png")
     }
 

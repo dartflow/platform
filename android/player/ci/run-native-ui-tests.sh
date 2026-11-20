@@ -11,12 +11,12 @@ adb shell wm density 160
 adb shell rm -rf /data/local/tmp/dartflow-ui-fixtures
 adb shell mkdir -p /data/local/tmp/dartflow-ui-fixtures
 ui_test_status=0
-./gradlew --no-daemon --max-workers=2 :app:connectedDevelopmentDebugAndroidTest || ui_test_status=$?
+./gradlew --no-daemon --info --max-workers=2 :app:connectedDevelopmentDebugAndroidTest || ui_test_status=$?
 
 screenshot_directory=app/build/reports/androidTests/screenshots
 mkdir -p "$screenshot_directory"
 screenshot_status=0
-for screenshot_name in compact-login.png compact-screens.png compact-events.png score-status-default.png score-status-large-font.png compact-home-feed.png; do
+for screenshot_name in compact-login.png compact-screens.png compact-events.png score-status-default.png score-status-large-font.png compact-home-feed.png clubhouse-premium-dark.png clubhouse-premium-light-large-font.png clubhouse-wizard-review.png clubhouse-theme-dartflow-dark.png clubhouse-theme-dartflow-light.png clubhouse-theme-blue-dark.png clubhouse-theme-blue-light.png clubhouse-theme-magenta-dark.png clubhouse-theme-magenta-light.png; do
   screenshot_path="$screenshot_directory/$screenshot_name"
   if adb exec-out cat "/data/local/tmp/dartflow-ui-fixtures/$screenshot_name" > "$screenshot_path" &&
     [[ "$(od -An -tx1 -N8 "$screenshot_path" | tr -d ' \n')" == 89504e470d0a1a0a ]]; then

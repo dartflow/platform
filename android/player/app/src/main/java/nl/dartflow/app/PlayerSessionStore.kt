@@ -19,7 +19,7 @@ class PlayerSessionStore(context: Context, slot: String = "session") {
     private val alias = "dartflow-player-$slot-v1"
     private val aad = "DartFlow Speler $slot v1:${context.packageName}".toByteArray()
     private val sessionSlot = slot == "session"
-    private val maxBytes = if (slot in listOf("play", "match-queue", "training-queue")) 2_000_000 else 100_000
+    private val maxBytes = if (slot in listOf("play", "match-queue", "training-queue")) 2_000_000 else if (slot == "theme" || slot == "session" || slot.startsWith("club-feed-draft")) 600_000 else 100_000
     companion object { private val storageLock = Any() }
     private fun key(): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }

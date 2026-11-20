@@ -8,8 +8,8 @@ import xml.etree.ElementTree as ET
 
 ANDROID = Path(__file__).resolve().parents[1]
 APPS = {
-    "player": {"directory": "player", "unit": 133, "ui": 73, "variants": ("Production", "Staging", "Development")},
-    "oche": {"directory": "oche-live", "unit": 32, "ui": 15, "variants": ("Staging", "Production")},
+    "player": {"directory": "player", "unit": 145, "ui": 81, "variants": ("Production", "Staging", "Development")},
+    "oche": {"directory": "oche-live", "unit": 34, "ui": 16, "variants": ("Staging", "Production")},
 }
 
 
