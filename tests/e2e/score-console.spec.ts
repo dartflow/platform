@@ -45,6 +45,8 @@ test('solo console fits small portraits, retains draft, and retries a committed 
     await page.getByRole('button',{name:'Opties sluiten',exact:true}).click();await context.setOffline(true);await expect(page.getByRole('status')).toContainText('Geen verbinding');await assertFits(page);await context.setOffline(false);await expect(page.getByRole('status')).not.toContainText('Geen verbinding');
     await digits(page,'180');await page.getByRole('button',{name:'Bevestigen',exact:true}).click();await expect(page.locator('.console-remaining')).toHaveText('21');
     await digits(page,'21');await page.setViewportSize({width:320,height:568});await assertFits(page);await expect(page.getByRole('button',{name:'Finish bevestigen',exact:true})).toBeDisabled();await page.getByRole('button',{name:'Finish in 2 darts',exact:true}).click();await page.getByRole('button',{name:'Finish bevestigen',exact:true}).click();await expect(page.getByRole('dialog',{name:'Schermvullende score-invoer'})).toHaveCount(0);await expect(page.locator('.training-remaining')).toHaveText('0');
+    // The console projects the finish before its ACK; cleanup must observe the committed result.
+    await expect.poll(async()=>{const entity=await training(context,id!);const visits=entity.state.game.visits;const last=visits.at(-1);return{completed:entity.state.completed,revision:entity.revision,visits:visits.length,lastScore:last?.score,lastDarts:last?.darts};}).toEqual({completed:true,revision:attempts[0].expectedRevision+3,visits:3,lastScore:21,lastDarts:2});
   }finally{
     await context.setOffline(false);if(id){const entity=await training(context,id);if(entity&&!entity.state.completed)await platform(context,{type:'training.finish',id},entity.revision);}await context.close();
   }
