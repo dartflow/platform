@@ -4,7 +4,7 @@ De productversie volgt `major.minor.patch`. Web/desktop en Android Player krijge
 
 | Versie | Android Player | Status | Samenvatting |
 | --- | --- | --- | --- |
-| [0.5.0](0.5.0.md) | code 8 | In voorbereiding | Clubhouse, premium huisstijl, interne competitiewizard en herstel van veegscrollen |
+| [0.5.0](0.5.0.md) | code 8 | Web/Player uitgegeven; Oche 1.4.0 GitHub geleverd, Play geblokkeerd | Clubhouse, premium huisstijl, interne competitiewizard, veegscrollen en aanklikbare schakellabels |
 | [0.4.0](0.4.0.md) | code 7 | Uitgegeven | Speleridentiteit, uitnodigingen/QR, spelen, meldingen en Firebase-koppeling |
 
 Gebruik voor elke volgende uitgifte [TEMPLATE.md](TEMPLATE.md). Kopieer het bestand naar `<versie>.md` en voeg een rij aan deze index toe. Schrijf vóór publicatie wat verandert en welke bewijzen vereist zijn. Vul uitgiftegegevens pas in na controle van de werkelijk uitgerolde commit, configuratie, ondertekende bestanden en distributietrack. Bewaar mislukte pogingen als historie; vervang ze niet door een uitslag van een andere poging.
