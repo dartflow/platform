@@ -99,5 +99,5 @@ for animation in window_animation_scale transition_animation_scale animator_dura
   timeout 10 "$adb" -s "$serial" shell settings put global "$animation" 0
 done
 
-./gradlew --no-daemon :app:connectedStagingDebugAndroidTest
+./gradlew --no-daemon --info :app:connectedStagingDebugAndroidTest
 python3 -B ../ci/verify_native_tests.py --app oche --kind ui --summary app/build/reports/androidTests/tv-runner/runtime-summary.json

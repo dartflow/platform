@@ -11,7 +11,7 @@ adb shell wm density 160
 adb shell rm -rf /data/local/tmp/dartflow-ui-fixtures
 adb shell mkdir -p /data/local/tmp/dartflow-ui-fixtures
 ui_test_status=0
-./gradlew --no-daemon --max-workers=2 :app:connectedDevelopmentDebugAndroidTest || ui_test_status=$?
+./gradlew --no-daemon --info --max-workers=2 :app:connectedDevelopmentDebugAndroidTest || ui_test_status=$?
 
 screenshot_directory=app/build/reports/androidTests/screenshots
 mkdir -p "$screenshot_directory"
