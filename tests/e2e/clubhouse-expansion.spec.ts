@@ -918,10 +918,53 @@ test("premium theme preview stays local, published club contexts override person
               ),
             )
             .toBe(expected.effective.tokens[colorMode].primary);
-          if (target)
+          if (target) {
             await expect(
               phone.getByRole("heading", { name: target.name, exact: true }),
             ).toBeVisible();
+            if (viewport.width <= 600) {
+              const launcher = await phone
+                .getByRole("button", {
+                  name: "Verenigingschat",
+                  exact: true,
+                })
+                .boundingBox();
+              const action = await phone
+                .locator(".ch-hero .button")
+                .first()
+                .boundingBox();
+              expect(launcher).not.toBeNull();
+              expect(action).not.toBeNull();
+              expect(launcher!.width).toBeGreaterThanOrEqual(48);
+              expect(launcher!.width).toBeLessThanOrEqual(56);
+              expect(launcher!.height).toBeGreaterThanOrEqual(48);
+              expect(
+                Math.max(
+                  0,
+                  Math.min(launcher!.x + launcher!.width, action!.x + action!.width) -
+                    Math.max(launcher!.x, action!.x),
+                ) *
+                  Math.max(
+                    0,
+                    Math.min(launcher!.y + launcher!.height, action!.y + action!.height) -
+                      Math.max(launcher!.y, action!.y),
+                  ),
+              ).toBe(0);
+            }
+          } else {
+            await expect(
+              phone.getByRole("textbox", {
+                name: "Volledige naam",
+                exact: true,
+              }),
+            ).toBeVisible();
+            await expect(
+              phone.getByRole("combobox", {
+                name: "Uitstraling",
+                exact: true,
+              }),
+            ).toHaveValue("dartflow");
+          }
           await screenshot(
             phone,
             info,

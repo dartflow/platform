@@ -327,11 +327,24 @@ export default function ClubhouseChat({
         type="button"
         ref={trigger}
         className="ch-chat-launcher"
+        aria-label="Verenigingschat"
         aria-expanded={open}
         aria-controls={`club-chat-${clubId}`}
         onClick={() => (open ? close() : setOpen(true))}
       >
-        ◌ Verenigingschat
+        <svg
+          aria-hidden="true"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        >
+          <path d="M20 11.5a8 8 0 0 1-8 8H4l1.5-4A8 8 0 1 1 20 11.5Z" />
+          <path d="M8 10h8M8 14h5" />
+        </svg>
+        <span className="ch-chat-launcher-label">Verenigingschat</span>
         {unread > 0 && <span className="ch-status">{unread}</span>}
       </button>
       {open && (

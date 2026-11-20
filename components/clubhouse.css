@@ -582,6 +582,7 @@
   color: var(--ch-text);
   overflow: hidden;
 }
+
 .ch-chat-window.is-large {
   width: min(840px, calc(100vw - 60px));
   height: calc(100dvh - 170px);
@@ -1131,3 +1132,24 @@ html[data-dartflow-theme="light"] .dartflow-themed {
   scroll-margin-top: 80px;
 }
 .club-workspace{--club-primary:var(--ch-primary,#c7f36a);--club-secondary:var(--ch-secondary,#72b5a0);--club-ink:var(--ch-on-primary,#19230d)}
+@media (max-width: 600px) {
+  .ch-chat-launcher {
+    width: 52px;
+    height: 52px;
+    justify-content: center;
+    padding: 0;
+    gap: 0;
+    border-radius: 50%;
+  }
+  .ch-chat-launcher-label {
+    display: none;
+  }
+  .ch-chat-launcher > .ch-status {
+    position: absolute;
+    top: -5px;
+    right: -4px;
+    min-width: 20px;
+    padding: 2px 4px;
+    font-size: 11px;
+  }
+}
