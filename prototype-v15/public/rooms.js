@@ -43,7 +43,8 @@ export function createRooms(ctx) {
   }
   function createGame(options={}){
     init();
-    const id=Date.now()+Math.floor(Math.random()*1000);
+    let id=Date.now()+Math.floor(Math.random()*1000);
+    while(db().matches.some(match=>match.id===id)||Object.hasOwn(db().play.rooms,id)||actors.has(id))id++;
     const opponentId=Number(options.opponentId)||2;
     if(blocked(opponentId)){ctx.toast('Deze speler staat op je blokkeerlijst. Deblokkeer eerst bij Vrienden.');return null;}
     const clubId=Object.hasOwn(options,'clubId')?(Number(options.clubId)||null):scope();
