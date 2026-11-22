@@ -2,6 +2,7 @@ import {test,expect,type BrowserContext,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import pg from 'pg';
 import type {PlayResponse,PlaySessionView} from '../../lib/play-session-types';
+import {choosePerDartInput} from './helpers/score-console';
 
 try{process.loadEnvFile('.env.local');}catch{/* CI supplies the isolated loopback fixture. */}
 function requireLocal(baseURL?:string){for(const value of[baseURL,process.env.DARTFLOW_DATABASE_ADMIN_URL])if(!value||!['localhost','127.0.0.1','[::1]'].includes(new URL(value).hostname))throw Error('Full-screen score proof requires an explicit loopback application and database.');}
@@ -16,7 +17,7 @@ const consoleFor=(page:Page)=>page.getByRole('dialog',{name:'Schermvullende scor
 test('a real two-player practice opens fullscreen and preserves an unsubmitted dart through close, Escape and browser Back',async({browser,baseURL},info)=>{
  requireLocal(baseURL);const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'}),page=await context.newPage(),ids:string[]=[];
  try{
-  const {session,controller}=await create(context,new URL(baseURL!).origin,{mode:'x01',startScore:501});ids.push(session.id);await page.goto(controller.url);const dialog=consoleFor(page);await expect(dialog).toBeVisible();await expect(dialog.locator('.play-big')).toHaveText(['501','501']);await expect(dialog).toContainText('Rico aan de beurt');
+  const {session,controller}=await create(context,new URL(baseURL!).origin,{mode:'x01',startScore:501});ids.push(session.id);await page.goto(controller.url);const dialog=consoleFor(page);await expect(dialog).toBeVisible();await choosePerDartInput(page);await expect(dialog.locator('.play-big')).toHaveText(['501','501']);await expect(dialog).toContainText('Rico aan de beurt');
   await dialog.getByRole('button',{name:'Triple',exact:true}).click();await dialog.getByRole('button',{name:'T20',exact:true}).click();await expect(dialog.getByLabel('Ingevoerde pijlen')).toContainText('T20');expect((await read(context,session.id,controller.token)).game.visits).toHaveLength(0);
   await dialog.getByRole('button',{name:'Terug naar wedstrijd',exact:true}).click();await expect(dialog).toHaveCount(0);await expect(page.getByRole('button',{name:'Scoreweergave openen',exact:true})).toBeVisible();await page.getByRole('button',{name:'Scoreweergave openen',exact:true}).click();await expect(dialog.getByLabel('Ingevoerde pijlen')).toContainText('T20');
   await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await page.getByRole('button',{name:'Scoreweergave openen',exact:true}).click();await expect(dialog.getByLabel('Ingevoerde pijlen')).toContainText('T20');
@@ -52,7 +53,7 @@ test('a real board session can extend its warning from fullscreen without record
   // creation, access, extension and acceptance use the real application API.
   expect((await admin.query("update dartflow_private.play_sessions set activity_at=clock_timestamp()-interval '125 seconds',deadline_at=clock_timestamp()+interval '55 seconds' where id=$1 and status='active' returning id",[session.id])).rowCount).toBe(1);
   const before=await read(context,session.id,controller.token);expect(before.extensionsUsed).toBe(0);expect(before.serverNow).toBeGreaterThan(before.warningAt);expect(before.deadlineAt!).toBeGreaterThan(before.serverNow);
-  await page.goto(controller.url);const dialog=consoleFor(page);await expect(dialog).toBeVisible();const warning=dialog.locator('.score-console-board-warning'),extend=warning.getByRole('button',{name:/^Doorgaan · \d+s$/});
+  await page.goto(controller.url);const dialog=consoleFor(page);await expect(dialog).toBeVisible();await choosePerDartInput(page);const warning=dialog.locator('.score-console-board-warning'),extend=warning.getByRole('button',{name:/^Doorgaan · \d+s$/});
   await expect(warning).toBeVisible();await expect(extend).toBeEnabled();
   for(const width of[320,390]){await page.setViewportSize({width,height:844});await expect(extend).toBeInViewport();const bounds=await extend.boundingBox();expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(width);}
   await page.setViewportSize({width:320,height:568});await expect(extend).toBeInViewport();const fit=await dialog.evaluate(node=>{const input=node.querySelector('.dart-console-input')!,r=input.getBoundingClientRect(),keys=[...node.querySelectorAll('.dart-score-pad>.play-keypad>button')],submit=node.querySelector('.dart-pad-submit')!.getBoundingClientRect();return{overflow:input.scrollHeight-input.clientHeight,submitBottom:submit.bottom,inputBottom:r.bottom,keys:keys.map(key=>{const b=key.getBoundingClientRect();return{width:b.width,height:b.height,bottom:b.bottom};})};});expect(fit.overflow).toBeLessThanOrEqual(1);expect(fit.submitBottom).toBeLessThanOrEqual(fit.inputBottom+1);expect(fit.keys).toHaveLength(20);for(const key of fit.keys){expect(key.width).toBeGreaterThanOrEqual(48);expect(key.height).toBeGreaterThanOrEqual(48);expect(key.bottom).toBeLessThanOrEqual(fit.inputBottom+1);}await page.setViewportSize({width:390,height:844});

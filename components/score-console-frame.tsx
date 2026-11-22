@@ -4,6 +4,9 @@ import {useEffect,useRef,useState,type ReactNode} from "react";
 import {createPortal} from "react-dom";
 import "./score-console.css";
 
+type HistoryRelease={marker:string;url:string};
+let pendingHistoryRelease:HistoryRelease|null=null;
+
 /** Presentation only. Closing never changes a match, writer or pending visit. */
 export default function ScoreConsoleFrame({children,onBack,onEscape,className="",open=true}:{children:ReactNode;onBack:()=>void;onEscape?:()=>boolean;className?:string;open?:boolean}){
   const [container,setContainer]=useState<HTMLDivElement|null>(null);
@@ -14,19 +17,35 @@ export default function ScoreConsoleFrame({children,onBack,onEscape,className=""
     return()=>{host.remove();};
   },[]);
   useEffect(()=>{
+    if(!open)return;
+    const openedUrl=location.href,inherited=pendingHistoryRelease;
+    const transferred=Boolean(inherited&&inherited.url===openedUrl&&history.state?.dartflowScoreConsole===inherited.marker);
+    const marker=transferred?inherited!.marker:crypto.randomUUID();let popped=false;
+    if(transferred)pendingHistoryRelease=null;
+    else history.pushState({...history.state,dartflowScoreConsole:marker},"",openedUrl);
+    const onPop=()=>{popped=true;backRef.current();};window.addEventListener("popstate",onPop);
+    return()=>{
+      window.removeEventListener("popstate",onPop);
+      if(popped||location.href!==openedUrl||history.state?.dartflowScoreConsole!==marker)return;
+      // React can replace a total-entry frame with a dart-entry frame in one
+      // commit. Transfer its history entry before releasing a genuine close.
+      const release={marker,url:openedUrl};pendingHistoryRelease=release;
+      queueMicrotask(()=>{
+        if(pendingHistoryRelease!==release)return;
+        pendingHistoryRelease=null;
+        if(location.href===release.url&&history.state?.dartflowScoreConsole===release.marker)history.back();
+      });
+    };
+  },[open]);
+  useEffect(()=>{
     if(!container)return;
     if(!open){placeholder.current?.append(container);return;}
-    const host=container,anchor=placeholder.current,previousFocus=document.activeElement,scrollX=window.scrollX,scrollY=window.scrollY,openedUrl=location.href;
+    const host=container,anchor=placeholder.current,previousFocus=document.activeElement,scrollX=window.scrollX,scrollY=window.scrollY;
     document.body.append(host);
     const siblings=Array.from(document.body.children).filter((node):node is HTMLElement=>node instanceof HTMLElement&&node!==host);
     const inertBefore=siblings.map(node=>node.inert);siblings.forEach(node=>{node.inert=true;});
     document.body.classList.add("score-console-open");
-    const marker=crypto.randomUUID(),state={...history.state,dartflowScoreConsole:marker};let popped=false;
-    history.pushState(state,"",location.href);
-    const onPop=()=>{popped=true;backRef.current();};window.addEventListener("popstate",onPop);
     return()=>{
-      window.removeEventListener("popstate",onPop);
-      if(!popped&&location.href===openedUrl&&history.state?.dartflowScoreConsole===marker)history.back();
       siblings.forEach((node,index)=>{node.inert=inertBefore[index];});
       document.body.classList.remove("score-console-open");anchor?.append(host);window.scrollTo(scrollX,scrollY);
       if(previousFocus instanceof HTMLElement&&previousFocus.isConnected)previousFocus.focus({preventScroll:true});

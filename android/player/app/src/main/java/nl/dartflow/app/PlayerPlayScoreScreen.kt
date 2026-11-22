@@ -2,7 +2,6 @@ package nl.dartflow.app
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import org.json.JSONObject
 
@@ -18,10 +17,10 @@ internal fun playerPlayAllowsTotal(session: PlayerPlaySession): Boolean = when (
     val mode = session.rules.text("mode")
     val outRule = if (mode == "leg-challenge") session.rules.obj("source").text("outRule", "double") else session.rules.text("outRule", "double")
     val pending = state.play.pending
-    var observedDarts by rememberSaveable(session.id) { mutableStateOf(false) }
+    val preference = rememberPlayerScoreInput(state, mode)
     val inputState = rememberSaveableStateHolder()
     val allowsTotal = playerPlayAllowsTotal(session)
-    val totals = allowsTotal && !observedDarts
+    val totals = allowsTotal && preference.input == PLAYER_TOTAL_INPUT
     val canScore = session.permissions.optBoolean("canScore") && state.play.pendingOperation == null && (session.raw.text("deviceMode") != "individual" || pending == 0)
     val message = state.play.error ?: when {
         state.play.pendingOperation != null -> "Eerdere partijwijziging wacht op bevestiging."
@@ -43,9 +42,9 @@ internal fun playerPlayAllowsTotal(session: PlayerPlaySession): Boolean = when (
         title = "${playerPlayModeName(mode)} · Set ${session.game.optInt("set", 1)} · Leg ${session.game.optInt("leg", 1)}",
         players = players, active = session.turn, currentThrowerName = session.currentName(), scoreLabel = scoreLabel,
         canScore = canScore, busy = state.play.syncing && !state.play.offline, offline = state.play.offline,
-        checkout = null, message = message, scoreKey = "${session.id}:${session.revision}",
+        checkout = null, message = message, scoreKey = "${session.id}:${playerPlayDraftKey(session)}",
         queueSupported = true, queuedVisits = pending, onSubmit = { _, _, _, _ -> },
-        unknownDartsByDefault = true, finishRule = outRule, optionsLabel = "Scorekaart & correctie", onSubmitVisit = { score, darts, double, attempts ->
+        unknownDartsByDefault = false, finishRule = outRule, optionsLabel = "Scorekaart & correctie", onSubmitVisit = { score, darts, double, attempts ->
             val input = json("score" to score)
             darts?.let { input.put("darts", it) }
             if (double && outRule != "straight") input.put("doubleConfirmed", true)
@@ -54,11 +53,13 @@ internal fun playerPlayAllowsTotal(session: PlayerPlaySession): Boolean = when (
         },
         onBack = onOverview, onRetry = { actions.playAction(json("type" to if (state.play.pendingOperation != null) "local.retry-operation" else "local.refresh")) },
         dartEntry = if (totals) null else { {
+            if (preference.input == PLAYER_TOTAL_INPUT && !allowsTotal) PlayerRequiredDartExplanation(if (mode == "leg-challenge" && session.rules.text("comparison") == "darts") "Deze uitdaging vergelijkt werkelijke pijlen. Registreer daarom iedere geraakte pijl." else "Dubbel in: registreer de werkelijke pijlen tot je hebt geopend. Daarna verschijnt jouw gekozen beurtotaal.")
             inputState.SaveableStateProvider("observed-darts:${session.id}") { PlayerPlayDartEntry(session, canScore && (!state.play.syncing || state.play.offline)) {
                 actions.playAction(json("type" to "session.score", "input" to it))
             } }
         } },
         options = {
+            if (mode in listOf("x01", "leg-challenge")) PlayerScoreInputChoice(preference, mode)
             PlayerPlayTimer(session, state.play.syncing, actions)
             Text(playerPlayRulesLabel(session.rules), color = PlayerMuted)
             if (session.permissions.optBoolean("canUndo") || pending > 0) Action(if (pending > 0) "Laatste wachtende invoer terugnemen" else "Laatste verwerkte beurt terugnemen", !state.play.syncing, false) { actions.playAction(json("type" to "session.undo")) }
@@ -67,6 +68,5 @@ internal fun playerPlayAllowsTotal(session: PlayerPlaySession): Boolean = when (
         },
         activity = if (session.raw.optLong("deadlineAt") > 0) JSONObject(session.raw.toString()).put("phase", "active").put("sessionId", session.id).put("canExtend", session.permissions.optBoolean("canManage") || session.permissions.optBoolean("canScore")) else JSONObject(),
         onExtend = { actions.playAction(json("type" to "session.extend", "warningEpoch" to session.raw.text("warningEpoch"))) },
-        onToggleDartEntry = if (allowsTotal) { { observedDarts = !observedDarts } } else null,
     )
 }

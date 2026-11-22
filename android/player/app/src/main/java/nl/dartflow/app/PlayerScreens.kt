@@ -102,6 +102,8 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
     val profile = state.profile
     var fullScore by rememberSaveable(state.match?.id) { mutableStateOf(true) }
     val scoringState = rememberSaveableStateHolder()
+    val dartInputState = rememberSaveableStateHolder()
+    val scoreInput = rememberPlayerScoreInput(state)
     var more by remember { mutableStateOf(false) }
     val navigationSection = playerNavigationSection(state.screen, state.activeId)
     val activeMatch = state.screen == PlayerScreen.MATCH && state.match != null
@@ -134,7 +136,10 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
             scoreKey = "${match.id}:${match.revision}", onSubmit = actions.score, scoreLabel = if (playerIsCricket(match)) "punten" else "restscore", currentThrowerName = match.currentThrower?.let { it.displayName.ifBlank { it.name } },
             onBack = { fullScore = false }, onRetry = actions.retry, pending = state.hasPendingCommand,
             activity = match.raw.obj("boardActivity"), onExtend = { extendActivity(match.raw.obj("boardActivity"), actions) },
-            options = { state.notice?.let { Notice(it, retry = actions.dismiss) }; MatchOptions(match, actions, state) }, dartEntry = if (playerNeedsDartDetail(match.raw.obj("settings"))) { { PlayerDartScoreEntry(match, state, actions) } } else null, media = if (playerCanMedia(match, state.profile?.id)) { { media(match.id) } } else null) }
+            options = { if (!playerIsCricket(match)) PlayerScoreInputChoice(scoreInput); state.notice?.let { Notice(it, retry = actions.dismiss) }; MatchOptions(match, actions, state) }, dartEntry = if (playerNeedsDartDetail(match.raw.obj("settings")) || scoreInput.input == PLAYER_DART_INPUT) { {
+                if (scoreInput.input == PLAYER_TOTAL_INPUT) playerCoreDartExplanation(match.raw.obj("settings"))?.let { PlayerRequiredDartExplanation(it) }
+                dartInputState.SaveableStateProvider("match-darts:${match.id}") { PlayerDartScoreEntry(match, state, actions) }
+            } } else null, media = if (playerCanMedia(match, state.profile?.id)) { { media(match.id) } } else null) }
         return
     }
     if (state.screen == PlayerScreen.TRAINING && state.activeId != null && (entityFor(state, "trainings").obj("state").has("game") || entityFor(state, "trainings").obj("state").text("mode") == "around")) {
@@ -606,8 +611,10 @@ internal fun entityCommand(actions: PlayerActions, entity: JSONObject, action: J
 @Composable private fun TrainingScreen(state: PlayerUiState, actions: PlayerActions) {
     val e = entityFor(state, "trainings"); val s = e.obj("state"); val game = s.obj("game"); val id = e.text("id")
     val trainingMatch = playerTrainingMatch(e, state.profile)
+    val scoreInput = rememberPlayerScoreInput(state)
     var console by rememberSaveable(id) { mutableStateOf(true) }
     val scoringState = rememberSaveableStateHolder()
+    val dartInputState = rememberSaveableStateHolder()
     BackHandler { if (console) console = false else actions.navigate(PlayerScreen.TRAINING, null) }
     if (s.text("mode") == "around") {
         if (console) AroundTrainingScreen(state, e, actions) { console = false }
@@ -621,10 +628,15 @@ internal fun entityCommand(actions: PlayerActions, entity: JSONObject, action: J
     }
     if (console && !s.optBoolean("interrupted") && !s.optBoolean("completed") && game.text("status") != "finished") {
         val remaining = game.optJSONArray("remaining").ints(); val players = listOf(state.profile?.displayName?.ifBlank { state.profile.name } ?: "Speler") + if (s.text("mode") == "bot") listOf("Dartbot") else emptyList()
-        scoringState.SaveableStateProvider("training-score:$id") { PlayerScoreConsole(title = e.text("name", "Solo ${game.optInt("startScore", 501)}"), players = players.mapIndexed { i, p -> ScorePlayer("$i", p, if (playerIsCricket(trainingMatch)) game.obj("cricket").optJSONArray("points")?.optInt(i) ?: 0 else remaining.getOrElse(i) { 501 }) }, active = game.optInt("turn"), canScore = e.optBoolean("canManage") && !s.optBoolean("nativeAwaitingReceipt") && (s.text("mode")!="bot"||game.optInt("turn")==0) && s.obj("offlineConflict").text("status")!="open", busy = state.busy, offline = !state.online, queueSupported = s.optBoolean("offlineSupported"), queuedVisits = state.pendingTrainingVisits,
+        val canScoreTraining = e.optBoolean("canManage") && !s.optBoolean("nativeAwaitingReceipt") && (s.text("mode")!="bot"||game.optInt("turn")==0) && s.obj("offlineConflict").text("status")!="open"
+        scoringState.SaveableStateProvider("training-score:$id") { PlayerScoreConsole(title = e.text("name", "Solo ${game.optInt("startScore", 501)}"), players = players.mapIndexed { i, p -> ScorePlayer("$i", p, if (playerIsCricket(trainingMatch)) game.obj("cricket").optJSONArray("points")?.optInt(i) ?: 0 else remaining.getOrElse(i) { 501 }) }, active = game.optInt("turn"), canScore = canScoreTraining, busy = state.busy, offline = !state.online, queueSupported = s.optBoolean("offlineSupported"), queuedVisits = state.pendingTrainingVisits,
             scoreLabel = if (playerIsCricket(trainingMatch)) "punten" else "restscore", checkout = null, message = state.error, scoreKey = "$id:${e.optInt("revision")}", onSubmit = { score, darts, double, attempts -> entityCommand(actions, e, json("type" to "training.score", "id" to id, "score" to score, "darts" to darts, "doubleConfirmed" to double, "doubleAttempts" to attempts)) }, onBack = { console = false }, onRetry = actions.retry, pending = state.hasPendingCommand,
-            dartEntry = if (playerNeedsDartDetail(trainingMatch.raw.obj("settings"))) { { PlayerDartScoreEntry(trainingMatch, state, PlayerActions(matchAction = { _, fields -> entityCommand(actions, e, JSONObject(fields.toString()).put("type", "training.score").put("id", id)) })) } } else null,
+            dartEntry = if (playerNeedsDartDetail(trainingMatch.raw.obj("settings")) || scoreInput.input == PLAYER_DART_INPUT) { {
+                if (scoreInput.input == PLAYER_TOTAL_INPUT) playerCoreDartExplanation(trainingMatch.raw.obj("settings"))?.let { PlayerRequiredDartExplanation(it) }
+                dartInputState.SaveableStateProvider("training-darts:$id") { PlayerDartScoreEntry(trainingMatch, state, PlayerActions(matchAction = { _, fields -> entityCommand(actions, e, JSONObject(fields.toString()).put("type", "training.score").put("id", id)) }), allowed = canScoreTraining && (state.online || s.optBoolean("offlineSupported"))) }
+            } } else null,
             activity = e.obj("boardActivity"), onExtend = { extendActivity(e.obj("boardActivity"), actions) }, options = {
+                if (!playerIsCricket(trainingMatch)) PlayerScoreInputChoice(scoreInput)
                 if(s.optBoolean("offlineSupported"))PlayerTrainingConflict(e,state,actions)
                 Action("Laatste beurt terug", !state.busy && s.optInt("undoCount", s.optJSONArray("undo")?.length() ?: 0) > 0, false) { entityCommand(actions, e, json("type" to "training.undo", "id" to id)) }
                 if(e.obj("boardActivity").text("kind")=="free")PlayerLegacyResume(id,"training",s.optBoolean("interrupted"),e.obj("boardActivity").optJSONArray("boardIds")?.strings().orEmpty(),state,actions)
@@ -1103,6 +1115,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
         Text("Privacy- en veiligheidsvragen: info@dartflow.nl", color = PlayerMuted, fontSize = 12.sp)
     }
     PlayerThemePreference(state, actions)
+    PlayerScoreInputSettings(state)
     PlayerCard("Instellingen") { Action("Meldingen", primary = false) { actions.navigate(PlayerScreen.NOTIFICATION_SETTINGS, null) }; Action("Mijn supporttickets", primary = false) { actions.navigate(PlayerScreen.SUPPORT, null) }; Action("Wat is nieuw?", primary = false) { actions.navigate(PlayerScreen.RELEASES, null) } }
     if (state.canManagePlatform) PlayerPremiumAdministration(state, actions)
     PlayerCard("Jouw account") { Text(state.session?.email ?: ""); Text("DartFlow ${BuildConfig.VERSION_NAME}", color = PlayerMuted, fontSize = 12.sp); Action("Uitloggen", !state.busy, false, Modifier.fillMaxWidth(), actions.logout) }

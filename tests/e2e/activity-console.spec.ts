@@ -3,6 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {matchView,newGame} from '../../lib/domain';
 import type {MatchState,MatchView,Overview} from '../../lib/types';
 import type {BoardActivityView} from '../../lib/board-activity-types';
+import {choosePerDartInput} from './helpers/score-console';
 
 const actor='00000000-0000-4000-8000-000000000002',opponent='00000000-0000-4000-8000-000000000003';
 function snapshot(detailed=false):MatchView{
@@ -42,7 +43,7 @@ for(const viewport of [{width:390,height:844},{width:360,height:640}])test(`warn
   });
   await page.goto(`/wedstrijd/${current.id}`);const consoleView=page.getByRole('dialog',{name:'Schermvullende score-invoer'});await expect(consoleView).toBeVisible();
   const notice=consoleView.getByRole('region',{name:'Baanactiviteit'});await expect(notice).toBeVisible();await expect(notice.getByRole('button',{name:/Doorspelen/})).toBeEnabled();await fits(page);await info.attach(`fullscreen-${detailed?'detailed':'total'}-warning-${viewport.width}x${viewport.height}`,{body:await page.screenshot(),contentType:'image/png'});
-  if(detailed){await consoleView.getByRole('button',{name:'Triple',exact:true}).click();await consoleView.getByRole('button',{name:'T20',exact:true}).click();await expect(consoleView.getByLabel('Ingevoerde pijlen')).toContainText('T20');await expect(consoleView.getByRole('button',{name:'Beurt vastleggen',exact:true})).toBeEnabled();}
+  if(detailed){await choosePerDartInput(page);await consoleView.getByRole('button',{name:'Triple',exact:true}).click();await consoleView.getByRole('button',{name:'T20',exact:true}).click();await expect(consoleView.getByLabel('Ingevoerde pijlen')).toContainText('T20');await expect(consoleView.getByRole('button',{name:'Beurt vastleggen',exact:true})).toBeEnabled();}
   else{await page.getByRole('button',{name:'Cijfer 6',exact:true}).click();await page.getByRole('button',{name:'Cijfer 0',exact:true}).click();await expect(page.getByRole('button',{name:'Bevestigen',exact:true})).toBeEnabled();}await fits(page);
   await notice.getByRole('button',{name:/Doorspelen/}).click();await expect(notice).toHaveCount(0);expect(continuations).toHaveLength(1);expect(continuations[0].sessionId).toBe(current.boardActivity!.sessionId);
   if(detailed){await expect(consoleView.getByLabel('Ingevoerde pijlen')).toContainText('T20');await consoleView.getByRole('button',{name:'Beurt vastleggen',exact:true}).click();}
@@ -50,7 +51,7 @@ for(const viewport of [{width:390,height:844},{width:360,height:640}])test(`warn
   // This transport-only view change exercises the two fullscreen owners at
   // the same URL; browser history cleanup must not close the incoming guest.
   await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
-  await expect.poll(()=>consoleView.count(),{timeout:2000,intervals:[50,100,200]}).toBe(1);await expect(consoleView).toContainText('Gastbediening · Sam Dart');await expect(consoleView.getByRole('button',{name:'S20',exact:true})).toBeEnabled();
+  await expect.poll(()=>consoleView.count(),{timeout:2000,intervals:[50,100,200]}).toBe(1);await expect(consoleView).toContainText('Gastbediening · Sam Dart');await choosePerDartInput(page);await expect(consoleView.getByRole('button',{name:'S20',exact:true})).toBeEnabled();
   await consoleView.getByRole('button',{name:'Terug naar wedstrijd',exact:true}).click();await expect(consoleView).toHaveCount(0);await expect(page.getByRole('region',{name:'Lokale gastbediening',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Scoreweergave openen',exact:true})).toHaveCount(1);
   await page.getByRole('button',{name:'Scoreweergave openen',exact:true}).click();await expect(consoleView).toHaveCount(1);await expect(consoleView).toContainText('Gastbediening · Sam Dart');expect(submitted).toHaveLength(1);
  }finally{await context.close();}

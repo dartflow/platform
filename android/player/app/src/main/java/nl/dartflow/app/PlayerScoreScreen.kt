@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,7 +49,7 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
     var previousRevision by rememberSaveable(matchIdentity) { mutableStateOf(scoreKey) }
     LaunchedEffect(scoreKey) {
         // Accepted server revision is the acknowledgement; never clear on a failed request.
-        if (scoreKey != previousRevision) { score = ""; attempts = null; dartsMeasured = !unknownDartsByDefault; finishDialog = false; previousRevision = scoreKey }
+        if (scoreKey != previousRevision) { score = ""; darts = 3; attempts = null; dartsMeasured = !unknownDartsByDefault; finishDialog = false; previousRevision = scoreKey }
     }
     val remaining = players.getOrNull(active)?.remaining ?: 0
     val finish = score.toIntOrNull()?.let { it == remaining && remaining in when (finishRule) { "straight" -> 1..180; "master" -> 2..180; else -> 2..170 } } == true
@@ -67,7 +68,11 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
     val extensions = maxOf(0, 2 - activity.optInt("extensionsUsed"))
     BoxWithConstraints(Modifier.fillMaxSize().background(PlayerInk).windowInsetsPadding(WindowInsets.safeDrawing).testTag("native-score-console")) {
         val compact = maxHeight < 660.dp
-        Column(Modifier.fillMaxSize().padding(horizontal = if (compact) 12.dp else 18.dp, vertical = if (compact) 4.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 10.dp)) {
+        // Very short phones retain usable keys; the complete console can scroll when needed.
+        val fontScale = LocalDensity.current.fontScale
+        val scrollConsole = maxHeight < 560.dp || (maxWidth <= 330.dp && maxHeight < 680.dp)
+        val consoleSize = if (scrollConsole) Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).height(620.dp + 200.dp * (fontScale - 1f).coerceAtLeast(0f)) else Modifier.fillMaxSize()
+        Column(consoleSize.padding(horizontal = if (compact) 12.dp else 18.dp, vertical = if (compact) 4.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 10.dp)) {
             Row(Modifier.fillMaxWidth().height(if (compact) 36.dp else 42.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onBack, contentPadding = PaddingValues(horizontal = 0.dp), modifier = Modifier.widthIn(min = 58.dp)) { Text("‹ Terug", fontSize = 13.sp) }
                 if (warning) {
@@ -97,9 +102,17 @@ data class ScorePlayer(val id: String, val name: String, val remaining: Int)
                     dartEntry()
                 }
             } else {
-            Row(Modifier.fillMaxWidth().height(if (compact) 50.dp else 66.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(Modifier.weight(1f)) { Text("WORP VAN", color = PlayerMuted, fontSize = 9.sp, letterSpacing = 1.sp); Text(currentThrowerName ?: players.getOrNull(active)?.name ?: "Speler", maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp) }
-                Text(score.ifEmpty { "0" }, fontFamily = PlayerBarlow, fontSize = if (compact) 44.sp else 58.sp, color = if (invalid) PlayerError else PlayerLime, modifier = Modifier.testTag("entered-score").semantics { contentDescription = "Ingevoerde score ${score.ifEmpty { "0" }}" })
+            Row(Modifier.fillMaxWidth().heightIn(min = if (compact) 50.dp else 66.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(Modifier.weight(1f)) {
+                Text(if (dartsMeasured) "Beurtotaal · $darts ${if (darts == 1) "pijl" else "pijlen"}" else "Beurtotaal · aantal onbekend", color = PlayerMuted, fontSize = 10.sp, lineHeight = 13.sp, modifier = Modifier.fillMaxWidth().testTag("visit-total-label"))
+                Text(currentThrowerName ?: players.getOrNull(active)?.name ?: "Speler", maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp, lineHeight = 16.sp)
+                Row {
+                (1..3).forEach { count ->
+                    TextButton(onClick = { darts = count; dartsMeasured = true; if ((attempts ?: 0) > count) attempts = null }, enabled = !locked, contentPadding = PaddingValues(0.dp), modifier = Modifier.size(48.dp).testTag("score-darts-$count").semantics { selected = dartsMeasured && darts == count; contentDescription = "$count ${if (count == 1) "pijl" else "pijlen"} in deze beurt" }, colors = ButtonDefaults.textButtonColors(contentColor = if (dartsMeasured && darts == count) PlayerLime else PlayerMuted)) { Text("$count", Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontSize = 16.sp, lineHeight = 22.sp, maxLines = 1, softWrap = false) }
+                }
+                }
+                }
+                Text(score.ifEmpty { "0" }, fontFamily = PlayerBarlow, fontSize = if (compact) 44.sp else 58.sp, lineHeight = if (compact) 46.sp else 60.sp, maxLines = 1, softWrap = false, textAlign = TextAlign.End, color = if (invalid) PlayerError else PlayerLime, modifier = Modifier.width((if (compact) 80.dp else 100.dp) * LocalDensity.current.fontScale).testTag("entered-score").semantics { contentDescription = "Ingevoerde score ${score.ifEmpty { "0" }}" })
             }
             Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 8.dp)) {
                 listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf("C", "0", "⌫")).forEach { row ->

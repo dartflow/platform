@@ -52,13 +52,13 @@ internal fun playerNeedsDartDetail(settings: JSONObject): Boolean = settings.tex
 }
 
 /** Only records observed targets; the server applies opening, finish and bust rules. */
-@Composable internal fun PlayerDartScoreEntry(match: PlayerMatch, state: PlayerUiState, actions: PlayerActions) {
+@Composable internal fun PlayerDartScoreEntry(match: PlayerMatch, state: PlayerUiState, actions: PlayerActions, allowed: Boolean = true) {
     var hits by rememberSaveable(match.id) { mutableStateOf(listOf<String>()) }
     var multiplier by rememberSaveable { mutableStateOf("S") }
     var details by remember { mutableStateOf(false) }
     var previousRevision by rememberSaveable(match.id) { mutableIntStateOf(match.revision) }
     LaunchedEffect(match.revision) { if (match.revision != previousRevision) { hits = emptyList(); previousRevision = match.revision } }
-    val enabled = match.permissions.optBoolean("canScore") && !state.busy && (state.online || match.raw.optBoolean("offlineSupported")) && !state.hasPendingCommand
+    val enabled = allowed && match.permissions.optBoolean("canScore") && !state.busy && (state.online || match.raw.optBoolean("offlineSupported")) && !state.hasPendingCommand
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(hits.joinToString(" · ").ifBlank { "Raakvlak per pijl" }, Modifier.weight(1f).testTag("entered-dart-hits"), color = PlayerLime, maxLines = 2)

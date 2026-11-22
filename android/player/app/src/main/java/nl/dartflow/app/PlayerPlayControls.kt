@@ -23,9 +23,10 @@ import org.json.JSONObject
 @Composable internal fun PlayerPlayDartEntry(session: PlayerPlaySession, enabled: Boolean, submit: (JSONObject) -> Unit) {
     var entered by rememberSaveable(session.id) { mutableStateOf(listOf<String>()) }
     var intended by rememberSaveable(session.id) { mutableStateOf(listOf<String>()) }
-    var previousRevision by rememberSaveable(session.id) { mutableIntStateOf(session.revision) }
-    LaunchedEffect(session.revision) {
-        if (previousRevision != session.revision) { entered = emptyList(); intended = emptyList(); previousRevision = session.revision }
+    val draftKey = playerPlayDraftKey(session)
+    var previousRevision by rememberSaveable(session.id) { mutableStateOf(draftKey) }
+    LaunchedEffect(draftKey) {
+        if (previousRevision != draftKey) { entered = emptyList(); intended = emptyList(); previousRevision = draftKey }
     }
     var multiplier by rememberSaveable { mutableStateOf("S") }
     var target by rememberSaveable { mutableStateOf("") }
