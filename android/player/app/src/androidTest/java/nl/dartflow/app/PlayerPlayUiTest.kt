@@ -64,13 +64,13 @@ class PlayerPlayUiTest {
         compose.onNodeWithTag("score-player-remaining-0").assertTextEquals("501")
         compose.onNodeWithText("Beoogd doel voor de volgende pijl (optioneel)").assertDoesNotExist()
         (1..20).forEach { target ->
-            val node=compose.onNodeWithTag("dart-target-$target").assertIsDisplayed()
+            val node=compose.onNodeWithTag("dart-target-$target").assertIsDisplayed().assertTextEquals("$target").assertContentDescriptionEquals("S$target")
             val bounds=node.getUnclippedBoundsInRoot()
             assertTrue("Every target remains at least 48 dp wide and high",bounds.right-bounds.left>=48.dp&&bounds.bottom-bounds.top>=48.dp)
             val layouts=mutableListOf<TextLayoutResult>();node.performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
-            assertEquals(1,layouts.size);assertEquals(1,layouts.single().lineCount);assertFalse("Target S$target must never wrap or clip",layouts.single().hasVisualOverflow)
+            assertEquals(1,layouts.size);assertEquals(1,layouts.single().lineCount);assertFalse("Target $target must never wrap or clip",layouts.single().hasVisualOverflow)
         }
-        compose.onNodeWithText("S20").performClick();compose.onNodeWithText("S19").performClick()
+        compose.onNodeWithTag("dart-target-20").performClick();compose.onNodeWithTag("dart-target-19").performClick()
         captureScoreFixture("score-practice-darts-large-font.png")
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
         compose.onNodeWithTag("native-score-console").assertDoesNotExist()
@@ -132,7 +132,7 @@ class PlayerPlayUiTest {
         compose.onAllNodesWithText("0/5").assertCountEquals(24)
         compose.onNodeWithText("Gereed").performClick()
         compose.onNodeWithText("Triple").performScrollTo().performClick()
-        compose.onNodeWithTag("dart-target-20").performScrollTo().performClick()
+        compose.onNodeWithTag("dart-target-20").assertTextEquals("20").assertContentDescriptionEquals("T20").performScrollTo().performClick()
         compose.onNodeWithTag("confirm-play-dart-hits").performScrollTo().performClick()
         compose.runOnIdle{assertEquals(listOf("T20"),input.optJSONArray("dartHits")!!.strings());assertFalse(input.has("score"))}
     }

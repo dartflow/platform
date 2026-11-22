@@ -33,15 +33,15 @@ internal fun playerDartCommand(hits: List<String>): JSONObject {
 }
 internal fun playerNeedsDartDetail(settings: JSONObject): Boolean = settings.text("discipline", "x01") in listOf("cricket", "tactics") || settings.text("inRule", "single") == "double" || settings.text("outRule", "double") != "double"
 
-/** No default Material button padding: five actual targets must fit without wrapping S20. */
-@Composable internal fun PlayerDartPad(multiplier: String, enabled: Boolean, onMultiplier: (String) -> Unit, onHit: (String) -> Unit, showMultiplier: Boolean = true) {
+/** Numeric targets stay readable; the selected segment and accessible hit retain S/D/T. */
+@Composable internal fun PlayerDartPad(multiplier: String, enabled: Boolean, onMultiplier: (String) -> Unit, onHit: (String) -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         listOf("S" to "Single", "D" to "Dubbel", "T" to "Triple").forEach { (value, label) ->
             FilledTonalButton(onClick = { onMultiplier(value) }, enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("dart-segment-$value").semantics { contentDescription = "$value · $label" }, shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.filledTonalButtonColors(containerColor = if (multiplier == value) PlayerLime else PlayerPanel, contentColor = if (multiplier == value) PlayerInk else PlayerText)) { Text(label, maxLines = 1, softWrap = false, fontSize = 14.sp) }
         }
     }
     (1..20).chunked(5).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) { row.forEach { target ->
-        FilledTonalButton(onClick = { onHit("$multiplier$target") }, enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("dart-target-$target").semantics { contentDescription = "$multiplier$target" }, shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.filledTonalButtonColors(containerColor = PlayerPanel, contentColor = PlayerText)) { Text(if (showMultiplier) "$multiplier$target" else "$target", maxLines = 1, softWrap = false, fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+        FilledTonalButton(onClick = { onHit("$multiplier$target") }, enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("dart-target-$target").semantics { contentDescription = "$multiplier$target" }, shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.filledTonalButtonColors(containerColor = PlayerPanel, contentColor = PlayerText)) { Text("$target", maxLines = 1, softWrap = false, fontSize = 18.sp, fontWeight = FontWeight.Bold) }
     } } }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         listOf("MISS" to "Mis", "SB" to "25", "DB" to "Bull 50").forEach { (hit, label) ->
@@ -64,7 +64,7 @@ internal fun playerNeedsDartDetail(settings: JSONObject): Boolean = settings.tex
         TextButton(onClick = { hits = hits.dropLast(1) }, enabled = enabled && hits.isNotEmpty(), modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Laatste pijl wissen" }) { Text("⌫") }
         TextButton(onClick = { details = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Scorekaart") }
     }
-    PlayerDartPad(multiplier, enabled && hits.size < 3, { multiplier = it }, { hits = hits + it }, showMultiplier = false)
+    PlayerDartPad(multiplier, enabled && hits.size < 3, { multiplier = it }, { hits = hits + it })
     state.error?.let { Notice(it, true, actions.retry) }
     if (state.hasPendingCommand) Notice("Je vorige worp wacht op bevestiging.", retry = actions.retry)
     Action(if (state.busy) "Pijlen worden bevestigd…" else "Bevestig deze pijlen", enabled && hits.isNotEmpty(), modifier = Modifier.fillMaxWidth().testTag("confirm-dart-hits")) { actions.matchAction("score", playerDartCommand(hits)) }

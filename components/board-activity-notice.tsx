@@ -5,7 +5,7 @@ import type {BoardActivityView} from '@/lib/board-activity-types';
 import './board-activity-notice.css';
 
 /** The server owns T and the deadline; this clock only paints the shared countdown. */
-export default function BoardActivityNotice({activity,display=false,boardId,offline=false,onRefresh}:{activity?:BoardActivityView;display?:boolean;boardId?:string;offline?:boolean;onRefresh?:()=>void|Promise<void>}){
+export default function BoardActivityNotice({activity,display=false,compact=false,boardId,offline=false,onRefresh}:{activity?:BoardActivityView;display?:boolean;compact?:boolean;boardId?:string;offline?:boolean;onRefresh?:()=>void|Promise<void>}){
  const [now,setNow]=useState(0),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [accepted,setAccepted]=useState<BoardActivityView|null>(null);
  const refresh=useRef(onRefresh);refresh.current=onRefresh;
@@ -30,6 +30,11 @@ export default function BoardActivityNotice({activity,display=false,boardId,offl
   catch(cause){setError(cause instanceof Error?cause.message:'Verbinding onderbroken. Probeer opnieuw.');void onRefresh?.();}
   finally{setBusy(false);}
  }
+ if(compact)return <section className="board-activity-notice board-activity-compact" aria-label="Baanactiviteit" data-session-id={current.sessionId} data-deadline={current.deadlineAt}>
+  <span className="visually-hidden" role="status" key={`${current.sessionId}:${current.warningEpoch}:${ended}`}>{ended?'De baansessie is afgelopen.':`Er is twee minuten niet gescoord. De baan wordt over één minuut vrijgegeven. ${extensions} verlengingen beschikbaar.`}</span>
+  {ended?<strong>{current.kind==='official'?'Partij onderbroken':'Baan vrijgegeven'}</strong>:current.canExtend?<button type="button" className="board-activity-continue" disabled={busy||offline||!extensions} onClick={()=>void extend()}>{busy?'Bezig…':'Doorspelen'} · <span>{seconds}</span><span className="visually-hidden"> · {extensions} verlengingen beschikbaar</span></button>:<strong title={display?'Tik op Doorspelen op je telefoon':extensions?'Baanstatus wordt bijgewerkt…':'Geen verlengingen meer. Een score houdt de baan actief.'}>Vrijgave · {seconds}</strong>}
+  {error&&<p className="board-activity-error" role="alert">{error}</p>}
+ </section>;
  return <section className={`board-activity-notice ${display?'board-activity-display':'board-activity-phone'}`} aria-label="Baanactiviteit" data-session-id={current.sessionId} data-deadline={current.deadlineAt}>
   <span className="visually-hidden" role="status" key={`${current.sessionId}:${current.warningEpoch}:${ended}`}>{ended?'De baansessie is afgelopen.':`Er is twee minuten niet gescoord. De baan wordt over één minuut vrijgegeven. ${extensions} verlengingen beschikbaar.`}</span>
   {display&&<span className="board-activity-clock" aria-hidden="true">◷</span>}

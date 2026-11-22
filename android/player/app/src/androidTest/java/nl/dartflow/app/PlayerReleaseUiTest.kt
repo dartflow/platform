@@ -87,7 +87,8 @@ class PlayerReleaseUiTest {
         compose.onNodeWithTag("native-score-console").assertIsDisplayed()
         compose.onNodeWithText("Single").performClick()
         compose.onNodeWithText("Dubbel").performClick()
-        compose.onNodeWithText("20").performScrollTo().performClick()
+        (1..20).forEach { target -> compose.onNodeWithTag("dart-target-$target").assertTextEquals("$target").assertContentDescriptionEquals("D$target") }
+        compose.onNodeWithTag("dart-target-20").performScrollTo().performClick()
         compose.onNodeWithText("‹ Terug").performClick()
         compose.onNodeWithTag("native-score-console").assertDoesNotExist()
         compose.onNodeWithText("Open score-invoer").performScrollTo().performClick()
