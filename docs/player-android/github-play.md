@@ -5,6 +5,22 @@ Deze procedure hoort uitsluitend bij **DartFlow Speler**, pakket
 De werkende GitHub Actions-inrichting vraagt geen wijziging van het GitHub-abonnement.
 Google-controle, accountverificatie en verplichte Play-formulieren blijven eigenaarstaken.
 
+## Actuele uitgifte · 0.6.1 (10)
+
+De actuele productbron is [`d1adf84c08061f606ccbd11b5abaec5c5bda5289`](https://github.com/dartflow/platform/commit/d1adf84c08061f606ccbd11b5abaec5c5bda5289), Player **0.6.1/code 10**, pakket **`nl.dartflow.app`**. Alle normale MAIN-controles zijn groen en staging/productie gebruiken die bron. De productie-AAB en universele APK zijn ondertekend met de bestaande uploadsleutel en als [GitHubrelease android-player-0.6.1-10](https://github.com/dartflow/platform/releases/tag/android-player-0.6.1-10) geleverd; De vier normale Play-handelingen zijn geslaagd; de [onafhankelijke nacontrole](https://github.com/dartflow/platform/actions/runs/45069821263) bevestigt intern en productie elk alleen **code 10 `completed`** op **22 november 2026 om 21:03:44 UTC**. Gebruik de actuele [0.6.1-releasebeschrijving](../releases/0.6.1.md), [bestandscontrole](oplevering.md) en het [uitgiftebewijs](../evidence/release-0.6.1-2026-11-22.json). De vorige geverifieerde Play-uitgifte is [0.6.0/code 9](../releases/0.6.0.md); 0.1.3 hieronder is historisch.
+
+| Fase voor 0.6.1/code 10 | Werkelijke stand |
+| --- | --- |
+| CI / webbackends | Exacte MAIN-bron geslaagd; staging en productie geaccepteerd |
+| Ondertekening | Geslaagd; AAB SHA-256 `d53d57fe77c3a2db2d114ac5a908ca2c7555796a2bf5b86828e10b8401bdadfb`, 28.527.374 bytes; universele APK uit dezelfde AAB, zonder hercompilatie |
+| GitHublevering | [android-player-0.6.1-10](https://github.com/dartflow/platform/releases/tag/android-player-0.6.1-10), **22 november 20:58:24 UTC**; alle elf assets opnieuw gedownload en gecontroleerd |
+| Voorafgaande Play-toegangscontrole | [45069431546](https://github.com/dartflow/platform/actions/runs/45069431546), poging 1, SUCCESS; receipt **20:59:40 UTC**, intern/productie toen code 9 `completed` |
+| Interne upload | [45069535417](https://github.com/dartflow/platform/actions/runs/45069535417), poging 1, SUCCESS; edit gecommit voor code 10 en exacte AAB, receipt **21:01:17 UTC** |
+| Productiepromotie | [45069697519](https://github.com/dartflow/platform/actions/runs/45069697519), poging 1, SUCCESS; dezelfde code 10 en AAB, receipt **21:02:37 UTC** |
+| Onafhankelijke tracknacontrole | [45069821263](https://github.com/dartflow/platform/actions/runs/45069821263), poging 1, SUCCESS; receipt **21:03:44 UTC**, intern/productie elk alleen **code 10 `completed`**, alpha/beta leeg |
+
+Het signingreceipt bewaart `playUpload=false` van het ondertekenmoment; dat wordt niet herschreven na publicatie. De latere Play-commits en onafhankelijke trackstatus staan afzonderlijk hierboven; Google-reviewgoedkeuring en ontvangst op een specifieke telefoon zijn niet afzonderlijk gemeten. `ERROR_IF_IN_REVIEW` blijft behouden.
+
 ## Eenmalig in Google Cloud en Play Console
 
 De eigenaar heeft het project via een Console-screenshot bevestigd:
@@ -15,7 +31,7 @@ De eigenaar heeft het project via een Console-screenshot bevestigd:
 | Project-ID | **`dartflow`** |
 | Projectnummer | **`955883910359`** |
 
-De eigenaar heeft de Cloud-bootstrap uitgevoerd en de publieke outputs, appgebonden Play-rechten, het subjectherstel en de eerste AAB-upload bevestigd. Serviceaccount, pool, provider en GitHub-variabelen zijn ingericht; `PLAYER_PLAY_ENABLED=true`. De eerste productie-indiening is door de eigenaar gedaan. De actuele ondertekende update is **0.1.3 (4)**, applicatiebron `4a234040109b0c5f1dd8118462a0dea3ae062994`. Beide backends draaien die bron. De [afzonderlijke Play-API-controle](https://github.com/dartflow/platform/actions/runs/44415166749) bevestigt op **18 november 2026 om 22:50:12 UTC** versiecode **4** met status **`completed`** op intern en productie. Google-goedkeuring en openbare beschikbaarheid zijn niet vastgesteld. Bestands-, backend- en Play-uitkomsten staan apart in het [releasebewijs](../evidence/player-home-score-2026-11-18.json); eerdere releases blijven historisch bewaard.
+De eigenaar heeft de Cloud-bootstrap uitgevoerd en de publieke outputs, appgebonden Play-rechten, het subjectherstel en de eerste AAB-upload bevestigd. Serviceaccount, pool, provider en GitHub-variabelen zijn ingericht; `PLAYER_PLAY_ENABLED=true`. De eerste productie-indiening is door de eigenaar gedaan. De actuele 0.6.1-status staat bovenaan; onderstaande inrichting en oudere uitgiften bewaren de bootstrapgeschiedenis. De historische [Play-API-controle voor 0.1.3](https://github.com/dartflow/platform/actions/runs/44415166749) bevestigde op **18 november 2026 om 22:50:12 UTC** versiecode **4** op intern/productie `completed`. Het [oude releasebewijs](../evidence/player-home-score-2026-11-18.json) blijft bij die bron en bewijst geen huidige 0.6.1-uitgifte.
 
 1. Projectkeuze en inschakelen van **Google Play Android Developer API** zijn door de eigenaar bevestigd.
 2. Maak een afzonderlijk serviceaccount voor de spelersapp. Maak geen downloadbare JSON-sleutel.
@@ -158,9 +174,9 @@ vereist ook voor de eerste productiepublicatie een handmatige Console-release.
 Daarna kan hij een gecontroleerde interne versie naar productie promoveren.
 Een API-commit is geen bewijs dat Google de app al heeft goedgekeurd of beschikbaar gesteld.
 
-### Actuele ondertekende update · 0.1.3 (4)
+### Historische ondertekende update · 0.1.3 (4)
 
-Gebruik uitsluitend [tag `android-player-0.1.3-4`](https://github.com/dartflow/platform/releases/tag/android-player-0.1.3-4), pakket **`nl.dartflow.app`**, versionName **`0.1.3`**, versionCode **`4`** en de assets `app-production-release.aab` plus `release-receipt.json`. De exacte applicatiebron is [`4a234040109b0c5f1dd8118462a0dea3ae062994`](https://github.com/dartflow/platform/commit/4a234040109b0c5f1dd8118462a0dea3ae062994), met PR #14, #15, #16 en #17. De AAB is **26.336.260 bytes** groot en heeft de gecontroleerde SHA-256 **`faf386e230345ea5d1c4eccfd36194a55c416f10c53f4f4b49cdb791b37ab251`**. Neem bij een herhaling nooit de oude 0.1.2-hash over.
+Deze historische 0.1.3-uitgifte gebruikt [tag `android-player-0.1.3-4`](https://github.com/dartflow/platform/releases/tag/android-player-0.1.3-4), pakket **`nl.dartflow.app`**, versionName **`0.1.3`**, versionCode **`4`** en de assets `app-production-release.aab` plus `release-receipt.json`. De exacte applicatiebron is [`4a234040109b0c5f1dd8118462a0dea3ae062994`](https://github.com/dartflow/platform/commit/4a234040109b0c5f1dd8118462a0dea3ae062994), met PR #14, #15, #16 en #17. De AAB is **26.336.260 bytes** groot en heeft de gecontroleerde SHA-256 **`faf386e230345ea5d1c4eccfd36194a55c416f10c53f4f4b49cdb791b37ab251`**. Neem bij een herhaling nooit de oude 0.1.2-hash over.
 
 | Releasegate | Gecontroleerde uitkomst |
 | --- | --- |
@@ -271,7 +287,7 @@ moet op staging en productie actief zijn.
 1. Kies eerst `check-access` om de ingestelde Play-rechten en bestaande tracks
    te controleren. Er wordt geen AAB geüpload of trackrelease gewijzigd.
 2. Gebruik `upload-internal` met de bronrelease en de verplichte
-   `bundle_sha256`. Voor de 0.1.3 (4)-release is de brontag `android-player-0.1.3-4`,
+   `bundle_sha256` uit het actuele bevroren signingreceipt. Onderstaand historisch voorbeeld hoort uitsluitend bij 0.1.3 (4), niet bij 0.6.1. Toen was de brontag `android-player-0.1.3-4`,
    met assets `app-production-release.aab` en `release-receipt.json`.
    Gebruik bundelhash `faf386e230345ea5d1c4eccfd36194a55c416f10c53f4f4b49cdb791b37ab251`
    uit het bevroren receipt en versiecode `4`.

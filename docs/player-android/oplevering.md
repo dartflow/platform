@@ -1,6 +1,38 @@
 # DartFlow Speler · native Android-opleveringen
 
-## Actuele ondertekende release · 0.1.3 (4)
+## Actuele release · 0.6.1 (10)
+
+DartFlow Speler **0.6.1**, versionCode **10**, pakket **`nl.dartflow.app`**, hoort bij productbron [`d1adf84c08061f606ccbd11b5abaec5c5bda5289`](https://github.com/dartflow/platform/commit/d1adf84c08061f606ccbd11b5abaec5c5bda5289), normaal gemerged via [PR 27](https://github.com/dartflow/platform/pull/27). Desktop en mobiele web/PWA zijn op staging en productie geaccepteerd. De Android-bestanden zijn met de bestaande uploadsleutel ondertekend en op **22 november 2026 om 20:58:24 UTC** als [GitHubrelease android-player-0.6.1-10](https://github.com/dartflow/platform/releases/tag/android-player-0.6.1-10) geleverd; De [onafhankelijke Play-nacontrole](https://github.com/dartflow/platform/actions/runs/45069821263) bevestigt op **22 november 2026 om 21:03:44 UTC** intern en productie elk alleen **code 10 `completed`**. Google-goedkeuring en ontvangst op een specifieke telefoon zijn niet afzonderlijk gemeten. De [volledige releasebeschrijving](../releases/0.6.1.md) en het [uitgiftebewijs](../evidence/release-0.6.1-2026-11-22.json) houden productbron, CI, hosting, signing en distributie apart.
+
+X01 opent standaard met een schermvullend beurtotaal over **drie pijlen**. Het gebruikte aantal is aanpasbaar; een finish vereist een expliciete keuze en toepasselijke uitgooibevestiging. Via **Instellingen → Score-invoer** kies je voor X01 en leguitdagingen afzonderlijk totaal of per pijl. Dit wordt per account **op dit toestel** bewaard en niet naar browsers of andere telefoons gesynchroniseerd. Cricket, Tactics en doelspellen behouden hun pijl-/doelregistratie. De kernroutes voor double-in, straight-out en master-out blijven werkelijke treffers vereisen; Play kan na openen totalen toestaan. Een leguitdaging die pijlen vergelijkt vereist altijd pijlregistratie.
+
+De scoreweergave omvat wedstrijden, vrije partijen en oefeningen, bestaande trainingen en offline hervatten. Grote cijferknoppen met een aparte segmentkeuze voorkomen afgebroken labels. Terug/heropenen en invoerwissels bewaren een niet-verzonden concept. Een sessieverlenging behoudt het Play-concept; een geaccepteerde beurt reset het voor de nieuwe werper. Serverrechten en offline replay blijven bepalend.
+
+| Controle op 0.6.1 (10) | Werkelijk resultaat |
+| --- | --- |
+| [Player MAIN CI 45064499653](https://github.com/dartflow/platform/actions/runs/45064499653) | SUCCESS op de exacte productbron. Verify-producer uit **poging 1**: **157 JVM-methoden per variant / 471 uitvoeringen**, lint en builds. UI-producer uit **poging 3**: **90 werkelijk uitgevoerde methoden**, nul fouten/skips; eerdere 89 behouden. Poging 1 en 2 faalden vóór UI-uitvoering op publieke Maven-resolutie; normale herhaling na afkoeling, zonder bron- of dependencywijziging. |
+| Bron- en artifactbinding | **145** native bronbestanden plus **drie** CI-gates gecontroleerd; build- en UI-archives met hun eigen producerpoging, grootte en digest geverifieerd. |
+| Visuele controle | **21 echte PNG's, alle 21 individueel bekeken**, van een API 36 google_apis x86_64-emulator met synthetische fixtures. Compacte/grote tekst, scoresysteem, instellingen, thema's en bestaande navigatie-/supportschermen beoordeeld. |
+| [Web MAIN CI 45064499677](https://github.com/dartflow/platform/actions/runs/45064499677) | Poging 1: **909** servertests, **47** prototypetests, **130** browsercases en afzonderlijk **5** overlappende Feed/chat-cases geslaagd, zonder skips of browserretries; typecheck/lint/build geslaagd. |
+| Ondertekening | Bestaande uploadsleutel; CI-AAB-payload buiten ondertekening bytegelijk. Universele APK uit dezelfde ondertekende AAB, **zonder hercompilatie**. Bundlevalidatie, jarsigner/apksigner, AAB `PAGE_ALIGNMENT_16K`, APK ZIP-uitlijning en 64-bit-ELF-loadsegmenten geslaagd. |
+| Staging-APK | Exact CI-debugbestand, `nl.dartflow.app.staging`, **0.6.1-staging/code 10**, ingebouwde stagingbackend en handtekening gecontroleerd. SHA-256 `7eaefe6f02dbf4198c83f38bed2b957123510b561c2b35e7d5fe79417f3c6ec5`; niet opnieuw gebouwd of fysiek geïnstalleerd. |
+| Staging / productiebackend | [45068084137](https://github.com/dartflow/platform/actions/runs/45068084137) / [45068534584](https://github.com/dartflow/platform/actions/runs/45068534584), dezelfde bron; health/ready, beschermde review-account-GETs en elk twaalf individueel bekeken openbare desktop-/mobiele browserbeelden geslaagd. |
+| GitHublevering | Alle **11 assets** vers gedownload en op grootte, SHA-256 en GitHubdigest gecontroleerd: drie APK/AAB-bestanden en acht controlebestanden. De 21 emulatorbeelden zijn afzonderlijk in het CI-bewijs bewaard. |
+| Google Play | Alle vier normale acties, elk poging 1, geslaagd: [toegangscontrole](https://github.com/dartflow/platform/actions/runs/45069431546), [interne upload](https://github.com/dartflow/platform/actions/runs/45069535417), [productiepromotie](https://github.com/dartflow/platform/actions/runs/45069697519) en [onafhankelijke nacontrole](https://github.com/dartflow/platform/actions/runs/45069821263). Laatste read **21:03:44 UTC**: intern/productie elk alleen **code 10 `completed`**, met dezelfde productbron en AAB. |
+| Fysieke toestellen | Niet uitgevoerd. Gehoste scoremutaties, nieuwe OTP-/Google-aanmelding, camera/video, installatie en pushontvangst zijn niet uit bovenstaande controles afgeleid. |
+
+| Ondertekend bestand | Grootte | SHA-256 |
+| --- | --- | --- |
+| [app-production-release.aab](https://github.com/dartflow/platform/releases/download/android-player-0.6.1-10/app-production-release.aab) | 28.527.374 bytes | `d53d57fe77c3a2db2d114ac5a908ca2c7555796a2bf5b86828e10b8401bdadfb` |
+| [app-production-release.apk](https://github.com/dartflow/platform/releases/download/android-player-0.6.1-10/app-production-release.apk) | 50.661.129 bytes | `d03c4fdcc0433e6fb8c2e97206e024a59890c6579c801bc36bc2e40743eb16a9` |
+| [release-evidence.json](https://github.com/dartflow/platform/releases/download/android-player-0.6.1-10/release-evidence.json) | Ondertekeningsbewijs | `e16d17192c8206dae9f0626eae8a442888139b79d8709f1b8f039e2f8d6bf660` |
+| [release-receipt.json](https://github.com/dartflow/platform/releases/download/android-player-0.6.1-10/release-receipt.json) | Bron-/versie-/certificaatbinding | `b376aee1458d27a326d4ec4bdc60d84528cd0e3ec4a652e4d26d6854512bc60d` |
+
+Het uploadcertificaat blijft `97:C8:A2:78:FF:67:14:BD:E4:F1:BC:B5:4E:BA:15:12:28:D4:2E:83:8F:11:D4:3B:CF:6E:71:C7:DE:08:A0:09`; het afzonderlijke Play App Signing-certificaat blijft `DE:54:EB:62:ED:D3:10:AA:F9:39:0F:47:6D:AF:73:E2:94:13:75:CE:EE:BE:DC:0B:89:D8:8D:E2:D4:EC:3E:F1`. De 16KB-ELF-controle geldt voor arm64-v8a en x86_64; de bestaande 32-bit-WebRTC-loadsegmenten zijn 4KB. Het bevroren signingreceipt heeft `playUpload=false` als status van het ondertekenmoment; latere Play-handelingen krijgen eigen bewijs.
+
+De vorige geverifieerde productuitgifte is **[0.6.0/code 9](../releases/0.6.0.md)**, bron `f527ed618b18a12d588b8bdc6fa12edc6f47cbdb`, toen intern/productie op Play `completed`. De secties hieronder bewaren oudere native opleveringen en hun eigen hashes. Oche Live is in deze Player-release niet opnieuw gepubliceerd.
+
+## Historische ondertekende release · 0.1.3 (4)
 
 DartFlow Speler **0.1.3**, versionCode **4**, pakket **`nl.dartflow.app`**, is ondertekend gepubliceerd als [GitHubrelease `android-player-0.1.3-4`](https://github.com/dartflow/platform/releases/tag/android-player-0.1.3-4). De exacte applicatiebron is [`4a234040109b0c5f1dd8118462a0dea3ae062994`](https://github.com/dartflow/platform/commit/4a234040109b0c5f1dd8118462a0dea3ae062994), met de scorewijziging uit [PR #14](https://github.com/dartflow/platform/pull/14), de nieuwe startpagina uit [PR #15](https://github.com/dartflow/platform/pull/15) en de footercontroles uit [PR #16](https://github.com/dartflow/platform/pull/16) en [PR #17](https://github.com/dartflow/platform/pull/17). Beide backends draaien dezelfde bron. De Play-API bevestigt versiecode **4** op intern en productie; Google-goedkeuring en openbare beschikbaarheid zijn niet vastgesteld. Het [samengevoegde releasebewijs](../evidence/player-home-score-2026-11-18.json) houdt de applicatiebron apart van een latere documentatiecommit.
 
@@ -141,7 +173,7 @@ Het bevroren `release-receipt.json` bewaart `playUpload=false` van het moment va
 
 ## Historische release · 0.1.0 (1)
 
-De onderstaande secties bewaren de eerdere oplevering en haar toenmalige uitrol-/configuratiestatus. De actuele ondertekende **0.1.3 (4)**-bestanden staan bovenaan.
+De onderstaande secties bewaren de eerdere oplevering en haar toenmalige uitrol-/configuratiestatus. De actuele **0.6.1 (10)**-status staat bovenaan; de oudere ondertekende bestanden houden hun eigen historische secties.
 
 Op 18 november 2026 zijn de ondertekende productiebestanden van versie **0.1.0 (1)** opgeleverd: Kotlin/Jetpack Compose, met applicationId **`nl.dartflow.app`**. De spelersschermen zijn ingebouwd in de app. De bestaande DartFlow-server blijft verantwoordelijk voor accounts, rechten, geaccepteerde scores, resultaten en statistieken.
 
@@ -191,7 +223,7 @@ Deze eerste versie levert de spelersomgeving; er is geen volledige native vervan
 
 ### Oorspronkelijke oplevering van 15 november
 
-De eerste bouwcontrole gebruikte applicatiebron `267fa5c76baed699214bdbd957a042ba901a5559`. Onderstaande debug-APK's en ongetekende AAB zijn de oorspronkelijke controlebestanden. De 0.1.0-productie-APK en ondertekende AAB van 18 november hierboven waren de daaropvolgende oplevering; de bevroren 0.1.1-bestanden staan in hun eigen sectie en de actuele 0.1.3 staat bovenaan.
+De eerste bouwcontrole gebruikte applicatiebron `267fa5c76baed699214bdbd957a042ba901a5559`. Onderstaande debug-APK's en ongetekende AAB zijn de oorspronkelijke controlebestanden. De 0.1.0-productie-APK en ondertekende AAB van 18 november hierboven waren de daaropvolgende oplevering; de bevroren 0.1.1-bestanden staan in hun eigen sectie en de historische 0.1.3 staat in haar eigen sectie. De actuele 0.6.1-status staat bovenaan.
 
 #### Lokale installatie van de historische ontwikkelbuild
 
