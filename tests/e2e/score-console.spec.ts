@@ -10,7 +10,7 @@ async function matchAction(context:BrowserContext,id:string,action:Record<string
 async function assertFits(page:Page){
   await expect(page.getByRole('dialog',{name:'Schermvullende score-invoer'})).toBeVisible();
   await expect(page.locator('.topbar')).toBeHidden();await expect(page.locator('.bottom-nav')).toBeHidden();
-  expect(await page.locator('.app-shell').evaluate(element=>(element as HTMLElement).inert)).toBe(true);
+  expect(await page.locator('.app-shell').evaluate(element=>element.closest('[inert]')!==null)).toBe(true);
   const layout=await page.locator('.score-console').evaluate(element=>{
     const bounds=element.getBoundingClientRect(),confirm=element.querySelector('.score-console-confirm')!.getBoundingClientRect(),keypad=element.querySelector('.score-console-keypad')!.getBoundingClientRect();
     return {height:innerHeight,width:innerWidth,bottom:bounds.bottom,right:bounds.right,confirmBottom:confirm.bottom,keypadTop:keypad.top,keypadBottom:keypad.bottom,overflow:element.scrollHeight-element.clientHeight};
@@ -73,7 +73,10 @@ test('one fullscreen console follows home and hybrid own turns and local shared-
       expect(state.status).toBe('result');await matchAction(first,id,{type:'confirm'});await matchAction(second,id,{type:'confirm'});activeId=undefined;
     }
   }finally{
-    if(activeId){let state:MatchView=await(await first.request.get(`/api/matches/${activeId}`)).json();for(let turn=0;state.status==='live'&&turn<12;turn++){const remaining=state.remaining[state.turn],actor=state.scoringMode==='per-player'?(state.turn===0?first:second):state.writerId==='00000000-0000-4000-8000-000000000003'?second:first;state=await matchAction(actor,activeId,{type:'score',score:state.turn===0?remaining>170?remaining-40:remaining:0,...(state.turn===0&&remaining<=170?{doubleConfirmed:true}:{})});}if(state.status==='result'){await matchAction(first,activeId,{type:'confirm'});await matchAction(second,activeId,{type:'confirm'});}}
-    await Promise.allSettled([first.close(),second.close()]);
+    try{
+      if(activeId){let state:MatchView=await(await first.request.get(`/api/matches/${activeId}`)).json();for(let turn=0;state.status==='live'&&turn<12;turn++){const remaining=state.remaining[state.turn],actor=state.scoringMode==='per-player'?(state.turn===0?first:second):state.writerId==='00000000-0000-4000-8000-000000000003'?second:first;state=await matchAction(actor,activeId,{type:'score',score:state.turn===0?remaining>170?Math.min(180,remaining-40):remaining:0,darts:3,...(state.turn===0&&remaining<=170?{doubleConfirmed:true}:{})});}if(state.status==='result'){await matchAction(first,activeId,{type:'confirm'});await matchAction(second,activeId,{type:'confirm'});}}
+    }finally{
+      await Promise.allSettled([first.close(),second.close()]);
+    }
   }
 });
