@@ -2,10 +2,14 @@ package nl.dartflow.app
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -17,23 +21,29 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 @Composable internal fun PlayerPlayDartEntry(session: PlayerPlaySession, enabled: Boolean, submit: (JSONObject) -> Unit) {
-    var entered by rememberSaveable(session.id, session.revision) { mutableStateOf(listOf<String>()) }
-    var intended by rememberSaveable(session.id, session.revision) { mutableStateOf(listOf<String>()) }
+    var entered by rememberSaveable(session.id) { mutableStateOf(listOf<String>()) }
+    var intended by rememberSaveable(session.id) { mutableStateOf(listOf<String>()) }
+    val draftKey = playerPlayDraftKey(session)
+    var previousRevision by rememberSaveable(session.id) { mutableStateOf(draftKey) }
+    LaunchedEffect(draftKey) {
+        if (previousRevision != draftKey) { entered = emptyList(); intended = emptyList(); previousRevision = draftKey }
+    }
     var multiplier by rememberSaveable { mutableStateOf("S") }
     var target by rememberSaveable { mutableStateOf("") }
+    var details by remember { mutableStateOf(false) }
     val input = json("dartHits" to JSONArray(entered), "intendedTargets" to JSONArray(intended.map { it.ifBlank { null } }))
     val preview = remember(session.id, session.revision, entered) { if (entered.isEmpty()) null else runCatching { PlayerPlayEngine.project(session, input) } }
     val last = preview?.getOrNull()?.game?.rows("visits")?.lastOrNull()
     val stopped = last?.optBoolean("bust") == true || last?.optBoolean("finish") == true || preview?.getOrNull()?.game?.text("status") == "replay-required"
     val dartsLeft = if (session.rules.text("mode") == "finish") session.progress.optInt("dartsLeft", 3) else if (session.rules.text("mode") == "leg-challenge" && session.rules.text("comparison") == "darts") (session.progress.optInt("sourceDarts") - session.progress.optInt("ownDarts")).coerceIn(1,3) else 3
     fun add(hit: String) { if (entered.size < dartsLeft && !stopped) { entered = entered + hit; intended = intended + target } }
-    PlayerCard("Registreer de geworpen pijlen") {
-        Text("${session.currentName()} · ${entered.size} / $dartsLeft pijlen", color = PlayerLime)
-        Text(entered.mapIndexed { i, hit -> "${i + 1}: ${if (hit == "MISS") "mis" else hit}${intended.getOrNull(i)?.takeIf(String::isNotBlank)?.let { " (doel $it)" }.orEmpty()}" }.joinToString(" · ").ifBlank { "Nog geen pijl ingevoerd" }, color = PlayerText)
-        Choice("Beoogd doel voor de volgende pijl (optioneel)", target, listOf("" to "Onbekend / niet geregistreerd") + (1..20).map { "D$it" to "D$it" } + listOf("DB" to "Bullseye"), { target = it }, enabled && !stopped)
-        Choice("Segment", multiplier, listOf("S" to "Single", "D" to "Dubbel", "T" to "Triple"), { multiplier = it }, enabled && !stopped)
-        (1..20).chunked(5).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) { row.forEach { n -> Action("$multiplier$n", enabled && entered.size < dartsLeft && !stopped, false, Modifier.weight(1f)) { add("$multiplier$n") } } } }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { listOf("MISS" to "Mis", "SB" to "25", "DB" to "Bull 50").forEach { (hit, label) -> Action(label, enabled && entered.size < dartsLeft && !stopped, false, Modifier.weight(1f)) { add(hit) } } }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(entered.joinToString(" · ") { if (it == "MISS") "Mis" else it }.ifBlank { "0 / $dartsLeft pijlen" }, Modifier.weight(1f).testTag("entered-dart-hits"), color = PlayerLime, maxLines = 2)
+            TextButton(onClick = { entered = entered.dropLast(1); intended = intended.dropLast(1) }, enabled = enabled && entered.isNotEmpty(), modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Laatste pijl aanpassen" }) { Text("⌫") }
+            TextButton(onClick = { details = true }, modifier = Modifier.heightIn(min = 48.dp).testTag("dart-entry-details")) { Text("Details") }
+        }
+        PlayerDartPad(multiplier, enabled && entered.size < dartsLeft && !stopped, { multiplier = it }, ::add)
         if (last?.optBoolean("bust") == true) Notice("BUST · de beurt eindigt; de reststand wordt hersteld.")
         if (last?.optBoolean("finish") == true) Notice("Geldige finish · bevestig de werkelijk gebruikte pijlen.")
         preview?.exceptionOrNull()?.message?.let { Notice(it, true) }
@@ -42,10 +52,16 @@ import org.json.JSONObject
             val routes = playerPlayFinishRoutes(left, dartsLeft - entered.size, session.rules.text("outRule"))
             Text(if (stopped) "Deze poging is beëindigd." else if (routes.isEmpty()) "Geen uitroute met de resterende pijlen." else "Mogelijke routes: ${routes.joinToString(" · ") { it.joinToString(" → ") }}", color = PlayerLime)
         }
-        Action("Verwerk ${entered.size} pijl(en)", enabled && entered.isNotEmpty() && preview?.isSuccess == true, modifier = Modifier.fillMaxWidth()) { submit(input); entered = emptyList(); intended = emptyList() }
-        Action("Laatste pijl aanpassen", enabled && entered.isNotEmpty(), false) { entered = entered.dropLast(1); intended = intended.dropLast(1) }
-        Text("Voer alleen werkelijk geworpen pijlen in. Een beurt stopt direct na bust, finish of de beslissende treffer. Onbekende dubbelpogingen blijven onbekend.", color = PlayerMuted)
+        Action("Verwerk ${entered.size} pijl(en)", enabled && entered.isNotEmpty() && preview?.isSuccess == true, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("confirm-play-dart-hits")) { submit(input) }
     }
+    if (details) AlertDialog(onDismissRequest = { details = false }, title = { Text("Pijlen & beoogd doel") }, text = {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("${session.currentName()} · ${entered.size} / $dartsLeft pijlen", color = PlayerLime)
+            Text(entered.mapIndexed { i, hit -> "${i + 1}: $hit${intended.getOrNull(i)?.takeIf(String::isNotBlank)?.let { " (doel $it)" }.orEmpty()}" }.joinToString(" · ").ifBlank { "Nog geen pijl ingevoerd" })
+            Choice("Beoogd doel voor de volgende pijl (optioneel)", target, listOf("" to "Onbekend / niet geregistreerd") + (1..20).map { "D$it" to "D$it" } + listOf("DB" to "Bullseye"), { target = it }, enabled && !stopped)
+            Text("Voer alleen werkelijk geworpen pijlen in. Een beurt stopt direct na bust, finish of de beslissende treffer. Onbekende dubbelpogingen blijven onbekend.", color = PlayerMuted)
+        }
+    }, confirmButton = { TextButton(onClick = { details = false }) { Text("Terug naar scoren") } })
 }
 
 internal fun playerPlayFinishRoutes(remaining: Int, dartsLeft: Int, out: String, limit: Int = 3): List<List<String>> {

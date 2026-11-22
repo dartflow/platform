@@ -1,4 +1,5 @@
 "use client";
+import ScoreInputSettings from './score-input-settings';
 import LegacyTrainingOffline from './legacy-training-offline';
 import X01OpeningField from './x01-opening-field';
 import ProfileIdentityFields from './profile-identity-fields';
@@ -3298,6 +3299,7 @@ function Preferences({
       </Title>
       <ProfileStatisticsLinks/>
       <section className="panel"><ThemePreferencePicker/></section>
+      <ScoreInputSettings actorId={data.profile.id}/>
       <PlayerPinSettings user={data.profile}/>
       <Form
         title="Jouw profiel"

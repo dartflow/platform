@@ -51,6 +51,9 @@ data class PlayerPlaySession(val raw: JSONObject) {
     fun publicCache() = JSONObject(raw.toString()).also { it.remove("privateAccess") }
 }
 
+/** Timer, writer and other session-only revisions do not acknowledge a score draft. */
+internal fun playerPlayDraftKey(session: PlayerPlaySession): String = "${session.game.optInt("set", 1)}:${session.game.optInt("leg", 1)}:${session.game.optInt("attempt", 1)}:${session.game.rows("visits").size}"
+
 /** Private fragments never become API query strings, account credentials or navigation labels. */
 internal class PlayerPlayLink(val sessionId: String, val purpose: String?, val token: String?) {
     override fun toString() = "PlayerPlayLink(session=$sessionId, purpose=$purpose, credential=[redacted])"

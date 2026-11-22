@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -23,7 +24,15 @@ import org.json.JSONObject
 internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScreen.PLAY_SESSION, PlayerScreen.PLAY_HISTORY, PlayerScreen.PRACTICE, PlayerScreen.CHALLENGES)
 
 @Composable internal fun PlayerPlayScreen(state: PlayerUiState, actions: PlayerActions) {
-    BackHandler { actions.back() }
+    val session = state.play.session
+    var fullScore by rememberSaveable(session?.id) { mutableStateOf(true) }
+    val scoringState = rememberSaveableStateHolder()
+    val scoreAvailable = state.screen == PlayerScreen.PLAY_SESSION && session != null && session.supported && !session.complete && session.raw.text("status") == "active" && session.game.text("status") == "live" && (state.play.canonical ?: session).raw.obj("conflict").text("status") != "open" && state.play.purpose != "claim"
+    BackHandler { if (scoreAvailable && fullScore) fullScore = false else actions.back() }
+    if (scoreAvailable && fullScore) {
+        scoringState.SaveableStateProvider("play-score:${session!!.id}") { PlayerPlayScoreScreen(state, actions) { fullScore = false } }
+        return
+    }
     Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Action("Terug", primary = false, onClick = actions.back)
         if (state.play.syncing) LinearProgressIndicator(Modifier.fillMaxWidth(), color = PlayerLime)
@@ -33,7 +42,7 @@ internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScre
             Action("Controleer bewaarde partijwijziging",!state.play.syncing){actions.playAction(json("type" to "local.retry-operation"))}
         }
         when (state.screen) {
-            PlayerScreen.PLAY_SESSION -> PlayerPlaySessionScreen(state, actions)
+            PlayerScreen.PLAY_SESSION -> PlayerPlaySessionScreen(state, actions) { fullScore = true }
             PlayerScreen.PLAY_HISTORY -> PlayerPlayHistoryScreen(state, actions)
             PlayerScreen.CHALLENGES -> PlayerPlayChallengesScreen(state, actions)
             PlayerScreen.PRACTICE -> PlayerPracticeScreen(state, actions)
@@ -95,7 +104,7 @@ internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScre
     Action("Mijn partijen & herstel", primary = false) { actions.navigate(PlayerScreen.PLAY_HISTORY, null) }
 }
 
-@Composable private fun PlayerPlaySessionScreen(state: PlayerUiState, actions: PlayerActions) {
+@Composable private fun PlayerPlaySessionScreen(state: PlayerUiState, actions: PlayerActions, openConsole: () -> Unit) {
     val session = state.play.session
     if (session == null) { Notice("De partij wordt opgehaald. Een persoonlijke herstel- of deelnemerslink geeft alleen toegang tot deze partij."); Action("Opnieuw ophalen") { actions.refresh() }; return }
     val canonical = state.play.canonical ?: session; val p = session.permissions; val pending = state.play.pending
@@ -116,9 +125,12 @@ internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScre
     else if (session.raw.text("status") == "interrupted") {
         Notice("Onderbroken. Dezelfde partij, regels en geaccepteerde voortgang blijven bewaard.")
         if (p.optBoolean("canResume")) Action("Hervat dezelfde partij", !state.play.syncing) { actions.playAction(json("type" to "session.resume")) }
-    } else if (!session.complete && session.game.text("status") == "live" && p.optBoolean("canScore") && (session.raw.text("deviceMode") != "individual" || pending == 0)) {
-        PlayerPlayDartEntry(session, state.play.pendingOperation==null&&(!state.play.syncing || state.play.offline)) { actions.playAction(json("type" to "session.score", "input" to it)) }
-    } else if (!session.complete && session.game.text("status") == "live") Notice("Wacht op de beurt van ${session.currentName()}. De stand wordt automatisch vernieuwd.")
+    } else if (state.play.purpose != "claim" && !session.complete && session.game.text("status") == "live" && p.optBoolean("canScore") && (session.raw.text("deviceMode") != "individual" || pending == 0)) {
+        Action("Open score-invoer", modifier = Modifier.fillMaxWidth()) { openConsole() }
+    } else if (state.play.purpose != "claim" && !session.complete && session.game.text("status") == "live") {
+        Notice("Wacht op de beurt van ${session.currentName()}. De stand wordt automatisch vernieuwd.")
+        Action("Open score-invoer", primary = false, modifier = Modifier.fillMaxWidth()) { openConsole() }
+    }
     if (session.game.text("status") == "replay-required" && p.optBoolean("canReplayAttempt")) Action("Speel deze gelijke leg opnieuw", pending == 0 && !state.play.syncing) { actions.playAction(json("type" to "session.restart-attempt")) }
     if (p.optBoolean("canUndo") || pending > 0) Action(if (pending > 0) "Laatste wachtende invoer terugnemen" else "Laatste verwerkte beurt terugnemen", !state.play.syncing, false) { actions.playAction(json("type" to "session.undo")) }
     if (pending > 0) Action("Synchroniseer bewaarde invoer", !state.play.syncing) { actions.playAction(json("type" to "local.refresh")) }
@@ -149,7 +161,7 @@ internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScre
     Action("Partijen & historie", primary = false) { actions.navigate(PlayerScreen.PLAY_HISTORY, null) }
 }
 
-@Composable private fun PlayerPlayTimer(session: PlayerPlaySession, busy: Boolean, actions: PlayerActions) {
+@Composable internal fun PlayerPlayTimer(session: PlayerPlaySession, busy: Boolean, actions: PlayerActions) {
     var now by remember(session.raw.optLong("serverNow")) { mutableLongStateOf(session.raw.optLong("serverNow")) }
     LaunchedEffect(session.raw.optLong("serverNow")) { while (true) { delay(1000); now += 1000 } }
     val deadline = session.raw.optLong("deadlineAt"); val warning = session.raw.optLong("warningAt")

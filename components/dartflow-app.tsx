@@ -6,6 +6,8 @@ import X01OpeningField from './x01-opening-field';
 import {useCoreScoreQueue} from './use-core-score-queue';
 import CompetitionBoardLobbyPanel from "./competition-board-lobby";
 import GuestMatchControls from './guest-match-controls';
+import {useScoreInputPreferences} from '@/lib/score-input-preferences';
+import {ScoreInputControl} from './score-input-settings';
 import BullStartPanel,{StartProcedureFields,readWinByTwo} from './bull-start-panel';
 import OfflineConflictPanel from './offline-conflict-panel';
 
@@ -37,6 +39,7 @@ import {FeedWorkspace} from './feed-workspace';
 import PlayerExperienceWorkspace from './player-experience';
 import type {PlayerExperience} from '@/lib/player-experience-types';
 import ScoreConsole from "./score-console";
+import DartScoreConsole from './dart-score-console';
 
 import SprintDisplay from "./sprint-display";
 import OcheCelebration, {useOcheCelebration} from "./oche-celebration";
@@ -1669,6 +1672,7 @@ function MatchPage({
   const live = usePolled<MatchView>(`/api/matches/${encodeURIComponent(id)}`);
   const { refresh: refreshMatch, accept: acceptMatch } = live;
   const scoreQueue=useCoreScoreQueue(id,user.id,live.data,acceptMatch);
+  const scoreInputPreferences=useScoreInputPreferences(user.id);
   const match = scoreQueue.projection;
   const actualBoard = usePolled<{
     board: { id: string; name: string };
@@ -1717,6 +1721,7 @@ function MatchPage({
         sessionStorage.removeItem(storeKey);
         if (command.action.type === "score") {
           setScore("");
+          setDarts(3);
           sessionStorage.removeItem(scoreKey);
           setDoubleConfirmed(false);
           setDoubleAttempts(null);
@@ -1755,7 +1760,7 @@ function MatchPage({
     };
   }, [pending, conflict, submitPending]);
   function act(action: MatchAction,guestId?:string) {
-    if(action.type==='score'&&!guestId&&match?.offlineSupported===true&&Boolean(match.scoringState)){try{scoreQueue.enqueue(action);setScore('');sessionStorage.removeItem(scoreKey);setDoubleConfirmed(false);setDoubleAttempts(null);setActionError('');}catch(error){setActionError(error instanceof Error?error.message:'Controleer de score.');}return;}
+    if(action.type==='score'&&!guestId&&match?.offlineSupported===true&&Boolean(match.scoringState)){try{scoreQueue.enqueue(action);setScore('');setDarts(3);sessionStorage.removeItem(scoreKey);setDoubleConfirmed(false);setDoubleAttempts(null);setActionError('');}catch(error){setActionError(error instanceof Error?error.message:'Controleer de score.');}return;}
     if(scoreQueue.pendingCount&&action.type!=='resolve-offline-conflict'){setActionError('Synchroniseer eerst de bewaarde scorebeurten.');return;}
     if (!match || pending&&action.type!=='resolve-offline-conflict' || sendingRef.current) return;
     const command = {
@@ -1820,7 +1825,10 @@ function MatchPage({
     "Baan toegewezen";
   const disabled = sending || Boolean(pending);
   const winner = match.players.find((p) => p.id === match.winnerId);
-  const matchControls = <>
+  const requiredDarts=match.settings.discipline==='tactics'||match.settings.discipline==='cricket'||match.settings.inRule==='double'||Boolean(match.settings.outRule&&match.settings.outRule!=='double');
+  const scoreInputGame=match.settings.discipline==='tactics'?'tactics':match.settings.discipline==='cricket'?'cricket':'x01';
+  const inputPreference=<ScoreInputControl actorId={user.id} game={scoreInputGame} totalAllowed={!requiredDarts} reason={requiredDarts?'Deze spelregels vereisen de werkelijke pijlen; je voorkeur blijft bewaard.':undefined}/>;
+  const matchControls = <>{inputPreference}
             <div className="match-actions">
               {match.settings.discipline!=='cricket'&&match.permissions.canScore&&match.settings.inRule!=='double'&&(!match.settings.outRule||match.settings.outRule==='double')&&<button type="button" className="button ghost small" disabled={disabled||!live.online} onClick={()=>act({type:'score',score:0,darts:3,bust:true})}>Bust · nul punten</button>}
               {match.permissions.canPause && (
@@ -1966,15 +1974,19 @@ function MatchPage({
               </div>
             )}
   </>;
-  const detailedScoring=match.settings.discipline==='tactics'||match.settings.discipline==='cricket'||match.settings.inRule==='double'||Boolean(match.settings.outRule&&match.settings.outRule!=='double');
+  const detailedScoring=requiredDarts||scoreInputPreferences.modes.x01==='per-dart';
   const startProcedurePending = Boolean(match.settings.startProcedure && (match.startDecision?.starter === undefined || match.bull && match.bull.status !== 'complete'));
-  const activeConsole = match.offlineConflict?.status!=='open'&&(!match.bull||match.bull.status==='complete')&&!detailedScoring && consoleOpen && match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore);
+  const guestOwnsConsole=!match.permissions.canScore&&Boolean(match.guestOperators?.some(guest=>guest.permissions.canScore));
+  const primaryOwnsConsole=!guestOwnsConsole&&(playerIndex>=0||match.permissions.canScore);
+  const consoleCanOpen=match.offlineConflict?.status!=='open'&&(!match.bull||match.bull.status==='complete')&&match.status==='live';
+  const activeConsole=consoleCanOpen&&consoleOpen&&primaryOwnsConsole;
   return (
     <>
       {!activeConsole&&<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>}
       {(scoreQueue.pendingCount>0||Boolean(scoreQueue.error))&&<div className="notice" role="status"><strong>{scoreQueue.pendingCount>0?(match.offlineConflict?.status==='open'?'Controle nodig':`Wacht op verbinding (${scoreQueue.pendingCount})`):'Toestelopslag'}</strong><p>{scoreQueue.error||'De beurten zijn op dit toestel bewaard.'}</p><button className="button" onClick={()=>void scoreQueue.flush()} disabled={scoreQueue.sending}>Wachtrij synchroniseren</button></div>}
-      {activeConsole && <ScoreConsole activity={<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={displayPlayers.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} allowOffline={match.offlineSupported===true&&Boolean(match.scoringState)} message={actionError || (scoreQueue.pendingCount ? `Wacht op verbinding (${scoreQueue.pendingCount}) · ${scoreQueue.error || "De beurten zijn op dit toestel bewaard."}` : scoreQueue.error) || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed,...(doubleAttempts==null?{}:{doubleAttempts})})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
-      {!detailedScoring&&match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore) && <button className="button gold full" onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</button>}
+      {activeConsole && !detailedScoring && <ScoreConsole activity={<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} title={`${match.settings.startScore} · Leg ${match.legNumber} · ${match.currentThrower?.name??displayPlayers[match.turn].name}`} players={displayPlayers.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} allowOffline={match.offlineSupported===true&&Boolean(match.scoringState)} message={actionError || (scoreQueue.pendingCount ? `Wacht op verbinding (${scoreQueue.pendingCount}) · ${scoreQueue.error || "De beurten zijn op dit toestel bewaard."}` : scoreQueue.error) || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed,...(doubleAttempts==null?{}:{doubleAttempts})})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
+      {consoleCanOpen&&primaryOwnsConsole&&<button className="button gold full" onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</button>}
+      {match.status==='live'&&primaryOwnsConsole&&<div hidden={!detailedScoring}><DartScoreConsole title={`${match.settings.discipline==='tactics'?'Tactics':match.settings.discipline==='cricket'?'Cricket':match.settings.startScore} · Leg ${match.legNumber} · ${match.currentThrower?.name??displayPlayers[match.turn].name}`} open={activeConsole&&detailedScoring} onBack={()=>setConsoleOpen(false)} offline={!live.online} activity={<BoardActivityNotice compact activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} message={(requiredDarts?'Deze spelregels vereisen werkelijke pijlen. ':'')+(actionError||scoreQueue.error||(scoreQueue.pendingCount?`Wacht op verbinding (${scoreQueue.pendingCount}) · beurten op dit toestel bewaard`:!match.permissions.canScore?`${writer} schrijft deze partij.`:match.checkout?`Finish: ${match.checkout}`:'Voer de werkelijk geworpen pijlen in.'))} scoreboard={<div className="score-console-players" aria-label="Actuele stand">{displayPlayers.map((player,index)=><div key={player.id} className={index===match.turn?'is-active':''}><span>{player.name}</span><strong className="console-remaining">{match.cricket?.points[index]??match.tactics?.points[index]??match.remaining[index]}</strong><small>{index===match.turn?'Aan de beurt':match.cricket||match.tactics?'Punten':'Restscore'}</small></div>)}</div>} options={<>{match.cricket&&<CricketCard cricket={match.cricket} names={displayPlayers.map(player=>player.name)}/>} {match.tactics&&<TacticsCard tactics={match.tactics} names={displayPlayers.map(player=>player.name)} turn={match.turn}/>} {matchControls}</>}><DartVisitInput disabled={disabled||!match.permissions.canScore||Boolean(match.offlineConflict?.status==='open')||Boolean(match.bull&&match.bull.status!=='complete')} thrower={match.currentThrower?.name??displayPlayers[match.turn].name} resetKey={`${match.revision}:${scoreQueue.pendingCount}`} onSubmit={hits=>act({type:'score',score:hits.reduce((sum,hit)=>sum+dartValue(hit),0),darts:hits.length,dartHits:hits})}/></DartScoreConsole></div>}
       <Heading
         kicker={`${event?.name || "BAANMODUS"}${match.boardId ? ` · ${boardName}` : ""}`}
         title={`${displayPlayers[0].name} — ${displayPlayers[1].name}`}
@@ -2172,7 +2184,7 @@ function MatchPage({
                   </div>
                 )}
               </div>
-            ) : detailedScoring&&match.permissions.canScore ? <DartVisitInput key={match.revision} disabled={disabled} onSubmit={hits=>act({type:'score',score:hits.reduce((sum,hit)=>sum+dartValue(hit),0),darts:hits.length,dartHits:hits})}/> : match.permissions.canScore && !tablet ? (
+            ) : detailedScoring ? <p>Gebruik de scoreweergave om werkelijk geworpen pijlen vast te leggen.</p> : match.permissions.canScore && !tablet ? (
               <form
                 className="score-form"
                 onSubmit={(e) => {
@@ -2345,7 +2357,7 @@ function MatchPage({
                   )}
               </div>
             )}
-            <BullStartPanel match={match}onAction={act}disabled={disabled}/><GuestMatchControls match={match}busy={disabled}onAction={act}/>
+            <BullStartPanel match={match}onAction={act}disabled={disabled}/><GuestMatchControls actorId={user.id} match={match}busy={disabled}onAction={act} fullscreenAvailable={guestOwnsConsole&&consoleCanOpen} consoleOpen={consoleOpen} onConsoleOpen={()=>setConsoleOpen(true)} onConsoleBack={()=>setConsoleOpen(false)} offline={!live.online} message={actionError||live.error||undefined} activity={<BoardActivityNotice compact activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>}/>
             <OfflineConflictPanel match={match}onAction={act}disabled={sending}/>
             {matchControls}
             <div className="revision-label">

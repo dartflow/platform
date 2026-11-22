@@ -23,7 +23,7 @@ class NativeTestReports(unittest.TestCase):
         return path
 
     def test_current_player_counts_remain_exact_and_oche_baseline_is_unchanged(self):
-        self.assertEqual((check.APPS["player"]["unit"], check.APPS["player"]["ui"]), (157, 89))
+        self.assertEqual((check.APPS["player"]["unit"], check.APPS["player"]["ui"]), (157, 90))
         self.assertEqual((check.APPS["oche"]["unit"], check.APPS["oche"]["ui"]), (34, 16))
 
     def test_actual_unique_cases_pass(self):
@@ -89,12 +89,21 @@ class NativeTestReports(unittest.TestCase):
         app = self.root / "player"
         source = app / "app/src/androidTest/java/Fixture.kt"
         source.parent.mkdir(parents=True)
-        source.write_text("package fixture\nclass Tests {\n" + "\n".join("@Test fun case" + str(i) + "() {}" for i in range(89)) + "\n}")
+        source.write_text("package fixture\nclass Tests {\n" + "\n".join("@Test fun case" + str(i) + "() {}" for i in range(90)) + "\n}")
         target = app / "app/build/outputs/androidTest-results/connected/device"
         target.mkdir(parents=True)
-        self.report(89).rename(target / "TEST-fixture.xml")
-        self.assertEqual(check.verify("player", "ui", self.root)["actualUniqueMethods"], 89)
-        source.write_text(source.read_text().replace("case88()", "replaced()"))
+        report = target / "TEST-fixture.xml"
+        self.report(90).rename(report)
+        self.assertEqual(check.verify("player", "ui", self.root)["actualUniqueMethods"], 90)
+        # The old count cannot stand in for the newly added settings/reload case.
+        old = ET.parse(report)
+        old.getroot().set("tests", "89")
+        old.getroot().remove(old.getroot().findall("testcase")[-1])
+        old.write(report)
+        with self.assertRaises(ValueError):
+            check.verify("player", "ui", self.root)
+        self.report(90).replace(report)
+        source.write_text(source.read_text().replace("case89()", "replaced()"))
         with self.assertRaises(ValueError):
             check.verify("player", "ui", self.root)
 

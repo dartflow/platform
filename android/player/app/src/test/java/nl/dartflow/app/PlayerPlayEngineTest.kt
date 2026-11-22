@@ -67,6 +67,18 @@ class PlayerPlaySafetyTest {
         assertEquals("single", legacy.raw.obj("settings").text("inRule"))
         assertEquals(5, playerPlayDefaultRules("finish").optInt("attemptCount"))
         assertEquals("replay", playerPlayDefaultRules("tactics").text("tieRule"))
+        val scoring=PlayerPlaySession(json("rules" to playerPlayDefaultRules("x01",301),"game" to json("turn" to 0,"progress" to json("opened" to JSONArray(listOf(false,true))))))
+        assertFalse("Opening requires observed darts",playerPlayAllowsTotal(scoring))
+        scoring.progress.getJSONArray("opened").put(0,true)
+        assertTrue("An opened X01 side can use a genuine aggregate visit",playerPlayAllowsTotal(scoring))
+        listOf("cricket","tactics","around","bingo","finish").forEach { mode ->
+            val detailed=PlayerPlaySession(json("rules" to playerPlayDefaultRules(mode),"game" to json("turn" to 0,"progress" to json("opened" to true))))
+            assertFalse("$mode retains observed-dart input",playerPlayAllowsTotal(detailed))
+        }
+        val challenge=PlayerPlaySession(json("rules" to json("mode" to "leg-challenge","comparison" to "darts"),"game" to json("progress" to json("opened" to true))))
+        assertFalse(playerPlayAllowsTotal(challenge))
+        challenge.rules.put("comparison","visits");assertTrue(playerPlayAllowsTotal(challenge))
+
     }
     @Test fun unknownModeOrRuleVersionNeverFallsBackTo501() {
         assertFalse(PlayerPlaySession(json("rules" to json("mode" to "future", "version" to 1))).supported)

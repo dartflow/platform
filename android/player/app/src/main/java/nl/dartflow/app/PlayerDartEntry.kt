@@ -1,11 +1,20 @@
 package nl.dartflow.app
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import org.json.JSONArray
 import org.json.JSONObject
@@ -25,26 +34,46 @@ internal fun playerDartCommand(hits: List<String>): JSONObject {
 }
 internal fun playerNeedsDartDetail(settings: JSONObject): Boolean = settings.text("discipline", "x01") in listOf("cricket", "tactics") || settings.text("inRule", "single") == "double" || settings.text("outRule", "double") != "double"
 
-/** Only records observed targets; the server applies opening, finish and bust rules. */
-@Composable internal fun PlayerDartScoreEntry(match: PlayerMatch, state: PlayerUiState, actions: PlayerActions) {
-    var hits by rememberSaveable(match.id) { mutableStateOf(listOf<String>()) }
-    var multiplier by rememberSaveable { mutableStateOf("S") }
-    var previousRevision by rememberSaveable(match.id) { mutableIntStateOf(match.revision) }
-    LaunchedEffect(match.revision) { if (match.revision != previousRevision) { hits = emptyList(); previousRevision = match.revision } }
-    val enabled = match.permissions.optBoolean("canScore") && !state.busy && (state.online || match.raw.optBoolean("offlineSupported")) && !state.hasPendingCommand
-    val settings = match.raw.obj("settings")
-    if (playerIsCricket(match)) PlayerCricketTable(match) else Text("${if (settings.text("inRule", "single") == "double") "Dubbel in" else "Single in"} · ${when (settings.text("outRule", "double")) { "master" -> "Master uit"; "straight" -> "Straight uit"; else -> "Dubbel uit" }}", color = PlayerLime)
-    Text("Voer de geraakte vakken in volgorde in. Stop na een finish of bust.", color = PlayerMuted)
-    Text(hits.mapIndexed { index, hit -> "${index + 1}: ${when (hit) { "MISS" -> "Mis"; "SB" -> "Bull 25"; "DB" -> "Bull 50"; else -> hit }}" }.joinToString(" · ").ifBlank { "Nog geen pijlen ingevoerd" }, style = MaterialTheme.typography.titleMedium)
-    Choice("Geraakt vak", multiplier, listOf("S" to "Single", "D" to "Dubbel", "T" to "Triple"), { multiplier = it }, enabled && hits.size < 3)
+/** Numeric targets stay readable; the selected segment and accessible hit retain S/D/T. */
+@Composable internal fun PlayerDartPad(multiplier: String, enabled: Boolean, onMultiplier: (String) -> Unit, onHit: (String) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        listOf("S" to "Single", "D" to "Dubbel", "T" to "Triple").forEach { (value, label) ->
+            FilledTonalButton(onClick = { onMultiplier(value) }, enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("dart-segment-$value").semantics { contentDescription = "$value · $label" }, shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.filledTonalButtonColors(containerColor = if (multiplier == value) PlayerLime else PlayerPanel, contentColor = if (multiplier == value) PlayerInk else PlayerText)) { Text(label, maxLines = 1, softWrap = false, fontSize = 14.sp) }
+        }
+    }
     (1..20).chunked(5).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) { row.forEach { target ->
-        Action("$target", enabled && hits.size < 3, false, Modifier.weight(1f)) { hits = hits + "$multiplier$target" }
+        FilledTonalButton(onClick = { onHit("$multiplier$target") }, enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("dart-target-$target").semantics { contentDescription = "$multiplier$target" }, shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.filledTonalButtonColors(containerColor = PlayerPanel, contentColor = PlayerText)) { Text("$target", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, maxLines = 1, softWrap = false, fontSize = 18.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold) }
     } } }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        listOf("MISS" to "Mis", "SB" to "Bull 25", "DB" to "Bull 50").forEach { (hit, label) -> Action(label, enabled && hits.size < 3, false, Modifier.weight(1f)) { hits = hits + hit } }
+        listOf("MISS" to "Mis", "SB" to "25", "DB" to "Bull 50").forEach { (hit, label) ->
+            FilledTonalButton(onClick = { onHit(hit) }, enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("dart-hit-$hit"), shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.filledTonalButtonColors(containerColor = PlayerPanel, contentColor = PlayerText)) { Text(label, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, maxLines = 1, softWrap = false, fontSize = 16.sp, lineHeight = 22.sp) }
+        }
     }
-    Action("Laatste pijl wissen", enabled && hits.isNotEmpty(), false) { hits = hits.dropLast(1) }
+}
+
+/** Only records observed targets; the server applies opening, finish and bust rules. */
+@Composable internal fun PlayerDartScoreEntry(match: PlayerMatch, state: PlayerUiState, actions: PlayerActions, allowed: Boolean = true) {
+    var hits by rememberSaveable(match.id) { mutableStateOf(listOf<String>()) }
+    var multiplier by rememberSaveable { mutableStateOf("S") }
+    var details by remember { mutableStateOf(false) }
+    var previousRevision by rememberSaveable(match.id) { mutableIntStateOf(match.revision) }
+    LaunchedEffect(match.revision) { if (match.revision != previousRevision) { hits = emptyList(); previousRevision = match.revision } }
+    val enabled = allowed && match.permissions.optBoolean("canScore") && !state.busy && (state.online || match.raw.optBoolean("offlineSupported")) && !state.hasPendingCommand
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(hits.joinToString(" · ").ifBlank { "Raakvlak per pijl" }, Modifier.weight(1f).testTag("entered-dart-hits"), color = PlayerLime, maxLines = 2)
+        TextButton(onClick = { hits = hits.dropLast(1) }, enabled = enabled && hits.isNotEmpty(), modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Laatste pijl wissen" }) { Text("⌫") }
+        TextButton(onClick = { details = true }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Scorekaart") }
+    }
+    PlayerDartPad(multiplier, enabled && hits.size < 3, { multiplier = it }, { hits = hits + it })
     state.error?.let { Notice(it, true, actions.retry) }
     if (state.hasPendingCommand) Notice("Je vorige worp wacht op bevestiging.", retry = actions.retry)
     Action(if (state.busy) "Pijlen worden bevestigd…" else "Bevestig deze pijlen", enabled && hits.isNotEmpty(), modifier = Modifier.fillMaxWidth().testTag("confirm-dart-hits")) { actions.matchAction("score", playerDartCommand(hits)) }
+    }
+    if (details) AlertDialog(onDismissRequest = { details = false }, title = { Text("Scorekaart & spelregels") }, text = {
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            if (playerIsCricket(match)) PlayerCricketTable(match) else Text(playerRuleLabel(match.raw.obj("settings")), color = PlayerLime)
+            Text("Voer de werkelijk geraakte vakken in volgorde in. Stop na een finish of bust.", color = PlayerMuted)
+        }
+    }, confirmButton = { TextButton(onClick = { details = false }) { Text("Terug naar scoren") } })
 }
