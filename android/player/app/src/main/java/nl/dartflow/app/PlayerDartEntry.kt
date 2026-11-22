@@ -41,11 +41,11 @@ internal fun playerNeedsDartDetail(settings: JSONObject): Boolean = settings.tex
         }
     }
     (1..20).chunked(5).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) { row.forEach { target ->
-        FilledTonalButton(onClick = { onHit("$multiplier$target") }, enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("dart-target-$target").semantics { contentDescription = "$multiplier$target" }, shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.filledTonalButtonColors(containerColor = PlayerPanel, contentColor = PlayerText)) { Text("$target", maxLines = 1, softWrap = false, fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+        FilledTonalButton(onClick = { onHit("$multiplier$target") }, enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("dart-target-$target").semantics { contentDescription = "$multiplier$target" }, shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.filledTonalButtonColors(containerColor = PlayerPanel, contentColor = PlayerText)) { Text("$target", maxLines = 1, softWrap = false, fontSize = 18.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold) }
     } } }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         listOf("MISS" to "Mis", "SB" to "25", "DB" to "Bull 50").forEach { (hit, label) ->
-            FilledTonalButton(onClick = { onHit(hit) }, enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("dart-hit-$hit"), shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.filledTonalButtonColors(containerColor = PlayerPanel, contentColor = PlayerText)) { Text(label, maxLines = 1, softWrap = false, fontSize = 16.sp) }
+            FilledTonalButton(onClick = { onHit(hit) }, enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("dart-hit-$hit"), shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.filledTonalButtonColors(containerColor = PlayerPanel, contentColor = PlayerText)) { Text(label, maxLines = 1, softWrap = false, fontSize = 16.sp, lineHeight = 22.sp) }
         }
     }
 }

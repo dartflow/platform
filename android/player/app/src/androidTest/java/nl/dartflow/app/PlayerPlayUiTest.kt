@@ -63,12 +63,20 @@ class PlayerPlayUiTest {
         compose.onNodeWithTag("native-score-console").assertIsDisplayed()
         compose.onNodeWithTag("score-player-remaining-0").assertTextEquals("501")
         compose.onNodeWithText("Beoogd doel voor de volgende pijl (optioneel)").assertDoesNotExist()
+        // Keep the actual failing layout visible in CI artifacts if a readability gate fails.
+        captureScoreFixture("score-practice-darts-large-font.png")
         (1..20).forEach { target ->
             val node=compose.onNodeWithTag("dart-target-$target").assertIsDisplayed().assertTextEquals("$target").assertContentDescriptionEquals("S$target")
             val bounds=node.getUnclippedBoundsInRoot()
             assertTrue("Every target remains at least 48 dp wide and high",bounds.right-bounds.left>=48.dp&&bounds.bottom-bounds.top>=48.dp)
             val layouts=mutableListOf<TextLayoutResult>();node.performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
-            assertEquals(1,layouts.size);assertEquals(1,layouts.single().lineCount);assertFalse("Target $target must never wrap or clip",layouts.single().hasVisualOverflow)
+            assertEquals(1,layouts.size)
+            val layout=layouts.single();assertEquals(1,layout.lineCount)
+            assertFalse("Target $target must never wrap or clip: font=${layout.layoutInput.style.fontSize}, lineHeight=${layout.layoutInput.style.lineHeight}, size=${layout.size}, paragraph=${layout.multiParagraph.width}x${layout.multiParagraph.height}, constraints=${layout.layoutInput.constraints}",layout.hasVisualOverflow)
+        }
+        listOf("MISS","SB","DB").forEach { hit ->
+            val layouts=mutableListOf<TextLayoutResult>();compose.onNodeWithTag("dart-hit-$hit").assertIsDisplayed().performSemanticsAction(SemanticsActions.GetTextLayoutResult){it(layouts)}
+            assertEquals(1,layouts.size);assertEquals(1,layouts.single().lineCount);assertFalse("Special target $hit must never wrap or clip",layouts.single().hasVisualOverflow)
         }
         compose.onNodeWithTag("dart-target-20").performClick();compose.onNodeWithTag("dart-target-19").performClick()
         captureScoreFixture("score-practice-darts-large-font.png")
