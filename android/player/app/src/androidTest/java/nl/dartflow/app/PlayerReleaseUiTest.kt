@@ -83,10 +83,15 @@ class PlayerReleaseUiTest {
         var type: String? = null
         var command: JSONObject? = null
         val match = PlayerMatch.parse(json("id" to "match-1", "revision" to 3, "status" to "live", "players" to JSONArray(listOf(json("id" to "p1", "name" to "Danny"), json("id" to "p2", "name" to "Noor"))), "remaining" to JSONArray(listOf(501, 501)), "settings" to json("inRule" to "double", "outRule" to "master"), "permissions" to json("canScore" to true)))
-        compose.setContent { DartFlowPlayerTheme { Column(Modifier.verticalScroll(rememberScrollState())) { PlayerDartScoreEntry(match, signedIn(), PlayerActions(matchAction = { action, input -> type = action; command = input })) } } }
+        compose.setContent { DartFlowPlayerTheme { PlayerApp(signedIn().copy(screen = PlayerScreen.MATCH, match = match), PlayerActions(matchAction = { action, input -> type = action; command = input })) } }
+        compose.onNodeWithTag("native-score-console").assertIsDisplayed()
         compose.onNodeWithText("Single").performClick()
         compose.onNodeWithText("Dubbel").performClick()
         compose.onNodeWithText("20").performScrollTo().performClick()
+        compose.onNodeWithText("‹ Terug").performClick()
+        compose.onNodeWithTag("native-score-console").assertDoesNotExist()
+        compose.onNodeWithText("Open score-invoer").performScrollTo().performClick()
+        compose.onNodeWithTag("entered-dart-hits").assertTextEquals("D20")
         compose.onNodeWithTag("confirm-dart-hits").performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals("score", type)
