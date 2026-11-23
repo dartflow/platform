@@ -24,7 +24,26 @@ test('real X01 defaults to a three-dart total, preserves both input drafts, and 
   const origin=new URL(baseURL!).origin,{session,controller}=await create(context,origin,'x01',ids);await page.goto(controller.url);const dialog=consoleFor(page);
   await expect(dialog).toBeVisible();await expect(dialog.getByRole('heading',{name:'Beurtotaal · 3 pijlen',exact:true})).toBeVisible();await expect(dialog.getByRole('button',{name:'3 pijlen',exact:true})).toHaveAttribute('aria-pressed','true');await expect(dialog.getByRole('button',{name:'T20',exact:true})).toHaveCount(0);
   for(const viewport of[{width:320,height:568},{width:390,height:844},{width:844,height:390}]){await page.setViewportSize(viewport);const geometry=await dialog.evaluate(node=>{const r=node.getBoundingClientRect(),input=node.querySelector('.dart-console-input')!,submit=node.querySelector('.score-console-confirm')!.getBoundingClientRect();return{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight,overflow:input.scrollHeight-input.clientHeight,submitBottom:submit.bottom};});expect(geometry.left).toBeGreaterThanOrEqual(0);expect(geometry.top).toBeGreaterThanOrEqual(0);expect(geometry.right).toBeLessThanOrEqual(geometry.width+1);expect(geometry.bottom).toBeLessThanOrEqual(geometry.height+1);expect(geometry.submitBottom).toBeLessThanOrEqual(geometry.height);expect(geometry.overflow).toBeLessThanOrEqual(1);await expect(dialog.getByRole('button',{name:'Cijfer 0',exact:true})).toBeInViewport();await expect(dialog.getByRole('button',{name:'Bevestigen',exact:true})).toBeInViewport();}
-  await page.setViewportSize({width:390,height:844});await digits(page,'100');await chooseScoreInputMode(page,'per-dart');await dialog.getByRole('button',{name:'Triple',exact:true}).click();await dialog.getByRole('button',{name:'T20',exact:true}).click();await expect(dialog.getByLabel('Ingevoerde pijlen')).toContainText('T20');
+  await page.setViewportSize({width:390,height:844});await digits(page,'100');await chooseScoreInputMode(page,'per-dart');
+  await page.setViewportSize({width:844,height:390});
+  const perDartLandscape=await dialog.evaluate(node=>{
+    const bounds=(element:Element)=>{const rect=element.getBoundingClientRect();return{top:rect.top,bottom:rect.bottom,width:rect.width,height:rect.height};};
+    const input=node.querySelector('.dart-console-input')!,pad=node.querySelector('.score-input-mode:not([hidden]) .dart-score-pad')!;
+    return{viewportHeight:innerHeight,header:bounds(node.querySelector('.score-console-header')!),back:bounds(node.querySelector('[data-console-back]')!),remove:bounds(pad.querySelector('button[aria-label="Laatste invoer verwijderen"]')!),submit:bounds(pad.querySelector('.dart-pad-submit')!),keys:Array.from(pad.querySelectorAll(':scope > .play-keypad > button')).map(bounds),overflowY:input.scrollHeight-input.clientHeight,overflowX:input.scrollWidth-input.clientWidth};
+  });
+  for(const [name,bounds] of Object.entries({header:perDartLandscape.header,back:perDartLandscape.back,submit:perDartLandscape.submit})){
+    expect(bounds.top,`${name} starts inside the landscape viewport`).toBeGreaterThanOrEqual(0);
+    expect(bounds.bottom,`${name} ends inside the landscape viewport`).toBeLessThanOrEqual(perDartLandscape.viewportHeight);
+  }
+  expect(perDartLandscape.back.width).toBeGreaterThanOrEqual(44);expect(perDartLandscape.back.height).toBeGreaterThanOrEqual(44);
+  expect(perDartLandscape.remove.width).toBeGreaterThanOrEqual(44);expect(perDartLandscape.remove.height).toBeGreaterThanOrEqual(44);
+  expect(perDartLandscape.keys).toHaveLength(20);
+  for(const bounds of perDartLandscape.keys){expect(bounds.width).toBeGreaterThanOrEqual(48);expect(bounds.height).toBeGreaterThanOrEqual(48);}
+  expect(perDartLandscape.overflowY).toBeLessThanOrEqual(1);expect(perDartLandscape.overflowX).toBeLessThanOrEqual(1);
+  await expect(dialog.getByRole('button',{name:'Beurt vastleggen',exact:true})).toBeInViewport();
+  await info.attach('real-x01-per-dart-landscape-844x390',{body:await page.screenshot(),contentType:'image/png'});
+  await page.setViewportSize({width:390,height:844});
+  await dialog.getByRole('button',{name:'Triple',exact:true}).click();await dialog.getByRole('button',{name:'T20',exact:true}).click();await expect(dialog.getByLabel('Ingevoerde pijlen')).toContainText('T20');
   await chooseScoreInputMode(page,'total');await expect(dialog.getByLabel('Bezoekscore',{exact:true})).toHaveValue('100');expect((await read(context,session.id,controller.token)).game.visits).toHaveLength(0);
   await chooseScoreInputMode(page,'per-dart');await expect(dialog.getByLabel('Ingevoerde pijlen')).toContainText('T20');expect((await read(context,session.id,controller.token)).game.visits).toHaveLength(0);await chooseScoreInputMode(page,'total');await expect(dialog.getByLabel('Bezoekscore',{exact:true})).toHaveValue('100');
   await dialog.getByRole('button',{name:'Terug naar wedstrijd',exact:true}).click();await expect(dialog).toHaveCount(0);await page.getByRole('button',{name:'Scoreweergave openen',exact:true}).click();await expect(dialog.getByLabel('Bezoekscore',{exact:true})).toHaveValue('100');

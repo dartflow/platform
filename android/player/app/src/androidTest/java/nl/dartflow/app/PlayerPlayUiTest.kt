@@ -47,6 +47,7 @@ class PlayerPlayUiTest {
         compose.onNodeWithText("Start deze partij").performScrollTo().performClick()
         compose.runOnIdle{assertEquals("session.create",command.text("type"));assertEquals("double",command.obj("rules").text("inRule"));assertEquals(301,command.obj("rules").optInt("startScore"));assertEquals(listOf("Noor","Rick"),command.rows("players").map{it.text("name")});assertFalse(command.toString().contains("accountId"))}
         compose.runOnIdle{current.value=PlayerUiState(screen=PlayerScreen.PLAY,session=PlayerSession("one","fixture@example.test",Long.MAX_VALUE),loading=false)}
+        compose.onNodeWithTag("configuration-toggle-Configuratie").performScrollTo().performClick()
         compose.onNodeWithText("501").performScrollTo().performClick();compose.onNodeWithText("301").performClick()
         compose.onNodeWithText("Dubbel in").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Start training").performScrollTo().performClick()
@@ -233,6 +234,7 @@ class PlayerPlayUiTest {
         val keyBounds=compose.onNodeWithTag("score-key-0").getUnclippedBoundsInRoot();assertTrue("Short-phone scrolling retains a full-sized keypad",keyBounds.bottom-keyBounds.top>=48.dp)
         compose.onNodeWithTag("confirm-score").performScrollTo().performClick()
         compose.runOnIdle{assertEquals(60,command.obj("input").getInt("score"));assertEquals(3,command.obj("input").getInt("darts"));assertFalse(command.obj("input").has("dartHits"));current.value=signed.copy(screen=PlayerScreen.PROFILE);compact.value=false}
+        compose.onNodeWithText("Score-invoer", useUnmergedTree=true).performClick()
         compose.onNodeWithTag("score-input-x01-per-dart").performScrollTo().performClick().assertIsSelected()
         compose.onNodeWithTag("score-input-leg-challenge-per-dart").performScrollTo().performClick().assertIsSelected()
         compose.onNodeWithTag("score-input-settings").performScrollTo()

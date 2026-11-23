@@ -21,7 +21,8 @@ class PlayerIdentityLobbyUiTest {
     @Test fun privateAndPublicNamesRemainEditableWhileCommittedHandleHasNoEditAction() {
         var command = JSONObject()
         compose.setContent { DartFlowPlayerTheme { PlayerApp(state(PlayerScreen.PROFILE), PlayerActions(platformAction = { command = it })) } }
-        compose.onNodeWithText("@danny").performScrollTo().assert(SemanticsMatcher.keyNotDefined(SemanticsActions.SetText))
+        compose.onAllNodesWithText("@danny").assertCountEquals(2)
+        (0..1).forEach { index -> compose.onAllNodesWithText("@danny")[index].performScrollTo().assert(SemanticsMatcher.keyNotDefined(SemanticsActions.SetText)) }
         compose.onNodeWithText("Volledige naam").performScrollTo().performTextReplacement("Nieuwe Privénaam")
         compose.onNodeWithText("Displaynaam").performScrollTo().performTextReplacement("De Pijl")
         compose.onNodeWithText("Anderen zien: De Pijl · @danny").performScrollTo().assertIsDisplayed()

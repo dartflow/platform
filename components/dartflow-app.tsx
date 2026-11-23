@@ -21,6 +21,7 @@ import {
 } from "react";
 import PlatformWorkspace from "./platform-workspace";
 import DartflowMore from "./dartflow-more";
+import {DesktopNavigation, activeNav} from "./redesign-shell";
 import {ClubhouseThemeProvider,ClubhouseHeaderLogo} from "./clubhouse-theme";
 import SeasonWorkspace from './season-workspace';
 import FaqAdminWorkspace from './faq-admin';
@@ -498,10 +499,18 @@ export default function DartflowApp() {
     return <PublicScreen token={path.split("/")[2]} />;
   if (path.startsWith("/baanscherm/"))
     return <ClubBoardScreen boardId={path.split("/")[2]} />;
-  if(/^\/spelen\/[a-f0-9-]{36}$/.test(path))return <PlayWorkspace sessionId={path.split('/')[2]} user={session.data?.user??undefined}/>;
-  if(/^\/leg\/[a-f0-9-]{36}$/.test(path))return <PlayWorkspace challengeId={path.split('/')[2]} user={session.data?.user??undefined}/>;
+  const playSession = /^\/spelen\/[a-f0-9-]{36}$/.test(path);
+  const playChallenge = /^\/leg\/[a-f0-9-]{36}$/.test(path);
+  if (playSession || playChallenge || path === '/speelsessie') {
+    if (!session.data && !session.error) return <div className="app-loading"><p>Je speelomgeving openen…</p></div>;
+    const workspace = <main><PlayWorkspace
+      sessionId={playSession ? path.split('/')[2] : undefined}
+      challengeId={playChallenge ? path.split('/')[2] : undefined}
+      user={session.data?.user ?? undefined}
+    /></main>;
+    return session.data?.user ? <ClubhouseThemeProvider>{workspace}</ClubhouseThemeProvider> : workspace;
+  }
   if(/^\/baan\/[a-f0-9-]{36}$/.test(path)&&session.data&&!session.data.user)return <PlayWorkspace boardId={path.split('/')[2]}/>;
-  if(path==='/speelsessie')return <PlayWorkspace user={session.data?.user??undefined}/>;
   const readOnlyAlias = path.match(/^\/app\/(spectator|overlay)\/([^/]+)$/);
   if (readOnlyAlias)
     return (
@@ -674,8 +683,9 @@ export default function DartflowApp() {
   const tabs = [nav[0],nav[1],nav.find(n=>n.href==='/app/competities')!,nav.find(n=>n.href==='/app/hall')!];
   return (
     <ClubhouseThemeProvider clubId={themeClub?.id ?? routeClubId}>
-    <div className="app-shell v15-shell clubhouse-app-shell">
+    <div className="app-shell v15-shell clubhouse-app-shell df-redesign">
       <DartflowMore open={mobileOpen} onClose={()=>setMobileOpen(false)} path={platformPath} club={activeClub} organizerLinks={canOrganize?organizeNav:[]} onLogout={()=>void logout()}/>
+      <DesktopNavigation path={platformPath} onMore={()=>setMobileOpen(true)} moreOpen={mobileOpen} canOrganize={canOrganize} canManagePlatform={Boolean(session.data.canManagePlatform)}/>
       <div className="main">
         <header className="topbar">
           <a className="mobile-brand" href="/app" aria-label="DartFlow · Vandaag">
@@ -683,6 +693,28 @@ export default function DartflowApp() {
           </a>
           <div className="breadcrumb"><strong>{section}</strong></div>
           <div className="topbar-right">
+          <div className="context-bar">
+            <div>
+              <Icon name="club" />
+              <label className="sr-only" htmlFor="club-context">
+                Omgeving kiezen
+              </label>
+              <select
+                id="club-context"
+                value={clubId}
+                onChange={(e) => changeClub(e.target.value)}
+              >
+                <option value="">Wereldwijd</option>
+                {data?.clubs.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Connection stale={overview.stale} updated={overview.updated} />
+          </div>
+
             <WorkspaceTools />
             {environment !== "production" && (
               <Badge>
@@ -705,29 +737,8 @@ export default function DartflowApp() {
           </div>
         )}
         <main className="content">
-          <div className="context-bar">
-            <div>
-              <Icon name="club" />
-              <label className="sr-only" htmlFor="club-context">
-                Omgeving kiezen
-              </label>
-              <select
-                id="club-context"
-                value={clubId}
-                onChange={(e) => changeClub(e.target.value)}
-              >
-                <option value="">Wereldwijd</option>
-                {data?.clubs.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Connection stale={overview.stale} updated={overview.updated} />
-          </div>
           {user.pinConfigured===false&&!/^\/(?:wedstrijd|baan)\//.test(path)&&!/^\/app\/(?:training|match|lobby)(?:\/|$)/.test(platformPath)&&platformPath!=='/app/settings'&&<div className="notice" role="status">Je spelerspincode moet nog worden ingesteld. <a href="/app/settings">Spelerspincode instellen</a>. Je kunt op je eigen telefoon blijven spelen.</div>}
-          {platformPath.startsWith('/app/notifications/')?<NotificationOpenWorkspace key={platformPath} id={platformPath.split('/')[3]}/>:platformPath==='/app/notifications'?<NotificationInboxPanel/>:platformPath==='/app/settings/notifications'?<NotificationSettingsWorkspace/>:platformPath.startsWith('/app/admin/support')?<SupportWorkspace path={platformPath} admin/>:platformPath.startsWith('/app/support')?<SupportWorkspace path={platformPath}/>:platformPath==='/app/admin/releases'?<ProductReleaseAdminWorkspace/>:platformPath==='/app/admin/notifications'?<NotificationAdminWorkspace/>:platformPath.startsWith('/app/whats-new')?<ProductReleasesWorkspace id={platformPath.split('/')[3]}/>:platformPath.startsWith('/app/platform-messages/')?<PlatformMessageWorkspace id={platformPath.split('/')[3]}/>:platformPath==="/app/uitdagingen"?<PlayChallengesWorkspace user={user}/>:platformPath==="/app/practice"?<PlayPracticeWorkspace user={user}/>:platformPath==="/app/play"?<><PlayWorkspace user={user}/><PlatformWorkspace path={platformPath} user={user} overview={data} clubId={clubId}/></>:path.startsWith("/wedstrijd/") ? (
+          {platformPath.startsWith('/app/notifications/')?<NotificationOpenWorkspace key={platformPath} id={platformPath.split('/')[3]}/>:platformPath==='/app/notifications'?<NotificationInboxPanel/>:platformPath==='/app/settings/notifications'?<NotificationSettingsWorkspace/>:platformPath.startsWith('/app/admin/support')?<SupportWorkspace path={platformPath} admin/>:platformPath.startsWith('/app/support')?<SupportWorkspace path={platformPath}/>:platformPath==='/app/admin/releases'?<ProductReleaseAdminWorkspace/>:platformPath==='/app/admin/notifications'?<NotificationAdminWorkspace/>:platformPath.startsWith('/app/whats-new')?<ProductReleasesWorkspace id={platformPath.split('/')[3]}/>:platformPath.startsWith('/app/platform-messages/')?<PlatformMessageWorkspace id={platformPath.split('/')[3]}/>:platformPath==="/app/uitdagingen"?<PlayChallengesWorkspace user={user}/>:platformPath==="/app/practice"?<PlayPracticeWorkspace user={user}/>:platformPath==="/app/play"?<PlayWorkspace user={user}/>:path.startsWith("/wedstrijd/") ? (
             <MatchPage
               id={path.split("/")[2]}
               user={user}
@@ -795,7 +806,6 @@ export default function DartflowApp() {
             )
           ) : (
             <>
-            {platformPath==='/app'&&<PlayerExperienceWorkspace compact/>}
             <PlatformWorkspace
               key={platformPath}
               path={platformPath}
@@ -816,7 +826,7 @@ export default function DartflowApp() {
         </main>
       </div>
       <nav className="bottom-nav" aria-label="Hoofdnavigatie">
-        {tabs.map(n=><a key={n.href} href={n.href} className={n.href===platformPath?'active':''} aria-current={n.href===platformPath?'page':undefined}><Icon name={n.icon}/><span>{n.label}</span></a>)}
+        {tabs.map(n=><a key={n.href} href={n.href} className={activeNav(n.href,platformPath)?'active':''} aria-current={activeNav(n.href,platformPath)?'page':undefined}><Icon name={n.icon}/><span>{n.label}</span></a>)}
         <button onClick={()=>setMobileOpen(true)} aria-expanded={mobileOpen} aria-label="Meer"><Icon name="menu"/><span>Meer</span></button>
       </nav>
     </div>

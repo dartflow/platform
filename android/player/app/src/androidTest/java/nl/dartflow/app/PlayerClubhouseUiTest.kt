@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
@@ -52,9 +53,12 @@ class PlayerClubhouseUiTest {
     @Test fun expandedMoreMenuKeepsListFlingAfterNotificationsBackAndReopen() {
         var current by mutableStateOf(state().copy(screen = PlayerScreen.HOME, resource = JSONObject()))
         compose.setContent { Box(Modifier.requiredSize(360.dp, 640.dp)) { DartFlowPlayerTheme { PlayerApp(current, PlayerActions(navigate = { screen, id -> current = current.copy(screen = screen, activeId = id, resource = JSONObject()) }, back = { current = current.copy(screen = PlayerScreen.HOME, activeId = null) })) } } }
-        compose.onNodeWithText("Meer").performClick(); compose.onNodeWithText("Meldingen").performScrollTo().performClick(); compose.onNodeWithTag("more-menu-scroll").assertDoesNotExist()
-        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK); compose.onNodeWithText("Meer").performClick(); compose.waitForIdle()
+        compose.onNodeWithText("Meer").performClick(); compose.onNodeWithTag("more-group-Jouw account").performScrollTo().performClick(); compose.onNodeWithText("Meldingen").performScrollTo().performClick(); compose.onNodeWithTag("more-menu-scroll").assertDoesNotExist()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK); compose.onNodeWithText("Meer").performClick(); compose.onNodeWithTag("more-group-Spelen & voortgang").performScrollTo().performClick(); compose.onNodeWithTag("more-group-Community & evenementen").performScrollTo().performClick(); compose.onNodeWithTag("more-group-Jouw account").performScrollTo().performClick(); compose.onNodeWithText("Profiel & instellingen").performScrollTo(); compose.waitForIdle()
         val menu = compose.onNodeWithTag("more-menu-scroll"); val range = { menu.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange] }
+        val distanceToStart = range().maxValue()
+        menu.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, -distanceToStart) }
+        compose.waitForIdle()
         assertEquals(0f, range().value(), .5f); val top = menu.getUnclippedBoundsInRoot().top
         compose.mainClock.autoAdvance = false
         try {
@@ -85,7 +89,7 @@ class PlayerClubhouseUiTest {
                     val footer = compose.onNodeWithText(label).assertIsDisplayed().getUnclippedBoundsInRoot()
                     assertTrue("Footer $label must remain reachable in $name", footer.left >= viewport.left && footer.right <= viewport.right && footer.top >= viewport.top && footer.bottom <= viewport.bottom)
                 }
-                val expected = palette.obj("effective").obj("tokens").obj(if (light) "light" else "dark")
+                val expected = if (name == "dartflow") JSONObject(if (light) playerDefaultLight else playerDefaultDark) else palette.obj("effective").obj("tokens").obj(if (light) "light" else "dark")
                 compose.runOnIdle { for (key in playerThemeKeys) assertEquals("$name / $light / $key", expected.text(key), observed[key]); assertTrue(playerContrast(observed.getValue("text"), observed.getValue("surface")) >= 4.5); assertTrue(playerContrast(observed.getValue("primary"), observed.getValue("onPrimary")) >= 4.5) }
                 val wordmark = compose.onNodeWithContentDescription("DartFlow").assertIsDisplayed().captureToImage().asAndroidBitmap()
                 if (light) {

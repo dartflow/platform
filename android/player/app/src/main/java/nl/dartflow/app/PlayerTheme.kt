@@ -36,7 +36,8 @@ val PlayerSans = FontFamily(Font(R.font.dm_sans_400), Font(R.font.dm_sans_700, F
     }
     val fresh = view?.let { playerBoundedTheme(it, now, null) }
     val dark = when (view?.obj("preference")?.text("colorMode")) { "light" -> false; "system" -> androidx.compose.foundation.isSystemInDarkTheme(); else -> true }
-    val tokens = playerThemeTokens(fresh?.obj("effective")?.obj("tokens")?.optJSONObject(if (dark) "dark" else "light"), dark)
+    val clubTokens = fresh?.takeIf { it.obj("effective").text("clubId").isNotBlank() }?.obj("effective")?.obj("tokens")?.optJSONObject(if (dark) "dark" else "light")
+    val tokens = playerThemeTokens(clubTokens, dark)
     fun color(key: String) = Color(0xFF000000 or tokens.getValue(key).removePrefix("#").toLong(16))
     androidx.compose.runtime.CompositionLocalProvider(LocalPlayerTokens provides tokens) {
     val scheme = if (dark) darkColorScheme() else lightColorScheme()
@@ -44,13 +45,18 @@ val PlayerSans = FontFamily(Font(R.font.dm_sans_400), Font(R.font.dm_sans_700, F
         colorScheme = scheme.copy(primary = color("primary"), onPrimary = color("onPrimary"), secondary = color("secondary"), background = color("background"), onBackground = color("text"), surface = color("surface"), onSurface = color("text"), surfaceVariant = color("surfaceRaised"), onSurfaceVariant = color("muted"), outline = color("border"), error = color("error")),
         typography = Typography(
             displayLarge = TextStyle(fontFamily = PlayerBarlow, fontSize = 48.sp, lineHeight = 50.sp, fontWeight = FontWeight.ExtraBold),
-            headlineLarge = TextStyle(fontFamily = PlayerBarlow, fontSize = 28.sp, lineHeight = 30.sp, fontWeight = FontWeight.ExtraBold),
-            headlineMedium = TextStyle(fontFamily = PlayerBarlow, fontSize = 24.sp, lineHeight = 27.sp, fontWeight = FontWeight.ExtraBold),
-            titleLarge = TextStyle(fontFamily = PlayerSans, fontSize = 18.sp, lineHeight = 23.sp, fontWeight = FontWeight.Bold),
-            titleMedium = TextStyle(fontFamily = PlayerSans, fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold),
-            bodyLarge = TextStyle(fontFamily = PlayerSans, fontSize = 16.sp, lineHeight = 24.sp),
-            bodyMedium = TextStyle(fontFamily = PlayerSans, fontSize = 14.sp, lineHeight = 21.sp),
-            labelLarge = TextStyle(fontFamily = PlayerSans, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold))) {
+            headlineLarge = TextStyle(fontFamily = PlayerBarlow, fontSize = 26.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold),
+            headlineMedium = TextStyle(fontFamily = PlayerBarlow, fontSize = 22.sp, lineHeight = 25.sp, fontWeight = FontWeight.ExtraBold),
+            headlineSmall = TextStyle(fontFamily = PlayerBarlow, fontSize = 20.sp, lineHeight = 23.sp, fontWeight = FontWeight.ExtraBold),
+            titleLarge = TextStyle(fontFamily = PlayerSans, fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold),
+            titleMedium = TextStyle(fontFamily = PlayerSans, fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold),
+            titleSmall = TextStyle(fontFamily = PlayerSans, fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Bold),
+            bodyLarge = TextStyle(fontFamily = PlayerSans, fontSize = 13.sp, lineHeight = 19.sp),
+            bodyMedium = TextStyle(fontFamily = PlayerSans, fontSize = 12.sp, lineHeight = 18.sp),
+            bodySmall = TextStyle(fontFamily = PlayerSans, fontSize = 11.sp, lineHeight = 16.sp),
+            labelLarge = TextStyle(fontFamily = PlayerSans, fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Bold),
+            labelMedium = TextStyle(fontFamily = PlayerSans, fontSize = 11.sp, lineHeight = 15.sp, fontWeight = FontWeight.Bold),
+            labelSmall = TextStyle(fontFamily = PlayerSans, fontSize = 10.sp, lineHeight = 14.sp))) {
         // MaterialTheme alone does not provide LocalContentColor. Login, onboarding,
         // and the fullscreen console also need the dark surface's readable default.
         Surface(Modifier.fillMaxSize(), color = PlayerInk, contentColor = PlayerText, content = content)

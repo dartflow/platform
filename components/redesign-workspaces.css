@@ -1,0 +1,584 @@
+/* Production adaptation of approved Sites v3 b301f14.
+ * Uses the existing validated club/theme tokens and production component scopes.
+ * Score consoles and the Oche Live projection have their own stylesheets. */
+.dartflow-themed {
+  --ws-base: var(--ch-bg, #101411);
+  --ws-surface: var(--ch-surface, #191f1b);
+  --ws-raised: var(--ch-raised, #202923);
+  --ws-line: var(--ch-border, #303c33);
+  --ws-text: var(--ch-text, #f2f5ef);
+  --ws-muted: var(--ch-muted, #aab7ad);
+  --ws-accent: var(--ch-primary, #c5fa59);
+  --ws-on-accent: var(--ch-on-primary, #162016);
+  --ws-selected: color-mix(in srgb, var(--ws-accent) 10%, var(--ws-surface));
+  --ws-feature: color-mix(in srgb, var(--ws-accent) 5%, var(--ws-surface));
+  --ws-feature-line: color-mix(in srgb, var(--ws-accent) 24%, var(--ws-line));
+  --ws-note: color-mix(in srgb, var(--ch-warning, #ebc66e) 10%, var(--ws-surface));
+  --ws-note-line: color-mix(in srgb, var(--ch-warning, #ebc66e) 40%, var(--ws-line));
+  --ws-radius: 12px;
+  --ws-gap: 12px;
+}
+
+.dartflow-themed .df-redesign :where(.ch-workspace, .season, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics, .df-feed, .studio-body) {
+  --panel: var(--ws-surface);
+  --panel2: var(--ws-raised);
+  --surface-deep: var(--ws-base);
+  --line: var(--ws-line);
+  --line-strong: var(--ws-feature-line);
+  --text: var(--ws-text);
+  --muted: var(--ws-muted);
+  --accent-text: var(--ws-accent);
+  --accent-line: var(--ws-feature-line);
+  width: 100%;
+  min-width: 0;
+  color: var(--ws-text);
+}
+
+/* Clear page titles and secondary actions on the same horizontal rhythm. */
+.dartflow-themed .df-redesign :where(.ch-page-heading, .communication-heading, .locations-heading, .oche-device-manager > .workspace-heading, .integrations-panel > .page-heading, .mail-workspace > .workspace-heading, .df-feed-page-head, .studio-heading) {
+  gap: 10px 20px;
+  align-items: end;
+  margin: 0 0 16px;
+  padding: 6px 0 13px;
+  border-bottom: 1px solid var(--ws-line);
+}
+
+.dartflow-themed .df-redesign :where(.ch-page-heading, .communication-heading, .locations-heading, .oche-device-manager > .workspace-heading, .integrations-panel > .page-heading, .mail-workspace > .workspace-heading, .df-feed-page-head, .studio-heading) h1 {
+  font-family: var(--display, 'Barlow Condensed', sans-serif);
+  font-size: clamp(1.65rem, 2.7vw, 2.3rem);
+  line-height: 1.04;
+  letter-spacing: -.015em;
+  margin: 3px 0 5px;
+  color: var(--ws-text);
+}
+
+.dartflow-themed .df-redesign :where(.ch-page-heading, .communication-heading, .locations-heading, .oche-device-manager > .workspace-heading, .integrations-panel > .page-heading, .mail-workspace > .workspace-heading, .df-feed-page-head, .studio-heading) :is(.eyebrow, .ch-eyebrow, .df-feed-kicker) {
+  color: var(--ws-accent);
+  font-size: .7rem;
+  letter-spacing: .105em;
+}
+
+.dartflow-themed .df-redesign :where(.ch-page-heading, .communication-heading, .locations-heading, .oche-device-manager > .workspace-heading, .integrations-panel > .page-heading, .mail-workspace > .workspace-heading, .df-feed-page-head, .studio-heading) p:not(:where(.eyebrow, .ch-eyebrow, .df-feed-kicker)) {
+  max-width: 65ch;
+  color: var(--ws-muted);
+  margin-bottom: 0;
+}
+
+/* Secondary panels and interaction controls */
+.dartflow-themed .df-redesign :where(.ch-workspace, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics, .studio-body) .panel,
+.dartflow-themed .df-redesign :where(.location-board, .oche-device-card, .season-panel, .support-ticket-row, .notification-item, .release-card, .df-feed-composer, .df-feed-card, .df-feed-side-panel, .df-feed-preferences, .df-feed-mobile-channel-list, .studio-panel, .club-board-card) {
+  border: 1px solid var(--ws-line);
+  border-radius: var(--ws-radius);
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  box-shadow: none;
+  min-width: 0;
+}
+
+.dartflow-themed .df-redesign :where(.ch-workspace, .season, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics, .df-feed, .studio-body, .faq-workspace, .auth-card) :is(input, select, textarea):not(:where([type="checkbox"], [type="radio"], [type="color"], [type="range"], [type="file"], .otp-input)) {
+  background-color: var(--ws-base);
+  border-color: var(--ws-line);
+  color: var(--ws-text);
+  border-radius: 7px;
+}
+
+.dartflow-themed .df-redesign :where(.ch-workspace, .season, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics, .df-feed, .studio-body, .faq-workspace, .auth-card) :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--ws-accent);
+  outline-offset: 2px;
+}
+
+.dartflow-themed .df-redesign :where(.ch-workspace, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics, .studio-body, .faq-workspace, .auth-card) .button:not(.gold, .primary) {
+  background: var(--ws-raised);
+  color: var(--ws-text);
+  border-color: var(--ws-line);
+  box-shadow: none;
+}
+
+.dartflow-themed .df-redesign :where(.ch-workspace, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics, .studio-body, .faq-workspace, .auth-card) .button:not(.gold, .primary):hover:not(:disabled) { border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign :where(.ch-workspace, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics, .studio-body, .faq-workspace, .auth-card) .button:is(.gold, .primary) {
+  background: var(--ws-accent);
+  color: var(--ws-on-accent);
+  border-color: var(--ws-accent);
+  box-shadow: none;
+}
+
+.dartflow-themed .df-redesign :where(.ch-workspace, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics) :is(.notice, .workspace-feedback) {
+  border-color: var(--ws-feature-line);
+  background: var(--ws-feature);
+  color: var(--ws-text);
+}
+
+.dartflow-themed .df-redesign :where(.ch-workspace, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics) .notice.error {
+  background: var(--error-bg, #331f1d);
+  border-color: var(--error-line, #78514b);
+  color: var(--error-text, #ffd0c9);
+}
+
+.dartflow-themed .df-redesign :where(.ch-workspace, .season, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics) :is(.field, label > small) { color: var(--ws-muted); }
+.dartflow-themed .df-redesign :where(.ch-workspace, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics) .field:focus-within { color: var(--ws-text); }
+.dartflow-themed .df-redesign :where(.ch-workspace, .communication-workspace, .locations-workspace, .oche-device-manager, .integrations-panel, .mail-workspace, .player-statistics) :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--ws-accent); }
+
+/* Clubhouse: one featured place card, then agenda, metrics, and compact tools. */
+.dartflow-themed .df-redesign .ch-workspace .ch-page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 15px;
+  border: 1px solid var(--ws-line);
+  border-radius: 10px;
+  background: var(--ws-base);
+}
+
+.dartflow-themed .df-redesign .ch-workspace .ch-page-nav a {
+  min-height: 44px;
+  padding: 6px 11px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ws-muted);
+  font-size: .8125rem;
+  font-weight: 650;
+}
+
+.dartflow-themed .df-redesign .ch-workspace .ch-page-nav a:hover { color: var(--ws-text); background: var(--ws-raised); }
+.dartflow-themed .df-redesign .ch-workspace .ch-page-nav a[aria-current="page"] { color: var(--ws-accent); background: var(--ws-selected); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .ch-workspace .ch-grid { gap: var(--ws-gap); }
+.dartflow-themed .df-redesign .ch-workspace .ch-hero {
+  align-items: center;
+  min-height: 155px;
+  padding: 18px;
+  border-color: var(--ws-feature-line);
+  background: linear-gradient(90deg, #122418 0%, #122418f2 39%, #14251bb8 75%, #11211899 100%), url('/assets/marketing-venue.webp') right 45% / cover !important;
+  color: #f6faf2;
+}
+.dartflow-themed .df-redesign .ch-workspace .ch-hero > div { z-index: 1; }
+.dartflow-themed .df-redesign .ch-workspace .ch-hero h2 { font-size: clamp(1.55rem, 3vw, 2.1rem); line-height: .98; letter-spacing: -.01em; }
+.dartflow-themed .df-redesign .ch-workspace .ch-hero :is(p, small) { color: #d4dfd3; }
+.dartflow-themed .df-redesign .ch-workspace .ch-hero .ch-eyebrow { color: #d4dfd3; }
+.dartflow-themed .df-redesign .ch-workspace .ch-hero .button.gold { background: var(--ws-accent); border-color: var(--ws-accent); color: var(--ws-on-accent); }
+.dartflow-themed .df-redesign .ch-workspace .ch-kpi { padding: 10px 13px; }
+.dartflow-themed .df-redesign .ch-workspace .ch-kpi strong { color: var(--ws-text); font-variant-numeric: tabular-nums; }
+.dartflow-themed .df-redesign .ch-workspace .ch-kpi:first-child { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .ch-workspace .ch-kpi:first-child strong { color: var(--ws-accent); }
+.dartflow-themed .df-redesign .ch-workspace .ch-list-item { padding-inline: 0; }
+.dartflow-themed .df-redesign .ch-workspace .ch-list-item:hover { color: var(--ws-accent); }
+.dartflow-themed .df-redesign .ch-workspace :where(.ch-form-grid, .ch-selection-list) { gap: 7px 12px; }
+.dartflow-themed .df-redesign .ch-workspace .ch-selection { padding: 6px 8px; border-color: var(--ws-line); background: var(--ws-base); }
+.dartflow-themed .df-redesign .ch-workspace .ch-selection:has(input:checked) { background: var(--ws-selected); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .ch-workspace .ch-calendar {
+  border: 1px solid var(--ws-line);
+  border-radius: 10px;
+  background: var(--ws-base);
+  padding: 8px;
+}
+
+/* Competitions: a shorter masthead and cards with status, progress, and action. */
+.dartflow-themed .df-redesign .season {
+  --season-lime: var(--ws-accent);
+  --season-ink: var(--ws-text);
+  --season-soft: var(--ws-muted);
+  --season-line: var(--ws-line);
+  --season-panel: var(--ws-surface);
+  --season-deep: var(--ws-base);
+}
+.dartflow-themed .df-redesign .season .season-hero {
+  min-height: 0;
+  align-items: end;
+  margin: 0 0 13px;
+  padding: 16px 18px;
+  border: 1px solid var(--ws-feature-line);
+  border-radius: var(--ws-radius);
+  background: linear-gradient(115deg, var(--ws-feature) 15%, var(--ws-surface) 62%);
+}
+.dartflow-themed .df-redesign .season .season-hero::before,
+.dartflow-themed .df-redesign .season .season-hero::after { opacity: .45; }
+.dartflow-themed .df-redesign .season .season-hero h1 { font-size: clamp(1.7rem, 3vw, 2.35rem); margin: 0 0 4px; }
+.dartflow-themed .df-redesign .season .season-hero p { margin-top: 0; }
+.dartflow-themed .df-redesign .season .season-hero-meta { margin-top: 6px; }
+.dartflow-themed .df-redesign .season .season-toolbar { margin-bottom: 11px; }
+.dartflow-themed .df-redesign .season .season-tabs { background: var(--ws-base); }
+.dartflow-themed .df-redesign .season :is(.season-tabs, .season-preset-row) button[aria-pressed="true"] { color: var(--ws-accent); background: var(--ws-selected); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .season .season-season-card { background: var(--ws-surface); border-color: var(--ws-line); padding: 12px; gap: 8px; }
+.dartflow-themed .df-redesign .season .season-season-card:has(.season-badge[data-status="active"]) { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .season .season-season-card:focus-within { border-color: var(--ws-accent); }
+.dartflow-themed .df-redesign .season .season-card-body { min-height: 0; }
+.dartflow-themed .df-redesign .season .season-card-body h2 { margin-top: 3px; margin-bottom: 5px; }
+.dartflow-themed .df-redesign .season .season-card-meta { gap: 4px 12px; }
+.dartflow-themed .df-redesign .season .season-emblem { width: 34px; height: 34px; background: var(--ws-selected); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .season .season-progress { margin-top: 0; background: var(--ws-line); }
+.dartflow-themed .df-redesign .season .season-card-link { padding-top: 5px; min-height: 44px; }
+.dartflow-themed .df-redesign .season .season-next { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .season :is(.season-button, .season-quiet, .season-icon-button) { background: var(--ws-raised); border-color: var(--ws-line); }
+.dartflow-themed .df-redesign .season .season-primary { background: var(--ws-accent); border-color: var(--ws-accent); color: var(--ws-on-accent) !important; }
+.dartflow-themed .df-redesign .season .season-dialog { background: var(--ws-surface); border-color: var(--ws-feature-line); color: var(--ws-text); }
+.dartflow-themed .df-redesign .season :is(.season-definition > div, .season-mini-list button, .season-inset-form, .season-management-entry, .season-slot) { background: var(--ws-base); border-color: var(--ws-line); }
+
+/* Responsive operational forms and cards. */
+.dartflow-themed .df-redesign .locations-workspace :is(.locations-activation, .location-current-game) { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .locations-workspace .location-boards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 318px), 1fr)); }
+.dartflow-themed .df-redesign .locations-workspace .location-board { align-content: start; background: var(--ws-base); }
+.dartflow-themed .df-redesign .locations-workspace .location-board > header { border-bottom: 1px solid var(--ws-line); padding-bottom: 6px; }
+.dartflow-themed .df-redesign .locations-workspace .location-current-game { border-radius: 8px; }
+.dartflow-themed .df-redesign .locations-workspace .location-form { align-items: end; }
+.dartflow-themed .df-redesign .locations-workspace .location-reserved { color: var(--ws-accent); }
+.dartflow-themed .df-redesign .oche-device-manager .oche-device-home { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .oche-device-manager :is(.oche-device-card, .oche-location-capacity) { gap: 9px; }
+.dartflow-themed .df-redesign .oche-device-manager .oche-location-capacity { background: var(--ws-base); border-color: var(--ws-line); }
+.dartflow-themed .df-redesign .oche-device-manager .oche-device-presence[data-online="true"] { background: var(--ws-selected); border-color: var(--ws-feature-line); color: var(--ws-accent); }
+.dartflow-themed .df-redesign .oche-device-manager .oche-device-card dl { margin-block: 4px; }
+.dartflow-themed .df-redesign .integrations-panel .integration-card { border-radius: var(--ws-radius); }
+.dartflow-themed .df-redesign .integrations-panel .integration-test { background: var(--ws-feature); border: 1px solid var(--ws-feature-line); border-radius: 8px; padding: 11px; }
+.dartflow-themed .df-redesign .integrations-panel .integration-reauth { background: var(--ws-note); border-color: var(--ws-note-line); color: var(--ws-text); }
+.dartflow-themed .df-redesign .mail-workspace .mail-template-list { padding: 5px; background: var(--ws-base); border: 1px solid var(--ws-line); border-radius: var(--ws-radius); }
+.dartflow-themed .df-redesign .mail-workspace .mail-template-list button.selected { background: var(--ws-selected); border-color: var(--ws-feature-line); color: var(--ws-accent); }
+.dartflow-themed .df-redesign .mail-workspace .mail-editor { border-radius: var(--ws-radius); background: var(--ws-surface); }
+.dartflow-themed .df-redesign .mail-workspace .panel, .dartflow-themed .df-redesign .integrations-panel .panel { min-width: 0; }
+
+/* Ticket queue, history and notification preferences. */
+.dartflow-themed .df-redesign .communication-workspace .communication-filters { gap: 7px 9px; background: var(--ws-base); }
+.dartflow-themed .df-redesign .communication-workspace .communication-filters > .button { align-self: end; }
+.dartflow-themed .df-redesign .communication-workspace .communication-metrics { flex-wrap: wrap; }
+.dartflow-themed .df-redesign .communication-workspace .communication-metrics > div { min-width: min(100%, 138px); background: var(--ws-surface); border-color: var(--ws-line); border-radius: 9px; }
+.dartflow-themed .df-redesign .communication-workspace .communication-metrics > div:last-child { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .communication-workspace .communication-metrics > div:last-child strong { color: var(--ws-accent); }
+.dartflow-themed .df-redesign .communication-workspace .communication-list { gap: 6px; margin-block: 8px 14px; }
+.dartflow-themed .df-redesign .communication-workspace :is(.support-ticket-row, .notification-item, .release-card) { position: relative; border-radius: 9px; }
+.dartflow-themed .df-redesign .communication-workspace :is(.support-ticket-row, .notification-item, .release-card):hover { border-color: var(--ws-feature-line); background: var(--ws-raised); }
+.dartflow-themed .df-redesign .communication-workspace .support-ticket-row { display: grid; grid-template-columns: minmax(82px, auto) minmax(0, 1fr) minmax(110px, auto) 14px; gap: 9px 14px; padding: 10px 12px; }
+.dartflow-themed .df-redesign .communication-workspace .support-ticket-row:has(.status-new),
+.dartflow-themed .df-redesign .communication-workspace .notification-item.is-unread,
+.dartflow-themed .df-redesign .communication-workspace .release-card:first-child { border-inline-start: 3px solid var(--ws-accent); background: var(--ws-feature); }
+.dartflow-themed .df-redesign .communication-workspace .support-ticket-number { color: var(--ws-accent); font-variant-numeric: tabular-nums; }
+.dartflow-themed .df-redesign .communication-workspace :is(.support-ticket-content, .support-ticket-state) { gap: 3px; }
+.dartflow-themed .df-redesign .communication-workspace .support-ticket-summary { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .communication-workspace .support-timeline { border-inline-start: 1px solid var(--ws-feature-line); padding-inline-start: 10px; }
+.dartflow-themed .df-redesign .communication-workspace .support-timeline > li { background: var(--ws-base); border-color: var(--ws-line); padding: 9px 10px; }
+.dartflow-themed .df-redesign .communication-workspace :is(.support-timeline > li.is-internal, .support-internal) { background: var(--ws-note); border-color: var(--ws-note-line); color: var(--ws-text); }
+.dartflow-themed .df-redesign .communication-workspace .notification-preference-header { background: var(--ws-base); }
+.dartflow-themed .df-redesign .communication-workspace :is(.notification-preference-header, .notification-preference-row) { padding-inline: 7px; }
+.dartflow-themed .df-redesign .communication-workspace .notification-preference-row:last-child { border-bottom: 0; }
+.dartflow-themed .df-redesign .communication-workspace .notification-item small { color: var(--ws-muted); }
+.dartflow-themed .df-redesign .communication-workspace .release-preview { background: var(--ws-feature); border-inline-start-color: var(--ws-accent); }
+
+/* Operational records retain their original reading and focus order. */
+.dartflow-themed .df-redesign .platform-workspace :is(.competition-settings, .fixture-controls, .workspace-report) { background: var(--ws-base); border: 1px solid var(--ws-line); border-radius: 9px; padding: 10px 12px; }
+.dartflow-themed .df-redesign .platform-workspace .fixture-controls > .workspace-form { background: var(--ws-surface); }
+.dartflow-themed .df-redesign .platform-workspace .competition-settings > .workspace-form { padding: 10px 0 0; }
+.dartflow-themed .df-redesign .platform-workspace .workspace-fixture { padding: 9px 10px; border-radius: 8px; }
+.dartflow-themed .df-redesign .platform-workspace .workspace-fixture:hover { border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .platform-workspace .workspace-fixture .button-row { gap: 5px; }
+.dartflow-themed .df-redesign .platform-workspace .club-navigation { border-bottom: 1px solid var(--ws-line); padding-bottom: 9px; }
+.dartflow-themed .df-redesign .platform-workspace .club-boards-intro { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+/* Profile and settings group the existing related options into columns. */
+.dartflow-themed .df-redesign .platform-workspace[data-workspace="settings"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--ws-gap);
+}
+.dartflow-themed .df-redesign .platform-workspace[data-workspace="settings"] > :is(.workspace-heading, .notice, .workspace-feedback, .profile-stat-nav) { grid-column: 1 / -1; }
+.dartflow-themed .df-redesign .platform-workspace[data-workspace="settings"] > .panel { margin: 0; border-radius: var(--ws-radius); border-color: var(--ws-line); background: var(--ws-surface); }
+.dartflow-themed .df-redesign .platform-workspace[data-workspace="settings"] > :is(#score-invoer, #meldingen) { border-color: var(--ws-feature-line); background: var(--ws-feature); }
+.dartflow-themed .df-redesign .platform-workspace[data-workspace="settings"] #meldingen > .button { margin: 4px 6px 0 0; }
+.dartflow-themed .df-redesign .profile-stat-nav { display: flex; flex-wrap: wrap; gap: 5px; }
+.dartflow-themed .df-redesign .profile-stat-nav :is(a[aria-current="page"], button[aria-selected="true"]) { color: var(--ws-accent); background: var(--ws-selected); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .player-statistics .profile-stat-filter { border-radius: var(--ws-radius); background: var(--ws-base); border: 1px solid var(--ws-line); padding: 11px; }
+.dartflow-themed .df-redesign .player-statistics :is(.profile-stat-trend, .profile-opponent) { border-color: var(--ws-line); }
+.dartflow-themed .df-redesign .experience-workspace:not(.experience-compact) .experience-goal { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .experience-workspace:not(.experience-compact) .experience-card { background-color: var(--ws-surface); border-color: var(--ws-line); border-radius: var(--ws-radius); }
+
+/* Community is a lighter reading surface within the same app palette. */
+.dartflow-themed .df-redesign .df-feed {
+  --feed-accent: var(--ws-accent);
+  --feed-text: var(--ws-text);
+  --feed-muted: var(--ws-muted);
+  --feed-line: var(--ws-line);
+  --feed-surface: var(--ws-surface);
+  --feed-inset: var(--ws-base);
+}
+.dartflow-themed .df-redesign .df-feed .df-feed-tabs { margin-bottom: 11px; }
+.dartflow-themed .df-redesign .df-feed .df-feed-urgent { margin-bottom: 10px; }
+.dartflow-themed .df-redesign .df-feed .df-feed-urgent article { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .df-feed .df-feed-urgent article p { color: var(--ws-muted); }
+.dartflow-themed .df-redesign .df-feed .df-feed-button { background: var(--ws-raised); border-color: var(--ws-line); color: var(--ws-text); }
+.dartflow-themed .df-redesign .df-feed .df-feed-button.primary { background: var(--ws-accent); border-color: var(--ws-accent); color: var(--ws-on-accent); }
+.dartflow-themed .df-redesign .df-feed .df-feed-audience-select select { background: var(--ws-base); }
+.dartflow-themed .df-redesign .df-feed :is(.df-feed-sort, .df-feed-filters) { margin-bottom: 1px; }
+.dartflow-themed .df-redesign .df-feed .df-feed-filters button { border-color: var(--ws-line); color: var(--ws-muted); }
+.dartflow-themed .df-redesign .df-feed .df-feed-filters button[aria-pressed="true"],
+.dartflow-themed .df-redesign .df-feed .df-feed-source button[aria-pressed="true"] { border-color: var(--ws-feature-line); background: var(--ws-selected); color: var(--ws-accent); }
+.dartflow-themed .df-redesign .df-feed .df-feed-card:has(.df-feed-pin) { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .df-feed .df-feed-score { background: var(--ws-base); border-color: var(--ws-line); }
+.dartflow-themed .df-redesign .df-feed .df-feed-score-player.is-winner { background: var(--ws-selected); }
+.dartflow-themed .df-redesign .df-feed .df-feed-side-link { border-color: var(--ws-line); }
+
+/* Records and dialogs use headers and row boundaries instead of extra cards. */
+.dartflow-themed .df-redesign :where(.ch-workspace, .season, .communication-workspace, .locations-workspace, .integrations-panel, .mail-workspace, .player-statistics, [data-workspace="rankings"]) :is(.table-wrap, .table-scroll, .season-scroll) {
+  margin-inline: 0;
+  padding: 0;
+  border: 1px solid var(--ws-line);
+  border-radius: 8px;
+  background: var(--ws-base);
+}
+.dartflow-themed .df-redesign :where(.ch-workspace, .season, .communication-workspace, .locations-workspace, .integrations-panel, .mail-workspace, .player-statistics) table {
+  background: transparent;
+  color: var(--ws-text);
+  font-variant-numeric: tabular-nums;
+}
+.dartflow-themed .df-redesign :where(.ch-workspace, .season, .communication-workspace, .locations-workspace, .integrations-panel, .mail-workspace, .player-statistics) thead { background: var(--ws-raised); color: var(--ws-muted); }
+.dartflow-themed .df-redesign :where(.ch-workspace, .season, .communication-workspace, .locations-workspace, .integrations-panel, .mail-workspace, .player-statistics) :is(td, th) { border-color: var(--ws-line); }
+.dartflow-themed .df-redesign :where(.ch-workspace, .season, .communication-workspace, .locations-workspace, .integrations-panel, .mail-workspace, .player-statistics) tbody tr:hover { background: var(--ws-raised); }
+.dartflow-themed .df-redesign :where(.ch-workspace, .season, .communication-workspace, .locations-workspace, .integrations-panel, .mail-workspace, .player-statistics) tbody > tr:last-child td { border-bottom: 0; }
+.dartflow-themed .df-redesign :is(.workspace-dialog, .season-dialog, .scoped-chat-sheet, .studio-dialog) {
+  border: 1px solid var(--ws-feature-line);
+  border-radius: 13px;
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  box-shadow: 0 18px 55px #0008;
+}
+.dartflow-themed .df-redesign :is(.workspace-dialog, .season-dialog, .scoped-chat-sheet, .studio-dialog)::backdrop { background: rgb(4 10 5 / .72); backdrop-filter: blur(5px); }
+.dartflow-themed .df-redesign .workspace-dialog-inner > .section-heading {
+  border-bottom: 1px solid var(--ws-line);
+  padding-bottom: 8px;
+}
+
+/* Public pages keep the same assets and receive the secondary surfaces. */
+.dartflow-themed .df-redesign .auth-page {
+  min-height: 100dvh;
+  background: radial-gradient(ellipse at 50% 0, #293b28 0%, transparent 60%), var(--ws-base);
+  color: var(--ws-text);
+}
+.dartflow-themed .df-redesign .auth-card {
+  border: 1px solid var(--ws-feature-line);
+  border-radius: 15px;
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  box-shadow: 0 24px 70px #0004;
+}
+.dartflow-themed .df-redesign .auth-card > p, .dartflow-themed .df-redesign .auth-footer { color: var(--ws-muted); }
+.dartflow-themed .df-redesign .auth-card h1 { color: var(--ws-text); }
+.dartflow-themed .df-redesign .faq-workspace {
+  color: var(--ws-text);
+  max-width: 990px;
+}
+.dartflow-themed .df-redesign .faq-workspace > .page-title {
+  border: 1px solid var(--ws-feature-line);
+  border-radius: var(--ws-radius);
+  padding: 14px;
+  background: var(--ws-feature);
+  margin-bottom: 12px;
+}
+.dartflow-themed .df-redesign .faq-workspace :is(.faq-search, .faq-answers details, .faq-workspace .panel) { border-color: var(--ws-line); background: var(--ws-surface); color: var(--ws-text); }
+.dartflow-themed .df-redesign .faq-workspace .faq-answers details[open] { border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .faq-workspace .faq-answers details[open] > summary { color: var(--ws-accent); }
+.dartflow-themed .df-redesign .faq-workspace .faq-answers summary { min-height: 44px; }
+.dartflow-themed .df-redesign .faq-workspace footer { color: var(--ws-muted); }
+.dartflow-themed .df-redesign :where(.blog-feature, .blog-card, .blog-toc, .blog-share) { border-color: var(--ws-line); background-color: var(--ws-surface); }
+.dartflow-themed .df-redesign .blog-feature { border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign :where(.studio-panel, .studio-library, .studio-editor-wrap) { border-color: var(--ws-line); background-color: var(--ws-surface); }
+.dartflow-themed .df-redesign .studio-heading :where(p, small) { color: var(--ws-muted); }
+
+@media (min-width: 1080px) {
+  .dartflow-themed .df-redesign .communication-workspace .communication-filters:has(select[name="assignee"]) { grid-template-columns: minmax(240px, 2fr) repeat(4, minmax(105px, 1fr)) auto; }
+  .dartflow-themed .df-redesign .communication-workspace .support-detail-layout:has(.support-management) { grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); }
+}
+
+@media (max-width: 760px) {
+  .dartflow-themed { --ws-gap: 9px; }
+  .dartflow-themed .df-redesign :where(.ch-page-heading, .communication-heading, .locations-heading, .oche-device-manager > .workspace-heading, .integrations-panel > .page-heading, .mail-workspace > .workspace-heading, .df-feed-page-head, .studio-heading) { margin-bottom: 10px; padding-bottom: 10px; }
+  .dartflow-themed .df-redesign :where(.ch-page-heading, .communication-heading, .locations-heading, .oche-device-manager > .workspace-heading, .integrations-panel > .page-heading, .mail-workspace > .workspace-heading, .df-feed-page-head, .studio-heading) h1 { font-size: clamp(1.55rem, 6.6vw, 1.85rem); }
+  .dartflow-themed .df-redesign .ch-workspace .ch-page-nav a { min-height: 44px; }
+  .dartflow-themed .df-redesign .ch-workspace .ch-hero { min-height: 130px; padding: 13px; background-image: linear-gradient(90deg, #122418 0%, #122418f2 36%, #14251bc9 74%, #112118aa 100%), url('/assets/marketing-venue.webp'); }
+  .dartflow-themed .df-redesign .season .season-hero { padding: 11px 12px; align-items: start; }
+  .dartflow-themed .df-redesign .season .season-hero h1 { font-size: clamp(1.6rem, 6.8vw, 1.85rem); }
+  .dartflow-themed .df-redesign .season .season-card-link { min-height: 44px; }
+  .dartflow-themed .df-redesign .platform-workspace[data-workspace="settings"] { grid-template-columns: minmax(0, 1fr); }
+  .dartflow-themed .df-redesign .communication-workspace .communication-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dartflow-themed .df-redesign .communication-workspace .communication-filters > :first-child:has(input[type="search"]) { grid-column: 1 / -1; }
+  .dartflow-themed .df-redesign .communication-workspace .support-ticket-row { grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 4px 8px; }
+  .dartflow-themed .df-redesign .communication-workspace :is(.support-ticket-number, .support-ticket-content) { grid-column: 1; }
+  .dartflow-themed .df-redesign .communication-workspace .support-ticket-state { grid-column: 2; grid-row: 1 / span 2; display: grid; width: auto; text-align: end; gap: 4px; justify-items: end; }
+  .dartflow-themed .df-redesign .communication-workspace .support-ticket-row > span:last-child { display: none; }
+  .dartflow-themed .df-redesign .communication-workspace .support-ticket-content strong { overflow-wrap: anywhere; }
+  .dartflow-themed .df-redesign .communication-workspace .notification-preference-header,
+  .dartflow-themed .df-redesign .communication-workspace .notification-preference-row { padding-inline: 3px; }
+  .dartflow-themed .df-redesign .df-feed .df-feed-page-head { align-items: start; }
+  .dartflow-themed .df-redesign .df-feed .df-feed-urgent article { padding: 8px; gap: 6px; }
+  .dartflow-themed .df-redesign .df-feed .df-feed-audience-select select { max-width: min(142px, 40vw); }
+}
+
+@media (max-width: 360px) {
+  .dartflow-themed .df-redesign .communication-workspace .support-ticket-row { grid-template-columns: minmax(0, 1fr); }
+  .dartflow-themed .df-redesign .communication-workspace .support-ticket-state { grid-column: 1; grid-row: auto; grid-auto-flow: column; justify-content: start; text-align: start; }
+  .dartflow-themed .df-redesign .communication-workspace .support-ticket-state time { white-space: normal; }
+}
+
+/* Compact text roles leave controls and numeric stands independently sized. */
+.dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .season, .communication-workspace, .locations-workspace, .player-statistics) {
+  font-size: var(--df-type-body, .8125rem);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .communication-workspace, .locations-workspace, .player-statistics) .panel {
+  padding: 16px;
+  border-radius: var(--ws-radius);
+}
+.dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .communication-workspace, .locations-workspace, .player-statistics) :is(h2, h3) {
+  font-family: var(--display, 'Barlow Condensed', sans-serif);
+  font-size: var(--df-type-section, 1.125rem);
+  line-height: 1.2;
+}
+.dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .communication-workspace, .locations-workspace, .player-statistics) :is(small, .field, .muted-copy) {
+  font-size: var(--df-type-label, .75rem);
+  line-height: 1.45;
+}
+.dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .communication-workspace, .locations-workspace, .player-statistics) .button,
+.dartflow-themed .df-redesign .season :is(.season-button, .season-tabs button, .season-mini-list button) {
+  min-height: 44px;
+  font-size: .8125rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .communication-workspace, .locations-workspace, .player-statistics) :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+.dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .communication-workspace, .locations-workspace, .player-statistics) :is(input, select):not([type="checkbox"], [type="radio"], [type="color"]) {
+  min-height: 44px;
+}
+.dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .season, .communication-workspace, .locations-workspace, .player-statistics) :is(.table-wrap, .table-scroll, .season-scroll) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .season, .communication-workspace, .locations-workspace, .player-statistics) :is(.table-wrap, .table-scroll, .season-scroll):focus-visible {
+  outline: 2px solid var(--ws-accent);
+  outline-offset: 3px;
+}
+.dartflow-themed .df-redesign .ch-workspace .ch-page-nav { align-items: center; }
+.dartflow-themed .df-redesign .ch-nav-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.dartflow-themed .df-redesign .ch-nav-group + .ch-nav-group { border-inline-start: 1px solid var(--ws-line); padding-inline-start: 8px; }
+.dartflow-themed .df-redesign .ch-nav-group-label { color: var(--ws-muted); font-size: .625rem; letter-spacing: .08em; text-transform: uppercase; padding-inline: 5px; }
+.dartflow-themed .df-redesign .ch-workspace .ch-grid { margin-bottom: var(--ws-gap); }
+.dartflow-themed .df-redesign .ch-workspace .ch-kpi strong { font: 750 1.65rem/1.1 var(--display); margin: 7px 0 4px; }
+.dartflow-themed .df-redesign .ch-workspace .ch-kpi p { font-size: .75rem; }
+.dartflow-themed .df-redesign .ch-workspace .ch-list-item { gap: 10px; padding-block: 11px; }
+.dartflow-themed .df-redesign .ch-workspace .ch-list-item > div { min-width: 0; }
+.dartflow-themed .df-redesign .ch-workspace .ch-hero-logo { width: 76px; height: 76px; margin-left: 12px; }
+.dartflow-themed .df-redesign .ch-wizard .ch-page-heading h2 { margin: 3px 0 5px; font-size: 1.8rem; }
+.dartflow-themed .df-redesign .ch-wizard .ch-steps { gap: 6px; margin-block: 12px; }
+.dartflow-themed .df-redesign .ch-wizard .ch-steps button { min-height: 44px; padding: 7px 10px; font-size: .8125rem; }
+.dartflow-themed .df-redesign .ch-wizard .ch-wizard-footer { padding-block: 12px; }
+.dartflow-themed .df-redesign .season .season-panel { padding: 15px; }
+.dartflow-themed .df-redesign .season :is(.season-panel h2, .season-dialog h2) { font-size: var(--df-type-section, 1.125rem); }
+.dartflow-themed .df-redesign .season .season-card-body h2 { font-size: var(--df-type-section, 1.125rem); }
+.dartflow-themed .df-redesign .season :is(.season-meta, .season-progress-line, .season-card-meta) { font-size: var(--df-type-meta, .6875rem); }
+.dartflow-themed .df-redesign .season .season-section-head { flex-wrap: wrap; }
+.dartflow-themed .df-redesign .season .season-section-tabs { align-items: start; }
+.dartflow-themed .df-redesign .season .season-season-card[data-status="active"] { background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .locations-workspace { gap: var(--ws-gap); }
+.dartflow-themed .df-redesign .locations-workspace .location-form { margin-block: 12px; gap: 10px; }
+.dartflow-themed .df-redesign .communication-workspace .communication-heading { margin-bottom: 14px; }
+.dartflow-themed .df-redesign .communication-workspace h2 { margin-bottom: 10px; }
+.dartflow-themed .df-redesign .communication-workspace .panel { margin-bottom: var(--ws-gap); }
+.dartflow-themed .df-redesign .communication-workspace .support-ticket-content strong { font-size: .875rem; }
+.dartflow-themed .df-redesign .communication-workspace .notification-item { padding: 12px; gap: 10px; }
+.dartflow-themed .df-redesign .communication-workspace .notification-item > span:only-of-type,
+.dartflow-themed .df-redesign .communication-workspace .notification-item > span:first-child:not(.notification-indicator) { display: grid; flex: 1; gap: 4px; }
+.dartflow-themed .df-redesign .communication-workspace .release-card { padding: 16px; }
+.dartflow-themed .df-redesign .communication-workspace :is(.communication-admin-layout, .support-detail-layout) { gap: var(--ws-gap); }
+.dartflow-themed .df-redesign .communication-workspace .campaign-recipient-list label { min-height: 44px; }
+.dartflow-themed .df-redesign .communication-workspace .notification-policy-controls label { min-width: min(100%, 140px); }
+.dartflow-themed .df-redesign .player-statistics .profile-stat-nav { margin-block: 12px; }
+.dartflow-themed .df-redesign .player-statistics .profile-stat-filter { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px; }
+.dartflow-themed .df-redesign .player-statistics .profile-stat-filter > label { display: grid; gap: 5px; font-size: .8125rem; }
+.dartflow-themed .df-redesign .player-statistics .profile-stat-filter select { background: var(--ws-base); border-color: var(--ws-line); color: var(--ws-text); }
+.dartflow-themed .df-redesign .player-statistics .profile-stat-grid { gap: var(--ws-gap); margin-block: 12px; }
+.dartflow-themed .df-redesign .player-statistics > .panel { margin-block: var(--ws-gap); }
+.dartflow-themed .df-redesign .player-statistics .profile-form-strip a { color: var(--ws-accent); background: var(--ws-selected); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign :is(.tournament-planning, .tournament-management) { min-width: 0; }
+.dartflow-themed .df-redesign :is(.tournament-planning, .tournament-management) .table-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+
+@media (max-width: 760px) {
+  .dartflow-themed .df-redesign .ch-workspace .ch-page-nav { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+  .dartflow-themed .df-redesign .ch-workspace .ch-page-nav a { flex: 0 0 auto; white-space: nowrap; }
+  .dartflow-themed .df-redesign .ch-nav-group { flex: 0 0 auto; flex-wrap: nowrap; }
+  .dartflow-themed .df-redesign .ch-workspace .ch-hero-logo { width: 60px; height: 60px; }
+  .dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .communication-workspace, .locations-workspace, .player-statistics) .panel { padding: 13px; }
+  .dartflow-themed .df-redesign :where(.ch-workspace, .ch-wizard, .communication-workspace, .locations-workspace, .player-statistics) .field :is(input, select, textarea):not([type="checkbox"], [type="radio"], [type="color"]) { font-size: 1rem; }
+  .dartflow-themed .df-redesign .season .season-panel { padding: 12px; }
+  .dartflow-themed .df-redesign .season .season-hero { flex-wrap: wrap; }
+  .dartflow-themed .df-redesign .communication-workspace .support-ticket-row { padding: 11px; }
+}
+
+/* Status contrast also follows light mode and published club accents. */
+.dartflow-themed .df-redesign .season .season-badge { color: var(--ws-muted); background: var(--ws-raised); border-color: var(--ws-line); }
+.dartflow-themed .df-redesign .season .season-badge:is([data-status="active"], [data-status="confirmed"], [data-status="played"], [data-status="live"]) { color: var(--ch-success); background: color-mix(in srgb, var(--ch-success) 9%, var(--ws-surface)); border-color: color-mix(in srgb, var(--ch-success) 40%, var(--ws-line)); }
+.dartflow-themed .df-redesign .season .season-badge:is([data-status="registration"], [data-status="provisional"], [data-status="waiting"]) { color: var(--ch-warning); background: var(--ws-note); border-color: var(--ws-note-line); }
+.dartflow-themed .df-redesign .season .season-badge:is([data-status="disputed"], [data-status="canceled"], [data-status="interrupted"], [data-status="withdrawn"]) { color: var(--ch-error); background: color-mix(in srgb, var(--ch-error) 9%, var(--ws-surface)); border-color: color-mix(in srgb, var(--ch-error) 40%, var(--ws-line)); }
+.dartflow-themed .df-redesign .season .season-fixture-sides > span { background: var(--ws-selected); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .season :is(input, select, textarea) { color-scheme: inherit; }
+.dartflow-themed .df-redesign .season .season-card-link:hover { color: var(--ws-accent) !important; }
+.dartflow-themed .df-redesign .season .season-dialog-head { background: var(--ws-raised); }
+.dartflow-themed .df-redesign .season .season-dialog-body { scrollbar-color: var(--ws-muted) var(--ws-surface); }
+.dartflow-themed .df-redesign .season :is(.season-lineups article, .season-management-list > article) { background: var(--ws-base); border-color: var(--ws-line); }
+.dartflow-themed .df-redesign .season :is(.season-notice, .season-point-preview:not(:empty), .season-feedback) { color: var(--ws-text); background: var(--ws-feature); border-color: var(--ws-feature-line); }
+.dartflow-themed .df-redesign .season .season-feedback[data-error="true"] { color: var(--ch-error); background: color-mix(in srgb, var(--ch-error) 9%, var(--ws-surface)); border-color: color-mix(in srgb, var(--ch-error) 40%, var(--ws-line)); }
+
+/* Public help and sign-in pages are outside the authenticated theme provider. */
+:where(.faq-workspace, .auth-page) {
+  --text: var(--df-text, #f2f5ef);
+  --muted: var(--df-muted, #aab7ad);
+  --panel: var(--df-surface, #191f1b);
+  --line: var(--df-line, #303c33);
+  font-size: .8125rem;
+  color: var(--text);
+}
+.faq-workspace > .page-title {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: var(--panel);
+}
+.faq-workspace .page-title h1, .auth-page .auth-card h1 {
+  font-family: var(--display, 'Barlow Condensed', sans-serif);
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  line-height: 1.08;
+}
+.faq-workspace :is(.panel, .faq-answers details), .auth-page .auth-card {
+  border-color: var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+}
+.faq-workspace .faq-answers summary {
+  min-height: 44px;
+  font-size: .875rem;
+  line-height: 1.5;
+}
+.faq-workspace .faq-answers details[open] > summary { color: var(--df-lime, #c5fa59); }
+.faq-workspace :is(.field, label, footer), .auth-page :is(.field, .auth-footer) { font-size: .75rem; }
+.faq-workspace :is(.button, input, select), .auth-page :is(.button, .field input, .field select) { min-height: 44px; }
+.faq-workspace :is(input, select), .auth-page .field :is(input, select) {
+  background: var(--df-ink, #101411);
+  border-color: var(--line);
+  color: var(--text);
+}
+.faq-workspace :is(h2, h3) { font-size: 1.125rem; }
+.faq-workspace :is(input, select, a, button, summary):focus-visible,
+.auth-page :is(input, select, a, button, summary):focus-visible {
+  outline: 2px solid var(--df-lime, #c5fa59);
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .faq-workspace :is(input, select), .auth-page .field :is(input, select):not(.otp-input) { font-size: 1rem; }
+}
+
+@media (max-width: 760px) {
+  .dartflow-themed .df-redesign .ch-page-heading { align-items: flex-start; }
+  .dartflow-themed .df-redesign .ch-page-heading > a.button { align-self: flex-end; }
+}

@@ -63,6 +63,7 @@ data class PlayerUiState(
     val canManagePlatform: Boolean = false, val organizerDraft: JSONObject = JSONObject(), val organizerCloudDraft: JSONObject = JSONObject(), val faqAdminReceipt: JSONObject = JSONObject(),
     val accountDeletion: JSONObject = JSONObject(), val communicationReceipt: JSONObject = JSONObject(),
     val homeFeed: JSONObject = JSONObject(), val homeFeedLoading: Boolean = false, val homeFeedError: String? = null,
+    val homePlaySessions: List<JSONObject> = emptyList(), val homePlayError: String? = null,
     val guestOperatorId: String = "",
     val theme: JSONObject = JSONObject(), val themeClockOffset: Long = 0,
     val clubhouseContext: String? = null, val clubhousePages: List<String> = emptyList(),

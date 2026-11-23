@@ -1,5 +1,6 @@
 "use client";
 import ScoreInputSettings from './score-input-settings';
+import {RedesignedToday} from './redesign-shell';
 import LegacyTrainingOffline from './legacy-training-offline';
 import X01OpeningField from './x01-opening-field';
 import ProfileIdentityFields from './profile-identity-fields';
@@ -124,7 +125,7 @@ function ShareInvitation({ section, id, entity }: { section: string; id: string;
   const [copyStatus, setCopyStatus] = useState("");
   const link = invitationLink(section, id, code);
   return code ? (
-    <div className="notice">
+    <div className={`notice${section==='lobby'?' play-lobby-code':''}`}>
       <strong>Uitnodigingscode</strong>
       <p className="workspace-code">{code}</p>
       <p>Deel de code of link met de bedoelde speler. Een nieuwe uitnodiging is zeven dagen geldig.</p>
@@ -177,6 +178,11 @@ const number = (v: unknown, fallback = 0) =>
 const statusLabel: Record<string, string> = {
   active: "Actief",
   finished: "Afgerond",
+  completed: "Afgerond",
+  draft: "Concept",
+  archived: "Gearchiveerd",
+  cancelled: "Geannuleerd",
+  canceled: "Geannuleerd",
   open: "Inschrijving open",
   planned: "Gepland",
   scheduled: "Gepland",
@@ -546,7 +552,7 @@ export default function PlatformWorkspace({
   if (page === "platform") return <IntegrationsPanel />;
   if (page === "mail") return <MailWorkspace clubId={clubId} />;
   return (
-    <div className="platform-workspace">
+    <div className="platform-workspace" data-workspace={page}>
       {(!online || error) && (
         <div className="notice error" role="alert">
           {error ||
@@ -692,39 +698,9 @@ function Dashboard({
   organizer: boolean;
   clubId: string;
 }) {
-  const personalMatches = data.matches || overview?.matches || [];
-  const current = personalMatches.find(
-    (m) =>
-      m.status === "live" && m.players.some((p) => p.id === data.profile.id),
-  );
-  const results =
-    personalMatches.filter(
-      (m) =>
-        m.status === "result" &&
-        m.players.some(
-          (p, i) => p.id === data.profile.id && !m.confirmations[i],
-        ),
-    ) || [];
-  const competitions = [...data.leagues, ...data.tournaments].filter(
-    (e) => (e.clubId || "") === clubId,
-  );
-  const scopedTraining = data.trainings.filter(
-    (e) => e.ownerId === data.profile.id,
-  );
-  return (
-    <>
-      <Title title={organizer ? "Organiseren" : "Vandaag"}>
-        {new Intl.DateTimeFormat("nl-NL", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          timeZone: "Europe/Amsterdam",
-        }).format(new Date())}{" "}
-        · {data.clubs.find((c) => c.id === clubId)?.name || "Wereldwijd"}
-      </Title>
-      <GuestClaimsPanel/>
-      {organizer ? (
-        <>
+  const competitions = [...data.leagues,...data.tournaments].filter(e=>(e.clubId||'')===clubId);
+  if (!organizer) return <><GuestClaimsPanel/><RedesignedToday data={data} overview={overview} clubId={clubId}/></>;
+  return <><Title title="Organiseren">{new Intl.DateTimeFormat('nl-NL',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Amsterdam'}).format(new Date())} · {data.clubs.find(c=>c.id===clubId)?.name||'Wereldwijd'}</Title><GuestClaimsPanel/>
           <div className="workspace-metrics">
             <Metric label="Evenementen" value={competitions.length} />
             <Metric
@@ -784,139 +760,7 @@ function Dashboard({
               </Tile>
             )}
           </div>
-        </>
-      ) : (
-        <>
-          <div className="workspace-dashboard-grid">
-            <section className="panel workspace-active workspace-tile">
-              <p className="eyebrow">JOUW WEDSTRIJD</p>
-              <h2>
-                {current
-                  ? "Actieve wedstrijd"
-                  : results.length
-                    ? "Uitslag bevestigen"
-                    : "Klaar voor je volgende partij?"}
-              </h2>
-              {current ? (
-                <>
-                  <div className="workspace-active-score">
-                    {current.players.map((p, i) => (
-                      <div key={p.id}>
-                        <span className="avatar">
-                          {p.name
-                            .split(" ")
-                            .map((x) => x[0])
-                            .slice(0, 2)
-                            .join("")}
-                        </span>
-                        <strong>{p.name}</strong>
-                        <b>
-                          {current.legs[i]}
-                          <small> legs</small>
-                        </b>
-                      </div>
-                    ))}
-                  </div>
-                  <a className="button gold" href={`/wedstrijd/${current.id}`}>
-                    Hervat je partij ↗
-                  </a>
-                </>
-              ) : results[0] ? (
-                <a className="button gold" href={`/wedstrijd/${results[0].id}`}>
-                  Bevestig je uitslag ↗
-                </a>
-              ) : (
-                <>
-                  <p>
-                    Speel een oefenleg, nodig een vriend uit of scan de QR-code
-                    bij de baan.
-                  </p>
-                  <Link to="play" primary>
-                    Naar Spelen
-                  </Link>
-                </>
-              )}
-            </section>
-            <section className="panel workspace-shortcuts">
-              <h2>Direct spelen</h2>
-              <Link to="practice">
-                Oefenwedstrijd <small>Lokaal of online</small>
-              </Link>
-              <Link to="lobby">Wedstrijdcode invoeren</Link>
-              <a href="/spelen" className="button ghost">
-                Baanmodus op locatie ↗
-              </a>
-            </section>
-          </div>
-          <div className="workspace-grid two">
-            <section className="panel">
-              <div className="section-heading">
-                <h2>Jouw programma</h2>
-                <Link to="events">Alle evenementen</Link>
-              </div>
-              {competitions.length ? (
-                competitions.slice(0, 4).map((e) => (
-                  <a
-                    className="workspace-row"
-                    key={e.id}
-                    href={`/app/${e.kind === "league" ? "leagues" : "hall"}/${e.id}`}
-                  >
-                    <div>
-                      <strong>{e.name}</strong>
-                      <small>{iso(e.state.date)}</small>
-                    </div>
-                    <Label value={e.state.status || "open"} />
-                  </a>
-                ))
-              ) : (
-                <Empty>Je hebt hier nog geen competitie of toernooi.</Empty>
-              )}
-            </section>
-            <section className="panel">
-              <div className="section-heading">
-                <h2>Vrienden</h2>
-                <Link to="friends">Bekijk vrienden</Link>
-              </div>
-              {data.friends.filter((f) => f.status === "friend").length ? (
-                data.friends
-                  .filter((f) => f.status === "friend")
-                  .slice(0, 4)
-                  .map((f) => (
-                    <div className="workspace-row" key={f.id}>
-                      <strong>{f.name}</strong>
-                      <Label value={f.favorite ? "Favoriet" : "Vriend"} />
-                    </div>
-                  ))
-              ) : (
-                <Empty>Voeg een vriend toe en daag elkaar uit.</Empty>
-              )}
-            </section>
-          </div>
-          <div className="workspace-metrics">
-            <Metric
-              label="Bevestigde uitslagen"
-              value={data.history?.length || overview?.history.length || 0}
-            />
-            <Metric label="Trainingen" value={scopedTraining.length} />
-            <Metric
-              label="Vriendschapsverzoeken"
-              value={data.friends.filter((f) => f.status === "incoming").length}
-            />
-            <Metric
-              label="Eigen verenigingen"
-              value={
-                data.clubs.filter((c) =>
-                  c.members.some(
-                    (m) => m.id === data.profile.id && m.status === "active",
-                  ),
-                ).length
-              }
-            />
-          </div>
-        </>
-      )}
-    </>
-  );
+  </>;
 }
 function Metric({ label, value }: { label: string; value: number }) {
   return (
@@ -2010,24 +1854,13 @@ function Lobby({
             )
           }
         />
-        {typeof entity.state.boardId === "string" &&
-          !entity.state.closed &&
-          selfActive && (
-            <BoundBoardScreen
-              boardId={entity.state.boardId}
-              command={command}
-              busy={busy}
-            />
-          )}
-        <div className="workspace-grid two">
-          <section className="panel">
-            <h2>Wedstrijdlobby</h2>
-            <p className="muted-copy">
-              Deel de code of uitnodigingslink met je tegenstander.
-            </p>
+        <div className="workspace-grid two play-lobby-layout">
+          <section className="panel play-lobby-main">
             <ShareInvitation section="lobby" id={entity.id} entity={entity} />
+            <h2>Spelers</h2>
             {entity.ownerId===data.profile.id&&selfActive&&typeof entity.state.boardId==='string'&&['localone','localtwo'].includes(text(entity.state.setup))&&!entity.state.matchId&&!entity.state.closed&&entity.members.filter(member=>member.status==='active').length===1&&<LocalPlayerAdd key={entity.id} lobbyId={entity.id} revision={entity.revision} boardId={entity.state.boardId} disabled={busy} onRefresh={onRefresh}/>}
-            {selfActive&&!entity.state.matchId&&!entity.state.closed&&['remote','hybrid'].includes(text(entity.state.setup))&&<label className="field">Mijn fysieke baan (optioneel)<select value={text(record(entity.state.remoteBoardIds)[data.profile.id])} disabled={busy} onChange={event=>{if(event.target.value)void command({type:'lobby.board.bind',id:entity.id,boardId:event.target.value},entity);}}><option value="">Thuis zonder gekoppeld baanscherm</option>{(data.clubBoards??[]).filter(board=>(!board.occupied&&!board.blocked&&!board.closed&&!board.closePending)||board.id===record(entity.state.remoteBoardIds)[data.profile.id]).map(board=><option key={board.id} value={board.id}>{board.name}</option>)}</select><small>Deze vaste baan volgt dezelfde live stand en deadline als je tegenstander.</small></label>}
+
+            <div className="play-lobby-players">
             {entity.members.map((m) => (
               <div className="workspace-row" key={m.id}>
                 <strong>{m.name}</strong>
@@ -2036,37 +1869,8 @@ function Lobby({
                 />
               </div>
             ))}
+            </div>
             <div className="button-row">
-              {entity.ownerId === data.profile.id &&
-                !record(entity.state.settings).startProcedure &&
-                !entity.state.matchId &&
-                !entity.state.closed && (
-                  <label className="field">
-                    Eerste gooier
-                    <select
-                      value={text(entity.state.starterId, entity.ownerId)}
-                      disabled={busy}
-                      onChange={(event) =>
-                        void command(
-                          {
-                            type: "lobby.starter",
-                            id: entity.id,
-                            starterId: event.target.value,
-                          },
-                          entity,
-                        )
-                      }
-                    >
-                      {entity.members
-                        .filter((member) => member.status === "active")
-                        .map((member) => (
-                          <option key={member.id} value={member.id}>
-                            {member.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                )}
               {!selfActive && !entity.state.closed && !entity.state.matchId && (
                 <Button
                   primary
@@ -2101,8 +1905,10 @@ function Lobby({
                 Ik sta klaar aan het bord
               </Button>
               <Button
+                primary={Boolean(ready[data.profile.id])}
                 disabled={
                   busy ||
+                  !selfActive ||
                   entity.state.closed === true ||
                   Boolean(entity.state.matchId) ||
                   entity.members.filter((member) => member.status === "active")
@@ -2147,11 +1953,56 @@ function Lobby({
               </p>
             )}
           </section>
-          <section className="panel">
-            <h2>Bordcontrole</h2>
+          <details className="panel play-lobby-settings">
+            <summary>Wedstrijdinstellingen</summary>
+              {entity.ownerId === data.profile.id &&
+                !record(entity.state.settings).startProcedure &&
+                !entity.state.matchId &&
+                !entity.state.closed && (
+                  <label className="field">
+                    Eerste gooier
+                    <select
+                      value={text(entity.state.starterId, entity.ownerId)}
+                      disabled={busy}
+                      onChange={(event) =>
+                        void command(
+                          {
+                            type: "lobby.starter",
+                            id: entity.id,
+                            starterId: event.target.value,
+                          },
+                          entity,
+                        )
+                      }
+                    >
+                      {entity.members
+                        .filter((member) => member.status === "active")
+                        .map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                )}
+
+            {selfActive&&!entity.state.matchId&&!entity.state.closed&&['remote','hybrid'].includes(text(entity.state.setup))&&<label className="field">Mijn fysieke baan (optioneel)<select value={text(record(entity.state.remoteBoardIds)[data.profile.id])} disabled={busy} onChange={event=>{if(event.target.value)void command({type:'lobby.board.bind',id:entity.id,boardId:event.target.value},entity);}}><option value="">Thuis zonder gekoppeld baanscherm</option>{(data.clubBoards??[]).filter(board=>(!board.occupied&&!board.blocked&&!board.closed&&!board.closePending)||board.id===record(entity.state.remoteBoardIds)[data.profile.id]).map(board=><option key={board.id} value={board.id}>{board.name}</option>)}</select><small>Deze vaste baan volgt dezelfde live stand en deadline als je tegenstander.</small></label>}
+        {typeof entity.state.boardId === "string" &&
+          !entity.state.closed &&
+          selfActive && (
+            <BoundBoardScreen
+              boardId={entity.state.boardId}
+              command={command}
+              busy={busy}
+            />
+          )}
+
+            <h3>Bordcontrole</h3>
             <p>
-              {text(record(entity.state.settings).startScore, 501)} · dubbel uit
-              · best of {text(record(entity.state.settings).bestOfLegs, 3)}
+              {text(record(entity.state.settings).discipline, 'x01') === 'x01' ? <>
+                X01 {text(record(entity.state.settings).startScore, 501)} · {record(entity.state.settings).inRule === 'double' ? 'dubbel in' : 'enkel in'} · {record(entity.state.settings).outRule === 'straight' ? 'vrij uit' : record(entity.state.settings).outRule === 'master' ? 'master uit' : 'dubbel uit'}
+              </> : text(record(entity.state.settings).discipline) === 'tactics' ? 'Tactics' : 'Cricket'}
+              {' · '}best of {text(record(entity.state.settings).bestOfLegs, 3)}
             </p>
             <p>
               {
@@ -2170,7 +2021,7 @@ function Lobby({
               Start pas als beide spelers klaar zijn. Scores worden door de
               server verwerkt en gedeeld.
             </p>
-          </section>
+          </details>
         </div>
       </>
     );
@@ -2299,6 +2150,23 @@ function Competitions({
       : page === "events"
         ? [...data.leagues, ...data.tournaments]
         : data.tournaments;
+  const eventStatus=(event:Entity)=>{
+    const value=String(event.state.status??'');
+    if(event.state.archived===true)return 'archived';
+    if(event.state.cancelled===true)return 'cancelled';
+    if(event.state.closed===true||event.state.completed===true)return 'completed';
+    if(['finished','completed','cancelled','canceled','archived'].includes(value))return value;
+    if(list(event.state.fixtures).some(fixture=>fixture.status==='live'))return 'live';
+    if(list(event.state.fixtures).some(fixture=>['scheduled','proposed'].includes(text(fixture.status))))return 'planned';
+    return value||'open';
+  };
+  const statusPriority=(event:Entity)=>{
+    const value=eventStatus(event);
+    if(['finished','completed','cancelled','canceled','archived'].includes(value))return 3;
+    if(['active','live','playing','started'].includes(value))return 0;
+    return value==='draft'?2:1;
+  };
+  const listedEntities=[...entities].sort((a,b)=>statusPriority(a)-statusPriority(b)||(Date.parse(String(a.state.startsAt??a.state.date))||Infinity)-(Date.parse(String(b.state.startsAt??b.state.date))||Infinity)||a.name.localeCompare(b.name,'nl'));
   const entity = entities.find((e) => e.id === id);
   if (entity) {
     const manager = entity.canManage === true;
@@ -2917,9 +2785,9 @@ function Competitions({
       )}
       <div className="workspace-grid">
         {entities.length ? (
-          entities.map((e) => (
-            <article className="panel workspace-tile" key={e.id}>
-              <Label value={e.state.status || "open"} />
+          listedEntities.map((e) => (
+            <article className="panel workspace-tile" key={e.id} data-status={eventStatus(e)}>
+              <Label value={eventStatus(e)} />
               <h2>{e.name}</h2>
               <p>{iso(e.state.date)}</p>
               <p>

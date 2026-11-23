@@ -23,6 +23,22 @@ import org.json.JSONObject
 
 internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScreen.PLAY_SESSION, PlayerScreen.PLAY_HISTORY, PlayerScreen.PRACTICE, PlayerScreen.CHALLENGES)
 
+@Composable internal fun PlayerPlayFeedback(state: PlayerUiState, actions: PlayerActions) {
+    if (state.play.syncing) LinearProgressIndicator(Modifier.fillMaxWidth(), color = PlayerLime)
+    state.play.error?.let { message ->
+        val retry: (() -> Unit)? = when {
+            state.play.pendingOperation != null -> { { actions.playAction(json("type" to "local.retry-operation")) } }
+            state.play.session != null -> { { actions.playAction(json("type" to "local.refresh")) } }
+            else -> null
+        }
+        Notice(message, true, retry)
+    }
+    if (state.play.pendingOperation != null) PlayerCard("Eerdere wijziging wacht op bevestiging") {
+        Text("De oorspronkelijke aanvraag blijft met hetzelfde actie-ID bewaard. Controleer de uitkomst voordat je een andere partijwijziging uitvoert.", color = PlayerMuted)
+        Action("Controleer bewaarde partijwijziging", !state.play.syncing) { actions.playAction(json("type" to "local.retry-operation")) }
+    }
+}
+
 @Composable internal fun PlayerPlayScreen(state: PlayerUiState, actions: PlayerActions) {
     val session = state.play.session
     var fullScore by rememberSaveable(session?.id) { mutableStateOf(true) }
@@ -35,12 +51,7 @@ internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScre
     }
     Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Action("Terug", primary = false, onClick = actions.back)
-        if (state.play.syncing) LinearProgressIndicator(Modifier.fillMaxWidth(), color = PlayerLime)
-        state.play.error?.let { Notice(it, true) { actions.playAction(json("type" to "local.refresh")) } }
-        if(state.play.pendingOperation!=null)PlayerCard("Eerdere wijziging wacht op bevestiging"){
-            Text("De oorspronkelijke aanvraag blijft met hetzelfde actie-ID bewaard. Controleer de uitkomst voordat je een andere partijwijziging uitvoert.",color=PlayerMuted)
-            Action("Controleer bewaarde partijwijziging",!state.play.syncing){actions.playAction(json("type" to "local.retry-operation"))}
-        }
+        PlayerPlayFeedback(state, actions)
         when (state.screen) {
             PlayerScreen.PLAY_SESSION -> PlayerPlaySessionScreen(state, actions) { fullScore = true }
             PlayerScreen.PLAY_HISTORY -> PlayerPlayHistoryScreen(state, actions)
@@ -76,7 +87,6 @@ internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScre
         state.play.board.obj("play").text("id").takeIf(String::isNotBlank)?.let { id -> Action("Hervat partij op deze baan") { actions.navigate(PlayerScreen.PLAY_SESSION, id) } }
         state.play.board.text("officialUrl").takeIf(String::isNotBlank)?.let { url -> Action("Geplande officiële wedstrijd", primary = false) { actions.openLink(url) } }
     }
-    PlayerCard("Spelregels") { PlayerPlayRulesEditor(rules, !state.play.syncing) { encodedRules = it.toString(); summary = false; if ((count.toIntOrNull() ?: 2) !in if (it.text("mode") == "bingo") 1..8 else 1..2) count = "2" } }
     PlayerCard("Deelnemers & bediening") {
         if(state.profile!=null)PlayerToggle("Eerste speler is mijn account",useAccount,!state.play.syncing){useAccount=it;summary=false}
         if (rules.text("mode") == "bingo") PlayerToggle("Twee teams", teams, !state.play.syncing) { teams = it; count = if (it) "4" else "2"; summary = false }
@@ -86,6 +96,7 @@ internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScre
         Choice("Wie begint?", starter, (0 until if (teams) 2 else playerCount).map { "$it" to if (teams) "Team ${it + 1}" else selected.getOrNull(it).orEmpty().ifBlank { "Speler ${it + 1}" } }, { starter = it; summary = false }, !state.play.syncing)
         Text(if (deviceMode == "shared") "Dit toestel voert de beurten in. Overdracht gebeurt bewust met behoud van de partij." else "Deel na het starten de eigen deelnemerslink. Op ieder toestel kan alleen de eigen beurt worden ingevoerd; wacht op serververwerking.", color = PlayerMuted)
     }
+    PlayerConfiguration { PlayerPlayRulesEditor(rules, !state.play.syncing) { encodedRules = it.toString(); summary = false; if ((count.toIntOrNull() ?: 2) !in if (it.text("mode") == "bingo") 1..8 else 1..2) count = "2" } }
     val valid = playerPlayDistinctNames(selected) && playerCount in if (practice) 1..1 else allowedCount.min()..allowedCount.max()
     Action("Controleer partij", valid && !state.play.syncing, modifier = Modifier.fillMaxWidth()) { summary = true }
     if (summary) PlayerCard("Controle vóór de eerste pijl") {

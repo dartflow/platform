@@ -4,6 +4,8 @@ import "@/components/clubhouse.css";
 import "@/components/pwa-screens.css";
 import "@/components/oche-live.css";
 import "@/components/analytics-consent.css";
+import "@/components/redesign-shell.css";
+import "@/components/redesign-workspaces.css";
 import AnalyticsConsent from "@/components/analytics-consent";
 import { PwaRuntime } from "@/components/pwa-install";
 import LegacyLink from "@/components/legacy-link";

@@ -23,6 +23,9 @@ internal suspend fun fetchPlayerHome(
     onFeed: (JSONObject) -> Unit,
     onExperienceFailure: (Exception) -> Unit,
     onFeedFailure: (Exception) -> Unit,
+    requestPlay: (suspend () -> JSONObject)? = null,
+    onPlay: (List<JSONObject>) -> Unit = {},
+    onPlayFailure: (Exception) -> Unit = {},
 ) = coroutineScope {
     launch {
         try { onExperience(request("/player-experience")) }
@@ -38,6 +41,15 @@ internal suspend fun fetchPlayerHome(
         catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) { onFeedFailure(failure) }
     }
+    if (requestPlay != null) launch {
+        try {
+            val result = requestPlay()
+            if (result.optJSONArray("sessions") == null || result.optJSONArray("history") == null) throw IOException("Ongeldige partijgegevens.")
+            onPlay(result.rows("sessions"))
+        }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (failure: Exception) { onPlayFailure(failure) }
+    }
 }
 
 internal fun PlayerUiState.withHomeFeedFailure(failure: Exception): PlayerUiState {
@@ -50,7 +62,12 @@ internal fun PlayerUiState.withHomeFeedFailure(failure: Exception): PlayerUiStat
 }
 
 internal fun PlayerUiState.withoutHomeFeed(): PlayerUiState =
-    copy(homeFeed = JSONObject(), homeFeedLoading = false, homeFeedError = null)
+    copy(homeFeed = JSONObject(), homeFeedLoading = false, homeFeedError = null, homePlaySessions = emptyList(), homePlayError = null)
+
+internal fun PlayerUiState.withHomePlayFailure(failure: Exception): PlayerUiState = copy(
+    homePlaySessions = if (failure is PlayerApiFailure && failure.status in listOf(401, 403, 404)) emptyList() else homePlaySessions,
+    homePlayError = if (failure is PlayerApiFailure) failure.feedback else "Vrije partijen konden niet worden vernieuwd. Je kunt een bewaarde partij via Historie openen.",
+)
 
 /** Keep the regular live tick; throttle only home reads, so navigation never inherits a long sleep. */
 internal class PlayerHomePolls {

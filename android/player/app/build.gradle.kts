@@ -15,7 +15,7 @@ android {
         applicationId = "nl.dartflow.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = providers.gradleProperty("playerVersionCode").orElse("10").get().toInt()
+        versionCode = providers.gradleProperty("playerVersionCode").orElse("11").get().toInt()
         versionName = providers.gradleProperty("playerVersionName").orElse(releaseVersion.getProperty("versionName")).get()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

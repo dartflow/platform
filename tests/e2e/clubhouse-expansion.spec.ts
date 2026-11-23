@@ -14,6 +14,13 @@ const actors = {
   owner: "00000000-0000-4000-8000-000000000001",
   player: "00000000-0000-4000-8000-000000000002",
 };
+function expectedPrimary(view: ThemeView, colorMode: "dark" | "light") {
+  // The approved DartFlow dark presentation replaces the legacy default accent.
+  // Published club styles and every light palette keep their validated API value.
+  return view.effective.clubId === null && colorMode === "dark"
+    ? "#c5fa59"
+    : view.effective.tokens[colorMode].primary;
+}
 async function local(context: BrowserContext, baseURL: string | undefined) {
   if (
     !baseURL ||
@@ -267,14 +274,24 @@ test("six real wizard steps publish one canonical club competition using only an
     expect(canonical.season.fixtures[0].slots[0].matchId).toBeUndefined();
     expect(canonical.season.rulesVersion).toBeGreaterThan(0);
     await page.goto(`/app/clubs/${c.id}`);
-    const nav = page.getByRole("navigation", { name: "Hoofdnavigatie" });
-    await expect(nav.getByRole("link")).toHaveText([
-      "Vandaag",
-      "Spelen",
-      "Competities",
-      "Toernooien",
-    ]);
-    await nav.getByRole("button", { name: "Meer", exact: true }).click();
+    const nav = page.getByRole("navigation", {
+      name: "Desktopnavigatie",
+      exact: true,
+    });
+    await expect(nav).toBeVisible();
+    for (const [name, href] of [
+      ["Vandaag", "/app"],
+      ["Spelen", "/app/play"],
+      ["Competities", "/app/competities"],
+      ["Toernooien", "/app/hall"],
+    ]) {
+      const destination = nav.getByRole("link", { name, exact: true });
+      await expect(destination).toBeVisible();
+      await expect(destination).toHaveAttribute("href", href);
+    }
+    const moreButton = nav.getByRole("button", { name: "Meer", exact: true });
+    await expect(moreButton).toBeVisible();
+    await moreButton.click();
     const more = page.getByRole("dialog", { name: "Meer DartFlow" });
     await expect(
       more.getByRole("heading", { name: "Jouw DartFlow" }),
@@ -863,7 +880,7 @@ test("premium theme preview stays local, published club contexts override person
             document.documentElement.style.getPropertyValue("--ch-primary"),
           ),
         )
-        .toBe(settledTheme.effective.tokens[colorMode].primary);
+        .toBe(expectedPrimary(settledTheme, colorMode));
       const beforeTokens = await manager.evaluate(() =>
         document.documentElement.style.getPropertyValue("--ch-primary"),
       );
@@ -973,7 +990,7 @@ test("premium theme preview stays local, published club contexts override person
                 document.documentElement.style.getPropertyValue("--ch-primary"),
               ),
             )
-            .toBe(expected.effective.tokens[colorMode].primary);
+            .toBe(expectedPrimary(expected, colorMode));
           if (target) {
             await expect(
               phone.getByRole("heading", { name: target.name, exact: true }),

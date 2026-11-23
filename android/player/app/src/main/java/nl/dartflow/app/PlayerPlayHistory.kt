@@ -34,6 +34,7 @@ import org.json.JSONObject
 
 @Composable internal fun PlayerPracticeScreen(state: PlayerUiState, actions: PlayerActions) {
     Heading("Oefenen", "TRAINING", "Solo of samen, met een scorekaart die past bij de gekozen oefening.")
+    Action("Finish 72", !state.play.syncing) { actions.navigate(PlayerScreen.PLAY_START, "mode:finish:72:double") }
     val advice = state.play.auxiliary.optJSONObject("advice")
     if (advice != null) PlayerCard("Finishadvies uit jouw geaccepteerde beurten") {
         Text(advice.text("explanation"), color = PlayerMuted)

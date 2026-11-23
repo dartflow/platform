@@ -277,6 +277,7 @@ class PlayerUiTest {
         compose.onNodeWithText("Profiel & instellingen").assertDoesNotExist()
         compose.onNodeWithText("Meer").performClick()
         compose.onNode(hasScrollAction() and hasAnyDescendant(hasText("Profiel & instellingen"))).performTouchInput { swipeUp() }
+        compose.onNodeWithTag("more-group-Jouw account").performScrollTo().performClick()
         compose.onNodeWithText("Meldingen").performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
         compose.runOnIdle { assertEquals(PlayerScreen.NOTIFICATIONS to null, destination) }
     }

@@ -98,7 +98,7 @@ export function ScopedChat({kind,scopeId,actorId,label='Chat',inConsole=false}:{
   finally{setBusy(false);}
  };
  return <div className={`scoped-chat ${inConsole?'scoped-chat-console':''}`}>
-  <button ref={trigger} type="button" className="button ghost small scoped-chat-trigger" aria-expanded={open} aria-controls={`chat-${kind}-${scopeId}`} onClick={()=>open?close():setOpen(true)}>◌ {label}</button>
+  <button ref={trigger} type="button" className="button ghost small scoped-chat-trigger" aria-label={inConsole?label:undefined} aria-expanded={open} aria-controls={`chat-${kind}-${scopeId}`} onClick={()=>open?close():setOpen(true)}>◌ {label}</button>
   {open&&<section ref={sheet} tabIndex={-1} role="dialog" aria-label={label} id={`chat-${kind}-${scopeId}`} className="scoped-chat-sheet" onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();}}}>
    <header><div><p className="eyebrow">{data?.scope.name||label}</p><h2>{label}</h2></div><button className="button ghost small" type="button" onClick={close} aria-label="Chat minimaliseren">−</button></header>
    {error&&<p className="notice error" role="alert">{error}</p>}

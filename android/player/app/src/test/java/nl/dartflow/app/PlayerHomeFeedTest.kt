@@ -19,6 +19,25 @@ class PlayerHomeFeedTest {
         .put("nextCursor", "next-page")
     private fun experience() = JSONObject().put("resume", JSONArray(listOf(JSONObject().put("href", "/wedstrijd/match-a"))))
 
+    @Test fun freshFreeSessionReadIsIndependentAndItsPermissionFailureErasesOnlyItsOwnCache() = runTest {
+        val releasePlay = CompletableDeferred<Unit>()
+        val experienceReady = CompletableDeferred<Unit>()
+        var current = PlayerUiState(homePlaySessions = listOf(json("id" to "cached")))
+        val read = async {
+            fetchPlayerHome(request = { if (it == "/player-experience") experience() else feed() },
+                onExperience = { current = current.copy(resource = it); experienceReady.complete(Unit) },
+                onFeed = { current = current.copy(homeFeed = it) }, onExperienceFailure = { throw it }, onFeedFailure = { throw it },
+                requestPlay = { releasePlay.await(); throw PlayerApiFailure(403, "forbidden", "Partijtoegang gewijzigd.") },
+                onPlay = { fail("This read is denied") }, onPlayFailure = { current = current.withHomePlayFailure(it) })
+        }
+        experienceReady.await()
+        assertFalse(read.isCompleted); assertEquals(1, current.resource.rows("resume").size)
+        releasePlay.complete(Unit); read.await()
+        assertTrue(current.homePlaySessions.isEmpty()); assertEquals("Partijtoegang gewijzigd.", current.homePlayError)
+        assertEquals(1, current.homeFeed.rows("posts").size); assertEquals(1, current.resource.rows("resume").size)
+        assertTrue(current.withoutHomeFeed().homePlaySessions.isEmpty()); assertNull(current.withoutHomeFeed().homePlayError)
+    }
+
     @Test fun aStalledFeedDoesNotDelayResumeAndScanActionsOrRequireDashboardRequests() = runTest {
         val releaseFeed = CompletableDeferred<Unit>()
         val experienceReady = CompletableDeferred<Unit>()

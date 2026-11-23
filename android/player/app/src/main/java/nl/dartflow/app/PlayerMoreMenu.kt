@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -59,7 +60,13 @@ import kotlin.math.roundToInt
         Column(Modifier.fillMaxWidth().navigationBarsPadding().testTag("more-menu-scroll")
             .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Heading("Jouw DartFlow", "MEER")
+            Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Heading("Jouw DartFlow", "MEER")
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = dismiss, modifier = Modifier.heightIn(min = 48.dp).testTag("more-close")) { Text("Sluiten") }
+            }
+            Text(state.profile?.displayName.orEmpty(), style = MaterialTheme.typography.titleMedium)
+            Action("Profiel & instellingen", primary = false, modifier = Modifier.fillMaxWidth()) { close(); actions.navigate(PlayerScreen.PROFILE, null) }
             state.clubhouseContext?.let { club ->
                 Text("ACTIEVE VERENIGING", Modifier.padding(top = 10.dp, start = 12.dp), color = PlayerMuted, fontSize = 10.sp)
                 state.clubhousePages.forEach { page -> playerClubPages[page]?.let { label -> TextButton(onClick = { close(); actions.navigate(PlayerScreen.CLUBHOUSE, playerClubId(club, page)) }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(label, Modifier.weight(1f), color = PlayerText, textAlign = TextAlign.Start); PlayerIcon(PlayerNavIcon.FORWARD) } } }
@@ -68,10 +75,14 @@ import kotlin.math.roundToInt
                 "Spelen & voortgang" to listOf(PlayerScreen.BOARDS to "Banen & favorieten", PlayerScreen.LOCATIONS to "Mijn locaties & reserveringen", PlayerScreen.PRACTICE to "Oefenen", PlayerScreen.CHALLENGES to "Uitdagingen", PlayerScreen.PLAY_HISTORY to "Vrije partijen & traininghistorie", PlayerScreen.TRAINING to "Bestaande trainingen", PlayerScreen.HISTORY to "Wedstrijdhistorie", PlayerScreen.STATISTICS to "Statistieken"),
                 "Community & evenementen" to listOf(PlayerScreen.RANKINGS to "Rankings", PlayerScreen.FEED to "Mijn feed", PlayerScreen.CLUBS to "Verenigingen", PlayerScreen.FRIENDS to "Vrienden & spelerskamers", PlayerScreen.ORGANIZE to "Toernooi organiseren"),
                 "Schermbeheer" to listOf(PlayerScreen.SCREENS to "Oche Live-schermen"),
-                "Jouw account" to listOf(PlayerScreen.PROFILE to "Profiel & instellingen", PlayerScreen.NOTIFICATIONS to "Meldingen", PlayerScreen.HELP to "Help & FAQ", PlayerScreen.SUPPORT to "Mijn supporttickets", PlayerScreen.RELEASES to "Wat is nieuw?"),
+                "Jouw account" to listOf(PlayerScreen.NOTIFICATIONS to "Meldingen", PlayerScreen.HELP to "Help & FAQ", PlayerScreen.SUPPORT to "Mijn supporttickets", PlayerScreen.RELEASES to "Wat is nieuw?"),
             ).plus(if (state.canManagePlatform) listOf("Platformbeheer" to listOf(PlayerScreen.SUPPORT_ADMIN to "Supportbeheer", PlayerScreen.RELEASE_ADMIN to "Releasebeheer", PlayerScreen.NOTIFICATION_ADMIN to "Meldingsbeheer")) else emptyList()).forEach { (group, entries) ->
-                Text(group.uppercase(Locale.ROOT), Modifier.padding(top = 10.dp, start = 12.dp), color = PlayerMuted, fontSize = 10.sp, letterSpacing = 1.sp)
-                entries.forEach { (route, label) -> TextButton(onClick = { close(); actions.navigate(route, null) }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                var open by rememberSaveable(group) { mutableStateOf(entries.any { it.first == state.screen }) }
+                TextButton(onClick = { open = !open }, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("more-group-$group")) {
+                    Text(group, Modifier.weight(1f), color = PlayerText, textAlign = TextAlign.Start)
+                    Text(if (open) "−" else "+", color = PlayerMuted)
+                }
+                if (open) entries.forEach { (route, label) -> TextButton(onClick = { close(); actions.navigate(route, null) }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                     Text(label, Modifier.weight(1f), color = if (state.screen == route) PlayerLime else PlayerText, textAlign = TextAlign.Start)
                     PlayerIcon(PlayerNavIcon.FORWARD, modifier = Modifier.size(16.dp))
                 } }

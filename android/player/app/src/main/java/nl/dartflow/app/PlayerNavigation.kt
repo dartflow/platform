@@ -17,13 +17,14 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-internal enum class PlayerNavIcon { HOME, PLAY, EVENTS, COMPETITIONS, FRIENDS, MORE, BELL, QR, FORWARD }
+internal enum class PlayerNavIcon { HOME, PLAY, EVENTS, COMPETITIONS, FRIENDS, MORE, BELL, QR, FORWARD, CHART, HISTORY }
 
 /** Keep a parent tab active while its detail route is open. */
 internal fun playerNavigationSection(screen: PlayerScreen, activeId: String?): PlayerNavIcon = when (screen) {
@@ -58,6 +59,8 @@ internal fun playerNavigationSection(screen: PlayerScreen, activeId: String?): P
                 PlayerNavIcon.MORE -> { line(4f, 6f, 20f, 6f); line(4f, 12f, 20f, 12f); line(4f, 18f, 20f, 18f) }
                 PlayerNavIcon.BELL -> { path(5f to 17f, 7f to 14f, 7f to 9f); drawArc(color, 180f, 180f, false, Offset(7f, 4f), Size(10f, 10f), style = stroke); path(17f to 9f, 17f to 14f, 19f to 17f, 5f to 17f); drawArc(color, 0f, 180f, false, Offset(10f, 18f), Size(4f, 4f), style = stroke); line(12f, 2f, 12f, 4f) }
                 PlayerNavIcon.QR -> { listOf(3f to 3f, 15f to 3f, 3f to 15f).forEach { drawRoundRect(color, Offset(it.first, it.second), Size(6f, 6f), CornerRadius(.5f), style = stroke) }; path(15f to 15f, 18f to 15f, 18f to 18f, 21f to 18f, 21f to 21f); line(15f, 19f, 15f, 21f); line(21f, 14f, 21f, 15f) }
+                PlayerNavIcon.CHART -> { line(4f, 20f, 21f, 20f); line(7f, 16f, 7f, 10f); line(12f, 16f, 12f, 5f); line(17f, 16f, 17f, 8f) }
+                PlayerNavIcon.HISTORY -> { drawArc(color, -160f, 320f, false, Offset(3f, 3f), Size(18f, 18f), style = stroke); path(3f to 5f, 3f to 10f, 8f to 10f); path(12f to 7f, 12f to 12f, 15f to 14f) }
                 PlayerNavIcon.FORWARD -> path(9f to 5f, 16f to 12f, 9f to 19f)
             }
         }
@@ -66,12 +69,13 @@ internal fun playerNavigationSection(screen: PlayerScreen, activeId: String?): P
 
 @Composable internal fun PlayerNavigationItem(label: String, icon: PlayerNavIcon, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val color = if (selected) PlayerLime else PlayerMuted
+    val largeText = LocalDensity.current.fontScale > 1.1f
     Column(modifier.selectable(selected = selected, role = Role.Tab, onClick = onClick)
         .heightIn(min = 56.dp).padding(horizontal = 2.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Box(Modifier.width(38.dp).heightIn(min = 25.dp).background(if (selected) PlayerLime.copy(alpha = .1f) else Color.Transparent, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
             PlayerIcon(icon, color)
         }
-        Text(label, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = color, fontFamily = PlayerSans, fontSize = 10.sp, lineHeight = 13.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+        Text(label, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = color, fontFamily = PlayerSans, fontSize = 10.sp, lineHeight = 13.sp, maxLines = if (largeText) 2 else 1, softWrap = largeText, overflow = TextOverflow.Ellipsis)
     }
 }
