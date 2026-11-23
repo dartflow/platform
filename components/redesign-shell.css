@@ -225,7 +225,7 @@
 .df-play-hero-copy { padding: 20px; max-width: 56%; }
 .df-play-hero h2 { color: #f6f9f2; font: 800 clamp(2rem, 4.1vw, 3.2rem)/.95 var(--display); margin: 0 0 7px; }
 .df-play-hero p { color: #d1ddcb; font-size: .8125rem; line-height: 1.4; margin: 0 0 14px; }
-.dartflow-themed .df-play-hero .df-hero-action { background: #c5fa59; color: #18210d; border-color: #c5fa59; min-height: 42px; }
+.dartflow-themed .df-play-hero .df-hero-action { background: var(--df-lime); color: var(--df-on-lime); border-color: var(--df-lime); min-height: 44px; }
 
 .df-current-panel, .df-today-list {
   display: flex; flex-direction: column; min-width: 0;
