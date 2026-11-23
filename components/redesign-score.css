@@ -552,3 +552,61 @@
   .score-console.dart-score-console > .dart-console-options > summary::after { content: '⋯'; font-size: 1.5rem; line-height: 1; margin: 0; }
   .score-console.dart-score-console > .dart-console-options[open] > div { position: fixed; bottom: 54px; left: 10px; right: 10px; }
 }
+
+/* Compact core/legacy total consoles: use the header for correction options,
+   keeping the existing accessible button text and all 48px score keys. */
+@media (max-height: 620px) and (orientation: portrait) {
+  .score-console:not(.dart-score-console)[role="dialog"] > .score-console-header {
+    padding-right: 52px;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] > .score-console-footer {
+    position: absolute;
+    top: max(10px, env(safe-area-inset-top));
+    right: var(--score-edge);
+    min-height: 44px;
+    width: 44px;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] > .score-console-footer > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] > .score-console-footer > button {
+    width: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] > .score-console-footer > button::after {
+    content: '⋯';
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+  .score-console.dart-score-console .score-input-mode > .visit-total-input {
+    gap: 4px;
+  }
+}
+
+@media (max-height: 620px) and (orientation: portrait) {
+  .score-console:not(.dart-score-console)[role="dialog"] [data-console-back] {
+    white-space: nowrap;
+    flex: none;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] .scoped-chat-console {
+    flex: none;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] .scoped-chat-console .scoped-chat-trigger {
+    background: var(--score-panel) !important;
+    color: var(--score-text);
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] .scoped-chat-console .scoped-chat-trigger::after {
+    content: '◌';
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+}

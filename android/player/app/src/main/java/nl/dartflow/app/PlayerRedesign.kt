@@ -50,7 +50,7 @@ import java.time.Instant
 @Composable internal fun PlayerWorkspaceTabs(selected: String, entries: List<Pair<String, String>>, select: (String) -> Unit) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         entries.forEach { (id, label) ->
-            Column(Modifier.selectable(selected == id, role = Role.Tab) { select(id) }) {
+            Column(Modifier.width(IntrinsicSize.Max).selectable(selected == id, role = Role.Tab) { select(id) }) {
                 Box(Modifier.heightIn(min = 48.dp).padding(horizontal = 2.dp), contentAlignment = Alignment.Center) {
                     Text(label, color = if (selected == id) PlayerText else PlayerMuted, style = MaterialTheme.typography.labelLarge)
                 }

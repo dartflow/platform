@@ -125,7 +125,7 @@ class PlayerRedesignUiTest {
         compose.onNodeWithTag("more-close").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
         compose.onNodeWithTag("more-group-Spelen & voortgang").performScrollTo().performClick()
         compose.onNodeWithTag("more-menu-scroll").performTouchInput { swipeUp() }
-        compose.onNodeWithText("Statistieken").performScrollTo().assertIsDisplayed()
+        compose.onNode(hasText("Statistieken") and hasAnyAncestor(hasTestTag("more-menu-scroll"))).performScrollTo().assertIsDisplayed()
         capture("redesign-more.png", "more-menu-scroll")
         compose.onNodeWithTag("more-close").performScrollTo().performClick()
         compose.onNodeWithTag("more-menu-scroll").assertDoesNotExist()

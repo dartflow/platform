@@ -56,7 +56,8 @@ class PlayerClubhouseUiTest {
         compose.onNodeWithText("Meer").performClick(); compose.onNodeWithTag("more-group-Jouw account").performScrollTo().performClick(); compose.onNodeWithText("Meldingen").performScrollTo().performClick(); compose.onNodeWithTag("more-menu-scroll").assertDoesNotExist()
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK); compose.onNodeWithText("Meer").performClick(); compose.onNodeWithTag("more-group-Spelen & voortgang").performScrollTo().performClick(); compose.onNodeWithTag("more-group-Community & evenementen").performScrollTo().performClick(); compose.onNodeWithTag("more-group-Jouw account").performScrollTo().performClick(); compose.onNodeWithText("Profiel & instellingen").performScrollTo(); compose.waitForIdle()
         val menu = compose.onNodeWithTag("more-menu-scroll"); val range = { menu.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange] }
-        menu.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, -range().maxValue()) }
+        val distanceToStart = range().maxValue()
+        menu.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, -distanceToStart) }
         compose.waitForIdle()
         assertEquals(0f, range().value(), .5f); val top = menu.getUnclippedBoundsInRoot().top
         compose.mainClock.autoAdvance = false
