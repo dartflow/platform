@@ -76,7 +76,6 @@ internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScre
         state.play.board.obj("play").text("id").takeIf(String::isNotBlank)?.let { id -> Action("Hervat partij op deze baan") { actions.navigate(PlayerScreen.PLAY_SESSION, id) } }
         state.play.board.text("officialUrl").takeIf(String::isNotBlank)?.let { url -> Action("Geplande officiële wedstrijd", primary = false) { actions.openLink(url) } }
     }
-    PlayerCard("Spelregels") { PlayerPlayRulesEditor(rules, !state.play.syncing) { encodedRules = it.toString(); summary = false; if ((count.toIntOrNull() ?: 2) !in if (it.text("mode") == "bingo") 1..8 else 1..2) count = "2" } }
     PlayerCard("Deelnemers & bediening") {
         if(state.profile!=null)PlayerToggle("Eerste speler is mijn account",useAccount,!state.play.syncing){useAccount=it;summary=false}
         if (rules.text("mode") == "bingo") PlayerToggle("Twee teams", teams, !state.play.syncing) { teams = it; count = if (it) "4" else "2"; summary = false }
@@ -86,6 +85,7 @@ internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScre
         Choice("Wie begint?", starter, (0 until if (teams) 2 else playerCount).map { "$it" to if (teams) "Team ${it + 1}" else selected.getOrNull(it).orEmpty().ifBlank { "Speler ${it + 1}" } }, { starter = it; summary = false }, !state.play.syncing)
         Text(if (deviceMode == "shared") "Dit toestel voert de beurten in. Overdracht gebeurt bewust met behoud van de partij." else "Deel na het starten de eigen deelnemerslink. Op ieder toestel kan alleen de eigen beurt worden ingevoerd; wacht op serververwerking.", color = PlayerMuted)
     }
+    PlayerConfiguration { PlayerPlayRulesEditor(rules, !state.play.syncing) { encodedRules = it.toString(); summary = false; if ((count.toIntOrNull() ?: 2) !in if (it.text("mode") == "bingo") 1..8 else 1..2) count = "2" } }
     val valid = playerPlayDistinctNames(selected) && playerCount in if (practice) 1..1 else allowedCount.min()..allowedCount.max()
     Action("Controleer partij", valid && !state.play.syncing, modifier = Modifier.fillMaxWidth()) { summary = true }
     if (summary) PlayerCard("Controle vóór de eerste pijl") {

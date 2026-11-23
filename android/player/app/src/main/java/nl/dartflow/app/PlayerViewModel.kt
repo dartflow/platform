@@ -165,7 +165,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             PlayerPush.clearLocal(getApplication())
             identityGeneration++; pending = null; navigation.clear(); saved.remove("pendingCommand"); saved.remove("organizerDraft"); saved.remove("invitation"); saved.remove("navigation")
             themeCache.clear(); themeReadAt = 0L
-            state.update { it.copy(theme = JSONObject(), clubhouseContext = null, clubhousePages = emptyList(), profile = null, platform = JSONObject(), overview = JSONObject(), resource = JSONObject(), match = null, board = null, screen = PlayerScreen.HOME, activeId = null, hasPendingCommand = false, loading = true, organizerDraft = JSONObject(), organizerCloudDraft = JSONObject(), faqAdminReceipt = JSONObject(), communicationReceipt = JSONObject(), invitation = JSONObject(), canManagePlatform = false, homeFeed = JSONObject(), homeFeedLoading = false, homeFeedError = null) }
+            state.update { it.copy(theme = JSONObject(), clubhouseContext = null, clubhousePages = emptyList(), profile = null, platform = JSONObject(), overview = JSONObject(), resource = JSONObject(), match = null, board = null, screen = PlayerScreen.HOME, activeId = null, hasPendingCommand = false, loading = true, organizerDraft = JSONObject(), organizerCloudDraft = JSONObject(), faqAdminReceipt = JSONObject(), communicationReceipt = JSONObject(), invitation = JSONObject(), canManagePlatform = false, homeFeed = JSONObject(), homeFeedLoading = false, homeFeedError = null, homePlaySessions = emptyList(), homePlayError = null) }
         }
         saved.put("accessToken", token).put("refreshToken", refresh).put("local", false)
             .put("expiresAt", if (result.optLong("expires_at") > 0) result.getLong("expires_at") * 1000 else api.serverNow() + result.optLong("expires_in", 3600) * 1000)
@@ -339,6 +339,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 onFeed = { feed -> if (current()) state.update { it.copy(homeFeed = feed, homeFeedLoading = false, homeFeedError = null) } },
                 onExperienceFailure = { failure -> experienceFailure = failure },
                 onFeedFailure = { failure -> if (current()) state.update { it.withHomeFeedFailure(failure) } },
+                requestPlay = { api.play("/play/mine") },
+                onPlay = { sessions -> if (current()) state.update { it.copy(homePlaySessions = sessions, homePlayError = null) } },
+                onPlayFailure = { failure -> if (current()) state.update { it.withHomePlayFailure(failure) } },
             )
             experienceFailure?.let { if (current()) throw it }
         } finally {

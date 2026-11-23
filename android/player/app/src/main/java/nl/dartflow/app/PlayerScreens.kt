@@ -150,10 +150,10 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         topBar = {
             Column(Modifier.statusBarsPadding().fillMaxWidth().background(PlayerInk)) {
                 Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    PlayerWordmark(Modifier.width(112.dp).height(32.dp))
+                    PlayerWordmark(Modifier.width(110.dp).height(29.dp).clickable(role = Role.Button, onClickLabel = "Vandaag") { actions.navigate(PlayerScreen.HOME, null) })
                     Spacer(Modifier.weight(1f))
                     IconButton(onClick = { actions.navigate(PlayerScreen.NOTIFICATIONS, null) }, modifier = Modifier.semantics { contentDescription = "Meldingen" }) { PlayerIcon(PlayerNavIcon.BELL) }
-                    Box(Modifier.size(48.dp).clickable { actions.navigate(PlayerScreen.PROFILE, null) }, contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(48.dp).semantics { contentDescription = "Profiel & instellingen" }.clickable { actions.navigate(PlayerScreen.PROFILE, null) }, contentAlignment = Alignment.Center) {
                         Avatar(profile?.displayName?.ifBlank { profile.name } ?: "DartFlow", Modifier.size(32.dp))
                     }
                 }
@@ -238,12 +238,12 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
 @Composable internal fun Heading(title: String, eyebrow: String? = null, description: String? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         eyebrow?.let { Text(it.uppercase(Locale.ROOT), color = PlayerLime, fontSize = 10.sp, letterSpacing = 2.sp) }
-        Text(title, color = PlayerLime, style = MaterialTheme.typography.headlineLarge)
+        Text(title, color = PlayerText, style = MaterialTheme.typography.headlineLarge, modifier = Modifier.semantics { heading() })
         description?.let { Text(it, color = PlayerMuted, style = MaterialTheme.typography.bodyMedium) }
     }
 }
 @Composable internal fun PlayerCard(title: String? = null, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.fillMaxWidth().border(1.dp, PlayerBorder, RoundedCornerShape(14.dp)).background(PlayerPanel.copy(alpha = .92f), RoundedCornerShape(14.dp)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier.fillMaxWidth().border(1.dp, PlayerBorder, RoundedCornerShape(10.dp)).background(PlayerPanel, RoundedCornerShape(10.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         title?.let { Text(it, color = PlayerText, style = MaterialTheme.typography.titleLarge) }; content()
     }
 }
@@ -364,32 +364,26 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
 
 @Composable private fun HomeScreen(state: PlayerUiState, actions: PlayerActions) {
     val experience = state.resource
-    val resume = experience.rows("resume")
+    val featured = playerHomeFeatured(experience, state.overview.rows("matches"), state.homePlaySessions)
     val feed = state.homeFeed
     var composeOpen by rememberSaveable(state.session?.userId) { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text("Hoi ${state.profile?.displayName?.ifBlank { state.profile.name } ?: "darter"}.", style = MaterialTheme.typography.titleLarge, color = PlayerText)
+        Text("Hoi ${state.profile?.displayName?.ifBlank { state.profile.name } ?: "darter"}.", style = MaterialTheme.typography.headlineLarge, color = PlayerText)
         Text("Wat speelt er vandaag?", color = PlayerMuted, style = MaterialTheme.typography.bodyMedium)
     }
-    // The actual active assignment always comes before discovery and community.
-    resume.take(2).forEach { match -> PlayerCard {
-        Text("JOUW PARTIJ", color = PlayerLime, fontSize = 10.sp, letterSpacing = 1.sp)
-        Text(match.optJSONArray("players")?.strings()?.joinToString(" – ") ?: "Jouw wedstrijd", style = MaterialTheme.typography.titleMedium)
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(match.optJSONArray("remaining")?.strings()?.joinToString(" – ") ?: "", Modifier.weight(1f), fontFamily = PlayerBarlow, fontSize = 34.sp, lineHeight = 38.sp, color = PlayerLime)
-            Action(match.text("actionLabel", "Hervat je partij"), modifier = Modifier.widthIn(max = 190.dp)) { actions.openLink(match.text("href", "/wedstrijd/${match.text("id")}")) }
-        }
+    featured?.let { match -> PlayerPhotoCard(modifier = Modifier.testTag("home-featured-match")) {
+        Text(if (match.text("actionLabel") == "Bevestig de uitslag") "UITSLAG BEVESTIGEN" else "JOUW PARTIJ", color = Color(0xFFC5FA59), style = MaterialTheme.typography.labelSmall)
+        Text(match.optJSONArray("players")?.strings()?.joinToString(" – ") ?: "Jouw wedstrijd", fontFamily = PlayerBarlow, fontSize = 24.sp, lineHeight = 26.sp)
+        Text(match.optJSONArray("remaining")?.strings()?.joinToString(" – ") ?: "", fontFamily = PlayerBarlow, fontSize = 35.sp, lineHeight = 37.sp)
+        Action(match.text("actionLabel", "Hervat je partij")) { actions.openLink(match.text("href", "/wedstrijd/${match.text("id")}")) }
     } }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(onClick = actions.scan, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("home-scan-button"), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
-            PlayerIcon(PlayerNavIcon.QR, PlayerInk, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Scan baan-QR")
-        }
-        OutlinedButton(onClick = { actions.navigate(PlayerScreen.PLAY, null) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("home-play-button"), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
-            PlayerIcon(PlayerNavIcon.PLAY, PlayerLime, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Vrij spelen")
-        }
-    }
+    HomeQuickActions(actions)
+    state.homePlayError?.let { Notice(it, true, actions.refresh) }
     PlayerOwnPreCalls(state, actions)
-    experience.rows("fixtures").firstOrNull()?.let { FixtureCard(it, actions, state.busy) }
+    experience.rows("fixtures").firstOrNull { fixture -> fixture.text("matchId") != featured?.text("id") && fixture.text("href") != featured?.text("href") }?.let {
+        PlayerSection("Op het programma")
+        FixtureCard(it, actions, state.busy)
+    }
     // Community is the main home content, using the exact same server posts and
     // actions as the standalone feed. Keep the first page compact on startup.
     Column(Modifier.fillMaxWidth().testTag("home-community-feed"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -410,7 +404,7 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
             }
         }
         if (state.homeFeedLoading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = PlayerLime)
-        feed.rows("posts").take(5).forEach { post -> CommunityPostCard(post, state, actions, "home-feed") }
+        feed.rows("posts").take(1).forEach { post -> CommunityPostCard(post, state, actions, "home-feed") }
         if (feed.rows("posts").isEmpty() && !state.homeFeedLoading && state.homeFeedError == null) {
             PlayerCard {
                 Text("Nog geen berichten", style = MaterialTheme.typography.titleMedium)
@@ -422,36 +416,51 @@ internal fun validPlayerPin(value: String) = PlayerValidation.validPin(value)
         Text("Met je spelerspincode kan je tegenstander jou toevoegen aan een lokale partij.", color = PlayerMuted)
         Action("Pincode instellen", primary = false) { actions.navigate(PlayerScreen.PROFILE, null) }
     }
-    HomeProgressShortcuts(actions)
 }
-@Composable private fun HomeProgressShortcuts(actions: PlayerActions) {
+@Composable private fun HomeQuickActions(actions: PlayerActions) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        // Give large system text the full row instead of shrinking or clipping a label.
-        if (maxWidth < 300.dp || LocalDensity.current.fontScale > 1.3f) {
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                HomeProgressShortcut("Statistieken", "home-statistics", Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.STATISTICS, null) }
-                HomeProgressShortcut("Historie", "home-history", Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.HISTORY, null) }
+        val entries = listOf(Triple("Scan baan-QR", "home-scan-button", PlayerNavIcon.QR), Triple("Vrij spelen", "home-play-button", PlayerNavIcon.PLAY), Triple("Statistieken", "home-statistics", PlayerNavIcon.CHART), Triple("Historie", "home-history", PlayerNavIcon.HISTORY))
+        val invoke: (Int) -> Unit = { index -> when (index) { 0 -> actions.scan(); 1 -> actions.navigate(PlayerScreen.PLAY, null); 2 -> actions.navigate(PlayerScreen.STATISTICS, null); else -> actions.navigate(PlayerScreen.HISTORY, null) } }
+        @Composable fun shortcut(index: Int, modifier: Modifier) {
+            val (label, tag, icon) = entries[index]
+            OutlinedButton(onClick = { invoke(index) }, modifier = modifier.heightIn(min = 58.dp).testTag(tag), shape = RoundedCornerShape(8.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    PlayerIcon(icon, PlayerLime, Modifier.size(18.dp))
+                    Text(label, Modifier.fillMaxWidth().heightIn(min = 16.dp), textAlign = TextAlign.Center, fontSize = 10.sp, lineHeight = 14.sp, maxLines = 1, softWrap = false)
+                }
             }
-        } else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            HomeProgressShortcut("Statistieken", "home-statistics", Modifier.weight(1f)) { actions.navigate(PlayerScreen.STATISTICS, null) }
-            HomeProgressShortcut("Historie", "home-history", Modifier.weight(1f)) { actions.navigate(PlayerScreen.HISTORY, null) }
         }
-    }
-}
-@Composable private fun HomeProgressShortcut(label: String, tag: String, modifier: Modifier, onClick: () -> Unit) {
-    OutlinedButton(onClick, modifier.heightIn(min = 48.dp).testTag(tag), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
-        // A full, integer-constrained text box avoids rounding a wrap-content glyph
-        // advance down to fewer pixels than the paragraph actually needs.
-        Text(label, Modifier.fillMaxWidth().heightIn(min = 20.dp), textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
+        if (LocalDensity.current.fontScale > 1.3f) Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            entries.indices.forEach { shortcut(it, Modifier.fillMaxWidth()) }
+        } else if (maxWidth < 310.dp) Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            entries.indices.chunked(2).forEach { row -> Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { row.forEach { shortcut(it, Modifier.weight(1f)) } } }
+        } else Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) { entries.indices.forEach { shortcut(it, Modifier.weight(1f)) } }
     }
 }
 @Composable private fun FixtureCard(f: JSONObject, actions: PlayerActions, busy: Boolean) {
-    PlayerCard(f.text("seasonName", "Jouw speeldag")) {
-        Text("Tegen ${f.text("opponent", "tegenstander")}", fontWeight = FontWeight.Bold)
-        Text("Ronde ${f.optInt("round")} · ${shortDate(f.text("startsAt", f.text("windowStart")))}", color = PlayerMuted)
-        Text(if (f.optBoolean("checkedIn")) "Ingecheckt" else statusLabel(f.text("status")), color = PlayerLime)
-        Action(if (f.text("matchId").isNotBlank()) "Open score-invoer" else "Bekijk wedstrijd", !busy) { actions.openLink(f.text("href")) }
-        if (f.optBoolean("canCheckIn") && !f.optBoolean("checkedIn")) Action("Check in", !busy, false) { actions.command("/seasons/actions", json("expectedRevision" to f.optInt("revision"), "action" to json("type" to "season.check-in", "seasonId" to f.text("seasonId"), "fixtureId" to f.text("fixtureId"), "present" to true))) }
+    val date = runCatching { Instant.parse(f.text("startsAt", f.text("windowStart"))).atZone(ZoneId.of("Europe/Amsterdam")) }.getOrNull()
+    val checkIn = f.optBoolean("canCheckIn") && !f.optBoolean("checkedIn")
+    PlayerCard {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            date?.let {
+                Column(Modifier.widthIn(min = 42.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(6.dp)).padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${it.dayOfMonth}", fontFamily = PlayerBarlow, fontSize = 24.sp, lineHeight = 25.sp)
+                    Text(it.format(DateTimeFormatter.ofPattern("MMM", Locale.forLanguageTag("nl-NL"))).uppercase(Locale.ROOT), color = PlayerMuted, style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Tegen ${f.text("opponent", "tegenstander")}", style = MaterialTheme.typography.titleMedium)
+                Text("${f.text("seasonName", "Jouw speeldag")} · ${shortDate(f.text("startsAt", f.text("windowStart")))}", color = PlayerMuted, style = MaterialTheme.typography.bodySmall)
+                if (!checkIn) Text(if (f.optBoolean("checkedIn")) "Ingecheckt" else statusLabel(f.text("status")), color = PlayerLime, style = MaterialTheme.typography.labelSmall)
+            }
+            if (checkIn && LocalDensity.current.fontScale <= 1.3f) Action("Check in", !busy, false) { actions.command("/seasons/actions", json("expectedRevision" to f.optInt("revision"), "action" to json("type" to "season.check-in", "seasonId" to f.text("seasonId"), "fixtureId" to f.text("fixtureId"), "present" to true))) }
+        }
+        if (checkIn && LocalDensity.current.fontScale > 1.3f) Action("Check in", !busy, false, Modifier.fillMaxWidth()) { actions.command("/seasons/actions", json("expectedRevision" to f.optInt("revision"), "action" to json("type" to "season.check-in", "seasonId" to f.text("seasonId"), "fixtureId" to f.text("fixtureId"), "present" to true))) }
+        HorizontalDivider(color = PlayerBorder)
+        TextButton(onClick = { actions.openLink(f.text("href")) }, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), contentPadding = PaddingValues(0.dp)) {
+            Text(if (f.text("matchId").isNotBlank()) "Open score-invoer" else "Bekijk wedstrijd", Modifier.weight(1f), textAlign = TextAlign.Start)
+            PlayerIcon(PlayerNavIcon.FORWARD, modifier = Modifier.size(16.dp))
+        }
     }
 }
 @Composable internal fun Stat(label: String, value: String) { Column { Text(value, color = PlayerLime, fontFamily = PlayerBarlow, fontSize = 30.sp); Text(label, color = PlayerMuted, fontSize = 11.sp) } }
@@ -463,15 +472,26 @@ internal fun statusLabel(value: String): String = mapOf("live" to "Live", "plann
     var botOpening by rememberSaveable { mutableStateOf<String?>(null) }
     var legs by rememberSaveable { mutableStateOf("3") }
     var code by rememberSaveable { mutableStateOf("") }
-    Heading("Stap naar de oche", "SPELEN", "Train solo, speel samen op locatie of daag iemand op afstand uit.")
-    PlayerCard("Vrij spelen, oefenen & uitdagingen") {
-        Text("Speel met gastnamen of accounts. Cricket, Tactics, Around the Clock, dubbelbingo en finishtraining gebruiken hun eigen scorekaart.", color = PlayerMuted)
-        Action("Nieuwe vrije partij", modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.PLAY_START, null) }
-        Action("Oefenen", primary = false) { actions.navigate(PlayerScreen.PRACTICE, null) }
-        Action("Uitdagingen", primary = false) { actions.navigate(PlayerScreen.CHALLENGES, null) }
-        Action("Partijen hervatten & historie", primary = false) { actions.navigate(PlayerScreen.PLAY_HISTORY, null) }
+    PlayerPhotoCard(venue = true) {
+        Text("SPELEN", color = Color(0xFFD2E0CB), style = MaterialTheme.typography.labelSmall)
+        Text("STAP NAAR DE OCHE", fontFamily = PlayerBarlow, fontSize = 28.sp, lineHeight = 30.sp)
+        Action("Nieuwe vrije partij") { actions.navigate(PlayerScreen.PLAY_START, null) }
     }
-    PlayerCard("Bestaande wedstrijd & bot") {
+    PlayerSection("Snel spelen")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf("Solo 501", "Tegen Dartbot", "Lokaal 501").forEachIndexed { index, label ->
+            OutlinedButton(onClick = {
+                when (index) {
+                    0 -> state.profile?.let { actions.playAction(playerSolo501Action(it)) } ?: actions.navigate(PlayerScreen.PLAY_START, "mode:x01")
+                    1 -> actions.platformAction(playerBot501Action())
+                    else -> actions.platformAction(playerLocal501Action())
+                }
+            }, enabled = !state.busy && !state.play.syncing && state.online, modifier = Modifier.weight(1f).heightIn(min = 68.dp).testTag("quick-play-$index"), shape = RoundedCornerShape(10.dp), contentPadding = PaddingValues(6.dp)) {
+                Text(label, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            }
+        }
+    }
+    PlayerConfiguration {
         Choice("Spelvorm", setup, listOf("solo" to "Solo trainen", "bot" to "Tegen de bot", "localone" to "Lokaal · één schrijver", "localtwo" to "Lokaal · twee borden", "remote" to "Beide thuis", "hybrid" to "Hybride"), { setup = it }, !state.busy)
         Choice("Startscore", score, listOf("301" to "301", "501" to "501", "701" to "701"), { score = it }, !state.busy)
         if (setup !in listOf("solo", "bot")) Choice("Best of legs", legs, listOf(1,3,5,7,9).map { "$it" to "$it legs" }, { legs = it }, !state.busy)
@@ -486,13 +506,22 @@ internal fun statusLabel(value: String): String = mapOf("live" to "Live", "plann
             else actions.platformAction(playerWithSettings(json("type" to "lobby.create", "name" to "Vrije wedstrijd", "setup" to setup, "startScore" to score.toInt(), "bestOfLegs" to legs.toInt()), extraRules))
         }
     }
-    PlayerCard("Ik heb een uitnodiging") {
+    PlayerSection("Aan de baan")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Action("Scan baan-QR", modifier = Modifier.weight(1f), onClick = actions.scan)
+        Action("Banen & locaties", primary = false, modifier = Modifier.weight(1f)) { actions.navigate(PlayerScreen.BOARDS, null) }
+    }
+    PlayerCard("Wedstrijdcode") {
         Field("Wedstrijdcode of uitnodigingslink", code, { code = it }, !state.busy, max = 500)
         Action("Aansluiten", code.isNotBlank() && !state.busy, modifier = Modifier.fillMaxWidth()) { actions.openLink(code) }
         Text("Codes hebben vier tekens. Kleine letters zijn ook geldig.", color = PlayerMuted, fontSize = 12.sp)
     }
-    Action("Scan een vaste baan-QR", modifier = Modifier.fillMaxWidth(), onClick = actions.scan)
-    Action("Banen & locaties", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.BOARDS, null) }
+    PlayerSection("Training en historie")
+    PlayerCard {
+        Action("Oefenen", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.PRACTICE, null) }
+        Action("Uitdagingen", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.CHALLENGES, null) }
+        Action("Partijen hervatten & historie", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.PLAY_HISTORY, null) }
+    }
     val lobbies = state.platform.rows("lobbies").filter { !it.obj("state").optBoolean("closed") }
     lobbies.forEach { l -> PlayerCard(l.text("name")) { Text("${l.rows("members").count { it.text("status") == "active" }} spelers · ${l.obj("state").text("setup")}", color = PlayerMuted); Action("Open lobby", primary = false) { actions.navigate(PlayerScreen.LOBBY, l.text("id")) } } }
 }
@@ -560,10 +589,15 @@ internal fun entityCommand(actions: PlayerActions, entity: JSONObject, action: J
     Heading(entity.text("name", "Wedstrijdlobby"), "SPELERS VERZAMELEN")
     BoardActivityBanner(entity.obj("boardActivity"), state.online, state.busy) { extendActivity(entity.obj("boardActivity"), actions) }
     if (closed) Notice("Deze lobby is gesloten. De baan is weer vrijgegeven.", true)
-    if (code.isNotBlank()) PlayerCard("Nodig je tegenstander uit") {
-        Text(code.uppercase(Locale.ROOT), fontFamily = PlayerBarlow, fontSize = 62.sp, color = PlayerLime, letterSpacing = 6.sp)
-        Text("Deel de code of de korte link. Je tegenstander kan ook zelf de vaste baan-QR scannen.", color = PlayerMuted)
-        ShareButton("${BuildConfig.API_ORIGIN}/w/$code")
+    if (code.isNotBlank()) PlayerCard("Uitnodigingscode") {
+        if (LocalDensity.current.fontScale <= 1.1f) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(code.uppercase(Locale.ROOT), Modifier.weight(1f), fontFamily = PlayerBarlow, fontSize = 40.sp, lineHeight = 44.sp, color = PlayerLime, letterSpacing = 4.sp)
+            ShareButton("${BuildConfig.API_ORIGIN}/w/$code")
+        } else {
+            Text(code.uppercase(Locale.ROOT), fontFamily = PlayerBarlow, fontSize = 40.sp, lineHeight = 44.sp, color = PlayerLime, letterSpacing = 4.sp)
+            ShareButton("${BuildConfig.API_ORIGIN}/w/$code")
+        }
+        Text("Deel de code of korte link. De vaste baan-QR blijft ook beschikbaar.", color = PlayerMuted, style = MaterialTheme.typography.bodySmall)
     }
     PlayerCard("Spelers") {
         members.forEach { member -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) { Avatar(name(member), Modifier.size(44.dp)); Column(Modifier.weight(1f)) { Text(name(member), fontWeight = FontWeight.Bold); Text(if (body.obj("ready").optBoolean(member.text("id"))) "Gereed aan het bord" else "Wacht op gereedmelding", color = PlayerMuted, fontSize = 12.sp) } } }
@@ -583,9 +617,6 @@ internal fun entityCommand(actions: PlayerActions, entity: JSONObject, action: J
         }
         if (!selfActive && !closed && matchId.isBlank()) Action("Meedoen", !state.busy) { entityCommand(actions, entity, json("type" to "lobby.join", "id" to id, "code" to code)) }
         if (selfActive && !closed && matchId.isBlank()) Action(if (body.obj("ready").optBoolean(mine)) "Je staat klaar" else "Ik sta klaar aan het bord", !state.busy && !body.obj("ready").optBoolean(mine), modifier = Modifier.fillMaxWidth()) { entityCommand(actions, entity, json("type" to "lobby.ready", "id" to id)) }
-        if (owner && !closed && matchId.isBlank()) {
-            Choice("Eerste gooier", body.text("starterId", mine), members.map { it.text("id") to name(it) }, { entityCommand(actions, entity, json("type" to "lobby.starter", "id" to id, "starterId" to it)) }, !state.busy)
-        }
         if (matchId.isBlank() && !closed) Action("Wedstrijd starten", !state.busy && selfActive && members.size == 2 && members.all { body.obj("ready").optBoolean(it.text("id")) }, modifier = Modifier.fillMaxWidth()) { entityCommand(actions, entity, json("type" to "lobby.start", "id" to id)) }
         if (matchId.isNotBlank()) Action("Naar de wedstrijd", modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.MATCH, matchId) }
     }
@@ -593,7 +624,11 @@ internal fun entityCommand(actions: PlayerActions, entity: JSONObject, action: J
         val boards = state.platform.rows("clubBoards").filter { !it.optBoolean("occupied") && !it.optBoolean("blocked") && !it.optBoolean("closed") }
         if (boards.isNotEmpty()) PlayerCard("Mijn fysieke baan") { Choice("Koppel een baan (optioneel)", body.obj("remoteBoardIds").text(mine), listOf("" to "Thuis zonder baanscherm") + boards.map { it.text("id") to it.text("name") }, { if (it.isNotBlank()) entityCommand(actions, entity, json("type" to "lobby.board.bind", "id" to id, "boardId" to it)) }, !state.busy) }
     }
-    PlayerCard("Jullie opstelling") { Text(mapOf("localone" to "Samen aan één bord", "localtwo" to "Twee borden op locatie", "remote" to "Beide thuis", "hybrid" to "Hybride")[body.text("setup")] ?: "Vrij spelen"); Text("${playerRuleLabel(body.obj("settings"))} · best of ${body.obj("settings").optInt("bestOfLegs", 3)}", color = PlayerMuted) }
+    PlayerConfiguration("Wedstrijdinstellingen") {
+        Text(mapOf("localone" to "Samen aan één bord", "localtwo" to "Twee borden op locatie", "remote" to "Beide thuis", "hybrid" to "Hybride")[body.text("setup")] ?: "Vrij spelen")
+        Text("${playerRuleLabel(body.obj("settings"))} · best of ${body.obj("settings").optInt("bestOfLegs", 3)}", color = PlayerMuted)
+        if (owner && !closed && matchId.isBlank()) Choice("Eerste gooier", body.text("starterId", mine), members.map { it.text("id") to name(it) }, { entityCommand(actions, entity, json("type" to "lobby.starter", "id" to id, "starterId" to it)) }, !state.busy)
+    }
     if (owner && !closed && matchId.isBlank()) Action("Lobby sluiten en baan vrijgeven", !state.busy, false) { entityCommand(actions, entity, json("type" to "lobby.cancel", "id" to id)) }
 }
 @Composable internal fun ShareButton(url: String) {
@@ -742,7 +777,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     Heading("Samen aan de oche", "TOERNOOIEN", "Jouw toernooien, competities en verenigingen.")
     Action("Toernooi organiseren", !state.busy, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.ORGANIZE, null) }
     Action("Competities & speeldagen", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.SEASONS, null) }
-    val events = state.platform.rows("tournaments") + state.platform.rows("leagues")
+    val events = (state.platform.rows("tournaments") + state.platform.rows("leagues")).sortedBy(::playerEventPriority)
     val additional = state.overview.rows("events").filter { event -> events.none { it.text("id") == event.text("id") } }
     if (events.isNotEmpty() || additional.isNotEmpty()) {
         Text("Jouw evenementen", style = MaterialTheme.typography.titleMedium)
@@ -807,7 +842,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     Heading("Jouw competitie", "COMPETITIES", "Planning, check-in, teams en officiële uitslagen.")
     if (state.resource.optBoolean("canCreateNational") || state.resource.rows("clubs").any { it.optBoolean("canManage") }) Action("Competitie maken", !state.busy) { actions.navigate(PlayerScreen.SEASON_CREATE, null) }
     Action("Landelijke spelersrating", primary = false) { actions.navigate(PlayerScreen.RANKINGS, null) }
-    val seasons = state.resource.rows("seasons")
+    val seasons = state.resource.rows("seasons").sortedBy(::playerEventPriority)
     seasons.forEach { s -> PlayerCard(s.text("name")) { Text(statusLabel(s.text("status")), color = PlayerLime); Text(s.text("format"), color = PlayerMuted); Action("Open competitie", primary = false) { actions.navigate(PlayerScreen.SEASON, s.text("id")) } } }
     if (seasons.isEmpty() && !state.loading) Text("Geen toegankelijke competities gevonden.", color = PlayerMuted)
 }
@@ -827,7 +862,7 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     Heading("Samen is beter", "VRIENDEN", "Vind spelers, beheer uitnodigingen en overleg in de chat.")
     PlayerFriendSearch(state, actions)
     val friends = state.platform.rows("friends")
-    friends.sortedByDescending { it.text("status") == "incoming" }.forEach { friend -> PlayerCard {
+    friends.sortedWith(compareByDescending<JSONObject> { it.text("status") == "incoming" }.thenByDescending { it.optBoolean("favorite") }.thenBy { playerPublicName(it).lowercase(Locale.ROOT) }).forEach { friend -> PlayerCard {
         PlayerPublicIdentity(friend)
         Text(when(friend.text("status")) { "incoming" -> "Wil jouw vriend worden"; "outgoing" -> "Verzoek verzonden"; else -> if (friend.optBoolean("favorite")) "★ Favoriet" else "Vriend" }, color = PlayerMuted, fontSize = 12.sp)
         val id = friend.text("id")
@@ -1074,9 +1109,18 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     var current by remember { mutableStateOf("") }; var pin by remember { mutableStateOf("") }; var repeat by remember { mutableStateOf("") }
     var reset by remember { mutableStateOf(false) }; var showPin by remember { mutableStateOf(!profile.pinConfigured) }
     ClearSecretsOnBackground { current = ""; pin = ""; repeat = "" }
-    Heading(profile.displayName.ifBlank { profile.name }, "JOUW PROFIEL", "Eén profiel voor training, wedstrijden, verenigingen en evenementen.")
-    Action("Bekijk statistieken", primary = false, modifier = Modifier.fillMaxWidth()) { actions.navigate(PlayerScreen.STATISTICS, null) }
+    var section by rememberSaveable(profile.id) { mutableStateOf("account") }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Avatar(profile.displayName.ifBlank { profile.name }, Modifier.size(44.dp))
+        Column { Heading(profile.displayName.ifBlank { profile.name }); Text("@${profile.username}", color = PlayerMuted) }
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        listOf("account" to "Account", "score" to "Score-invoer", "preferences" to "Voorkeuren").forEach { (id, label) ->
+            OutlinedButton(onClick = { section = id }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { selected = section == id }, contentPadding = PaddingValues(4.dp), shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.outlinedButtonColors(containerColor = if (section == id) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent)) { Text(label) }
+        }
+    }
     fun saveIdentity() { actions.platformAction(playerIdentityUpdate(profile, fullName, display, username).put("showPublicStatistics", publicStats)); confirmUsername = false }
+    if (section == "account") {
     PlayerCard("Jouw identiteit") {
         val validIdentity = PlayerIdentityFields(profile, !state.busy, fullName, { fullName = it }, display, { display = it }, username, { username = it }, actions)
         Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(publicStats, { publicStats = it }); Text("Historische profielcijfers tonen op openbare Oche Live-baanschermen", fontSize = 13.sp) }
@@ -1114,12 +1158,19 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
         SafetyLink("Communityregels en melden", "/communityregels")
         Text("Privacy- en veiligheidsvragen: info@dartflow.nl", color = PlayerMuted, fontSize = 12.sp)
     }
-    PlayerThemePreference(state, actions)
-    PlayerScoreInputSettings(state)
-    PlayerCard("Instellingen") { Action("Meldingen", primary = false) { actions.navigate(PlayerScreen.NOTIFICATION_SETTINGS, null) }; Action("Mijn supporttickets", primary = false) { actions.navigate(PlayerScreen.SUPPORT, null) }; Action("Wat is nieuw?", primary = false) { actions.navigate(PlayerScreen.RELEASES, null) } }
-    if (state.canManagePlatform) PlayerPremiumAdministration(state, actions)
     PlayerCard("Jouw account") { Text(state.session?.email ?: ""); Text("DartFlow ${BuildConfig.VERSION_NAME}", color = PlayerMuted, fontSize = 12.sp); Action("Uitloggen", !state.busy, false, Modifier.fillMaxWidth(), actions.logout) }
     AccountDeletionCard(state, actions)
+    }
+    if (section == "score") {
+        PlayerScoreInputSettings(state)
+        Action("Bekijk statistieken", primary = false) { actions.navigate(PlayerScreen.STATISTICS, null) }
+        Action("Wedstrijdhistorie", primary = false) { actions.navigate(PlayerScreen.HISTORY, null) }
+    }
+    if (section == "preferences") {
+    PlayerThemePreference(state, actions)
+    PlayerCard("Instellingen") { Action("Meldingen", primary = false) { actions.navigate(PlayerScreen.NOTIFICATION_SETTINGS, null) }; Action("Mijn supporttickets", primary = false) { actions.navigate(PlayerScreen.SUPPORT, null) }; Action("Wat is nieuw?", primary = false) { actions.navigate(PlayerScreen.RELEASES, null) } }
+    if (state.canManagePlatform) PlayerPremiumAdministration(state, actions)
+    }
 }
 
 @Composable private fun ScreensScreen(state: PlayerUiState, actions: PlayerActions) {
@@ -1132,10 +1183,20 @@ internal fun extendActivity(activity: JSONObject, actions: PlayerActions) { acti
     Heading("Oche Live-schermen", "SCHERMBEHEER", "Koppel je tv of tablet eenmalig. Het scherm leest alleen de toegewezen stand.")
     PlayerCard("Scherm koppelen") {
         Text("Open Oche Live op het scherm en vul de acht tekens van de getoonde koppelcode in.", color = PlayerMuted)
-        Field("Koppelcode", code, { code = it.uppercase(Locale.ROOT).filter { c -> c.isLetterOrDigit() }.take(8); confirmed = false }, !state.busy, max = 8)
-        Action("Scan koppel-QR", !state.busy, false, onClick = actions.scan)
-        Field("Schermnaam", label, { label = it; confirmed = false }, !state.busy, max = 80)
-        Choice("Waar gebruik je dit scherm?", scope, listOf("home" to "Mijn scherm thuis") + locations.filter { it.text("locationId").isNotBlank() }.map { it.text("locationId") to it.text("name") }, { scope = it; board = ""; confirmed = false }, !state.busy)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) { Field("Koppelcode", code, { code = it.uppercase(Locale.ROOT).filter { c -> c.isLetterOrDigit() }.take(8); confirmed = false }, !state.busy, max = 8) }
+            OutlinedButton(onClick = actions.scan, enabled = !state.busy, modifier = Modifier.size(48.dp).semantics { contentDescription = "Scan koppel-QR" }, contentPadding = PaddingValues(0.dp)) { PlayerIcon(PlayerNavIcon.QR, PlayerLime) }
+        }
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            @Composable fun location() { Choice("Locatie", scope, listOf("home" to "Mijn scherm thuis") + locations.filter { it.text("locationId").isNotBlank() }.map { it.text("locationId") to it.text("name") }, { scope = it; board = ""; confirmed = false }, !state.busy) }
+            if (maxWidth >= 300.dp && LocalDensity.current.fontScale <= 1.1f) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
+                Column(Modifier.weight(1f)) { Field("Schermnaam", label, { label = it; confirmed = false }, !state.busy, max = 80) }
+                Column(Modifier.weight(1f)) { location() }
+            } else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Field("Schermnaam", label, { label = it; confirmed = false }, !state.busy, max = 80)
+                location()
+            }
+        }
         if (scope != "home") Choice("Baan", board, listOf("" to "Later een baan toewijzen") + (selected?.rows("boards") ?: emptyList()).map { it.text("id") to it.text("name") }, { board = it; confirmed = false }, !state.busy)
         val capacity = if (scope == "home") context.obj("home") else selected ?: JSONObject()
         val full = capacity.optInt("active") + capacity.optInt("reserved") >= capacity.optInt("maximum", Int.MAX_VALUE)

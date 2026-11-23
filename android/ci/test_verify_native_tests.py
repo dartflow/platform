@@ -23,7 +23,7 @@ class NativeTestReports(unittest.TestCase):
         return path
 
     def test_current_player_counts_remain_exact_and_oche_baseline_is_unchanged(self):
-        self.assertEqual((check.APPS["player"]["unit"], check.APPS["player"]["ui"]), (157, 90))
+        self.assertEqual((check.APPS["player"]["unit"], check.APPS["player"]["ui"]), (163, 97))
         self.assertEqual((check.APPS["oche"]["unit"], check.APPS["oche"]["ui"]), (34, 16))
 
     def test_actual_unique_cases_pass(self):
@@ -79,7 +79,7 @@ class NativeTestReports(unittest.TestCase):
         for variant in config["variants"]:
             target = self.root / "player/app/build/test-results" / ("test" + variant + "DebugUnitTest")
             target.mkdir(parents=True)
-            self.report(157).rename(target / "TEST-fixture.xml")
+            self.report(163).rename(target / "TEST-fixture.xml")
         self.assertEqual(len(check.verify("player", "unit", self.root)), 3)
         next((self.root / "player/app/build/test-results/testStagingDebugUnitTest").glob("*.xml")).unlink()
         with self.assertRaises(ValueError):
@@ -89,21 +89,22 @@ class NativeTestReports(unittest.TestCase):
         app = self.root / "player"
         source = app / "app/src/androidTest/java/Fixture.kt"
         source.parent.mkdir(parents=True)
-        source.write_text("package fixture\nclass Tests {\n" + "\n".join("@Test fun case" + str(i) + "() {}" for i in range(90)) + "\n}")
+        source.write_text("package fixture\nclass Tests {\n" + "\n".join("@Test fun case" + str(i) + "() {}" for i in range(97)) + "\n}")
         target = app / "app/build/outputs/androidTest-results/connected/device"
         target.mkdir(parents=True)
         report = target / "TEST-fixture.xml"
-        self.report(90).rename(report)
-        self.assertEqual(check.verify("player", "ui", self.root)["actualUniqueMethods"], 90)
-        # The old count cannot stand in for the newly added settings/reload case.
+        self.report(97).rename(report)
+        self.assertEqual(check.verify("player", "ui", self.root)["actualUniqueMethods"], 97)
+        # The old count cannot stand in for the new redesign methods.
         old = ET.parse(report)
-        old.getroot().set("tests", "89")
-        old.getroot().remove(old.getroot().findall("testcase")[-1])
+        old.getroot().set("tests", "90")
+        for case in old.getroot().findall("testcase")[90:]:
+            old.getroot().remove(case)
         old.write(report)
         with self.assertRaises(ValueError):
             check.verify("player", "ui", self.root)
-        self.report(90).replace(report)
-        source.write_text(source.read_text().replace("case89()", "replaced()"))
+        self.report(97).replace(report)
+        source.write_text(source.read_text().replace("case96()", "replaced()"))
         with self.assertRaises(ValueError):
             check.verify("player", "ui", self.root)
 

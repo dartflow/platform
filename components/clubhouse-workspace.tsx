@@ -40,6 +40,11 @@ export const CLUBHOUSE_NAV: { page: Page; slug: string; label: string }[] = [
   { page: "dues", slug: "contributie", label: "Contributie" },
   { page: "manage", slug: "beheer", label: "Verenigingsbeheer" },
 ];
+const CLUBHOUSE_NAV_GROUPS: { label: string; pages: Page[] }[] = [
+  { label: "Club", pages: ["overview", "feed", "calendar", "members"] },
+  { label: "Spelen", pages: ["teams", "competitions", "matches"] },
+  { label: "Organiseren", pages: ["locations", "tasks", "dues", "manage"] },
+];
 const pageFor = (slug?: string): Page =>
   CLUBHOUSE_NAV.find((x) => x.slug === slug || x.page === slug)?.page ??
   "overview";
@@ -295,6 +300,10 @@ export default function ClubhouseWorkspace({
   const permitted = data.pages.includes(page),
     can = (permission: string) =>
       data.permissions.includes(permission as View["permissions"][number]);
+  const upcomingActivities = data.activities
+    .filter((activity) => Date.parse(activity.endsAt) >= now)
+    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))
+    .slice(0, 3);
   const legacy = (tab: string) => (
     <ClubWorkspace
       key={tab}
@@ -328,30 +337,44 @@ export default function ClubhouseWorkspace({
         </a>
       </header>
       <nav className="ch-page-nav" aria-label="Verenigingsonderdelen">
-        {CLUBHOUSE_NAV.filter((item) => data.pages.includes(item.page)).map(
-          (item) => (
-            <a
-              href={href(item.page)}
-              key={item.page}
-              aria-current={page === item.page ? "page" : undefined}
+        {CLUBHOUSE_NAV_GROUPS.map((group) => {
+          const items = CLUBHOUSE_NAV.filter(
+            (item) =>
+              group.pages.includes(item.page) && data.pages.includes(item.page),
+          );
+          return items.length ? (
+            <div
+              className="ch-nav-group"
+              role="group"
+              aria-label={group.label}
+              key={group.label}
             >
-              {item.label}
-              {item.page === "members" &&
-                data.club.clubAccess.canApprove &&
-                data.club.clubDetails.requests.some(
-                  (r) => r.status === "pending",
-                ) && (
-                  <span className="ch-status">
-                    {
-                      data.club.clubDetails.requests.filter(
-                        (r) => r.status === "pending",
-                      ).length
-                    }
-                  </span>
-                )}
-            </a>
-          ),
-        )}
+              <span className="ch-nav-group-label">{group.label}</span>
+              {items.map((item) => (
+                <a
+                  href={href(item.page)}
+                  key={item.page}
+                  aria-current={page === item.page ? "page" : undefined}
+                >
+                  {item.label}
+                  {item.page === "members" &&
+                    data.club.clubAccess.canApprove &&
+                    data.club.clubDetails.requests.some(
+                      (r) => r.status === "pending",
+                    ) && (
+                      <span className="ch-status">
+                        {
+                          data.club.clubDetails.requests.filter(
+                            (r) => r.status === "pending",
+                          ).length
+                        }
+                      </span>
+                    )}
+                </a>
+              ))}
+            </div>
+          ) : null;
+        })}
       </nav>
       {error && (
         <div className="notice error" role="alert">
@@ -460,27 +483,24 @@ export default function ClubhouseWorkspace({
                     <a href={href("calendar")}>Bekijk agenda ↗</a>
                   </div>
                   <div className="ch-list">
-                    {data.activities
-                      .filter((a) => Date.parse(a.endsAt) >= now)
-                      .slice(0, 4)
-                      .map((activity) => (
-                        <a
-                          className="ch-list-item"
-                          key={activity.id}
-                          href={`${href("calendar")}?activiteit=${activity.id}`}
-                        >
-                          <div>
-                            <strong>{activity.title}</strong>
-                            <small>
-                              {date(activity.startsAt)} · {activity.location}
-                            </small>
-                          </div>
-                          <span>›</span>
-                        </a>
-                      ))}
+                    {upcomingActivities.map((activity) => (
+                      <a
+                        className="ch-list-item"
+                        key={activity.id}
+                        href={`${href("calendar")}?activiteit=${activity.id}`}
+                      >
+                        <div>
+                          <strong>{activity.title}</strong>
+                          <small>
+                            {date(activity.startsAt)} · {activity.location}
+                          </small>
+                        </div>
+                        <span>›</span>
+                      </a>
+                    ))}
                   </div>
-                  {!data.activities.length && (
-                    <Empty>Er zijn nog geen clubactiviteiten.</Empty>
+                  {!upcomingActivities.length && (
+                    <Empty>Er staan geen aankomende clubactiviteiten gepland.</Empty>
                   )}
                 </section>
                 <section className="panel">

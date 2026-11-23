@@ -6,7 +6,7 @@ import java.time.Instant
 import kotlin.math.pow
 
 internal val playerThemeKeys = listOf("background", "surface", "surfaceRaised", "border", "text", "muted", "primary", "onPrimary", "secondary", "focus", "success", "warning", "error")
-internal val playerDefaultDark = mapOf("background" to "#111615", "surface" to "#1A201E", "surfaceRaised" to "#202724", "border" to "#2D3631", "text" to "#F3F6F1", "muted" to "#AAB8B0", "primary" to "#C7F36A", "onPrimary" to "#19230D", "secondary" to "#B5D5A4", "focus" to "#C7F36A", "success" to "#91E5A6", "warning" to "#F6D285", "error" to "#FFADA4")
+internal val playerDefaultDark = mapOf("background" to "#101411", "surface" to "#191F1B", "surfaceRaised" to "#202923", "border" to "#303C33", "text" to "#F2F5EF", "muted" to "#AAB7AD", "primary" to "#C5FA59", "onPrimary" to "#19230D", "secondary" to "#B5D5A4", "focus" to "#C7F36A", "success" to "#91E5A6", "warning" to "#F6D285", "error" to "#FFADA4")
 internal val playerDefaultLight = mapOf("background" to "#F2F5F0", "surface" to "#FFFFFF", "surfaceRaised" to "#E6ECE5", "border" to "#7C897D", "text" to "#18221B", "muted" to "#46584A", "primary" to "#36551B", "onPrimary" to "#FFFFFF", "secondary" to "#325A4D", "focus" to "#36551B", "success" to "#1C6335", "warning" to "#76500B", "error" to "#A12424")
 internal fun playerHex(value: String) = Regex("#[0-9a-fA-F]{6}").matches(value)
 internal fun playerContrast(first: String, second: String): Double {

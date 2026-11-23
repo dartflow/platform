@@ -149,7 +149,7 @@ internal fun playerSeasonCommand(actions: PlayerActions, season: JSONObject, typ
     PlayerSeasonFormatControls(season, state, actions)
     Action("Officiële ranking- en circuitgevolgen", primary = false) { actions.navigate(PlayerScreen.RANKING_EVENT, season.text("id")) }
     Action("Hulp bij competitie en opstelling", primary = false) { actions.navigate(PlayerScreen.HELP, "q=opstelling") }
-    Choice("Competitie", tab, listOf("program" to "Programma en uitslagen", "standings" to "Stand", "entries" to "Deelnemers en teams", "rules" to "Reglement") + if (season.optBoolean("canManage")) listOf("manage" to "Beheer") else emptyList(), { tab = it })
+    PlayerWorkspaceTabs(tab, listOf("program" to "Programma en uitslagen", "standings" to "Stand", "entries" to "Deelnemers en teams", "rules" to "Reglement") + if (season.optBoolean("canManage")) listOf("manage" to "Beheer") else emptyList()) { tab = it }
     when (tab) {
         "standings" -> {
             season.rows("standings").forEach { row -> PlayerCard("${row.optInt("position")}${if (row.optBoolean("shared")) " =" else ""} · ${row.text("name")}") {

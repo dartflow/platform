@@ -38,13 +38,25 @@ internal fun playerClubPermission(view: JSONObject, permission: String) = permis
     val view = state.resource
     if (view.obj("club").text("id") != route.clubId) { if (!state.loading) Notice("Dit Clubhouse is niet beschikbaar voor je huidige account.", true, actions.refresh); return }
     val club = view.obj("club"); val pages = view.optJSONArray("pages")?.strings().orEmpty()
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        PlayerClubLogo(view.obj("theme").obj("effective").text("logoData"), club.text("name"))
-        Column(Modifier.weight(1f)) { Heading(playerClubPages[route.page] ?: "Clubhouse", club.text("name")); Text("Via DartFlow", color = PlayerMuted) }
+    if (route.page == "overview") PlayerPhotoCard(venue = true) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            PlayerClubLogo(view.obj("theme").obj("effective").text("logoData"), club.text("name"))
+            Column(Modifier.weight(1f)) {
+                Text(club.text("name").uppercase(java.util.Locale.ROOT), style = MaterialTheme.typography.labelSmall)
+                Text("Clubhouse", fontFamily = PlayerBarlow, style = MaterialTheme.typography.headlineLarge)
+            }
+        }
+        Text("Jouw vereniging, via DartFlow", style = MaterialTheme.typography.bodySmall)
+    } else Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        PlayerClubLogo(view.obj("theme").obj("effective").text("logoData"), club.text("name"), Modifier.size(40.dp))
+        Column(Modifier.weight(1f)) { Heading(playerClubPages[route.page] ?: "Clubhouse", club.text("name")) }
     }
     val eligibleClubs = state.platform.rows("clubs").filter { it.obj("clubAccess").optBoolean("isMember") }
     if (eligibleClubs.size > 1) Choice("Actieve vereniging", route.clubId, eligibleClubs.map { it.text("id") to it.text("name") }, { actions.navigate(PlayerScreen.CLUBHOUSE, playerClubId(it)) })
-    Choice("Clubhouse-pagina", route.page, pages.mapNotNull { page -> playerClubPages[page]?.let { page to it } }, { actions.navigate(PlayerScreen.CLUBHOUSE, playerClubId(route.clubId, it)) })
+    val quickPages = listOf("overview", "feed", "calendar").filter { it in pages }
+    PlayerWorkspaceTabs(route.page, quickPages.map { it to playerClubPages.getValue(it) }) { actions.navigate(PlayerScreen.CLUBHOUSE, playerClubId(route.clubId, it)) }
+    val otherPages = pages.filter { it !in quickPages }
+    if (otherPages.isNotEmpty()) Choice("Meer onderdelen", route.page.takeIf { it in otherPages }.orEmpty(), listOf("" to "Kies een onderdeel") + otherPages.mapNotNull { page -> playerClubPages[page]?.let { page to it } }, { if (it.isNotBlank()) actions.navigate(PlayerScreen.CLUBHOUSE, playerClubId(route.clubId, it)) })
     if (route.page !in pages) { Notice("Je hebt geen toegang tot dit verenigingsonderdeel.", true); return }
     when (route.page) {
         "overview" -> PlayerClubhouseOverview(view, state, actions)
@@ -79,7 +91,7 @@ internal fun playerClubPermission(view: JSONObject, permission: String) = permis
             listOf("members" to "Actieve leden", "teamMatches" to "Teamwedstrijden", "individualMatches" to "Individuele partijen", "activeTeams" to "Actieve teams").forEach { (key, label) -> PlayerCard(label, Modifier.width(cardWidth)) { Text(if (metrics.has(key)) metrics.optInt(key).toString() else "Nog niet beschikbaar", style = MaterialTheme.typography.headlineMedium, color = PlayerLime) } }
         }
     }
-    val upcoming = view.rows("activities").filter { runCatching { java.time.Instant.parse(it.text("endsAt")).isAfter(java.time.Instant.now()) }.getOrDefault(false) }.take(3)
+    val upcoming = playerUpcomingActivities(view.rows("activities"))
     PlayerCard("Binnenkort") { if (upcoming.isEmpty()) Text("Geen komende clubactiviteiten.", color = PlayerMuted); upcoming.forEach { activity -> Text(activity.text("title")); Text(shortDate(activity.text("startsAt")), color = PlayerMuted); Action("Bekijk activiteit", primary = false) { actions.navigate(PlayerScreen.CLUBHOUSE, playerClubId(clubId, "calendar", activity.text("id"))) } } }
     PlayerCard("Open taken") { val tasks = view.rows("tasks").filter { it.text("status") != "done" }.take(3); if (tasks.isEmpty()) Text("Geen open taken.", color = PlayerMuted); tasks.forEach { Text(it.text("title")); it.text("deadline").takeIf(String::isNotBlank)?.let { deadline -> Text(shortDate(deadline), color = PlayerMuted) } }; Action("Taken en vrijwilligers", primary = false) { actions.navigate(PlayerScreen.CLUBHOUSE, playerClubId(clubId, "tasks")) } }
     PlayerCard("Recente clubberichten") {
@@ -92,7 +104,7 @@ internal fun playerClubPermission(view: JSONObject, permission: String) = permis
 @Composable private fun PlayerClubCompetitions(view: JSONObject, state: PlayerUiState, actions: PlayerActions) {
     val clubId = view.obj("club").text("id")
     if (playerClubPermission(view, "competitions.manage")) Action("Interne competitie maken", state.online && !state.busy) { actions.navigate(PlayerScreen.CLUB_COMPETITION_WIZARD, playerClubId(clubId)) }
-    val seasons = view.rows("competitions")
+    val seasons = view.rows("competitions").sortedBy(::playerEventPriority)
     if (seasons.isEmpty()) Text("Nog geen zichtbare interne competities. Concepten zijn alleen voor bevoegde leiding zichtbaar.", color = PlayerMuted)
     seasons.forEach { season -> PlayerCard(season.text("name")) { Text("${season.text("format")} · ${statusLabel(season.text("status"))}", color = PlayerLime); Action("Open programma, stand en reglement", primary = false) { actions.navigate(PlayerScreen.SEASON, season.text("id")) } } }
     Action("Ook landelijke DartFlow Leagues bekijken", primary = false) { actions.navigate(PlayerScreen.SEASONS, null) }

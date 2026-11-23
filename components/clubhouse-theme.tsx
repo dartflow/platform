@@ -162,7 +162,14 @@ export function ClubhouseThemeProvider({
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.dartflowTheme = dark ? "dark" : "light";
-    const tokens = view?.effective.tokens[dark ? "dark" : "light"];
+    const received = view?.effective.tokens[dark ? "dark" : "light"];
+    // Presentation tokens belong to the player UI; published club tokens retain
+    // their existing entitlement, expiry and membership checks.
+    const tokens = received && dark && !view?.effective.clubId ? {
+      ...received, background: "#101411", surface: "#191f1b", surfaceRaised: "#202923",
+      border: "#303c33", text: "#f2f5ef", muted: "#aab7ad", primary: "#c5fa59",
+      onPrimary: "#18210d", focus: "#c5fa59",
+    } : received;
     Object.entries(tokenNames).forEach(([name, css]) => {
       if (tokens)
         root.style.setProperty(css, tokens[name as keyof typeof tokens]);
