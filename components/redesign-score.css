@@ -386,6 +386,10 @@
   border-color: var(--score-line);
 }
 
+.score-console .dart-score-pad .play-darts {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) 44px;
+}
+
 .score-console .dart-score-pad > .play-keypad {
   min-height: 0;
   grid-template-rows: repeat(4, minmax(var(--score-target), 1fr));
@@ -524,7 +528,7 @@
 /* Keep secondary controls usable beside the larger score keys, including on
    short screens; the console owns scrolling when content needs more room. */
 .score-console[role="dialog"] :is(.score-console-header button, .score-console-footer button,
-  .score-console-options header button, .visit-total-darts button,
+  .score-console-options header button, .visit-total-darts button, .play-darts button,
   .score-console-finish button, .dart-pad-segments button, .dart-pad-special button,
   .dart-console-options > summary, .visit-total-attempts > summary,
   .score-console-options select, .dart-console-options select, .visit-total-attempts select) {
@@ -611,10 +615,10 @@
   }
 }
 
-/* Short landscape total input: reserve the true44px header height and use the
-   existing left-hand control column for optional double-attempt settings. */
+/* Reserve the header controls in both landscape input modes; optional double
+   attempts use the existing left-hand column beside total input. */
 @media (orientation: landscape) and (max-height: 550px) {
-  .score-console.dart-score-console[role="dialog"]:has(.score-input-mode:not([hidden]) > .visit-total-input) {
+  .score-console.dart-score-console[role="dialog"] {
     grid-template-rows: 46px minmax(0, 1fr) auto auto;
   }
   .score-console.dart-score-console[role="dialog"]:has(.score-input-mode:not([hidden]) > .visit-total-input) > .dart-console-scoreboard {
