@@ -610,3 +610,20 @@
     line-height: 1;
   }
 }
+
+/* Short landscape total input: reserve the true44px header height and use the
+   existing left-hand control column for optional double-attempt settings. */
+@media (orientation: landscape) and (max-height: 550px) {
+  .score-console.dart-score-console[role="dialog"]:has(.score-input-mode:not([hidden]) > .visit-total-input) {
+    grid-template-rows: 46px minmax(0, 1fr) auto auto;
+  }
+  .score-console.dart-score-console[role="dialog"]:has(.score-input-mode:not([hidden]) > .visit-total-input) > .dart-console-scoreboard {
+    max-height: calc(100% - 52px);
+  }
+  .score-console.dart-score-console .visit-total-attempts:not([open]) {
+    position: absolute;
+    left: var(--score-edge);
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    width: calc((100% - 2 * var(--score-edge) - 12px) * .35);
+  }
+}
