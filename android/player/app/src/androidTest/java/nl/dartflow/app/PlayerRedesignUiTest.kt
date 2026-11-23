@@ -48,13 +48,19 @@ class PlayerRedesignUiTest {
     }
     @Test fun quickPresetsAreImmediateAndConfigurationPreservesSelectedRulesWhenReopened() {
         val commands = mutableListOf<JSONObject>()
+        val current = mutableStateOf(state(PlayerScreen.PLAY))
         compose.setContent { Box(Modifier.requiredSize(360.dp, 760.dp).testTag("redesign-fixture")) { DartFlowPlayerTheme {
-            PlayerApp(state(PlayerScreen.PLAY), PlayerActions(playAction = { commands += it }, platformAction = { commands += it }))
+            PlayerApp(current.value, PlayerActions(playAction = { commands += it }, platformAction = { commands += it }))
         } } }
         compose.onNodeWithText("Start training").assertDoesNotExist()
         capture("redesign-play-closed-360.png")
         (0..2).forEach { compose.onNodeWithTag("quick-play-$it").performScrollTo().assertIsEnabled().performClick() }
         compose.runOnIdle { assertEquals(listOf("session.create", "training.create", "lobby.create"), commands.map { it.text("type") }); assertEquals(45, commands[1].optInt("botAverage")) }
+        compose.runOnIdle { current.value = current.value.copy(play = PlayerPlayUi(error = "De uitkomst van je aanvraag is onzeker.", pendingOperation = "session.create")) }
+        compose.onNodeWithText("De uitkomst van je aanvraag is onzeker.").performScrollTo().assertIsDisplayed()
+        (0..2).forEach { compose.onNodeWithTag("quick-play-$it").performScrollTo().assertIsNotEnabled() }
+        compose.onNodeWithText("Controleer bewaarde partijwijziging").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals("local.retry-operation", commands.last().text("type")); assertFalse("The UI must reuse the coordinator's original request identity", commands.last().has("requestId")); current.value = current.value.copy(play = PlayerPlayUi()) }
         compose.onNodeWithTag("configuration-toggle-Configuratie").performScrollTo().performClick()
         compose.onNodeWithText("501").performScrollTo().performClick(); compose.onNodeWithText("701").performClick()
         capture("redesign-play-open-360.png")

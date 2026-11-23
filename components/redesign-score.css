@@ -531,3 +531,24 @@
   min-height: 44px;
   min-width: 44px;
 }
+
+/* Short portrait phones retain the whole exact-dart keypad. Put its options in
+   the header; the accessible summary still names the stand and corrections. */
+@media (max-height: 620px) and (orientation: portrait) {
+  .score-console.dart-score-console[role="dialog"] { --score-gap: 4px; padding-block: 6px; }
+  .score-console.dart-score-console > .score-console-header { gap: 4px; padding-right: 52px; }
+  .score-console.dart-score-console .dart-console-scoreboard .play-sides article { min-height: 52px; padding: 4px 8px; }
+  .score-console.dart-score-console .dart-console-scoreboard .play-sides h2 { font-size: .75rem; line-height: 1.15; }
+  .score-console.dart-score-console .dart-console-scoreboard .play-big { font-size: 1.875rem; }
+  .score-console.dart-score-console .dart-console-scoreboard .play-sides article > span { font-size: .5625rem; }
+  .score-console.dart-score-console .dart-score-pad { gap: 3px; }
+  .score-console.dart-score-console .dart-pad-heading .dart-pad-current strong { font-size: 1.25rem; }
+  .score-console.dart-score-console .dart-score-pad > .play-keypad { gap: 4px; min-height: 204px; }
+  .score-console.dart-score-console .play-darts button { min-height: 44px; }
+  .score-console.dart-score-console > .dart-console-options {
+    position: absolute; top: 6px; right: var(--score-edge); width: 44px; margin: 0;
+  }
+  .score-console.dart-score-console > .dart-console-options > summary { width: 44px; padding: 0; font-size: 0; line-height: 0; justify-content: center; }
+  .score-console.dart-score-console > .dart-console-options > summary::after { content: '⋯'; font-size: 1.5rem; line-height: 1; margin: 0; }
+  .score-console.dart-score-console > .dart-console-options[open] > div { position: fixed; bottom: 54px; left: 10px; right: 10px; }
+}

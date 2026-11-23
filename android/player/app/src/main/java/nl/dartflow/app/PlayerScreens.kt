@@ -477,6 +477,7 @@ internal fun statusLabel(value: String): String = mapOf("live" to "Live", "plann
         Text("STAP NAAR DE OCHE", fontFamily = PlayerBarlow, fontSize = 28.sp, lineHeight = 30.sp)
         Action("Nieuwe vrije partij") { actions.navigate(PlayerScreen.PLAY_START, null) }
     }
+    PlayerPlayFeedback(state, actions)
     PlayerSection("Snel spelen")
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf("Solo 501", "Tegen Dartbot", "Lokaal 501").forEachIndexed { index, label ->
@@ -486,7 +487,7 @@ internal fun statusLabel(value: String): String = mapOf("live" to "Live", "plann
                     1 -> actions.platformAction(playerBot501Action())
                     else -> actions.platformAction(playerLocal501Action())
                 }
-            }, enabled = !state.busy && !state.play.syncing && state.online, modifier = Modifier.weight(1f).heightIn(min = 68.dp).testTag("quick-play-$index"), shape = RoundedCornerShape(10.dp), contentPadding = PaddingValues(6.dp)) {
+            }, enabled = !state.busy && !state.play.syncing && state.play.pendingOperation == null && state.online, modifier = Modifier.weight(1f).heightIn(min = 68.dp).testTag("quick-play-$index"), shape = RoundedCornerShape(10.dp), contentPadding = PaddingValues(6.dp)) {
                 Text(label, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
             }
         }

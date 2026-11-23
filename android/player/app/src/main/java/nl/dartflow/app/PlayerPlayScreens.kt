@@ -23,6 +23,22 @@ import org.json.JSONObject
 
 internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScreen.PLAY_SESSION, PlayerScreen.PLAY_HISTORY, PlayerScreen.PRACTICE, PlayerScreen.CHALLENGES)
 
+@Composable internal fun PlayerPlayFeedback(state: PlayerUiState, actions: PlayerActions) {
+    if (state.play.syncing) LinearProgressIndicator(Modifier.fillMaxWidth(), color = PlayerLime)
+    state.play.error?.let { message ->
+        val retry: (() -> Unit)? = when {
+            state.play.pendingOperation != null -> { { actions.playAction(json("type" to "local.retry-operation")) } }
+            state.play.session != null -> { { actions.playAction(json("type" to "local.refresh")) } }
+            else -> null
+        }
+        Notice(message, true, retry)
+    }
+    if (state.play.pendingOperation != null) PlayerCard("Eerdere wijziging wacht op bevestiging") {
+        Text("De oorspronkelijke aanvraag blijft met hetzelfde actie-ID bewaard. Controleer de uitkomst voordat je een andere partijwijziging uitvoert.", color = PlayerMuted)
+        Action("Controleer bewaarde partijwijziging", !state.play.syncing) { actions.playAction(json("type" to "local.retry-operation")) }
+    }
+}
+
 @Composable internal fun PlayerPlayScreen(state: PlayerUiState, actions: PlayerActions) {
     val session = state.play.session
     var fullScore by rememberSaveable(session?.id) { mutableStateOf(true) }
@@ -35,12 +51,7 @@ internal val playerPublicPlayScreens = setOf(PlayerScreen.PLAY_START, PlayerScre
     }
     Column(Modifier.fillMaxSize().background(PlayerInk).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Action("Terug", primary = false, onClick = actions.back)
-        if (state.play.syncing) LinearProgressIndicator(Modifier.fillMaxWidth(), color = PlayerLime)
-        state.play.error?.let { Notice(it, true) { actions.playAction(json("type" to "local.refresh")) } }
-        if(state.play.pendingOperation!=null)PlayerCard("Eerdere wijziging wacht op bevestiging"){
-            Text("De oorspronkelijke aanvraag blijft met hetzelfde actie-ID bewaard. Controleer de uitkomst voordat je een andere partijwijziging uitvoert.",color=PlayerMuted)
-            Action("Controleer bewaarde partijwijziging",!state.play.syncing){actions.playAction(json("type" to "local.retry-operation"))}
-        }
+        PlayerPlayFeedback(state, actions)
         when (state.screen) {
             PlayerScreen.PLAY_SESSION -> PlayerPlaySessionScreen(state, actions) { fullScore = true }
             PlayerScreen.PLAY_HISTORY -> PlayerPlayHistoryScreen(state, actions)
