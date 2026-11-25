@@ -8,6 +8,7 @@ import {executePlatformCommand,getPlatformStatistics,replayMatchCommands} from '
 import {ensureBoardActivity,extendBoardActivity,readBoardActivity,readSourceBoardActivity,releaseBoardActivity,boardDeviceCanExtend} from '../lib/board-activity';
 import {executeLegacyPlayCommand}from'../lib/play-sessions';
 import {boardLease} from '../lib/platform-locks';
+import{getBoardScreen,projectBoardScreenForDevice}from'../lib/board-screens';
 import type {MatchState} from '../lib/types';
 import {acceptPlayerSafety,COMMUNITY_RULES_VERSION} from '../lib/player-safety';
 try{process.loadEnvFile('.env.local');}catch{/* CI injects local URLs. */}
@@ -80,8 +81,12 @@ test('physical inactivity transactions preserve deadlines, shared extensions and
   });
   await t.test('paired extension capability is board-bound, revocable and does not grant anonymous access',async()=>{
    const source=await start(),token=Buffer.alloc(32,7).toString('base64url'),device=randomUUID();
+   await admin.query("insert into dartflow_private.club_boards(board_id,club_id,event_id,name,access,created_by)values($1,$2,$3,'Extension board','all',$4)",[source.board,club,event,manager]);
    await admin.query("insert into dartflow_private.board_screen_devices(id,board_id,event_id,created_by,name,token_hash,pairing_expires_at,paired_at,expires_at) values($1,$2,$3,$4,'Activity device',$5,now()+interval '1 hour',now(),now()+interval '1 day')",[device,source.board,event,manager,createHash('sha256').update(token).digest('hex')]);
    await age(source.activity.sessionId,130000);const warning=(await readBoardActivity(database(),source.board))!;assert.equal(await boardDeviceCanExtend(database(),source.board,token),true);
+   assert.equal((await getBoardScreen(source.board,token)).snapshot.boardActivity?.canExtend,true);
+   const client=await database().connect();let activityReads=0;const observed=new Proxy(client,{get(target,key){if(key==='query')return(...args:unknown[])=>{const sql=typeof args[0]==='string'?args[0]:(args[0]as{text?:string})?.text??'';if(sql.startsWith('select s.* from dartflow_private.board_activity_links'))activityReads++;return Reflect.apply(target.query,target,args);};const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;}});
+   try{assert.equal((await projectBoardScreenForDevice(observed,source.board)).snapshot.boardActivity?.canExtend,false);assert.equal(activityReads,1);}finally{client.release();}
    await assert.rejects(extendBoardActivity(null,{sessionId:warning.sessionId,warningEpoch:warning.warningEpoch,requestId:randomUUID(),boardId:source.board}),{status:403});
    await extendBoardActivity(null,{sessionId:warning.sessionId,warningEpoch:warning.warningEpoch,requestId:randomUUID(),boardId:source.board,deviceToken:token});await admin.query('update dartflow_private.board_screen_devices set revoked_at=now() where id=$1',[device]);assert.equal(await boardDeviceCanExtend(database(),source.board,token),false);await force(warning.sessionId);
   });
@@ -148,6 +153,7 @@ test('physical inactivity transactions preserve deadlines, shared extensions and
   await admin.query('delete from dartflow_private.board_activity_sessions where event_id=$1',[event]);
   await admin.query('delete from dartflow_private.board_score_events where board_id=any($1::uuid[])',[boardIds]);
   await admin.query('delete from dartflow_private.board_screen_devices where board_id=any($1::uuid[])',[boardIds]);
+  await admin.query('delete from dartflow_private.club_boards where board_id=any($1::uuid[])',[boardIds]);
   for(const table of ['visits','match_confirmations','match_results','action_receipts','match_players','platform_match_links'])await admin.query(`delete from dartflow_private.${table} where match_id=any($1::uuid[])`,[matchIds]);
   await admin.query('delete from dartflow_private.audit_events where actor_id=any($1::uuid[]) or event_id=$2',[people,event]);
   await admin.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.platform_audit where actor_id=any($1::uuid[])',[people]);

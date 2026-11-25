@@ -10,7 +10,7 @@ import {publicMatchSides,publicMatchVisit,publicMatchSettings,matchParticipants}
 import {getOcheStatistics} from './player-statistics-db';
 import {calculatePlayerMeasures,currentPlayerProfiles} from './player-statistics';
 import { randomUUID } from 'node:crypto';
-import {readBoardScoreEvents} from './score-events';
+import {readBoardScoreEvents,type MatchEventContext} from './score-events';
 import { database } from './db';
 import { checkout, DomainError, matchView } from './domain';
 import { boardLease } from './platform-locks';
@@ -113,10 +113,11 @@ export async function getClubBoardScreen(boardId:string,client?:Client):Promise<
  if(!rows.length)throw new DomainError('not_found','Deze verenigingsbaan bestaat niet.',404);
  const rawActivity=await readBoardActivity(client,id);
  rows[0].state=await assignedBoardMatch(client,id);
- const row=rows[0],lease=await boardLease(client,id),occupied=Boolean(row.state||lease),location=await locationScreenContext(client,id,row.state?.id??lease?.id);
- let match:PublicSnapshot['match']=null;
+ const row=rows[0],lease=row.state?null:await boardLease(client,id),occupied=Boolean(row.state||lease),location=await locationScreenContext(client,id,row.state?.id??lease?.id);
+ let match:PublicSnapshot['match']=null,eventContext:MatchEventContext|undefined;
  if(row.state){
   const labels=await client.query<{id:string;name:string}>('select id,name from dartflow_private.profile_labels where id=any($1::uuid[])',[matchParticipants(row.state).map(p=>p.id)]);
+  eventContext={sourceId:row.state.id,participantNames:labels.rows.map(p=>p.name)};
   row.state=currentPlayerProfiles(row.state,labels.rows);
   const view=matchView(row.state,'',false);
   const currentLegVisits=(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit));
@@ -131,5 +132,5 @@ export async function getClubBoardScreen(boardId:string,client?:Client):Promise<
  const blocked=row.blocked||Boolean(location?.physical.archived_at);
  const closed=Boolean(location?.physical.closed_at),closePending=Boolean(location?.physical.close_after_session),activity=publicBoardActivity(rawActivity);
  const statistics=await getOcheStatistics(client,{boardId:id,state:row.state,lobbyId:lease?.kind==='lobby'?lease.id:null,allowRecap:!row.state&&!lease&&!play&&!blocked&&!closed&&!closePending&&!location?.reservation});
- return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied:occupied||play?.status==='active',closed,closePending,publicScan:row.access==='all'&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:closed?'closed':match||play?'playing':lease?'waiting':blocked?'blocked':closePending?'closed':location?.reservation?'reserved':'available',snapshot:{board:{id,name:row.name},event:{name:[location?.reservation?.label??row.club_name,await matchEventNotice(client,row.state?.id)].filter(Boolean).join(' · ')},match,...await readSeasonDisplay(client,row.state?.id),...(!row.state?{competitionLobby:await readCompetitionLobbyDisplay(client,id)}:{}),...await readPublicPrecall(client,id,row.state?.eventId??row.event_id),...(statistics?{statistics}:{}),...(activity?{boardActivity:activity}:{}),...(play?{play,sessionKey:play.sessionKey,scoreEvents:[]}:await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision))},...(location?.reservation?{reservation:location.reservation}:{})};
+ return {board:{id,name:row.name,clubName:row.club_name,access:row.access,blocked,occupied:occupied||play?.status==='active',closed,closePending,publicScan:row.access==='all'&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${id}`,screenUrl:`/baanscherm/${id}`},status:closed?'closed':match||play?'playing':lease?'waiting':blocked?'blocked':closePending?'closed':location?.reservation?'reserved':'available',snapshot:{board:{id,name:row.name},event:{name:[location?.reservation?.label??row.club_name,await matchEventNotice(client,row.state?.id)].filter(Boolean).join(' · ')},match,...await readSeasonDisplay(client,row.state?.id),...(!row.state?{competitionLobby:await readCompetitionLobbyDisplay(client,id)}:{}),...await readPublicPrecall(client,id,row.state?.eventId??row.event_id),...(statistics?{statistics}:{}),...(activity?{boardActivity:activity}:{}),...(play?{play,sessionKey:play.sessionKey,scoreEvents:[]}:await readBoardScoreEvents(client,id,row.state?.id??lease?.id,match?.revision,eventContext))},...(location?.reservation?{reservation:location.reservation}:{})};
 }
