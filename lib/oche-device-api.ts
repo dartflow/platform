@@ -5,7 +5,7 @@ import {appConfig} from './config';
 import {consumeRateLimit} from './db';
 import {DomainError} from './domain';
 import {secretHash} from './oche-device-crypto';
-import {claimOcheInstallation,getOcheInstallationStatus,getOcheManagement,logoutOcheDevice,manageOcheDevice,redeemOcheInstallation,refreshOcheSession,selectOcheHomeSession,setOcheLimit,startOcheInstallation} from './oche-device-store';
+import {claimOcheInstallation,proposeOcheLayout,getOcheLayoutProposal,getOcheInstallationStatus,getOcheManagement,logoutOcheDevice,manageOcheDevice,redeemOcheInstallation,refreshOcheSession,selectOcheHomeSession,setOcheLimit,startOcheInstallation} from './oche-device-store';
 import {getOcheDeviceSnapshot,pollOcheDeviceEvents} from './oche-device-projection';
 import type {OcheClaim,OchePlatform,OcheSession} from './oche-device-types';
 
@@ -42,12 +42,12 @@ export async function handleOcheDeviceApi(request:NextRequest,segments:string[])
   if(config.secure&&(new URL(request.url).protocol!=='https:'&&request.headers.get('x-forwarded-proto')!=='https'))throw new DomainError('https_required','Gebruik de beveiligde HTTPS-schermlink.',400);
   const ip=secretHash((request.headers.get('x-forwarded-for')??'direct').split(',')[0].trim());
   await limit(`ip:${ip}`,1200);
-  if(path.length===1&&path[0]==='capabilities'&&method==='GET')return json({apiVersion:1,origin:config.origin,pairing:{alphabet:'CrockfordBase32',length:8,lifetimeSeconds:600},permissions:{read:true,score:false,extend:false},pollAfterMs:2000,revocationBoundMs:5000});
+  if(path.length===1&&path[0]==='capabilities'&&method==='GET')return json({apiVersion:1,origin:config.origin,pairing:{alphabet:'CrockfordBase32',length:8,lifetimeSeconds:600},permissions:{read:true,score:false,extend:false},pollAfterMs:2000,revocationBoundMs:5000,layouts:{version:1,dualLocation:true}});
   if(path.length===1&&path[0]==='start'&&method==='POST'){
    const input=await body(request),platform=input.platform as OchePlatform,existing=installAuth(request),browser=platform==='browser';if(browser)csrf(request);
    await limit(`start:${ip}`,20,600);
-   const result=await startOcheInstallation({platform,requestId:String(input.requestId??''),...(browser&&existing.id?{installationId:existing.id,installationSecret:existing.secret}:!browser&&input.installationId?{installationId:String(input.installationId),installationSecret:String(input.installationSecret??'')}: {})});
-   const response=json(browser?{installationId:result.installationId,code:result.code,expiresAt:result.expiresAt,serverNow:result.serverNow,verificationUrl:result.verificationUrl,pollAfterMs:result.pollAfterMs}:result,201);
+   const result=await startOcheInstallation({platform,...(input.layoutProposal!==undefined?{layoutProposal:input.layoutProposal}:{}),requestId:String(input.requestId??''),...(browser&&existing.id?{installationId:existing.id,installationSecret:existing.secret}:!browser&&input.installationId?{installationId:String(input.installationId),installationSecret:String(input.installationSecret??'')}: {})});
+   const response=json(browser?{installationId:result.installationId,code:result.code,expiresAt:result.expiresAt,serverNow:result.serverNow,verificationUrl:result.verificationUrl,pollAfterMs:result.pollAfterMs,layoutProposal:result.layoutProposal}:result,201);
    if(browser){
     clearCookies(response);
     response.cookies.set(pendingCookie,`${result.installationId}.${result.installationSecret}`,{httpOnly:true,secure:config.secure,sameSite:'strict',path:cookiePath,maxAge:600});
@@ -61,12 +61,14 @@ export async function handleOcheDeviceApi(request:NextRequest,segments:string[])
    const input=await body(request),cookie=request.cookies.get(refreshCookie)?.value,browser=Boolean(cookie);if(browser)csrf(request);await limit(`refresh:${ip}`,120);return sessionResponse(await refreshOcheSession(cookie??String(input.refreshToken??''),String(input.nonce??'')),browser);
   }
   if(path.length===1&&['snapshot','events'].includes(path[0])&&method==='GET'){
-   const auth=accessAuth(request);await limit(`access:${secretHash(auth.token)}`,120);return json(path[0]==='snapshot'?await getOcheDeviceSnapshot(auth.token):await pollOcheDeviceEvents(auth.token,new URL(request.url).searchParams.get('after')??undefined));
+   const auth=accessAuth(request);await limit(`access:${secretHash(auth.token)}`,120);const query=new URL(request.url).searchParams,panels=query.get('panels')==='1';return json(path[0]==='snapshot'?await getOcheDeviceSnapshot(auth.token,panels):await pollOcheDeviceEvents(auth.token,query.get('after')??undefined,panels));
   }
+  if(path.length===1&&path[0]==='layout-proposal'&&method==='POST'){const auth=accessAuth(request);if(auth.browser)csrf(request);await limit(`proposal:${secretHash(auth.token)}`,20,600);return json(await proposeOcheLayout(auth.token,await body(request) as Parameters<typeof proposeOcheLayout>[1]),201);}
   if(path.length===1&&path[0]==='logout'&&method==='POST'){
    const auth=accessAuth(request);if(auth.browser)csrf(request);await logoutOcheDevice(auth.token);const response=json({ok:true});clearCookies(response);return response;
   }
   const id=await actor(request);await limit(`account:${id}`,method==='GET'?120:30);if(method!=='GET')csrf(request);
+  if(path.length===1&&path[0]==='proposal'&&method==='GET')return json(await getOcheLayoutProposal(id,new URL(request.url).searchParams.get('code')??''));
   if(path.length===1&&path[0]==='context'&&method==='GET')return json(await getOcheManagement(id));
   if(path.length===1&&path[0]==='devices'&&method==='GET')return json({devices:(await getOcheManagement(id)).devices});
   if(path.length===1&&path[0]==='claim'&&method==='POST'){await limit(`claim:${id}`,20,600);return json(await claimOcheInstallation(id,await body(request) as OcheClaim));}

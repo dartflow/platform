@@ -29,9 +29,23 @@ def validate(capabilities,associations,package,fingerprint):
             return
     raise ValueError('De productiehost bevestigt de opgegeven package en het Play app-signingcertificaat nog niet.')
 
+def validate_deployment(capabilities,health,ready,sha):
+    if not re.fullmatch(r'[a-f0-9]{40}',sha):raise ValueError('Volledige geteste web-SHA vereist.')
+    if capabilities.get('layouts',{}).get('version')!=1 or capabilities.get('layouts',{}).get('dualLocation') is not True:
+        raise ValueError('De productiebackend bevestigt de vereiste schermindeling nog niet.')
+    if health.get('sha')!=sha or health.get('status')!='ok' or health.get('mode')!='supabase':
+        raise ValueError('De gezonde productiebackend gebruikt niet de expliciete web-SHA.')
+    if ready.get('sha')!=sha or ready.get('status')!='ready' or ready.get('database')!='ok' or ready.get('auth')!='reachable':
+        raise ValueError('Database en authenticatie van de expliciete webrelease zijn niet gereed.')
+    if not health.get('releaseId') or health.get('releaseId')!=ready.get('releaseId') or not health.get('buildConfigId') or any(value.get('buildConfigId')!=health['buildConfigId'] or value.get('runtimeConfigId')!=health['buildConfigId'] for value in (health,ready)):
+        raise ValueError('De backend veranderde tijdens de deploymentcontrole.')
+
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--package',required=True);parser.add_argument('--fingerprint',required=True);args=parser.parse_args()
-    try:validate(get_json('/api/oche/v1/capabilities'),get_json('/.well-known/assetlinks.json'),args.package,args.fingerprint)
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--package',required=True);parser.add_argument('--fingerprint',required=True);parser.add_argument('--sha');args=parser.parse_args()
+    try:
+        capabilities=get_json('/api/oche/v1/capabilities')
+        validate(capabilities,get_json('/.well-known/assetlinks.json'),args.package,args.fingerprint)
+        if args.sha:validate_deployment(capabilities,get_json('/api/health'),get_json('/api/ready'),args.sha)
     except (ValueError,OSError,http.client.HTTPException) as error:
         parser.exit(1,f'Play-preflight gestopt: {error}\n')
     print('Productiebackend en Play App Links bevestigd; er zijn geen gegevens gewijzigd.')

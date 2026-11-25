@@ -1,0 +1,482 @@
+{
+  "format": "dartflow-oche-layout-database-rollout-v1",
+  "createdAt": "2026-11-25T16:31:22.064Z",
+  "result": "passed",
+  "authorization": "Explicit user authorization for staging and production rollout.",
+  "host": "dg-nxttrack-01",
+  "sourceMigration": "supabase/migrations/20261125154720_oche_screen_layout.sql",
+  "sourceSha256": "99ca107588b3e872b355c80463663697c6b9d9fd942f394c779579a471060df6",
+  "executedSha256": "2cb90e01de77ed232d09788d2bafc953196e7e6af4636b80581f25ea875d4b2e",
+  "executionDifference": "Only SET LOCAL lock_timeout='10s' and statement_timeout='90s' were inserted inside the reviewed transaction.",
+  "transport": "Connected Supabase management apply_migration; staging verified before production apply.",
+  "webDeploymentGate": "Both database environments verified ready for the separately gated web backend release.",
+  "rolloutOrder": [
+    "staging database",
+    "production database",
+    "web backend via existing exact-SHA CI/release workflows",
+    "Android after web backend"
+  ],
+  "backupMethod": "Existing protected identity-backup-db3e728a6949134d.mjs --execute and --compare, serialized using the existing host build lock. No application credentials or row data emitted.",
+  "backupHelperSha256": "db3e728a6949134d3e2217c5f98f7b92a916e46e167d29b0d1051905b74b80dd",
+  "backupHelperOwnershipAndMode": "root:root 0700",
+  "productionFixtureMutations": false,
+  "syntheticAccountsCreated": false,
+  "newDevicePairingsCreated": false,
+  "newMatchesPlayed": false,
+  "apiMaintenancePause": false,
+  "scope": "Only the new additive private Oche screen layout migration. Existing services, account/scoring sessions, physical board IDs and capacity records were preserved. No local full migration runner was used on hosted projects.",
+  "environments": {
+    "staging": {
+      "projectRef": "dsnqnvbckkqpzadblshu",
+      "managementConnection": "DartFlow",
+      "projectStatus": "ACTIVE_HEALTHY",
+      "databaseVersion": "17.11.0.018",
+      "migration": {
+        "version": "20261125162837",
+        "name": "oche_screen_layout"
+      },
+      "migrationsBefore": 49,
+      "migrationsAfter": 50,
+      "backup": {
+        "destination": "/var/backups/dartflow/identity-staging-20261125T162650221Z",
+        "environment": "staging",
+        "project": "dsnqnvbckkqpzadblshu",
+        "snapshotAt": "2026-11-25 16:26:50.475467+00",
+        "snapshotConsistent": true,
+        "format": "dartflow-runtime-backup-v2-raw-json",
+        "scope": "Runtime-visible dartflow_private application rows and exact active runtime/release configuration only. Excludes Supabase Auth, unreadable private tables, signing keys, external providers and schema/role restoration. Verified file readback is not a restore drill.",
+        "privateRootMode": "0700",
+        "fileMode": "0600",
+        "files": [
+          {
+            "name": "application.json.gz",
+            "bytes": 1379053,
+            "sha256": "e2069429ff2238a062e03bdf06ea77cf12ee74dba10cc68cfa53f53116529bbd"
+          },
+          {
+            "name": "runtime.env",
+            "bytes": 802,
+            "sha256": "6ef8cd794472c659cb84320a6d1d456ca003ea9f4de4ab25a01f8bbd20bc03d6"
+          },
+          {
+            "name": "release.env",
+            "bytes": 511,
+            "sha256": "69ee27db8ebeb642ba72f7e2664a8feb240d3dad5b2d0bcc7d00c30bf1b49523"
+          }
+        ],
+        "excluded": [
+          "owner_bootstrap",
+          "profile_identity_migration_audit"
+        ],
+        "verifiedReadback": true,
+        "freshRestoreDrill": false,
+        "tableCount": 197,
+        "rowCount": 1454
+      },
+      "sportComparison": {
+        "environment": "staging",
+        "baseline": "/var/backups/dartflow/identity-staging-20261125T162650221Z",
+        "snapshotConsistent": true,
+        "sportTables": 36,
+        "sportsUnchanged": true,
+        "changes": [],
+        "scope": "Read-only historical sport fingerprint comparison; concurrent legitimate play can also change fingerprints."
+      },
+      "before": {
+        "counts": {
+          "boards": 7,
+          "profiles": 7,
+          "oche_devices": 0,
+          "reservations": 0,
+          "active_devices": 0,
+          "activity_links": 0,
+          "location_boards": 3,
+          "physical_matches": 0,
+          "active_reservations": 0
+        },
+        "fingerprints": {
+          "boards": "58cf4747dac1feba0c22e9cbc0169aea",
+          "limits": "d41d8cd98f00b204e9800998ecf8427e",
+          "reservations": "d41d8cd98f00b204e9800998ecf8427e",
+          "devices_primary": "d41d8cd98f00b204e9800998ecf8427e",
+          "location_boards": "f5cb9f23a0904e5e00d1b906f1b4fc8b"
+        }
+      },
+      "after": {
+        "counts": {
+          "boards": 7,
+          "profiles": 7,
+          "oche_devices": 0,
+          "reservations": 0,
+          "active_devices": 0,
+          "activity_links": 0,
+          "location_boards": 3,
+          "physical_matches": 0,
+          "active_reservations": 0
+        },
+        "fingerprints": {
+          "boards": "58cf4747dac1feba0c22e9cbc0169aea",
+          "limits": "d41d8cd98f00b204e9800998ecf8427e",
+          "reservations": "d41d8cd98f00b204e9800998ecf8427e",
+          "devices_primary": "d41d8cd98f00b204e9800998ecf8427e",
+          "location_boards": "f5cb9f23a0904e5e00d1b906f1b4fc8b"
+        }
+      },
+      "countsUnchanged": true,
+      "primaryAssignmentsBoardsAndQuotaUnchanged": true,
+      "verification": {
+        "columns": [
+          {
+            "table": "oche_devices",
+            "column": "layout",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_devices",
+            "column": "secondary_board_id",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_devices",
+            "column": "configuration_revision",
+            "default": "0",
+            "nullable": "NO"
+          },
+          {
+            "table": "oche_installations",
+            "column": "layout_proposal",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_installations",
+            "column": "target_device_id",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_installations",
+            "column": "proposal_revision",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_reservations",
+            "column": "layout",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_reservations",
+            "column": "secondary_board_id",
+            "default": null,
+            "nullable": "YES"
+          }
+        ],
+        "feature": 1,
+        "oche_rls": true,
+        "triggers": [
+          {
+            "name": "oche_device_assignment",
+            "definition": "CREATE TRIGGER oche_device_assignment BEFORE INSERT OR UPDATE OF scope, location_id, board_id, secondary_board_id, layout ON dartflow_private.oche_devices FOR EACH ROW EXECUTE FUNCTION dartflow_private.oche_validate_assignment()"
+          },
+          {
+            "name": "oche_reservation_assignment",
+            "definition": "CREATE TRIGGER oche_reservation_assignment BEFORE INSERT OR UPDATE OF scope, location_id, board_id, secondary_board_id, layout ON dartflow_private.oche_reservations FOR EACH ROW EXECUTE FUNCTION dartflow_private.oche_validate_assignment()"
+          }
+        ],
+        "constraints": [
+          {
+            "name": "oche_device_layout",
+            "validated": true,
+            "definition": "CHECK ((dartflow_private.oche_valid_layout(layout) AND (configuration_revision >= 0) AND ((scope <> 'home'::text) OR (COALESCE((layout ->> 'scoreboards'::text), '1'::text) = '1'::text)) AND ((secondary_board_id IS NULL) OR (((scope = 'location'::text) AND ((layout ->> 'scoreboards'::text) = '2'::text)) IS TRUE)) AND ((secondary_board_id IS NULL) OR (board_id IS NULL) OR (secondary_board_id <> board_id))))"
+          },
+          {
+            "name": "oche_installation_layout",
+            "validated": true,
+            "definition": "CHECK ((dartflow_private.oche_valid_layout(layout_proposal) AND ((target_device_id IS NULL) OR (((layout_proposal IS NOT NULL) AND (proposal_revision >= 0)) IS TRUE))))"
+          },
+          {
+            "name": "oche_reservation_layout",
+            "validated": true,
+            "definition": "CHECK ((dartflow_private.oche_valid_layout(layout) AND ((scope <> 'home'::text) OR (COALESCE((layout ->> 'scoreboards'::text), '1'::text) = '1'::text)) AND ((secondary_board_id IS NULL) OR (((scope = 'location'::text) AND ((layout ->> 'scoreboards'::text) = '2'::text)) IS TRUE)) AND ((secondary_board_id IS NULL) OR (board_id IS NULL) OR (secondary_board_id <> board_id))))"
+          }
+        ],
+        "layout_checks": {
+          "legacy_null_valid": true,
+          "portrait_one_valid": true,
+          "landscape_one_valid": true,
+          "landscape_two_valid": true,
+          "portrait_two_rejected": true,
+          "string_count_rejected": true,
+          "missing_fields_rejected": true
+        },
+        "layout_function_invoker": true,
+        "restricted_roles_no_crud": true,
+        "new_column_runtime_access": true,
+        "active_home_unique_index_valid": true,
+        "layout_function_runtime_execute": true,
+        "layout_function_public_no_execute": true
+      },
+      "securityAdvisories": {
+        "unchanged": true,
+        "before": [
+          {
+            "name": "rls_enabled_no_policy",
+            "level": "INFO",
+            "count": 2,
+            "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+          },
+          {
+            "name": "auth_leaked_password_protection",
+            "level": "WARN",
+            "count": 1,
+            "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+          }
+        ],
+        "after": [
+          {
+            "name": "rls_enabled_no_policy",
+            "level": "INFO",
+            "count": 2,
+            "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+          },
+          {
+            "name": "auth_leaked_password_protection",
+            "level": "WARN",
+            "count": 1,
+            "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+          }
+        ]
+      }
+    },
+    "production": {
+      "projectRef": "wlrnowuownakqqgjxnbb",
+      "managementConnection": "Duindorpdoet",
+      "projectStatus": "ACTIVE_HEALTHY",
+      "databaseVersion": "17.11.0.018",
+      "migration": {
+        "version": "20261125162926",
+        "name": "oche_screen_layout"
+      },
+      "migrationsBefore": 51,
+      "migrationsAfter": 52,
+      "backup": {
+        "destination": "/var/backups/dartflow/identity-production-20261125T162746457Z",
+        "environment": "production",
+        "project": "wlrnowuownakqqgjxnbb",
+        "snapshotAt": "2026-11-25 16:27:46.690088+00",
+        "snapshotConsistent": true,
+        "format": "dartflow-runtime-backup-v2-raw-json",
+        "scope": "Runtime-visible dartflow_private application rows and exact active runtime/release configuration only. Excludes Supabase Auth, unreadable private tables, signing keys, external providers and schema/role restoration. Verified file readback is not a restore drill.",
+        "privateRootMode": "0700",
+        "fileMode": "0600",
+        "files": [
+          {
+            "name": "application.json.gz",
+            "bytes": 370458,
+            "sha256": "20c35e77a949bff86beae32c6460727f1b561a0fb59241209b4a716aea2213b8"
+          },
+          {
+            "name": "runtime.env",
+            "bytes": 3387,
+            "sha256": "ab6b37ac1559433ffe935a94aa28f406bd9756e632610ff552a3c2a149aa8534"
+          },
+          {
+            "name": "release.env",
+            "bytes": 511,
+            "sha256": "fbbd15d1f92824a05a2ecb89436e62b354d16f024eafb46d3a3162771f3017f4"
+          }
+        ],
+        "excluded": [
+          "owner_bootstrap",
+          "profile_identity_migration_audit"
+        ],
+        "verifiedReadback": true,
+        "freshRestoreDrill": false,
+        "tableCount": 197,
+        "rowCount": 530
+      },
+      "sportComparison": {
+        "environment": "production",
+        "baseline": "/var/backups/dartflow/identity-production-20261125T162746457Z",
+        "snapshotConsistent": true,
+        "sportTables": 36,
+        "sportsUnchanged": true,
+        "changes": [],
+        "scope": "Read-only historical sport fingerprint comparison; concurrent legitimate play can also change fingerprints."
+      },
+      "before": {
+        "counts": {
+          "boards": 2,
+          "profiles": 8,
+          "oche_devices": 0,
+          "reservations": 0,
+          "active_devices": 0,
+          "activity_links": 0,
+          "location_boards": 2,
+          "physical_matches": 0,
+          "active_reservations": 0
+        },
+        "fingerprints": {
+          "boards": "e7c67fc4453512e43ad1a375e8f91e3c",
+          "limits": "d41d8cd98f00b204e9800998ecf8427e",
+          "reservations": "d41d8cd98f00b204e9800998ecf8427e",
+          "devices_primary": "d41d8cd98f00b204e9800998ecf8427e",
+          "location_boards": "948ba43ae6a66554263618244c6ed720"
+        }
+      },
+      "after": {
+        "counts": {
+          "boards": 2,
+          "profiles": 8,
+          "oche_devices": 0,
+          "reservations": 0,
+          "active_devices": 0,
+          "activity_links": 0,
+          "location_boards": 2,
+          "physical_matches": 0,
+          "active_reservations": 0
+        },
+        "fingerprints": {
+          "boards": "e7c67fc4453512e43ad1a375e8f91e3c",
+          "limits": "d41d8cd98f00b204e9800998ecf8427e",
+          "reservations": "d41d8cd98f00b204e9800998ecf8427e",
+          "devices_primary": "d41d8cd98f00b204e9800998ecf8427e",
+          "location_boards": "948ba43ae6a66554263618244c6ed720"
+        }
+      },
+      "countsUnchanged": true,
+      "primaryAssignmentsBoardsAndQuotaUnchanged": true,
+      "verification": {
+        "columns": [
+          {
+            "table": "oche_devices",
+            "column": "layout",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_devices",
+            "column": "secondary_board_id",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_devices",
+            "column": "configuration_revision",
+            "default": "0",
+            "nullable": "NO"
+          },
+          {
+            "table": "oche_installations",
+            "column": "layout_proposal",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_installations",
+            "column": "target_device_id",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_installations",
+            "column": "proposal_revision",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_reservations",
+            "column": "layout",
+            "default": null,
+            "nullable": "YES"
+          },
+          {
+            "table": "oche_reservations",
+            "column": "secondary_board_id",
+            "default": null,
+            "nullable": "YES"
+          }
+        ],
+        "feature": 1,
+        "oche_rls": true,
+        "triggers": [
+          {
+            "name": "oche_device_assignment",
+            "definition": "CREATE TRIGGER oche_device_assignment BEFORE INSERT OR UPDATE OF scope, location_id, board_id, secondary_board_id, layout ON dartflow_private.oche_devices FOR EACH ROW EXECUTE FUNCTION dartflow_private.oche_validate_assignment()"
+          },
+          {
+            "name": "oche_reservation_assignment",
+            "definition": "CREATE TRIGGER oche_reservation_assignment BEFORE INSERT OR UPDATE OF scope, location_id, board_id, secondary_board_id, layout ON dartflow_private.oche_reservations FOR EACH ROW EXECUTE FUNCTION dartflow_private.oche_validate_assignment()"
+          }
+        ],
+        "constraints": [
+          {
+            "name": "oche_device_layout",
+            "validated": true,
+            "definition": "CHECK ((dartflow_private.oche_valid_layout(layout) AND (configuration_revision >= 0) AND ((scope <> 'home'::text) OR (COALESCE((layout ->> 'scoreboards'::text), '1'::text) = '1'::text)) AND ((secondary_board_id IS NULL) OR (((scope = 'location'::text) AND ((layout ->> 'scoreboards'::text) = '2'::text)) IS TRUE)) AND ((secondary_board_id IS NULL) OR (board_id IS NULL) OR (secondary_board_id <> board_id))))"
+          },
+          {
+            "name": "oche_installation_layout",
+            "validated": true,
+            "definition": "CHECK ((dartflow_private.oche_valid_layout(layout_proposal) AND ((target_device_id IS NULL) OR (((layout_proposal IS NOT NULL) AND (proposal_revision >= 0)) IS TRUE))))"
+          },
+          {
+            "name": "oche_reservation_layout",
+            "validated": true,
+            "definition": "CHECK ((dartflow_private.oche_valid_layout(layout) AND ((scope <> 'home'::text) OR (COALESCE((layout ->> 'scoreboards'::text), '1'::text) = '1'::text)) AND ((secondary_board_id IS NULL) OR (((scope = 'location'::text) AND ((layout ->> 'scoreboards'::text) = '2'::text)) IS TRUE)) AND ((secondary_board_id IS NULL) OR (board_id IS NULL) OR (secondary_board_id <> board_id))))"
+          }
+        ],
+        "layout_checks": {
+          "legacy_null_valid": true,
+          "portrait_one_valid": true,
+          "landscape_one_valid": true,
+          "landscape_two_valid": true,
+          "portrait_two_rejected": true,
+          "string_count_rejected": true,
+          "missing_fields_rejected": true
+        },
+        "layout_function_invoker": true,
+        "restricted_roles_no_crud": true,
+        "new_column_runtime_access": true,
+        "active_home_unique_index_valid": true,
+        "layout_function_runtime_execute": true,
+        "layout_function_public_no_execute": true
+      },
+      "securityAdvisories": {
+        "unchanged": true,
+        "before": [
+          {
+            "name": "rls_enabled_no_policy",
+            "level": "INFO",
+            "count": 2,
+            "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+          },
+          {
+            "name": "auth_leaked_password_protection",
+            "level": "WARN",
+            "count": 1,
+            "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+          }
+        ],
+        "after": [
+          {
+            "name": "rls_enabled_no_policy",
+            "level": "INFO",
+            "count": 2,
+            "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+          },
+          {
+            "name": "auth_leaked_password_protection",
+            "level": "WARN",
+            "count": 1,
+            "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+          }
+        ]
+      }
+    }
+  }
+}

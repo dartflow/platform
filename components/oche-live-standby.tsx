@@ -16,9 +16,9 @@ export function OcheFullscreen(){
   return <><button type="button" className="oche-fullscreen" aria-label="Volledig scherm" title="Volledig scherm" onClick={()=>void toggle()}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg></button>{error&&<p className="oche-control-error" role="status">{error}</p>}</>;
 }
 
-type StandbyProps = {data:ClubBoardScreenView|null;error:string;stale:boolean;needsPairing:boolean;pairForm:ReactNode;qr:ReactNode;controls:ReactNode;overlay:ReactNode;activityOverlay?:ReactNode;carouselEligible?:boolean};
+type StandbyProps = {data:ClubBoardScreenView|null;error:string;stale:boolean;needsPairing:boolean;pairForm:ReactNode;qr:ReactNode;controls:ReactNode;overlay:ReactNode;activityOverlay?:ReactNode;carouselEligible?:boolean;automatic?:boolean};
 
-function OcheStandbyCarousel({data,stale,qr,controls,overlay,activityOverlay}:{data:ClubBoardScreenView;stale:boolean;qr:ReactNode;controls:ReactNode;overlay:ReactNode;activityOverlay?:ReactNode}){
+function OcheStandbyCarousel({data,stale,qr,controls,overlay,activityOverlay,automatic}:{data:ClubBoardScreenView;stale:boolean;qr:ReactNode;controls:ReactNode;overlay:ReactNode;activityOverlay?:ReactNode;automatic?:boolean}){
   const [frame,setFrame]=useState(()=>ocheStandbyFrame(0));
   useEffect(()=>{
     const startedAt=performance.now();let handle=0,lastBucket=-1;
@@ -39,18 +39,18 @@ function OcheStandbyCarousel({data,stale,qr,controls,overlay,activityOverlay}:{d
       <section className="oche-slide oche-slide--qr" data-active={frame.index===1} aria-hidden={frame.index!==1} inert={frame.index!==1} aria-label="Scan en speel"><div className="oche-headline club-board-idle-context"><span className={`oche-pill ${stale?'oche-pill-offline':'oche-pill-live'}`}>{stale?'Offline':'Baan vrij'}</span><h1 className="oche-kicker" data-testid="oche-board-name">{data.board.name}</h1><h2>Scan en <em>speel.</em></h2><p>Begin een oefenpartij, speel samen op locatie of nodig iemand online uit.</p></div>{qr}</section>
       <section className="oche-slide oche-slide--steps" data-active={frame.index===2} aria-hidden={frame.index!==2} inert={frame.index!==2} aria-label="Zo speel je"><OcheBrand className="oche-steps-logo" kind="logo" key={data?.snapshot.theme?.id} theme={data?.snapshot.theme?.id}/>{qr}<h2>Zo <em>speel je.</em></h2><ol>{steps.map((step,index)=><li key={step}><b aria-hidden="true">{index+1}</b><span>{step}</span></li>)}</ol></section>
     </div>
-    {data?.snapshot.pendingCall&&<aside className="oche-precall" aria-label="Vooroproep"><b>{data.snapshot.pendingCall.label}</b><span>{data.snapshot.pendingCall.players.join(' · ')}</span></aside>}<footer className="oche-foot"><div className="oche-carousel-progress" aria-hidden="true"><span/></div><span>Powered by DartFlow</span><div className="oche-foot-actions"><span className="oche-slide-counter" aria-label={`Stand-byslide ${frame.index+1} van 3`}>{String(frame.index+1).padStart(2,'0')} / 03</span>{controls}<OcheFullscreen/></div></footer>
+    {data?.snapshot.pendingCall&&<aside className="oche-precall" aria-label="Vooroproep"><b>{data.snapshot.pendingCall.label}</b><span>{data.snapshot.pendingCall.players.join(' · ')}</span></aside>}<footer className="oche-foot"><div className="oche-carousel-progress" aria-hidden="true"><span/></div><span>Powered by DartFlow</span><div className="oche-foot-actions"><span className="oche-slide-counter" aria-label={`Stand-byslide ${frame.index+1} van 3`}>{String(frame.index+1).padStart(2,'0')} / 03</span>{controls}{!automatic&&<OcheFullscreen/>}</div></footer>
   </div>{overlay}{activityOverlay}{data.status==='available'&&<OcheMatchRecap statistics={data.snapshot.statistics}/>}</div></main>;
 }
 
-export default function OcheLiveStandby({data,error,stale,needsPairing,pairForm,qr,controls,overlay,activityOverlay,carouselEligible}:StandbyProps){
+export default function OcheLiveStandby({data,error,stale,needsPairing,pairForm,qr,controls,overlay,activityOverlay,carouselEligible,automatic}:StandbyProps){
   const label=data?.board.clubName??'Oche Live';
   const status=data?.status;
   const competition=data?.snapshot.competitionLobby;
   const display=data as (ClubBoardScreenView&{reservation?:{label:string;startsAt:string;endsAt:string;overrun:boolean};board:ClubBoardScreenView['board']&{locationKind?:'home'|'venue'}})|null;
   const reserved=status==='reserved'||Boolean(display?.reservation)&&status==='available';
   const eligible=carouselEligible??Boolean(data&&status==='available'&&!display?.reservation&&(data.board.publicScan??data.board.access==='all'));
-  if(data&&eligible&&!needsPairing)return <OcheStandbyCarousel key={data.board.id} data={data} stale={stale} qr={qr} controls={controls} overlay={overlay} activityOverlay={activityOverlay}/>;
+  if(data&&eligible&&!needsPairing)return <OcheStandbyCarousel key={data.board.id} data={data} stale={stale} qr={qr} controls={controls} overlay={overlay} activityOverlay={activityOverlay} automatic={automatic}/>;
   return <main className={`oche-display club-board-idle${competition?' oche-display--competition':''}`} data-theme={data?.snapshot.theme?.id??'dartflow'} aria-label="Oche Live-baanscherm"><div className="oche-stage"><div className="oche-content">
     <header className="oche-top"><OcheBrand className="oche-logo" kind="logo" key={data?.snapshot.theme?.id} theme={data?.snapshot.theme?.id}/><div className="oche-location"><span className="oche-location-mark" aria-hidden="true">{label.split(/\s+/).map(part=>part[0]).filter(Boolean).slice(0,3).join('').toUpperCase()}</span><span className="oche-location-label"><b>{label}</b><small>{display?.board.locationKind==='home'?'Thuisbaan':data?'Op locatie':'Baanscherm'}</small></span></div></header>
     <section className="oche-main">
@@ -60,6 +60,6 @@ export default function OcheLiveStandby({data,error,stale,needsPairing,pairForm,
         {!competition&&status==='waiting'&&<OcheHeadToHead statistics={data.snapshot.statistics}/>}
       </>}
     </section>
-    {data?.snapshot.pendingCall&&<aside className="oche-precall" aria-label="Vooroproep"><b>{data.snapshot.pendingCall.label}</b><span>{data.snapshot.pendingCall.players.join(' · ')}</span></aside>}<footer className="oche-foot"><span>Powered by DartFlow</span><div className="oche-foot-actions"><a className="oche-back-link" href="/speler">Terug</a>{controls}<OcheFullscreen/></div></footer>
+    {data?.snapshot.pendingCall&&<aside className="oche-precall" aria-label="Vooroproep"><b>{data.snapshot.pendingCall.label}</b><span>{data.snapshot.pendingCall.players.join(' · ')}</span></aside>}<footer className="oche-foot"><span>Powered by DartFlow</span><div className="oche-foot-actions">{!automatic&&<a className="oche-back-link" href="/speler">Terug</a>}{controls}{!automatic&&<OcheFullscreen/>}</div></footer>
   </div>{overlay}{activityOverlay}{status==='available'&&<OcheMatchRecap statistics={data?.snapshot.statistics}/>}</div></main>;
 }

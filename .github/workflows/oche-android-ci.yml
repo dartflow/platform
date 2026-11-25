@@ -6,6 +6,10 @@ on:
         description: Bouw alleen een gesigneerde eerste AAB; upload niet naar Play
         type: boolean
         default: false
+      check_play_access:
+        description: Controleer uitsluitend bestaande Oche Play-toegang en tracks
+        type: boolean
+        default: false
   pull_request:
     branches: [main]
   push:
@@ -15,6 +19,53 @@ permissions:
   contents: read
 
 jobs:
+  play-access:
+    name: Oche Play-toegang · ${{ matrix.environment }}
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.check_play_access
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        environment: [play-internal, play-production]
+    environment: ${{ matrix.environment }}
+    env:
+      PLAY_PACKAGE: ${{ vars.PLAY_PACKAGE_NAME }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Controleer de vaste Oche-identiteit
+        env:
+          PROVIDER: ${{ vars.PLAY_WIF_PROVIDER }}
+          ACCOUNT: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+        run: |
+          test "$GITHUB_REPOSITORY" = dartflow/platform
+          test "$GITHUB_REF" = refs/heads/main
+          test "$PLAY_PACKAGE" = nl.dartflow.ochelive
+          test -n "$PROVIDER"
+          test -n "$ACCOUNT"
+      - name: Autoriseer uitsluitend de toegangscontrole
+        id: play-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ vars.PLAY_WIF_PROVIDER }}
+          service_account: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Lees bestaande Oche-tracks en openbare appcertificaten
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.play-auth.outputs.access_token }}
+        run: |
+          python3 android/oche-live/ci/play_release.py list-tracks --package "$PLAY_PACKAGE" --signing-certificates
+          printf 'Oche access checked; no bundle upload, track update or release commit requested.\n' >> "$GITHUB_STEP_SUMMARY"
+
   verify:
     name: Android lint, tests en debugbuild
     runs-on: ubuntu-24.04
@@ -36,7 +87,9 @@ jobs:
             sdkmanager "platforms;android-36"
           fi
       - name: Test veilige Play-promotie zonder credentials
-        run: python3 -B ci/test_play_release.py
+        run: |
+          python3 -B ci/test_play_release.py
+          python3 -B ci/test_verify_signed_release.py
       - name: Controleer en bouw
         run: |
           python3 -B ../ci/test_verify_native_tests.py
@@ -226,6 +279,23 @@ jobs:
           path: android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab
           retention-days: 90
           if-no-files-found: error
+      - name: Leg signing en geteste herkomst vast zonder publicatie
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+        run: |
+          python3 ci/verify_signed_release.py receipt \
+            --bundle app/build/outputs/bundle/productionRelease/app-production-release.aab \
+            --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" \
+            --run-number "$GITHUB_RUN_NUMBER" --version-code "$VERSION_CODE" \
+            --version-name "$VERSION_NAME" --output "$RUNNER_TEMP/oche-signing-receipt.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: oche-signing-receipt
+          path: ${{ runner.temp }}/oche-signing-receipt.json
+          retention-days: 90
+          if-no-files-found: error
+          overwrite: true
       - name: Autoriseer bij Google Play
         if: github.event_name == 'push' && vars.OCHE_PLAY_ENABLED == 'true'
         id: play-auth

@@ -10,6 +10,19 @@
 
 Dit draaiboek geldt voor de eerste Android-app, **DartFlow Oche Live**. Het bestaande DartFlow-account en de webversie behouden hun eigen deployment. De Android-pipeline maakt één ondertekende Android App Bundle (AAB) voor de gekozen Android-doelapparaten.
 
+## Actuele publicatieroute (25 november 2026)
+
+Een read-only Publisher-controle [45654655146](https://github.com/dartflow/platform/actions/runs/45654655146) bevestigde **1.4.0 (1063)** als `completed` op `internal` en `production`, met het bestaande Oche-appsigningcertificaat `D1:1D:97:4C:3B:F6:B0:1A:97:92:90:D9:C7:F5:D4:63:D7:DB:50:93:78:7C:F2:E6:8B:E5:1E:74:B1:6D:CB:62`. De oudere statusnotities hieronder blijven historische context.
+
+De bestaande Publisher-identiteit is beperkt tot `player-play-release.yml` op `main` in `player-play-production`. De afzonderlijke Oche-environments vallen buiten die trust. De nieuwe expliciete acties `oche-check-access`, `oche-upload-internal` en `oche-promote-production` in die vertrouwde workflow gebruiken uitsluitend `nl.dartflow.ochelive`; het bestaande Player-pad behoudt zijn eigen package, certificaat en controles. Er worden geen Cloudrechten verruimd en geen sleutels toegevoegd. `OCHE_PLAY_ENABLED=false` blijft automatische publicatie blokkeren.
+
+1. Rol eerst de database en webbackend uit. Leg de exacte gezonde productiebron vast als `web_sha`.
+2. Start **Oche Live Android CI** op de exacte `main`-bron met `signed_bundle=true`. De lint/build-, **44 JVM-tests per variant** en **24 instrumentatietests per telefoon/TV-target**, zonder skips, moeten slagen vóór signing. De code blijft `1000 + run_number`; 1.5.0 is de nieuwe featureversie. De signingjob bewaart `oche-signed-aab` en `oche-signing-receipt` zonder Play-upload.
+3. Maak vanaf die SHA een beschermde, onverplaatsbare `oche-v1.5.0`-tag en een GitHub-release met exact de twee bestanden `app-production-release.aab` en `oche-signing-receipt.json` uit die signingrun. Bescherming tegen tagupdates en verwijderen moet actief blijven. De huidige immutable-ruleset heeft volgens de beheercontrole geen bypass; GitHub redigeert bypassinformatie voor readonly workflowtokens.
+4. Start **DartFlow Speler Google Play** op `main` met `action=oche-upload-internal`, de volledige `source_sha`, expliciete `web_sha`, `release_tag`, AAB-`bundle_sha256`, `version_code` en `oche_ci_run_id`. De workflow verifieert dezelfde bron, nieuwste groene CI, alle vier Oche-jobs, de exacte artifact-ID's en ZIP-inhoud, beide releaseassets, de eigen Oche-uploadhandtekening en de beschermde tag. De gezonde web-SHA moet een ancestor van de Androidbron zijn; de productiebackend moet die exacte SHA, layouts v1, werkende database/auth en Oche App Links bevestigen.
+5. Gebruik voor productie **dezelfde inputs** met `action=oche-promote-production`. Alleen dezelfde hash en volledig bevestigde interne versie worden naar `production` gepromoveerd. Het bestaande Play-helpergedrag bewaart idempotentie en blokkeert gelijktijdige reviewconflicten. Elke geslaagde actie bewaart een afzonderlijk `oche-publication-receipt`.
+6. Controleer de teruggelezen Play-tracks en voer installatie-, pairing-, D-pad- en QR-rooktests uit. Een API-status `completed` is geen bewijs van feitelijke beschikbaarheid op ieder toestel of van fysieke 55-inch-TV-validatie.
+
 ## Releaseproces
 
 | Moment | GitHub en Google Play |

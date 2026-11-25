@@ -13,7 +13,7 @@ import {projectBoardScreenForDevice} from './board-screens';
 import {readSourceBoardActivity} from './board-activity';
 import {readBoardScoreEvents} from './score-events';
 import {authorizeOcheAccess,ocheTransaction,type OcheDeviceRow} from './oche-device-store';
-import type {OcheDisplaySnapshot,OcheEvents} from './oche-device-types';
+import type {OcheDisplayPanel,OcheDisplaySnapshot,OcheEvents} from './oche-device-types';
 import type {ClubBoardScreenView} from './platform-types';
 import type {Game,PublicSnapshot,Visit} from './types';
 import {readOcheHomeEvents} from './oche-device-events';
@@ -45,27 +45,64 @@ async function homeProjection(client:PoolClient,device:OcheDeviceRow):Promise<Cl
  const scoreEvents=boardId?await readBoardScoreEvents(client,boardId,sourceId,match?.revision):{sessionKey:opaque(sourceId),scoreEvents:match?await readOcheHomeEvents(client,sourceId,device.owner_id!,ownMatch?'match':'training',match.revision):[]};
  return {board:{id:`home-${device.id}`,name:'Thuis',clubName:title,access:'club',blocked:false,occupied:true,publicScan:false,playUrl:'/app/spelen',screenUrl:'/oche-live'},status:match?'playing':'waiting',snapshot:{board:{id:`home-${device.id}`,name:'Thuis'},event:{name:[title,await matchEventNotice(client,ownMatch?.id)].filter(Boolean).join(' · ')},match,...await readSeasonDisplay(client,ownMatch?.id),...scoreEvents,...(activity?{boardActivity:activity}:{})},screen:{rotation:0,paired:false}};
 }
-export async function getOcheDeviceSnapshot(token:string):Promise<OcheDisplaySnapshot>{
+/** Keep legacy primary projection unchanged unless the client opts in to panels. */
+export async function getOcheDeviceSnapshot(token:string,includePanels=false):Promise<OcheDisplaySnapshot>{
  return ocheTransaction(async client=>{
   const device=await authorizeOcheAccess(token,client);
   const serverNow=Number((await client.query<{now:string}>('select extract(epoch from clock_timestamp())*1000 as now')).rows[0].now);
   const location=device.location_id?(await client.query<{id:string;name:string}>('select id,name from dartflow_private.locations where id=$1',[device.location_id])).rows[0]??null:null;
-  const display=device.scope==='home'?await homeProjection(client,device):device.board_id?await projectBoardScreenForDevice(client,device.board_id):null;
-  const theme=await resolveOcheDeviceTheme(client,device);if(display)display.snapshot.theme=theme;
-  const activity=display?.snapshot.boardActivity;let state:OcheDisplaySnapshot['state']=display?display.status==='available'?'standby':display.status==='playing'?'live':display.status:'unassigned';
-  if(activity?.phase==='warning')state='warning';
-  if(display?.snapshot.match&&['result','confirmed','disputed'].includes(display.snapshot.match.status)||display?.snapshot.play?.status==='completed')state='result';
-  const revision=display?.snapshot.play?.revision??display?.snapshot.match?.revision??0;
-  // State, assignment and deadline mutations matter even when the score revision is unchanged.
-  const stableTheme=theme.id==='club'?{...theme,validUntil:0}:theme;
-  const stableDisplay=display?{...display,snapshot:{...display.snapshot,theme:stableTheme,...(display.snapshot.play?{play:{...display.snapshot.play,serverNow:0}}:{}),...(activity?{boardActivity:{...activity,serverNow:0}}:{})}}:null;
-  const group=opaque(JSON.stringify({device:device.id,grant:device.grant_version,scope:device.scope,location:device.location_id,board:device.board_id,session:display?.snapshot.sessionKey??'unassigned'}));
-  const eventId=`v1:${group}:${revision}:${opaque(JSON.stringify({name:device.name,location,display:stableDisplay,theme:stableTheme,state}))}`;
-  return {apiVersion:1,serverNow,state,scope:device.scope,device:{id:device.id,name:device.name,platform:device.platform,grantVersion:device.grant_version},location,board:device.board_id&&display?{id:device.board_id,name:display.board.name}:null,display,theme,eventId,revision,pollAfterMs:2000,permissions:{read:true,score:false,extend:false}};
+  const theme=await resolveOcheDeviceTheme(client,device);
+  const timeout=includePanels?(await client.query<{value:string;milliseconds:string}>("select current_setting('statement_timeout') as value,setting as milliseconds from pg_settings where name='statement_timeout'")).rows[0]:null;
+  const project=async(boardId:string|null,sourceClient:PoolClient=client):Promise<OcheDisplaySnapshot>=>{
+   const display=device.scope==='home'?await homeProjection(sourceClient,device):boardId?await projectBoardScreenForDevice(sourceClient,boardId):null;
+   if(display)display.snapshot.theme=theme;
+   const activity=display?.snapshot.boardActivity;let state:OcheDisplaySnapshot['state']=display?display.status==='available'?'standby':display.status==='playing'?'live':display.status:'unassigned';
+   if(activity?.phase==='warning')state='warning';
+   if(display?.snapshot.match&&['result','confirmed','disputed'].includes(display.snapshot.match.status)||display?.snapshot.play?.status==='completed')state='result';
+   const revision=display?.snapshot.play?.revision??display?.snapshot.match?.revision??0;
+   const stableTheme=theme.id==='club'?{...theme,validUntil:0}:theme;
+   const stableDisplay=display?{...display,snapshot:{...display.snapshot,theme:stableTheme,...(display.snapshot.play?{play:{...display.snapshot.play,serverNow:0}}:{}),...(activity?{boardActivity:{...activity,serverNow:0}}:{})}}:null;
+   const group=opaque(JSON.stringify({device:device.id,grant:device.grant_version,scope:device.scope,location:device.location_id,board:boardId,session:display?.snapshot.sessionKey??'unassigned'}));
+   const eventId=`v1:${group}:${revision}:${opaque(JSON.stringify({name:device.name,location,display:stableDisplay,theme:stableTheme,state}))}`;
+   return {apiVersion:1,serverNow,state,scope:device.scope,device:{id:device.id,name:device.name,platform:device.platform,grantVersion:device.grant_version},location,board:boardId&&display?{id:boardId,name:display.board.name}:null,display,theme,eventId,revision,pollAfterMs:2000,permissions:{read:true,score:false,extend:false}};
+  };
+  const pane=async(position:'left'|'right',boardId:string|null):Promise<OcheDisplayPanel>=>{
+   const sourceId=boardId??(device.scope==='home'?`home:${device.id}`:null);
+   if(device.scope==='location'&&!boardId)return {position,sourceId,status:'unassigned',snapshot:null};
+   const available=async(sourceClient:PoolClient)=>!boardId||Boolean((await sourceClient.query('select 1 from dartflow_private.location_boards where board_id=$1 and location_id=$2 and archived_at is null',[boardId,device.location_id])).rowCount);
+   if(!includePanels)return await available(client)?{position,sourceId,status:'ready',snapshot:await project(boardId)}:{position,sourceId,status:'unavailable',snapshot:null};
+   // The entire source gets one second, including all of its SQL statements.
+   // Recompute each query's remaining budget rather than restarting the timer.
+   // Two stalled sources therefore fit the existing 2500 ms client deadline.
+   const configured=Number(timeout?.milliseconds??0),deadline=performance.now()+Math.min(1000,configured>0?configured:1000);
+   const boundedClient=new Proxy(client,{get(target,key){
+    if(key==='query')return async(...args:unknown[])=>{
+     const remaining=Math.floor(deadline-performance.now());if(remaining<=0)throw new Error('Oche source deadline exceeded');
+     await target.query("select set_config('statement_timeout',$1,true)",[`${remaining}ms`]);
+     const result=await Reflect.apply(target.query,target,args);if(performance.now()>deadline)throw new Error('Oche source deadline exceeded');return result;
+    };
+    const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;
+   }});
+   await client.query('savepoint oche_panel');
+   try{
+    const result:OcheDisplayPanel=await available(boundedClient)?{position,sourceId,status:'ready',snapshot:await project(boardId,boundedClient)}:{position,sourceId,status:'unavailable',snapshot:null};
+    await client.query("select set_config('statement_timeout',$1,true)",[timeout!.value]);await client.query('release savepoint oche_panel');return result;
+   }catch{
+    // Rollback also restores the previous SET LOCAL statement_timeout value.
+    await client.query('rollback to savepoint oche_panel');await client.query('release savepoint oche_panel');
+    return {position,sourceId,status:'error',snapshot:null};
+   }
+  };
+  const left=await pane('left',device.board_id);
+  const primary=left.snapshot??{apiVersion:1 as const,serverNow,state:'unassigned' as const,scope:device.scope,device:{id:device.id,name:device.name,platform:device.platform,grantVersion:device.grant_version},location,board:null,display:null,theme,eventId:`v1:${opaque(`${device.id}:${device.grant_version}:${device.board_id}:${left.status}`)}:0:${opaque(left.status)}`,revision:0,pollAfterMs:2000,permissions:{read:true as const,score:false as const,extend:false as const}};
+  if(!includePanels)return primary;
+  const panels=[left];if(device.layout?.scoreboards===2)panels.push(await pane('right',device.secondary_board_id));
+  const eventId=`${primary.eventId.slice(0,primary.eventId.lastIndexOf(':'))}:${opaque(JSON.stringify({configuration:device.configuration_revision,layout:device.layout,panels:panels.map(panel=>({position:panel.position,source:panel.sourceId,status:panel.status,event:panel.snapshot?.eventId}))}))}`;
+  return {...primary,eventId,layout:device.layout??null,configurationRevision:device.configuration_revision??0,panels};
  });
 }
-export async function pollOcheDeviceEvents(token:string,after?:string):Promise<OcheEvents>{
- const snapshot=await getOcheDeviceSnapshot(token);
+export async function pollOcheDeviceEvents(token:string,after?:string,includePanels=false):Promise<OcheEvents>{
+ const snapshot=await getOcheDeviceSnapshot(token,includePanels);
  const cursor=/^v1:([a-f0-9]{32}):(\d+):[a-f0-9]{32}$/;
  const previous=after?cursor.exec(after):null,current=cursor.exec(snapshot.eventId)!;
  const events=snapshot.display?.snapshot.scoreEvents??[];

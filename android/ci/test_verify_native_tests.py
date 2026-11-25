@@ -22,9 +22,9 @@ class NativeTestReports(unittest.TestCase):
         ET.ElementTree(root).write(path)
         return path
 
-    def test_current_player_counts_remain_exact_and_oche_baseline_is_unchanged(self):
+    def test_player_counts_remain_exact_and_oche_layout_cases_are_required(self):
         self.assertEqual((check.APPS["player"]["unit"], check.APPS["player"]["ui"]), (163, 97))
-        self.assertEqual((check.APPS["oche"]["unit"], check.APPS["oche"]["ui"]), (34, 16))
+        self.assertEqual((check.APPS["oche"]["unit"], check.APPS["oche"]["ui"]), (44, 24))
 
     def test_actual_unique_cases_pass(self):
         self.assertEqual(check.summarize([self.report()], 3), {"tests": 3, "failures": 0, "errors": 0, "skipped": 0})

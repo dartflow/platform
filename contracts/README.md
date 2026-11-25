@@ -37,7 +37,7 @@ rotates again. If only its two-minute access credential expired, recovery mints
 current access without another rotation or slot. A repeated old refresh
 operation cannot resurrect an older credential.
 Access credentials expire after two minutes and are also checked against the
-current device, grant version, location role and board on every request.
+current device, grant version and location role on every request. Each lane's current availability is checked independently before projection.
 
 Codes contain eight Crockford Base32 characters, displayed as `XXXX–XXXX`, and
 expire after ten minutes. QR prefill is only `/koppel-scherm#code=<code>`; the
@@ -113,3 +113,62 @@ only stable `code`, user-facing `message` and optional capacity metadata.
 `cleanupOcheDevices` runs in the existing worker; claims synchronously expire
 their scope's old reservations as well, so capacity recovery does not depend
 on a display being open.
+
+## Opt-in screen layout extension (layout version 1)
+
+Deploy `20261125154720_oche_screen_layout.sql` before the web backend and then
+Android. The default v1 snapshot remains the primary lane and keeps its original
+schema. New clients request `snapshot?panels=1` or
+`events?panels=1&after=<eventId>`; the cookie path stays `/api/oche/v1`.
+`capabilities.layouts.version === 1` and `context.layoutSupport === true` advertise
+support. Without that capability clients use the valid single primary view.
+The extension schema and synthetic single-source renderer inputs are in
+`oche-display-v1-panels.schema.json` and `fixtures/oche-display-v1-panels/`.
+
+A layout is `{orientation:'portrait'|'landscape',scoreboards:1|2}`; portrait
+requires one board and two boards require a physical location. `layout:null`
+means an existing device still uses its adaptive legacy layout. The primary
+`board_id` remains intact for older clients. Explicit layout and both lane IDs
+are stored atomically; physical screen and reservation counts are unchanged.
+
+`start` accepts `layoutProposal`. Save that confirmed local choice before calling
+start. Account `GET proposal?code=<shortCode>` returns
+`{layoutProposal,targetDeviceId,device?}`. For a new installation the account
+must explicitly supply `layout` in `claim`, plus optional `secondaryBoardId`.
+For home the account must explicitly confirm one board. Both non-null lane IDs
+must be distinct active lanes of the same location; missing lanes are allowed.
+
+Account `POST devices/<id>` with
+`{action:'configure',layout,boardId,secondaryBoardId,expectedRevision,requestId}`
+updates composition and assignments in one transaction. `configurationRevision`
+starts at zero. A stale revision returns HTTP 409 `configuration_conflict` and
+retains the prior configuration. Retrying the same UUID and payload returns its
+original receipt. Transitioning to one board clears the active secondary lane;
+transitioning back to two does not restore it. Legacy `assign` preserves layout
+and the secondary lane and rejects a duplicate primary assignment.
+
+A linked display can `POST layout-proposal` with device authentication and
+`{layout,requestId}`. This only creates an expiring short review code and pairing
+QR; it grants no configuration authority and consumes no screen/reservation slot.
+Keep polling the existing display session. Account proposal lookup verifies the
+current owner/location manager. Account `claim` supplies the existing scope,
+layout, assignments and `expectedRevision`, then atomically applies the reviewed
+configuration to the same device. Both the displayed proposal revision and the
+account revision must still be current. No re-pairing or redeem is needed.
+The changed grant returns HTTP 401 `device_assignment_changed`; erase the old
+projection, refresh the existing session, and load the effective server layout.
+An expired access token instead returns `device_unauthorized`.
+
+Extended snapshots include `layout`, `configurationRevision`, and ordered
+`panels` with stable `position:'left'|'right'`, `sourceId`, `status` and an
+individual v1 `snapshot` (with its own cursor/revision, session key, activity
+deadlines and events). A missing assignment is `unassigned`; a lane removed from
+the location is `unavailable`; a projection error/timeout is `error`. These states
+carry no projection or QR. Individual projection SQL is isolated with savepoints
+and a total 1000 ms source budget (each SQL receives only the remaining time) so
+one source failure does not abort the other and two stalled sources fit the
+existing 2500 ms client request deadline. Legacy v1 retains its original timeout
+behavior.
+The device is authorized once per poll; revocation removes access to both lanes.
+Clients baseline events separately per position and source/session on initial
+load, reconnect or reassignment, and suppress playable QR codes while offline.

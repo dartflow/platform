@@ -6,7 +6,7 @@ on:
         description: Eerste publicatie en juridische bevestigingen gebeuren eenmalig in Play Console
         required: true
         type: choice
-        options: [check-access, check-oche-access, check-firebase-config, upload-internal, promote-production]
+        options: [check-access, check-oche-access, check-firebase-config, upload-internal, promote-production, oche-check-access, oche-upload-internal, oche-promote-production]
       source_sha:
         description: Volledige main-SHA met geslaagde web- en spelersapp-CI
         required: true
@@ -24,6 +24,14 @@ on:
         required: true
         type: string
         default: '2'
+      oche_ci_run_id:
+        description: Alleen Oche; geslaagde signing-only Oche CI-run op de exacte source_sha
+        type: string
+        required: false
+      web_sha:
+        description: Alleen Oche; exacte gezonde productieweb-SHA, ancestor van source_sha
+        type: string
+        required: false
 permissions:
   contents: read
   actions: read
@@ -32,6 +40,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
+    if: ${{ !startsWith(inputs.action, 'oche-') }}
     name: Verifieer en verwerk spelersrelease
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -141,3 +150,152 @@ jobs:
           else
             printf 'Package: nl.dartflow.app\nAction: %s\nSource: %s\nBundle SHA-256: %s\nVersionCode: %s\n' "$RELEASE_ACTION" "$SOURCE_SHA" "$BUNDLE_SHA256" "$VERSION_CODE" >> "$GITHUB_STEP_SUMMARY"
           fi
+  oche-release:
+    if: startsWith(inputs.action, 'oche-')
+    name: Verifieer en verwerk uitsluitend Oche-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: player-play-production
+    concurrency:
+      group: oche-play-release
+      queue: max
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      WEB_SHA: ${{ inputs.web_sha }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      BUNDLE_SHA256: ${{ inputs.bundle_sha256 }}
+      VERSION_CODE: ${{ inputs.version_code }}
+      OCHE_CI_RUN_ID: ${{ inputs.oche_ci_run_id }}
+      RELEASE_ACTION: ${{ inputs.action }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .nvmrc
+      - name: Verifieer vaste Oche-bron, webrelease en alle exacte CI-gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = dartflow/platform
+          test "$GITHUB_REF" = refs/heads/main
+          [[ "$SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$WEB_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$BUNDLE_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          [[ "$RELEASE_TAG" =~ ^oche-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$VERSION_CODE" =~ ^[1-9][0-9]{0,9}$ ]]
+          [[ "$OCHE_CI_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
+          [[ "$RELEASE_ACTION" == oche-check-access || "$RELEASE_ACTION" == oche-upload-internal || "$RELEASE_ACTION" == oche-promote-production ]]
+          git merge-base --is-ancestor "$WEB_SHA" "$SOURCE_SHA"
+          test "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$SOURCE_SHA"
+          node --input-type=module <<'JS'
+          import {verifyRelease} from './ops/release-gate.mjs';
+          const policy={repository:'dartflow/platform',integrationBranch:'main',githubToken:process.env.GH_TOKEN};
+          await verifyRelease({...policy,sha:process.env.SOURCE_SHA,requiredChecks:[{workflow:'ci.yml',jobs:['Verify'],events:['push']},{workflow:'oche-android-ci.yml',jobs:['Android lint, tests en debugbuild','Android UI · google_apis','Android UI · android-tv','AAB signeren en intern publiceren'],events:['workflow_dispatch']}]});
+          await verifyRelease({...policy,sha:process.env.WEB_SHA,requiredChecks:[{workflow:'ci.yml',jobs:['Verify'],events:['push']}]});
+          JS
+          mkdir -m 700 oche-release
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$OCHE_CI_RUN_ID" > oche-release/run.json
+          attempt="$(jq -er '.run_attempt | select(type == "number" and floor == . and . > 0)' oche-release/run.json)"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$OCHE_CI_RUN_ID/attempts/$attempt/jobs?per_page=100" > oche-release/jobs.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$OCHE_CI_RUN_ID/artifacts?per_page=100" > oche-release/artifacts.json
+          gh release view "$RELEASE_TAG" --repo dartflow/platform --json tagName,targetCommitish,isDraft > oche-release/release.json
+          gh api "repos/$GITHUB_REPOSITORY/rulesets?per_page=100" --jq '.[] | select(.target == "tag") | .id' > "$RUNNER_TEMP/oche-tag-rules"
+          while IFS= read -r rule_id; do
+            [[ "$rule_id" =~ ^[1-9][0-9]*$ ]]
+            gh api "repos/$GITHUB_REPOSITORY/rulesets/$rule_id"
+          done < "$RUNNER_TEMP/oche-tag-rules" | jq -s . > oche-release/rulesets.json
+          for artifact_name in oche-signed-aab oche-signing-receipt; do
+            artifact_id="$(jq -er --arg name "$artifact_name" --arg sha "$SOURCE_SHA" --argjson run "$OCHE_CI_RUN_ID" '[.artifacts[] | select(.name == $name and .expired == false and .workflow_run.id == $run and .workflow_run.head_sha == $sha and .workflow_run.head_branch == "main")] | if length == 1 then .[0].id else error("Exact signing artifact required") end' oche-release/artifacts.json)"
+            [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]
+            file=app-production-release.aab
+            if [[ "$artifact_name" == oche-signing-receipt ]]; then file=oche-signing-receipt.json; fi
+            archive="$RUNNER_TEMP/$artifact_name.zip"
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$archive"
+            test "$(unzip -Z1 "$archive")" = "$file"
+            unzip -p "$archive" "$file" > "oche-release/$file"
+          done
+          mkdir -m 700 "$RUNNER_TEMP/oche-published-release"
+          gh release download "$RELEASE_TAG" --repo dartflow/platform --dir "$RUNNER_TEMP/oche-published-release" \
+            --pattern app-production-release.aab --pattern oche-signing-receipt.json
+          cmp oche-release/app-production-release.aab "$RUNNER_TEMP/oche-published-release/app-production-release.aab"
+          cmp oche-release/oche-signing-receipt.json "$RUNNER_TEMP/oche-published-release/oche-signing-receipt.json"
+          version_name="$(git show "$SOURCE_SHA:android/oche-live/version.properties" | sed -n 's/^versionName=//p')"
+          python3 android/oche-live/ci/verify_signed_release.py verify \
+            --bundle oche-release/app-production-release.aab --directory oche-release \
+            --source-sha "$SOURCE_SHA" --run-id "$OCHE_CI_RUN_ID" --sha256 "$BUNDLE_SHA256" \
+            --version-code "$VERSION_CODE" --version-name "$version_name" --tag "$RELEASE_TAG"
+          # Re-read after artifact download so a rerun cannot change the accepted CI attempt.
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$OCHE_CI_RUN_ID" > "$RUNNER_TEMP/oche-latest-run.json"
+          jq -e --slurpfile original oche-release/run.json 'select(.run_attempt == $original[0].run_attempt and .head_sha == $original[0].head_sha and .status == "completed" and .conclusion == "success")' "$RUNNER_TEMP/oche-latest-run.json" > /dev/null
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verifieer de bestaande eigen Oche-uploadhandtekening
+        shell: bash
+        run: |
+          set -euo pipefail
+          LC_ALL=C jarsigner -verify oche-release/app-production-release.aab > "$RUNNER_TEMP/oche-signature.log"
+          grep -Fxq 'jar verified.' "$RUNNER_TEMP/oche-signature.log"
+          fingerprint="$(keytool -printcert -jarfile oche-release/app-production-release.aab -rfc | openssl x509 -noout -fingerprint -sha256)"
+          test "${fingerprint#*=}" = '91:55:1C:31:71:01:D4:D2:57:56:41:8C:FA:AC:93:50:0D:29:9F:66:61:D2:93:B3:6E:B4:A8:7F:67:0F:ED:9B'
+      - name: Verifieer expliciete gezonde webrelease, layouts en Oche App Links
+        run: |
+          python3 android/oche-live/ci/check_release_readiness.py --package nl.dartflow.ochelive \
+            --fingerprint 'D1:1D:97:4C:3B:F6:B0:1A:97:92:90:D9:C7:F5:D4:63:D7:DB:50:93:78:7C:F2:E6:8B:E5:1E:74:B1:6D:CB:62' --sha "$WEB_SHA"
+      - name: Controleer bestaande vertrouwde Publisher-identiteit
+        env:
+          ENABLED: ${{ vars.PLAYER_PLAY_ENABLED }}
+          PROVIDER: ${{ vars.PLAY_WIF_PROVIDER }}
+          ACCOUNT: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+        run: |
+          test "$ENABLED" = true
+          test -n "$PROVIDER"
+          test -n "$ACCOUNT"
+      - name: Autoriseer Oche via bestaande vertrouwde Publisher-workflow
+        id: oche-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ vars.PLAY_WIF_PROVIDER }}
+          service_account: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Verwerk uitsluitend de vaste Oche-track en geteste AAB
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.oche-auth.outputs.access_token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          helper=android/oche-live/ci/play_release.py
+          if [[ "$RELEASE_ACTION" == oche-check-access ]]; then
+            python3 "$helper" list-tracks --package nl.dartflow.ochelive --signing-certificates
+          elif [[ "$RELEASE_ACTION" == oche-upload-internal ]]; then
+            python3 "$helper" upload-internal --package nl.dartflow.ochelive \
+              --bundle oche-release/app-production-release.aab --version-code "$VERSION_CODE" \
+              --tracks internal --release-name "Oche Live ${RELEASE_TAG#oche-v} ($VERSION_CODE)"
+          else
+            python3 "$helper" promote --package nl.dartflow.ochelive --version-code "$VERSION_CODE" \
+              --tracks production --source-tracks internal --action start --fraction 1 --sha256 "$BUNDLE_SHA256"
+          fi
+          python3 "$helper" list-tracks --package nl.dartflow.ochelive --signing-certificates
+      - name: Bewaar afzonderlijk Oche-publicatiebewijs
+        run: |
+          jq --arg action "$RELEASE_ACTION" --arg webSha "$WEB_SHA" --arg publicationRun "$GITHUB_RUN_ID" \
+            '. + {action:$action,webSha:$webSha,publicationRun:$publicationRun}' oche-release/oche-signing-receipt.json > "$RUNNER_TEMP/oche-publication-receipt.json"
+          printf 'Package: nl.dartflow.ochelive\nAction: %s\nSource: %s\nWeb source: %s\nVersionCode: %s\nBundle SHA-256: %s\n' "$RELEASE_ACTION" "$SOURCE_SHA" "$WEB_SHA" "$VERSION_CODE" "$BUNDLE_SHA256" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: oche-publication-receipt
+          path: ${{ runner.temp }}/oche-publication-receipt.json
+          if-no-files-found: error
+          retention-days: 90

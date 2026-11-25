@@ -44,8 +44,29 @@ data class PendingCall(val label: String, val players: List<String>, val writerN
 data class CompetitionLobby(val competitionName: String, val round: Int, val players: List<Pair<String, Boolean>>, val writerName: String, val expiresAt: Long)
 data class Encounter(val name: String, val homeName: String, val awayName: String, val score: List<Int>, val legs: List<Int>, val componentIndex: Int, val componentLabel: String)
 data class Activity(val warningAt: Long, val deadlineAt: Long, val extensionsUsed: Int)
-data class DisplaySnapshot(val state: String, val serverNow: Long, val eventId: String, val revision: Long, val boardName: String, val displayName: String, val scope: String, val playUrl: String?, val reservation: String?, val match: Match?, val activity: Activity?, val theme: String = "dartflow", val encounter: Encounter? = null, val pendingCall: PendingCall? = null, val competitionLobby: CompetitionLobby? = null, val play: PlayDisplay? = null, val clubTheme: ClubDisplayTheme? = null) {
+/** Composition is independent of physical device rotation. Null retains legacy adaptive rendering. */
+data class DisplayLayout(val orientation: String, val scoreboards: Int) {
+    init { require(orientation in listOf("portrait", "landscape") && scoreboards in 1..2 && (orientation != "portrait" || scoreboards == 1)) }
+    fun json(): JSONObject = JSONObject().put("orientation", orientation).put("scoreboards", scoreboards)
+    companion object {
+        fun parse(value: JSONObject?): DisplayLayout? = value?.let { runCatching { DisplayLayout(it.getString("orientation"), it.getInt("scoreboards")) }.getOrNull() }
+        fun detected(landscape: Boolean) = DisplayLayout(if (landscape) "landscape" else "portrait", 1)
+    }
+}
+data class DisplayPanel(val position: String, val sourceId: String?, val status: String, val snapshot: DisplaySnapshot?)
+data class SplitScreenGeometry(val cardWidth: Float, val cardHeight: Float, val railWidth: Float)
+/** Two outward-facing 9:16 cards leave a shared rail with one direction per logical half. */
+fun splitScreenGeometry(width: Float, height: Float, gap: Float = 12f): SplitScreenGeometry {
+    val railMinimum = minOf(260f, width * .28f)
+    val cardWidth = minOf(height * 9f / 16f, ((width - gap * 2f - railMinimum) / 2f).coerceAtLeast(0f))
+    return SplitScreenGeometry(cardWidth, cardWidth * 16f / 9f, (width - cardWidth * 2f - gap * 2f).coerceAtLeast(0f))
+}
+data class DisplaySnapshot(val state: String, val serverNow: Long, val eventId: String, val revision: Long, val boardName: String, val displayName: String, val scope: String, val playUrl: String?, val reservation: String?, val match: Match?, val activity: Activity?, val theme: String = "dartflow", val encounter: Encounter? = null, val pendingCall: PendingCall? = null, val competitionLobby: CompetitionLobby? = null, val play: PlayDisplay? = null, val clubTheme: ClubDisplayTheme? = null, val layout: DisplayLayout? = null, val configurationRevision: Long? = null, val panels: List<DisplayPanel>? = null) {
     val publicStandby get() = state == "standby" && playUrl != null
+    /** Lobby joining uses the same confirmed public board link without a standby carousel. */
+    val canScan get() = playUrl != null && state in listOf("standby", "waiting")
+    val playing get() = (panels?.mapNotNull { it.snapshot } ?: listOf(this)).any { projection -> projection.play?.status == "active" || (projection.match ?: projection.play?.x01Match)?.let { !it.finished && it.status in listOf("live", "ready", "interrupted") } == true }
+    val safeForLayoutSetup get() = !playing && state !in listOf("live", "warning") && panels.orEmpty().none { it.status == "error" || it.snapshot?.state in listOf("live", "warning") }
     companion object {
         fun parse(json: JSONObject): DisplaySnapshot {
             require(json.getInt("apiVersion") == 1) { "Deze app moet worden bijgewerkt." }
@@ -88,11 +109,21 @@ data class DisplaySnapshot(val state: String, val serverNow: Long, val eventId: 
             val activity = (snapshot?.optJSONObject("boardActivity") ?: snapshot?.optJSONObject("match")?.optJSONObject("boardActivity"))?.let { Activity(it.optLong("warningAt"), it.optLong("deadlineAt"), it.optInt("extensionsUsed")) }
             val pendingCall = snapshot?.optJSONObject("pendingCall")?.let { c -> PendingCall(c.optString("label"), c.optJSONArray("players")?.let { a -> (0 until a.length()).map { a.optString(it) } }.orEmpty(), c.optString("writerName").takeIf { it.isNotBlank() && it != "null" }) }
             val encounter = snapshot?.optJSONObject("encounter")?.let { e -> val component = e.optJSONObject("component"); Encounter(e.optString("name"), e.optString("homeName"), e.optString("awayName"), e.optJSONArray("score")?.ints().orEmpty(), e.optJSONArray("legs")?.ints().orEmpty(), component?.optInt("index") ?: 0, component?.optString("label").orEmpty()) }
+            // A failed panel cannot prevent the other panel's valid projection from rendering.
+            val panels = json.optJSONArray("panels")?.let { values ->
+                listOf("left", "right").map { position ->
+                    val panel = values.objects().firstOrNull { it.optString("position") == position }
+                    val sourceId = panel?.optString("sourceId")?.takeIf { it.isNotBlank() && it != "null" }
+                    val projection = panel?.optJSONObject("snapshot")?.let { runCatching { parse(it) }.getOrNull() }
+                    val status = panel?.optString("status")?.takeIf { it in listOf("ready", "unassigned", "unavailable", "error") } ?: "unassigned"
+                    DisplayPanel(position, sourceId, if (status == "ready" && projection == null) "error" else status, projection.takeIf { status == "ready" })
+                }
+            }
             val competitionLobby = snapshot?.optJSONObject("competitionLobby")?.let { c -> runCatching { val players = c.optJSONArray("players").objects(); require(players.size == 2); CompetitionLobby(c.getString("competitionName"), c.getInt("round"), players.map { it.getString("name") to it.optBoolean("confirmed") }, c.getString("writerName"), java.time.Instant.parse(c.getString("expiresAt")).toEpochMilli()) }.getOrNull() }
             val theme = json.optJSONObject("theme") ?: snapshot?.optJSONObject("theme")
             val clubTheme = ClubDisplayTheme.parse(theme, json.getLong("serverNow"))
             val themeId = theme?.takeIf { it.optInt("version") == 1 }?.optString("id")?.takeIf { it in listOf("dartflow", "onzetrots") || it == "club" && clubTheme != null } ?: "dartflow"
-            return DisplaySnapshot(json.getString("state"), json.getLong("serverNow"), json.optString("eventId"), json.optLong("revision"), board?.optString("name") ?: "Mijn scherm", json.optJSONObject("device")?.optString("name") ?: "Oche Live", json.optString("scope"), display?.optJSONObject("board")?.takeIf { it.optBoolean("publicScan", false) }?.optString("playUrl")?.let { if (it.startsWith("/baan/")) BuildConfig.API_ORIGIN + it else it }?.takeIf { it.startsWith("${BuildConfig.API_ORIGIN}/baan/") }, display?.optJSONObject("reservation")?.optString("label"), match, activity, themeId, encounter, pendingCall, competitionLobby, snapshot?.optJSONObject("play")?.let(PlayDisplay::parse), clubTheme)
+            return DisplaySnapshot(json.getString("state"), json.getLong("serverNow"), json.optString("eventId"), json.optLong("revision"), board?.optString("name") ?: "Mijn scherm", json.optJSONObject("device")?.optString("name") ?: "Oche Live", json.optString("scope"), display?.optJSONObject("board")?.takeIf { it.optBoolean("publicScan", false) }?.optString("playUrl")?.let { if (it.startsWith("/baan/")) BuildConfig.API_ORIGIN + it else it }?.takeIf { it.startsWith("${BuildConfig.API_ORIGIN}/baan/") }, display?.optJSONObject("reservation")?.optString("label"), match, activity, themeId, encounter, pendingCall, competitionLobby, snapshot?.optJSONObject("play")?.let(PlayDisplay::parse), clubTheme, DisplayLayout.parse(json.optJSONObject("layout")), json.optLong("configurationRevision").takeIf { json.has("configurationRevision") && !json.isNull("configurationRevision") }, panels)
         }
     }
 }
@@ -112,13 +143,39 @@ class EventCursor {
     fun disconnect() { connected = false }
     fun observe(match: Match?, reset: Boolean = false): ScoreEvent? {
         if (match == null) { session = null; revision = -1; connected = false; seen.clear(); return null }
-        if (!connected || reset || session == match.sessionKey && match.revision < revision) {
-            connected = true; session = match.sessionKey; revision = match.revision; seen.clear(); seen.addAll(match.events.map { it.id }); return null
+        val identity = "${match.sessionKey}:${match.id}"
+        val retainedGap = match.events.size >= 64 && revision < (match.events.minOfOrNull { it.revision } ?: 0) - 1
+        if (!connected || reset || session != identity || match.revision < revision || retainedGap) {
+            connected = true; session = identity; revision = match.revision; seen.clear(); seen.addAll(match.events.map { it.id }); return null
         }
-        if (session != match.sessionKey) { session = match.sessionKey; revision = -1; seen.clear() }
         val fresh = match.events.filter { it.revision > revision && it.id !in seen }.sortedBy { it.revision }
         revision = maxOf(revision, match.revision)
         seen.addAll(fresh.map { it.id }); if (seen.size > 1024) { seen.clear(); seen.addAll(match.events.map { it.id }) }
         return if (match.cricket != null || fresh.any { it.kind == "undo" }) null else fresh.lastOrNull { it.kind == "score" && !it.bust && (it.score == 180 || it.checkout && it.score >= 100) }
     }
+}
+
+/** Each stable TV position owns a baseline; changing its source invalidates only that baseline. */
+class PanelEventCursors {
+    private val cursors = mutableMapOf<String, EventCursor>()
+    private val sources = mutableMapOf<String, String?>()
+    fun disconnect() { cursors.values.forEach { it.disconnect() } }
+    fun observe(panels: List<DisplayPanel>?, reset: Boolean = false): Map<String, ScoreEvent> {
+        val result = mutableMapOf<String, ScoreEvent>()
+        for (panel in panels.orEmpty()) {
+            val cursor = cursors.getOrPut(panel.position) { EventCursor() }
+            val changed = !sources.containsKey(panel.position) || sources[panel.position] != panel.sourceId
+            sources[panel.position] = panel.sourceId
+            cursor.observe(panel.snapshot?.let { it.match ?: it.play?.x01Match }, reset || changed)?.let { result[panel.position] = it }
+        }
+        val active = panels.orEmpty().map { it.position }.toSet()
+        cursors.keys.retainAll(active); sources.keys.retainAll(active)
+        return result
+    }
+}
+
+/** Clear grants and cached public projections while retaining the installation's confirmed choice. */
+fun revokedInstallation(saved: JSONObject): JSONObject = JSONObject().apply {
+    DisplayLayout.parse(saved.optJSONObject("layoutChoice"))?.let { put("layoutChoice", it.json()) }
+    if (saved.optBoolean("layoutPromptShown")) put("layoutPromptShown", true)
 }

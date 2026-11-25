@@ -1,0 +1,105 @@
+{
+  "status": "local-verified-databases-migrated",
+  "checkedAt": "2026-11-25T16:42:50.195072+00:00",
+  "referenceCommit": "07e2d64d97d9ffa2c85d10b074a0747fa3ab789f",
+  "workBranch": "codex/full-release-20261119",
+  "headCommit": "52a105c66cbc3a7cc75f04a557dac60c931158da",
+  "web": {
+    "build": "passed",
+    "typecheck": "passed",
+    "lint": "passed",
+    "unitDatabaseContract": {
+      "command": "npm test",
+      "passed": 918,
+      "failed": 0,
+      "skipped": 0,
+      "environment": "fresh seeded isolated local PostgreSQL audit database",
+      "note": "Full merged-source regression on a fresh migrated and seeded local audit database. Exact release-SHA CI remains required before web rollout."
+    },
+    "browser": {
+      "passed": 35,
+      "failed": 0,
+      "environment": "local production build in Chromium",
+      "viewports": [
+        [
+          1920,
+          1080
+        ],
+        [
+          1280,
+          720
+        ],
+        [
+          1080,
+          1920
+        ]
+      ],
+      "coverage": [
+        "first-start persistence and back navigation",
+        "account pairing and home reduction",
+        "atomic assignments and revision conflicts",
+        "independent scores, events and event baselines",
+        "fixed canonical play QR per lane, hidden while offline",
+        "revocation clears both views",
+        "portrait geometry and central direction strip",
+        "legacy cast rotation, scorecards and club themes"
+      ],
+      "note": "31 display/management browser tests passed; the four real API pairing/branding tests passed across final runs. Capacity UI retries preserve the same claim and requestId while honoring the existing server Retry-After.",
+      "commands": [
+        "npx playwright test tests/e2e/oche-split.spec.ts tests/e2e/oche-device-management.spec.ts tests/e2e/oche-display-v18.spec.ts tests/e2e/oche-statistics.spec.ts tests/e2e/oche-live.spec.ts tests/e2e/oche-cast.spec.ts tests/e2e/release-oche-theme.spec.ts",
+        "node --env-file=.local/oche-layout-merged-scratch.env node_modules/@playwright/test/cli.js test tests/e2e/oche-device.spec.ts tests/e2e/oche-club-branding.spec.ts",
+        "node --env-file=.local/oche-layout-merged-scratch.env node_modules/@playwright/test/cli.js test tests/e2e/oche-device.spec.ts"
+      ],
+      "initialMergeFailuresResolved": [
+        "Restored the current-main shared profile redemption lock.",
+        "Updated the club-style acceptance flow to confirm the first-start layout.",
+        "The capacity test now honors real rate limiting and retries the identical operation instead of assuming an unlimited request budget."
+      ]
+    }
+  },
+  "android": {
+    "status": "passed",
+    "instrumentationApkCompiled": true,
+    "instrumentationExecuted": false,
+    "physicalTvTested": false,
+    "physicalQrScansTested": false,
+    "unitTestsPerVariant": 44,
+    "unitTestVariants": [
+      "stagingDebug",
+      "productionDebug",
+      "productionRelease"
+    ],
+    "unitTestFailures": 0,
+    "playWorkflowTestsPassed": 19,
+    "build": "passed",
+    "lint": "passed",
+    "releaseBundle": "unsigned local AAB built",
+    "publicLobbyQrParity": "verified by unit regression; Compose regression compiled",
+    "instrumentationSourceMethods": 24,
+    "nativeTestInventoryVerification": "passed exact JVM count and no skips"
+  },
+  "visuals": [
+    "left-live-right-free-1920x1080.png",
+    "left-live-right-free-1280x720.png",
+    "both-live-1920x1080.png",
+    "both-live-1280x720.png"
+  ],
+  "hardware": {
+    "horizontal55InchTv": "not tested",
+    "simultaneousQrScansFromThrowPosition": "not tested",
+    "multiplePhonesIndividually": "not tested",
+    "physicalAndroidTvDpad": "not tested",
+    "emulator": "not run: no attached adb device and no /dev/kvm"
+  },
+  "rollout": {
+    "migration": "20261125154720_oche_screen_layout.sql",
+    "migrationAppliedLocally": true,
+    "published": false,
+    "order": [
+      "database migration",
+      "web/backend",
+      "Android update"
+    ],
+    "hostedDatabaseEvidence": "database-rollout-2026-11-25.json"
+  }
+}

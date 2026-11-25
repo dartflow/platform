@@ -59,14 +59,14 @@ private val PlayInk:Color @Composable get()=MaterialTheme.colorScheme.background
 private val PlayGreen:Color @Composable get()=MaterialTheme.colorScheme.primary
 private val PlayMuted: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 
-@Composable internal fun PlayDisplayView(play: PlayDisplay, landscape: Boolean, serverTime: Long, cached: Boolean) {
+@Composable internal fun PlayDisplayView(play: PlayDisplay, landscape: Boolean, serverTime: Long, cached: Boolean, compactLayout: Boolean = false) {
     if (!play.supported) {
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Text("WERK OCHE LIVE BIJ", color = PlayGreen, fontSize = 32.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Text("Deze spelvorm of regelversie wordt nog niet ondersteund. Gebruik de telefoon voor de actuele stand.", color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center)
         }; return
     }
-    if(play.x01Match!=null){LiveView(play.x01Match,landscape,play.x01Match.finished);return}
+    if(play.x01Match!=null){LiveView(play.x01Match,landscape,play.x01Match.finished,compactLayout);return}
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val availableHeight = maxHeight
         val compact = maxHeight < 580.dp || maxWidth < 380.dp

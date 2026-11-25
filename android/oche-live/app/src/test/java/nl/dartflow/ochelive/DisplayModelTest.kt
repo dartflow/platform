@@ -5,6 +5,101 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DisplayModelTest {
+    @Test fun `portrait split cards fit both TV resolutions with a symmetric central rail`() {
+        for ((width,height) in listOf(1920f to 1080f,1280f to 720f,896f to 390f)) {
+            val geometry = splitScreenGeometry(width,height)
+            assertEquals(9f / 16f,geometry.cardWidth / geometry.cardHeight,.0001f)
+            assertTrue(geometry.cardHeight <= height + .01f)
+            assertTrue(geometry.railWidth >= width * .28f)
+            assertEquals(width,geometry.cardWidth * 2f + geometry.railWidth + 24f,.01f)
+            assertEquals(width / 2f,geometry.cardWidth + 12f + geometry.railWidth / 2f,.01f)
+        }
+    }
+    @Test fun `layout validation separates orientation from detected viewport`() {
+        assertEquals(DisplayLayout("portrait", 1), DisplayLayout.detected(false))
+        assertEquals(DisplayLayout("landscape", 1), DisplayLayout.detected(true))
+        val chosen = DisplayLayout("landscape", 2)
+        assertEquals(chosen, DisplayLayout.parse(JSONObject(chosen.json().toString())))
+        assertNull(DisplayLayout.parse(JSONObject("""{"orientation":"portrait","scoreboards":2}""")))
+        assertNull(DisplayLayout.parse(JSONObject("""{"orientation":"landscape","scoreboards":3}""")))
+        assertNull(DisplayLayout.parse(null))
+    }
+    @Test fun `shared dual fixtures retain independent board scores and public scan link`() {
+        val mixed = DisplaySnapshot.parse(JSONObject(javaClass.getResource("/left-live-right-free.json")!!.readText()))
+        assertEquals(DisplayLayout("landscape", 2), mixed.layout)
+        val panels = mixed.panels!!
+        assertEquals(listOf("left", "right"), panels.map { it.position })
+        assertNotEquals(panels[0].sourceId, panels[1].sourceId)
+        assertEquals(listOf(148,188), panels[0].snapshot!!.match!!.players.map { it.remaining })
+        assertTrue(panels[1].snapshot!!.publicStandby)
+        assertFalse(panels[0].snapshot!!.publicStandby)
+        val both = DisplaySnapshot.parse(JSONObject(javaClass.getResource("/both-live.json")!!.readText()))
+        assertTrue(both.panels!!.all { it.snapshot?.match != null })
+        assertNotEquals(both.panels[0].snapshot!!.match!!.id, both.panels[1].snapshot!!.match!!.id)
+    }
+    @Test fun `one invalid panel cannot remove the valid board and old servers stay adaptive`() {
+        val json = JSONObject(javaClass.getResource("/both-live.json")!!.readText())
+        json.getJSONArray("panels").getJSONObject(1).getJSONObject("snapshot").put("apiVersion", 99)
+        val parsed = DisplaySnapshot.parse(json)
+        assertNotNull(parsed.panels!![0].snapshot!!.match)
+        assertEquals("error", parsed.panels[1].status)
+        assertNull(parsed.panels[1].snapshot)
+        val legacy = DisplaySnapshot.parse(JSONObject(javaClass.getResource("/live.json")!!.readText()))
+        assertNull(legacy.layout); assertNull(legacy.panels)
+    }
+    @Test fun `panel baselines isolate simultaneous events swaps reconnect and source loss`() {
+        fun snapshot(match: Match) = DisplaySnapshot("live",0,"event",match.revision,"Baan","TV","location",null,null,match,null)
+        fun panel(position: String, source: String, match: Match) = DisplayPanel(position, source, "ready", snapshot(match))
+        val cursors = PanelEventCursors()
+        val left = match(key = "left-session")
+        val right = match(key = "right-session").copy(id = "right-match")
+        val maximum = ScoreEvent("same-event-id",2,"score",180,false,false,"Danny")
+        assertTrue(cursors.observe(listOf(panel("left","board-a",left),panel("right","board-b",right))).isEmpty())
+        val leftMaximum = left.copy(revision = 2, events = listOf(maximum))
+        val rightMaximum = right.copy(revision = 2, events = listOf(maximum))
+        assertEquals(setOf("left"), cursors.observe(listOf(panel("left","board-a",leftMaximum),panel("right","board-b",right))).keys)
+        assertEquals(setOf("right"), cursors.observe(listOf(panel("left","board-a",leftMaximum),panel("right","board-b",rightMaximum))).keys)
+        assertTrue(cursors.observe(listOf(panel("left","board-b",rightMaximum),panel("right","board-a",leftMaximum))).isEmpty())
+        cursors.disconnect()
+        assertTrue(cursors.observe(listOf(panel("left","board-b",rightMaximum.copy(revision = 3, events = listOf(maximum.copy(id = "offline",revision = 3)))),DisplayPanel("right",null,"unassigned",null))).isEmpty())
+        assertTrue(cursors.observe(listOf(panel("left","board-b",rightMaximum),panel("right","board-a",leftMaximum))).isEmpty())
+    }
+    @Test fun `revocation removes both cached boards and credentials but preserves layout`() {
+        val saved = JSONObject().put("refreshToken","private").put("installationSecret","private").put("layoutPromptShown",true).put("layoutChoice",DisplayLayout("landscape",2).json()).put("lastSnapshot",JSONObject(javaClass.getResource("/both-live.json")!!.readText()))
+        val cleared = revokedInstallation(saved)
+        assertNull(cachedDisplay(cleared)); assertFalse(cleared.has("lastSnapshot")); assertFalse(cleared.has("refreshToken")); assertFalse(cleared.has("installationSecret"))
+        assertEquals(DisplayLayout("landscape",2),DisplayLayout.parse(cleared.optJSONObject("layoutChoice")))
+        assertTrue(cleared.optBoolean("layoutPromptShown"))
+    }
+    @Test fun `left match switch keeps a newly accepted right maximum independent`() {
+        fun panel(position: String, match: Match) = DisplayPanel(position, "board-$position", "ready", DisplaySnapshot("live",0,"event",match.revision,"Baan","TV","location",null,null,match,null))
+        val cursors = PanelEventCursors()
+        val left = match(key = "left-old")
+        val right = match(key = "right")
+        cursors.observe(listOf(panel("left",left),panel("right",right)))
+        val historical = ScoreEvent("left-old-maximum",100,"score",180,false,false,"Danny")
+        val accepted = ScoreEvent("right-new-maximum",2,"score",180,false,false,"Rick")
+        val cues = cursors.observe(listOf(panel("left",left.copy(id = "new-match", sessionKey = "left-new", revision = 100, events = listOf(historical))),panel("right",right.copy(revision = 2, events = listOf(accepted)))))
+        assertEquals(setOf("right"),cues.keys)
+        assertEquals(accepted,cues["right"])
+    }
+    @Test fun `legacy setup waits for a confirmed safe state in every panel`() {
+        val live = DisplaySnapshot.parse(JSONObject(javaClass.getResource("/live.json")!!.readText()))
+        val standby = DisplaySnapshot.parse(JSONObject(javaClass.getResource("/standby.json")!!.readText()))
+        assertFalse(live.safeForLayoutSetup)
+        assertFalse(live.copy(match = live.match!!.copy(paused = true)).safeForLayoutSetup)
+        assertTrue(standby.safeForLayoutSetup)
+        assertFalse(standby.copy(panels = listOf(DisplayPanel("left","a","ready",standby),DisplayPanel("right","b","error",null))).safeForLayoutSetup)
+        assertFalse(standby.copy(panels = listOf(DisplayPanel("left","a","ready",standby),DisplayPanel("right","b","ready",live))).safeForLayoutSetup)
+    }
+    @Test fun `an individual retained event gap establishes a new baseline`() {
+        val cursor = EventCursor()
+        cursor.observe(match())
+        val retained = (937L..1000L).map { ScoreEvent("retained-$it",it,"score",180,false,false,"Danny") }
+        assertNull(cursor.observe(match(revision = 1000,events = retained)))
+        val accepted = ScoreEvent("accepted-1001",1001,"score",180,false,false,"Rick")
+        assertEquals(accepted,cursor.observe(match(revision = 1001,events = retained.drop(1) + accepted)))
+    }
     @Test fun `competition lobby is optional public state with absolute expiry`() {
         val root = JSONObject("""{"apiVersion":1,"state":"standby","serverNow":1000,"display":{"snapshot":{"competitionLobby":{"competitionName":"Clubleague","round":3,"players":[{"name":"De Pijl","confirmed":true,"pin":"never projected"},{"name":"Noor","confirmed":false}],"writerName":"De Pijl","expiresAt":"2026-11-19T12:00:00Z"}}}}""")
         val parsed = DisplaySnapshot.parse(root)
@@ -132,6 +227,21 @@ class DisplayModelTest {
         val privateBoard=DisplaySnapshot.parse(json)
         assertFalse(privateBoard.publicStandby)
         assertNull(privateBoard.playUrl)
+    }
+    @Test fun `public waiting lobbies can be scanned without a standby carousel`() {
+        val json = JSONObject(javaClass.getResource("/waiting.json")!!.readText())
+        val board = json.getJSONObject("display").getJSONObject("board")
+        board.put("publicScan",true).put("playUrl","/baan/waiting-lobby")
+        val waiting = DisplaySnapshot.parse(json)
+        assertTrue(waiting.canScan); assertFalse(waiting.publicStandby)
+        assertTrue(waiting.playUrl!!.endsWith("/baan/waiting-lobby"))
+        board.put("publicScan",false)
+        assertFalse(DisplaySnapshot.parse(json).canScan)
+        board.put("publicScan",true)
+        for (state in listOf("reserved","closed","blocked","live","result","unassigned")) {
+            json.put("state",state)
+            assertFalse("QR unavailable in $state",DisplaySnapshot.parse(json).canScan)
+        }
     }
     @Test fun `offline restart restores public snapshot only with a retained grant`() {
         val json=JSONObject(javaClass.getResource("/live-snapshot.json")!!.readText())

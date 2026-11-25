@@ -2,10 +2,10 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import pg from 'pg';
-import {closeDatabase,database} from '../lib/db';
+import {closeDatabase,database,executeMatchCommand} from '../lib/db';
 import {createBoardScreenDevice,getBoardScreen,pairBoardScreenDevice,revokeBoardScreenDevice} from '../lib/board-screens';
 import {newGame,scoreGame} from '../lib/domain';
-import {authorizeOcheAccess,claimOcheInstallation,cleanupOcheDevices,getOcheInstallationStatus,getOcheManagement,manageOcheDevice,redeemOcheInstallation,refreshOcheSession,selectOcheHomeSession,setOcheLimit,startOcheInstallation} from '../lib/oche-device-store';
+import {authorizeOcheAccess,proposeOcheLayout,getOcheLayoutProposal,claimOcheInstallation,cleanupOcheDevices,getOcheInstallationStatus,getOcheManagement,manageOcheDevice,redeemOcheInstallation,refreshOcheSession,selectOcheHomeSession,setOcheLimit,startOcheInstallation} from '../lib/oche-device-store';
 import {getOcheDeviceSnapshot,pollOcheDeviceEvents} from '../lib/oche-device-projection';
 import {createOcheAccess,decryptOcheReceipt,encryptOcheReceipt,secretHash} from '../lib/oche-device-crypto';
 import type {OchePlatform,OchePairing,OcheClaim,OcheSession} from '../lib/oche-device-types';
@@ -241,6 +241,87 @@ test('persistent Oche device grants enforce scopes, quotas, retries, rotation an
    const gap=await pollOcheDeviceEvents(session.accessToken!,replay.eventId);assert.equal(gap.reset,true);assert.equal(gap.snapshot.display?.snapshot.scoreEvents?.length,64);
    await executePlatformCommand(owner,{requestId:request(),expectedRevision:progress.entity!.revision,action:{type:'training.score',id:sourceId,score:0}});assert.equal((await pollOcheDeviceEvents(session.accessToken!,gap.eventId)).reset,false);await revoke(session.deviceId);
   });
+  await t.test('dual layouts validate account authority and both lanes, occupy one slot, and preserve legacy writes',async()=>{
+   const layout={orientation:'landscape' as const,scoreboards:2 as const},locationId=await venue(),otherLocation=await venue(),left=await board(locationId,true),right=await board(locationId,true),other=await board(otherLocation),key=request();
+   const device=await startOcheInstallation({platform:'android-tv',requestId:key,layoutProposal:layout});installations.push(device.installationId);
+   assert.deepEqual(device.layoutProposal,layout);assert.deepEqual((await getOcheLayoutProposal(owner,device.code)).layoutProposal,layout);
+   await assert.rejects(claim(device,{scope:'location',locationId,boardId:left}),{code:'layout_confirmation'});
+   await assert.rejects(claim(device,{scope:'home',layout}),{code:'invalid_layout'});
+   await assert.rejects(claim(device,{scope:'location',locationId,boardId:left,secondaryBoardId:left,layout}),{code:'duplicate_board'});
+   await assert.rejects(claim(device,{scope:'location',locationId,boardId:left,secondaryBoardId:other,layout}),{code:'invalid_board'});
+   await assert.rejects(claim(device,{scope:'location',locationId,boardId:left,secondaryBoardId:right,layout},outsider),{status:403});
+   await claim(device,{scope:'location',locationId,boardId:left,secondaryBoardId:right,layout});let session=await redeem(device);
+   await assert.rejects(admin.query('update dartflow_private.oche_devices set secondary_board_id=$2 where id=$1',[session.deviceId,left]),{code:'23514'});
+   await assert.rejects(admin.query('update dartflow_private.oche_devices set secondary_board_id=$2 where id=$1',[session.deviceId,other]),{code:'23514'});
+   await assert.rejects(admin.query("update dartflow_private.oche_devices set layout='{\"orientation\":\"portrait\",\"scoreboards\":2}' where id=$1",[session.deviceId]),{code:'23514'});
+   assert.equal((await getOcheManagement(owner)).locations.find(item=>item.locationId===locationId)?.active,1);
+   const primary=await getOcheDeviceSnapshot(session.accessToken!);assert.equal(primary.board?.id,left);assert.equal(primary.panels,undefined);assert.equal(primary.layout,undefined);
+   let snapshot=await getOcheDeviceSnapshot(session.accessToken!,true);assert.deepEqual(snapshot.panels?.map(panel=>panel.snapshot?.board?.id),[left,right]);assert.deepEqual(snapshot.layout,layout);
+   await manageOcheDevice(owner,session.deviceId,{action:'assign',boardId:null,requestId:request()});session=await refreshOcheSession(session.refreshToken!,request());
+   snapshot=await getOcheDeviceSnapshot(session.accessToken!,true);assert.equal(snapshot.panels?.[0].status,'unassigned');assert.equal(snapshot.panels?.[1].snapshot?.board?.id,right);assert.deepEqual(snapshot.layout,layout);
+   const config={action:'configure' as const,layout,boardId:right,secondaryBoardId:left,expectedRevision:snapshot.configurationRevision,requestId:request()};
+   await assert.rejects(manageOcheDevice(outsider,session.deviceId,config),{status:403});
+   await manageOcheDevice(owner,session.deviceId,config);assert.deepEqual(await manageOcheDevice(owner,session.deviceId,config),{ok:true});
+   await assert.rejects(getOcheDeviceSnapshot(session.accessToken!,true),{code:'device_assignment_changed'});
+   const raced=await Promise.allSettled([manageOcheDevice(owner,session.deviceId,{...config,requestId:request()}),manageOcheDevice(owner,session.deviceId,{...config,requestId:request()})]);assert.equal(raced.filter(item=>item.status==='rejected'&&item.reason.code==='configuration_conflict').length,2);
+   session=await refreshOcheSession(session.refreshToken!,request());snapshot=await getOcheDeviceSnapshot(session.accessToken!,true);assert.deepEqual(snapshot.panels?.map(panel=>panel.snapshot?.board?.id),[right,left]);
+   const concurrent=await Promise.allSettled([manageOcheDevice(owner,session.deviceId,{action:'configure',layout,boardId:right,secondaryBoardId:left,expectedRevision:snapshot.configurationRevision,requestId:request()}),manageOcheDevice(owner,session.deviceId,{action:'configure',layout,boardId:right,secondaryBoardId:left,expectedRevision:snapshot.configurationRevision,requestId:request()})]);assert.equal(concurrent.filter(item=>item.status==='fulfilled').length,1);assert.equal(concurrent.filter(item=>item.status==='rejected'&&item.reason.code==='configuration_conflict').length,1);
+   session=await refreshOcheSession(session.refreshToken!,request());snapshot=await getOcheDeviceSnapshot(session.accessToken!,true);
+   await admin.query('update dartflow_private.location_boards set archived_at=clock_timestamp() where board_id=$1',[left]);
+   const archived=await getOcheDeviceSnapshot(session.accessToken!,true);assert.equal(archived.panels?.[0].status,'ready');assert.equal(archived.panels?.[1].status,'unavailable');assert.equal(archived.panels?.[1].snapshot,null);
+   await admin.query('update dartflow_private.location_boards set archived_at=null where board_id=$1',[left]);
+   await manageOcheDevice(owner,session.deviceId,{action:'configure',layout:{orientation:'portrait',scoreboards:1},boardId:right,secondaryBoardId:left,expectedRevision:snapshot.configurationRevision,requestId:request()});
+   session=await refreshOcheSession(session.refreshToken!,request());snapshot=await getOcheDeviceSnapshot(session.accessToken!,true);assert.equal(snapshot.panels?.length,1);assert.equal((await getOcheManagement(owner)).devices.find(item=>item.id===session.deviceId)?.secondaryBoardId,null);
+   await manageOcheDevice(owner,session.deviceId,{action:'configure',layout,boardId:right,secondaryBoardId:null,expectedRevision:snapshot.configurationRevision,requestId:request()});
+   session=await refreshOcheSession(session.refreshToken!,request());assert.equal((await getOcheDeviceSnapshot(session.accessToken!,true)).panels?.[1].status,'unassigned');await revoke(session.deviceId);
+  });
+  await t.test('two match projections isolate accepted scores, undo, events, projection errors and slow SQL',async()=>{
+   const locationId=await venue(),left=await board(locationId,true),right=await board(locationId,true),layout={orientation:'landscape' as const,scoreboards:2 as const};
+   const match=async(boardId:string,remaining:number[])=>{
+    const id=randomUUID();matches.push(id);const eventId=(await admin.query('select event_id from dartflow_private.boards where id=$1',[boardId])).rows[0].event_id,settings={startScore:501 as const,bestOfLegs:3,bestOfSets:1},game=newGame(id,[owner,player],settings);game.remaining=remaining;
+    const state:MatchState={id,clubId:club,eventId,boardId,revision:1,status:'live',players:[{id:owner,name:'Links speler'},{id:player,name:'Tegenstander'}],writerId:owner,settings,accepted:[true,true],confirmations:[false,false],resultRevision:null,game,previousSets:[],winnerId:null,resultPublished:false,dispute:null};
+    await admin.query('insert into dartflow_private.matches(id,club_id,event_id,board_id,revision,state) values($1,$2,$3,$4,1,$5)',[id,club,eventId,boardId,JSON.stringify(state)]);
+    for(const [position,user]of [owner,player].entries())await admin.query('insert into dartflow_private.match_players(match_id,user_id,position) values($1,$2,$3)',[id,user,position]);return id;
+   };
+   const leftMatch=await match(left,[148,188]),rightMatch=await match(right,[271,94]),device=await start();await claim(device,{scope:'location',locationId,boardId:left,secondaryBoardId:right,layout});const session=await redeem(device);
+   const initial=await getOcheDeviceSnapshot(session.accessToken!,true),score=await executeMatchCommand(owner,{matchId:leftMatch,expectedRevision:1,requestId:request(),action:{type:'score',score:60}});
+   let update=await pollOcheDeviceEvents(session.accessToken!,initial.eventId,true);assert.deepEqual(update.snapshot.panels?.[0].snapshot?.display?.snapshot.match?.remaining,[88,188]);assert.deepEqual(update.snapshot.panels?.[1].snapshot?.display?.snapshot.match?.remaining,[271,94]);assert.equal(update.snapshot.panels?.[0].snapshot?.display?.snapshot.scoreEvents?.at(-1)?.score,60);assert.equal(update.snapshot.panels?.[1].snapshot?.display?.snapshot.scoreEvents?.length,0);
+   const leftCursor=update.snapshot.panels?.[0].snapshot?.eventId;await executeMatchCommand(owner,{matchId:rightMatch,expectedRevision:1,requestId:request(),action:{type:'score',score:180}});update=await pollOcheDeviceEvents(session.accessToken!,update.eventId,true);assert.equal(update.snapshot.panels?.[0].snapshot?.eventId,leftCursor);assert.equal(update.snapshot.panels?.[1].snapshot?.display?.snapshot.scoreEvents?.at(-1)?.score,180);
+   await executeMatchCommand(owner,{matchId:leftMatch,expectedRevision:score.revision,requestId:request(),action:{type:'undo'}});update=await pollOcheDeviceEvents(session.accessToken!,update.eventId,true);assert.deepEqual(update.snapshot.panels?.[0].snapshot?.display?.snapshot.match?.remaining,[148,188]);assert.deepEqual(update.snapshot.panels?.[1].snapshot?.display?.snapshot.match?.remaining,[91,94]);assert.equal(update.snapshot.panels?.[0].snapshot?.display?.snapshot.scoreEvents?.at(-1)?.kind,'undo');
+   const saved=(await admin.query('select state from dartflow_private.matches where id=$1',[rightMatch])).rows[0].state;await admin.query("update dartflow_private.matches set state=jsonb_set(state,'{game}','null') where id=$1",[rightMatch]);
+   const failed=await getOcheDeviceSnapshot(session.accessToken!,true);assert.equal(failed.panels?.[0].status,'ready');assert.equal(failed.panels?.[1].status,'error');assert.equal(failed.panels?.[1].snapshot,null);await admin.query('update dartflow_private.matches set state=$2 where id=$1',[rightMatch,saved]);
+   // Inject a real delayed SQL statement only for the right source; its savepoint
+   // and statement timeout must recover while keeping the left projection.
+   const delaySources=async(sourceIds:string[])=>{
+    const pool=database(),connection=await pool.connect(),delayed=new Set<string>();
+    const wrapper=new Proxy(connection,{get(target,key){if(key==='query')return async(...args:unknown[])=>{if(typeof args[0]==='string'&&args[0].includes('select b.id,b.event_id')&&Array.isArray(args[1])&&sourceIds.includes(args[1][0])&&!delayed.has(args[1][0])){delayed.add(args[1][0]);await target.query('select pg_sleep(2)');}return Reflect.apply(target.query,target,args);};const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;}});
+    const originalConnect=pool.connect;Object.defineProperty(pool,'connect',{configurable:true,value:async()=>wrapper});
+    try{const began=performance.now(),snapshot=await getOcheDeviceSnapshot(session.accessToken!,true);assert.equal(delayed.size,sourceIds.length);assert.ok(performance.now()-began<2500,'Both source deadlines must fit the existing client request budget.');return snapshot;}finally{Object.defineProperty(pool,'connect',{configurable:true,value:originalConnect});}
+   };
+   const slowRight=await delaySources([right]);assert.equal(slowRight.panels?.[0].status,'ready');assert.equal(slowRight.panels?.[1].status,'error');
+   const bothSlow=await delaySources([left,right]);assert.deepEqual(bothSlow.panels?.map(panel=>panel.status),['error','error']);assert.ok(bothSlow.panels?.every(panel=>panel.snapshot===null));
+   const recovered=await getOcheDeviceSnapshot(session.accessToken!,true);assert.equal(recovered.panels?.[1].status,'ready');await revoke(session.deviceId);
+  });
+  await t.test('linked display proposals are inert until an authorized account confirms, without pairing or capacity changes',async()=>{
+   const locationId=await venue(),left=await board(locationId,true),right=await board(locationId,true),device=await start();await claim(device,{scope:'location',locationId,boardId:left});let session=await redeem(device);
+   const before=await getOcheDeviceSnapshot(session.accessToken!,true),layout={orientation:'landscape' as const,scoreboards:2 as const},requestId=request(),proposal=await proposeOcheLayout(session.accessToken!,{layout,requestId});
+   assert.deepEqual(await proposeOcheLayout(session.accessToken!,{layout,requestId}),proposal);assert.equal(proposal.targetDeviceId,session.deviceId);assert.equal('installationSecret'in proposal,false);
+   assert.equal((await getOcheDeviceSnapshot(session.accessToken!,true)).configurationRevision,before.configurationRevision);assert.equal((await getOcheManagement(owner)).locations.find(item=>item.locationId===locationId)?.reserved,0);
+   await assert.rejects(getOcheLayoutProposal(outsider,proposal.code),{status:403});const details=await getOcheLayoutProposal(owner,proposal.code);assert.equal(details.device?.boardId,left);
+   await claim(proposal,{scope:'location',locationId,boardId:left,secondaryBoardId:right,layout,expectedRevision:before.configurationRevision});
+   await assert.rejects(getOcheDeviceSnapshot(session.accessToken!,true),{code:'device_assignment_changed'});session=await refreshOcheSession(session.refreshToken!,request());
+   const after=await getOcheDeviceSnapshot(session.accessToken!,true);assert.equal(after.device.id,before.device.id);assert.deepEqual(after.layout,layout);assert.equal(after.panels?.[1].snapshot?.board?.id,right);assert.equal((await getOcheManagement(owner)).locations.find(item=>item.locationId===locationId)?.active,1);
+   const pending=await proposeOcheLayout(session.accessToken!,{layout:{orientation:'portrait',scoreboards:1},requestId:request()});
+   await manageOcheDevice(owner,session.deviceId,{action:'configure',layout,boardId:right,secondaryBoardId:left,expectedRevision:after.configurationRevision,requestId:request()});
+   await assert.rejects(getOcheLayoutProposal(owner,pending.code),{code:'configuration_conflict'});
+   await assert.rejects(claim(pending,{scope:'location',locationId,boardId:left,secondaryBoardId:right,layout,expectedRevision:after.configurationRevision}),{code:'configuration_conflict'});
+   session=await refreshOcheSession(session.refreshToken!,request());
+   // Even a stand-by heartbeat update follows scope -> device lock ordering.
+   await admin.query("update dartflow_private.oche_devices set last_seen_at=clock_timestamp()-interval '1 minute' where id=$1",[session.deviceId]);
+   const raced=await Promise.allSettled([manageOcheDevice(owner,session.deviceId,{action:'configure',layout,boardId:left,secondaryBoardId:right,expectedRevision:(after.configurationRevision??0)+1,requestId:request()}),proposeOcheLayout(session.accessToken!,{layout,requestId:request()})]);
+   assert.equal(raced[0].status,'fulfilled');for(const result of raced)if(result.status==='rejected')assert.equal(result.reason.code,'device_assignment_changed');
+   await revoke(session.deviceId);
+  });
   await t.test('private device tables have RLS and browser roles cannot select credentials',async()=>{
    const rows=(await admin.query("select relname,relrowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='dartflow_private' and relname like 'oche_%' and relkind='r'")).rows;assert.equal(rows.length,8);for(const row of rows)assert.equal(row.relrowsecurity,true);
    assert.equal((await admin.query("select has_table_privilege('public','dartflow_private.oche_device_credentials','select') as readable")).rows[0].readable,false);
@@ -257,7 +338,7 @@ test('persistent Oche device grants enforce scopes, quotas, retries, rotation an
   await admin.query('delete from dartflow_private.board_screen_devices where id=any($1::uuid[])',[legacyIds]);await admin.query('delete from dartflow_private.audit_events where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.auth_limits where key=any($1::text[])',[boards.map(id=>`board-screen-pair:${id}`)]);
   await admin.query('delete from dartflow_private.oche_location_limits where updated_by=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.location_boards where board_id=any($1::uuid[])',[boards]);
   await admin.query('delete from dartflow_private.location_members where location_id=any($1::uuid[])',[locations]);await admin.query('delete from dartflow_private.locations where id=any($1::uuid[])',[locations]);
-  await admin.query('delete from dartflow_private.match_players where match_id=any($1::uuid[])',[matches]);await admin.query('delete from dartflow_private.matches where id=any($1::uuid[])',[matches]);await admin.query('delete from dartflow_private.boards where id=any($1::uuid[])',[boards]);
+  await admin.query('delete from dartflow_private.visits where match_id=any($1::uuid[])',[matches]);await admin.query('delete from dartflow_private.action_receipts where match_id=any($1::uuid[])',[matches]);await admin.query('delete from dartflow_private.match_players where match_id=any($1::uuid[])',[matches]);await admin.query('delete from dartflow_private.matches where id=any($1::uuid[])',[matches]);await admin.query('delete from dartflow_private.boards where id=any($1::uuid[])',[boards]);
   await admin.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.platform_audit where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.platform_members where entity_id in(select id from dartflow_private.platform_entities where owner_id=any($1::uuid[]))',[people]);await admin.query('delete from dartflow_private.invitation_codes where entity_id in(select id from dartflow_private.platform_entities where owner_id=any($1::uuid[]))',[people]);await admin.query('delete from dartflow_private.platform_entities where owner_id=any($1::uuid[])',[people]);
   await admin.query('delete from dartflow_private.events where id=any($1::uuid[])',[events]);await admin.query('delete from dartflow_private.club_memberships where club_id=$1',[club]);await admin.query('delete from dartflow_private.clubs where id=$1',[club]);
   await admin.query('delete from dartflow_private.platform_roles where user_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);await admin.end();await closeDatabase();

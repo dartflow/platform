@@ -7,13 +7,13 @@ import {locationManager} from './location-access';
 import {uuid as parseUuid} from './platform-store';
 import {readOcheLocationBrandingChoices,requireOcheLocationClubTheme} from './oche-device-branding';
 import {codeDigest,createOcheAccess,decryptOcheReceipt,encryptOcheReceipt,formatOcheCode,newOcheCode,readOcheAccess,secretHash} from './oche-device-crypto';
-import type {OcheCapacity,OcheClaim,OcheClaimResult,OcheDevice,OcheManagement,OchePairing,OchePairingStatus,OchePlatform,OcheScope,OcheSession} from './oche-device-types';
+import type {OcheLayout,OcheLayoutProposal,OcheCapacity,OcheClaim,OcheClaimResult,OcheDevice,OcheManagement,OchePairing,OchePairingStatus,OchePlatform,OcheScope,OcheSession} from './oche-device-types';
 
 type Client=Pick<PoolClient,'query'>;
 type Scope={scope:OcheScope;ownerId:string|null;locationId:string|null};
-export type OcheDeviceRow={theme:'dartflow'|'onzetrots'|'club';branding_club_id:string|null;id:string;installation_id:string;scope:OcheScope;owner_id:string|null;location_id:string|null;board_id:string|null;created_by:string;name:string;platform:OchePlatform;grant_version:number;created_at:Date;last_seen_at:Date|null;revoked_at:Date|null};
-type Installation={id:string;platform:OchePlatform;secret_hash:string;code_hash:string|null;code_cipher:string|null;state:'pending'|'approved'|'redeemed'|'revoked';expires_at:Date};
-type Reservation={scope:OcheScope;id:string;installation_id:string;owner_id:string|null;location_id:string|null;board_id:string|null;created_by:string;name:string;replaces_device_id:string|null;expires_at:Date;state:'approved'|'redeemed'|'expired'|'cancelled'};
+export type OcheDeviceRow={layout:OcheLayout|null;secondary_board_id:string|null;configuration_revision:number;theme:'dartflow'|'onzetrots'|'club';branding_club_id:string|null;id:string;installation_id:string;scope:OcheScope;owner_id:string|null;location_id:string|null;board_id:string|null;created_by:string;name:string;platform:OchePlatform;grant_version:number;created_at:Date;last_seen_at:Date|null;revoked_at:Date|null};
+type Installation={layout_proposal:OcheLayout|null;target_device_id:string|null;proposal_revision:number|null;id:string;platform:OchePlatform;secret_hash:string;code_hash:string|null;code_cipher:string|null;state:'pending'|'approved'|'redeemed'|'revoked';expires_at:Date};
+type Reservation={layout:OcheLayout|null;secondary_board_id:string|null;scope:OcheScope;id:string;installation_id:string;owner_id:string|null;location_id:string|null;board_id:string|null;created_by:string;name:string;replaces_device_id:string|null;expires_at:Date;state:'approved'|'redeemed'|'expired'|'cancelled'};
 const credential=/^[A-Za-z0-9_-]{43}$/;
 // PostgreSQL UUID equality is case-insensitive. Lock/receipt identities must use
 // the same canonical representation or equivalent inputs can bypass a mutex.
@@ -53,6 +53,25 @@ async function requireBoard(client:Client,scope:Scope,boardId:string|null):Promi
  if(scope.scope==='home'){if(boardId)throw new DomainError('invalid_board','Een thuisscherm volgt een eigen sessie.');return;}
  if(boardId&&!(await client.query('select 1 from dartflow_private.location_boards where board_id=$1 and location_id=$2 and archived_at is null',[uuid(boardId),scope.locationId])).rowCount)throw new DomainError('invalid_board','Deze baan hoort niet bij de gekozen locatie.',400);
 }
+/** Validate explicit physical composition without inferring it from viewport changes. */
+export function parseOcheLayout(value:unknown):OcheLayout{
+ const layout=value as Partial<OcheLayout>|null;
+ if(!layout||typeof layout!=='object'||!['portrait','landscape'].includes(String(layout.orientation))||![1,2].includes(Number(layout.scoreboards))||typeof layout.scoreboards!=='number'||layout.orientation==='portrait'&&layout.scoreboards!==1)throw new DomainError('invalid_layout','Kies verticaal met één scorebord of horizontaal met één of twee scoreborden.');
+ return {orientation:layout.orientation!,scoreboards:layout.scoreboards!};
+}
+async function requireConfiguration(client:Client,scope:Scope,layout:OcheLayout|null,boardId:string|null,secondaryBoardId:string|null):Promise<void>{
+ if(scope.scope==='home'&&(layout?.scoreboards===2||secondaryBoardId))throw new DomainError('invalid_layout','Bevestig één scorebord voor Mijn scherm thuis.');
+ if(secondaryBoardId&&layout?.scoreboards!==2)throw new DomainError('invalid_layout','Een tweede baan vereist twee horizontale scoreborden.');
+ if(boardId&&secondaryBoardId&&boardId===secondaryBoardId)throw new DomainError('duplicate_board','Kies twee verschillende banen.');
+ await requireBoard(client,scope,boardId);await requireBoard(client,scope,secondaryBoardId);
+}
+function revisionMatches(row:OcheDeviceRow,revision:unknown){if(!Number.isSafeInteger(revision)||revision!==row.configuration_revision)throw new DomainError('configuration_conflict','De schermindeling is intussen gewijzigd. Ververs en controleer beide banen opnieuw.',409);}
+async function configure(client:Client,row:OcheDeviceRow,input:{layout:unknown;boardId?:unknown;secondaryBoardId?:unknown;expectedRevision?:unknown}):Promise<void>{
+ revisionMatches(row,input.expectedRevision);
+ const layout=parseOcheLayout(input.layout),boardId=input.boardId?uuid(input.boardId):null,secondaryBoardId=layout.scoreboards===2&&input.secondaryBoardId?uuid(input.secondaryBoardId):null;
+ await requireConfiguration(client,scopeOf(row),layout,boardId,secondaryBoardId);
+ await client.query('update dartflow_private.oche_devices set layout=$2,board_id=$3,secondary_board_id=$4,configuration_revision=configuration_revision+1,grant_version=grant_version+1 where id=$1',[row.id,layout,boardId,secondaryBoardId]);
+}
 async function sweepScope(client:Client,scope:Scope):Promise<void>{
  await client.query("update dartflow_private.oche_reservations set state='expired' where state='approved' and expires_at<=clock_timestamp() and scope=$1 and (owner_id=$2 or location_id=$3)",[scope.scope,scope.ownerId,scope.locationId]);
 }
@@ -71,8 +90,8 @@ async function installation(client:Client,id:string,secret:string,lock=false):Pr
  const row=(await client.query<Installation>(`select * from dartflow_private.oche_installations where id=$1 and secret_hash=$2${lock?' for update':''}`,[uuid(id),secretHash(secret)])).rows[0];
  if(!row)throw unavailable();if(row.state==='revoked')throw new DomainError('device_revoked','Dit scherm is ontkoppeld.',410);return row;
 }
-function pairing(row:Installation,code:string,serverNow:number):OchePairing{return {installationId:row.id,code:formatOcheCode(code),expiresAt:iso(row.expires_at),serverNow,verificationUrl:`${appConfig().origin}/koppel-scherm#code=${code}`,pollAfterMs:2000};}
-export async function startOcheInstallation(input:{platform:OchePlatform;requestId:string;installationId?:string;installationSecret?:string}):Promise<OchePairing&{installationSecret:string}>{
+function pairing(row:Installation,code:string,serverNow:number):OchePairing{return {installationId:row.id,code:formatOcheCode(code),expiresAt:iso(row.expires_at),serverNow,verificationUrl:`${appConfig().origin}/koppel-scherm#code=${code}`,pollAfterMs:2000,layoutProposal:row.layout_proposal??null,targetDeviceId:row.target_device_id??null};}
+export async function startOcheInstallation(input:{platform:OchePlatform;requestId:string;installationId?:string;installationSecret?:string;layoutProposal?:unknown}):Promise<OchePairing&{installationSecret:string}>{
  if(!['browser','android','android-tv'].includes(input.platform))throw new DomainError('invalid_platform','Kies een ondersteund schermtype.');
  input={...input,requestId:uuid(input.requestId),...(input.installationId?{installationId:uuid(input.installationId)}:{})};
  return ocheTransaction(async client=>{
@@ -80,7 +99,8 @@ export async function startOcheInstallation(input:{platform:OchePlatform;request
   await lockRequest(client,principal,'start',input.requestId);
   if(input.installationId)await lockInstallation(client,input.installationId);
   if(input.installationId)await installation(client,input.installationId,input.installationSecret??'');
-  const payload={platform:input.platform};const previous=await receipt<OchePairing&{installationSecret:string}>(client,principal,'start',input.requestId,payload);if(previous)return previous;
+  const layoutProposal=input.layoutProposal===undefined?null:parseOcheLayout(input.layoutProposal);
+  const payload={platform:input.platform,...(input.layoutProposal!==undefined?{layoutProposal}: {})};const previous=await receipt<OchePairing&{installationSecret:string}>(client,principal,'start',input.requestId,payload);if(previous)return previous;
   let id=input.installationId,secret=input.installationSecret;
   if(id){
    const reservation=(await client.query<Reservation>('select * from dartflow_private.oche_reservations where installation_id=$1',[id])).rows[0];
@@ -95,8 +115,8 @@ export async function startOcheInstallation(input:{platform:OchePlatform;request
    const code=newOcheCode();
    await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`oche:code:${codeDigest(code)}`]);
    if((await client.query('select 1 from dartflow_private.oche_installations where code_hash=$1 and id<>$2',[codeDigest(code),id])).rowCount)continue;
-   const result=await client.query<Installation>(`insert into dartflow_private.oche_installations(id,platform,secret_hash,code_hash,code_cipher,expires_at) values($1,$2,$3,$4,$5,clock_timestamp()+interval '10 minutes')
-    on conflict(id) do update set code_hash=excluded.code_hash,code_cipher=excluded.code_cipher,state='pending',expires_at=excluded.expires_at,updated_at=clock_timestamp() returning *`,[id,input.platform,secretHash(secret!),codeDigest(code),encryptOcheReceipt(code)]);
+   const result=await client.query<Installation>(`insert into dartflow_private.oche_installations(id,platform,secret_hash,code_hash,code_cipher,layout_proposal,expires_at) values($1,$2,$3,$4,$5,$6,clock_timestamp()+interval '10 minutes')
+    on conflict(id) do update set code_hash=excluded.code_hash,code_cipher=excluded.code_cipher,layout_proposal=excluded.layout_proposal,target_device_id=null,proposal_revision=null,state='pending',expires_at=excluded.expires_at,updated_at=clock_timestamp() returning *`,[id,input.platform,secretHash(secret!),codeDigest(code),encryptOcheReceipt(code),layoutProposal]);
    const response={...pairing(result.rows[0],code,await now(client)),installationSecret:secret!};await saveReceipt(client,principal,'start',input.requestId,payload,response);return response;
   }
   throw new DomainError('pairing_unavailable','Koppelen is tijdelijk niet beschikbaar.',503);
@@ -111,10 +131,10 @@ export async function claimOcheInstallation(actor:string,input:OcheClaim):Promis
  actor=uuid(actor);
  const digest=codeDigest(input.code),name=ocheName(input.name),scope:Scope={scope:input.scope,ownerId:input.scope==='home'?uuid(actor):null,locationId:input.scope==='location'?uuid(input.locationId):null};
  if(!['home','location'].includes(input.scope))throw new DomainError('invalid_scope','Kies thuis of een eigen locatie.');
- const boardId=input.boardId?uuid(input.boardId):null,replacementId=input.replaceDeviceId?uuid(input.replaceDeviceId):null,requestId=uuid(input.requestId);
+ const boardId=input.boardId?uuid(input.boardId):null,secondaryBoardId=input.secondaryBoardId?uuid(input.secondaryBoardId):null,layout=input.layout===undefined?null:parseOcheLayout(input.layout),replacementId=input.replaceDeviceId?uuid(input.replaceDeviceId):null,requestId=uuid(input.requestId);
  return ocheTransaction(async client=>{
   await lockRequest(client,`actor:${actor}`,'claim',requestId);
-  const payload={digest,name,scope,boardId,replacementId};await requireScopeManager(client,actor,scope);
+  const payload={digest,name,scope,boardId,replacementId,...(input.layout!==undefined?{layout,secondaryBoardId,expectedRevision:input.expectedRevision??null}: {})};await requireScopeManager(client,actor,scope);
   const confirmed=await receipt<OcheClaimResult>(client,`actor:${actor}`,'claim',requestId,payload);if(confirmed)return confirmed;
   // Pairing operations take an installation guard before the capacity scope.
   // A concurrent new-code request cannot miss a just-approved reservation.
@@ -123,17 +143,29 @@ export async function claimOcheInstallation(actor:string,input:OcheClaim):Promis
   const replay=await receipt<OcheClaimResult>(client,`actor:${actor}`,'claim',requestId,payload);if(replay)return replay;
   const row=(await client.query<Installation>('select * from dartflow_private.oche_installations where code_hash=$1 for update',[digest])).rows[0];const serverNow=await now(client);
   if(!row||row.state!=='pending'||ms(row.expires_at)<=serverNow)throw invalidCode();
-  await requireBoard(client,scope,boardId);const count=await capacity(client,scope);
+  if(row.layout_proposal&&!layout)throw new DomainError('layout_confirmation','Bevestig de voorgestelde schermindeling.');
+  await requireConfiguration(client,scope,layout,boardId,secondaryBoardId);
+  if(row.target_device_id){
+   const current=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1 for update',[row.target_device_id])).rows[0];
+   if(!current||current.revoked_at)throw new DomainError('device_revoked','Dit scherm is ontkoppeld.',410);
+   if(current.scope!==scope.scope||current.owner_id!==scope.ownerId||current.location_id!==scope.locationId)throw new DomainError('forbidden','Een schermvoorstel blijft binnen de gekoppelde omgeving.',403);
+   await requireScopeManager(client,actor,scopeOf(current));if(current.configuration_revision!==row.proposal_revision)throw new DomainError('configuration_conflict','De indeling is gewijzigd. Maak op de tv een nieuw voorstel of wijzig via Schermen.',409);
+   await configure(client,current,{layout,boardId,secondaryBoardId,expectedRevision:input.expectedRevision});
+   await client.query("update dartflow_private.oche_installations set state='redeemed',code_hash=null,code_cipher=null,updated_at=clock_timestamp() where id=$1",[row.id]);
+   const response:OcheClaimResult={state:'redeemed',reservationId:current.id,expiresAt:iso(row.expires_at),capacity:await capacity(client,scope)};
+   await saveReceipt(client,`actor:${actor}`,'claim',requestId,payload,response);await audit(client,actor,'screen.configure',current.id);return response;
+  }
+  const count=await capacity(client,scope);
   if(replacementId){
    const old=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1 for update',[replacementId])).rows[0];
    if(!old||old.revoked_at||old.scope!==scope.scope||old.owner_id!==scope.ownerId||old.location_id!==scope.locationId)throw new DomainError('invalid_replacement','Kies een actief scherm binnen dezelfde omgeving.',409);
    if(count.aboveLimit)throw Object.assign(new DomainError('device_limit','Boven limiet. Ontkoppel eerst een scherm voordat je vervangt.',409),{capacity:count});
    if((await client.query("select 1 from dartflow_private.oche_reservations where replaces_device_id=$1 and state='approved'",[replacementId])).rowCount)throw new DomainError('replacement_pending','Voor dit scherm loopt al een vervanging.',409);
   }else if(count.active+count.reserved>=count.maximum)throw Object.assign(new DomainError('device_limit','Limiet bereikt. Kies expliciet een bestaand scherm om te vervangen.',409),{capacity:count});
-  const id=randomUUID();const inserted=await client.query<{expires_at:Date}>(`insert into dartflow_private.oche_reservations(id,installation_id,scope,owner_id,location_id,board_id,created_by,name,replaces_device_id,expires_at)
-   values($1,$2,$3,$4,$5,$6,$7,$8,$9,least($10::timestamptz,clock_timestamp()+interval '2 minutes'))
-   on conflict(installation_id) do update set id=excluded.id,scope=excluded.scope,owner_id=excluded.owner_id,location_id=excluded.location_id,board_id=excluded.board_id,created_by=excluded.created_by,name=excluded.name,replaces_device_id=excluded.replaces_device_id,expires_at=excluded.expires_at,state='approved',created_at=clock_timestamp()
-   where dartflow_private.oche_reservations.state in('expired','cancelled') returning expires_at`,[id,row.id,scope.scope,scope.ownerId,scope.locationId,boardId,actor,name,replacementId,row.expires_at]);
+  const id=randomUUID();const inserted=await client.query<{expires_at:Date}>(`insert into dartflow_private.oche_reservations(id,installation_id,scope,owner_id,location_id,board_id,created_by,name,replaces_device_id,layout,secondary_board_id,expires_at)
+   values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,least($12::timestamptz,clock_timestamp()+interval '2 minutes'))
+   on conflict(installation_id) do update set id=excluded.id,scope=excluded.scope,owner_id=excluded.owner_id,location_id=excluded.location_id,board_id=excluded.board_id,created_by=excluded.created_by,name=excluded.name,replaces_device_id=excluded.replaces_device_id,layout=excluded.layout,secondary_board_id=excluded.secondary_board_id,expires_at=excluded.expires_at,state='approved',created_at=clock_timestamp()
+   where dartflow_private.oche_reservations.state in('expired','cancelled') returning expires_at`,[id,row.id,scope.scope,scope.ownerId,scope.locationId,boardId,actor,name,replacementId,layout,secondaryBoardId,row.expires_at]);
   if(!inserted.rows.length)throw invalidCode();
   await client.query("update dartflow_private.oche_installations set state='approved',expires_at=$2,updated_at=clock_timestamp() where id=$1",[row.id,inserted.rows[0].expires_at]);
   const response:OcheClaimResult={state:'approved',reservationId:id,expiresAt:iso(inserted.rows[0].expires_at),capacity:await capacity(client,scope)};
@@ -147,7 +179,7 @@ async function issueSession(client:Client,device:OcheDeviceRow):Promise<OcheSess
 }
 async function assertCurrentDevice(client:Client,row:OcheDeviceRow|undefined):Promise<OcheDeviceRow>{
  if(!row||row.revoked_at)throw unavailable();
- await requireScopeManager(client,row.created_by,scopeOf(row));await requireBoard(client,scopeOf(row),row.board_id);return row;
+ await requireScopeManager(client,row.created_by,scopeOf(row));return row;
 }
 async function recoveredAccess(client:Client,session:OcheSession,device:OcheDeviceRow):Promise<OcheSession>{
  const serverNow=await now(client),original=readOcheAccess(session.accessToken!);
@@ -167,13 +199,13 @@ export async function redeemOcheInstallation(id:string,secret:string,nonce:strin
    const stored=(await client.query<{refresh_hash:string}>('select refresh_hash from dartflow_private.oche_device_credentials where device_id=$1 and refresh_expires_at>clock_timestamp()',[device.id])).rows[0];if(stored?.refresh_hash!==secretHash(replay.refreshToken!))throw new DomainError('refresh_replayed','Gebruik de actuele schermsessie.',409);return recoveredAccess(client,replay,device);}
   const reservation=(await client.query<Reservation>('select * from dartflow_private.oche_reservations where installation_id=$1 for update',[id])).rows[0];
   const serverNow=await now(client);if(!reservation||reservation.state!=='approved'||row.state!=='approved'||ms(reservation.expires_at)<=serverNow)throw invalidCode();
-  await requireScopeManager(client,reservation.created_by,scopeOf(reservation));await requireBoard(client,scopeOf(reservation),reservation.board_id);
+  await requireScopeManager(client,reservation.created_by,scopeOf(reservation));await requireConfiguration(client,scopeOf(reservation),reservation.layout,reservation.board_id,reservation.secondary_board_id);
   const currentCapacity=await capacity(client,scopeOf(reservation));if(currentCapacity.aboveLimit)throw Object.assign(new DomainError('device_limit','De schermlimiet is verlaagd. Maak eerst ruimte vrij.',409),{capacity:currentCapacity});
   if(reservation.replaces_device_id){
    const old=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1 for update',[reservation.replaces_device_id])).rows[0];
    if(old&&!old.revoked_at){await client.query('update dartflow_private.oche_devices set revoked_at=clock_timestamp(),grant_version=grant_version+1 where id=$1',[old.id]);await client.query('delete from dartflow_private.oche_device_credentials where device_id=$1',[old.id]);await audit(client,reservation.created_by,'screen.replaced',old.id);}
   }
-  const device=(await client.query<OcheDeviceRow>(`insert into dartflow_private.oche_devices(id,installation_id,scope,owner_id,location_id,board_id,created_by,name,platform,last_seen_at) values($1,$2,$3,$4,$5,$6,$7,$8,$9,clock_timestamp()) returning *`,[randomUUID(),id,reservation.scope,reservation.owner_id,reservation.location_id,reservation.board_id,reservation.created_by,reservation.name,row.platform])).rows[0];
+  const device=(await client.query<OcheDeviceRow>(`insert into dartflow_private.oche_devices(id,installation_id,scope,owner_id,location_id,board_id,created_by,name,platform,layout,secondary_board_id,last_seen_at) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,clock_timestamp()) returning *`,[randomUUID(),id,reservation.scope,reservation.owner_id,reservation.location_id,reservation.board_id,reservation.created_by,reservation.name,row.platform,reservation.layout,reservation.secondary_board_id])).rows[0];
   await client.query("update dartflow_private.oche_reservations set state='redeemed' where id=$1",[reservation.id]);await client.query("update dartflow_private.oche_installations set state='redeemed',code_hash=null,code_cipher=null,updated_at=clock_timestamp() where id=$1",[id]);
   const response=await issueSession(client,device);await saveReceipt(client,principal,'redeem',nonce,payload,response);await audit(client,reservation.created_by,'screen.activated',device.id);return response;
  });
@@ -195,13 +227,13 @@ export async function refreshOcheSession(refreshToken:string,nonce:string):Promi
 }
 export async function authorizeOcheAccess(token:string,client:Client=database()):Promise<OcheDeviceRow>{
  const access=readOcheAccess(token),deviceId=uuid(access.deviceId);const row=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1',[deviceId])).rows[0];
- const device=await assertCurrentDevice(client,row);if(device.grant_version!==access.version||access.expires<=await now(client))throw unavailable();
+ const device=await assertCurrentDevice(client,row);if(device.grant_version!==access.version)throw new DomainError('device_assignment_changed','De schermtoewijzing is gewijzigd. Vernieuw de schermsessie.',401);if(access.expires<=await now(client))throw unavailable();
  await client.query("update dartflow_private.oche_devices set last_seen_at=clock_timestamp() where id=$1 and(last_seen_at is null or last_seen_at<clock_timestamp()-interval '10 seconds')",[row.id]);return device;
 }
 async function listDevices(client:Client,actor:string):Promise<OcheDevice[]>{
- const rows=(await client.query<OcheDeviceRow&{location_name:string|null;board_name:string|null}>(`select d.*,l.name as location_name,b.name as board_name from dartflow_private.oche_devices d left join dartflow_private.locations l on l.id=d.location_id left join dartflow_private.boards b on b.id=d.board_id
+ const rows=(await client.query<OcheDeviceRow&{location_name:string|null;board_name:string|null;secondary_board_name:string|null}>(`select d.*,l.name as location_name,b.name as board_name,sb.name as secondary_board_name from dartflow_private.oche_devices d left join dartflow_private.locations l on l.id=d.location_id left join dartflow_private.boards b on b.id=d.board_id left join dartflow_private.boards sb on sb.id=d.secondary_board_id
   where (d.scope='home' and d.owner_id=$1) or(d.scope='location' and(l.owner_id=$1 or exists(select 1 from dartflow_private.location_members lm where lm.location_id=l.id and lm.user_id=$1))) order by d.created_at desc limit 500`,[actor])).rows;
- const serverNow=await now(client);return rows.map(row=>({theme:row.theme,brandingClubId:row.branding_club_id,id:row.id,name:row.name,platform:row.platform,scope:row.scope,locationId:row.location_id,locationName:row.location_name,boardId:row.board_id,boardName:row.board_name,lastSeenAt:row.last_seen_at?iso(row.last_seen_at):null,online:!row.revoked_at&&Boolean(row.last_seen_at&&serverNow-ms(row.last_seen_at)<15000),createdAt:iso(row.created_at),revoked:Boolean(row.revoked_at),grantVersion:row.grant_version}));
+ const serverNow=await now(client);return rows.map(row=>({layout:row.layout??null,secondaryBoardId:row.secondary_board_id??null,secondaryBoardName:row.secondary_board_name??null,configurationRevision:row.configuration_revision??0,theme:row.theme,brandingClubId:row.branding_club_id,id:row.id,name:row.name,platform:row.platform,scope:row.scope,locationId:row.location_id,locationName:row.location_name,boardId:row.board_id,boardName:row.board_name,lastSeenAt:row.last_seen_at?iso(row.last_seen_at):null,online:!row.revoked_at&&Boolean(row.last_seen_at&&serverNow-ms(row.last_seen_at)<15000),createdAt:iso(row.created_at),revoked:Boolean(row.revoked_at),grantVersion:row.grant_version}));
 }
 export async function getOcheManagement(actor:string):Promise<OcheManagement>{
  actor=uuid(actor);
@@ -209,7 +241,7 @@ export async function getOcheManagement(actor:string):Promise<OcheManagement>{
  const canManageLimits=Boolean((await client.query("select 1 from dartflow_private.platform_roles where user_id=$1 and role in('owner','admin')",[actor])).rowCount);
  const locations=(await client.query<{id:string;name:string}>(`select l.id,l.name from dartflow_private.locations l where l.kind='venue' and(l.owner_id=$1 or exists(select 1 from dartflow_private.location_members lm where lm.location_id=l.id and lm.user_id=$1) or $2) order by l.name,l.id limit 200`,[actor,canManageLimits])).rows;
  const choices:OcheManagement['locations']=[];for(const location of locations){const count=await capacity(client,{scope:'location',ownerId:null,locationId:location.id});const boards=(await client.query<{id:string;name:string}>('select b.id,b.name from dartflow_private.location_boards lb join dartflow_private.boards b on b.id=lb.board_id where lb.location_id=$1 and lb.archived_at is null order by b.name,b.id',[location.id])).rows;const canManageScreens=await locationManager(client,actor,location.id);choices.push({...count,canManageScreens,boards,brandingClubs:canManageScreens?await readOcheLocationBrandingChoices(client,location.id):[]});}
- const sessions=(await client.query<{id:string;name:string;kind:'match'|'lobby'|'training'|'play'|'play'}>(`select id,name,kind from (
+ const sessions=(await client.query<{id:string;name:string;kind:'match'|'lobby'|'training'|'play'}>(`select id,name,kind from (
   select m.id,concat_ws(' – ',m.state->'players'->0->>'name',m.state->'players'->1->>'name') as name,'match' as kind,m.updated_at as updated_at from dartflow_private.matches m where m.state->>'status' not in('abandoned','interrupted') and (exists(select 1 from dartflow_private.match_players p where p.match_id=m.id and p.user_id=$1) or m.state->'remoteWriterIds' ? $1::text or jsonb_path_exists(m.state,'$.sideParticipants[*][*] ? (@.id == $actor)',jsonb_build_object('actor',$1::text)))
   union all select e.id,coalesce(e.state->>'name',case when e.kind='training' then 'Oefenwedstrijd' else 'Wedstrijdlobby' end),e.kind,e.updated_at from dartflow_private.platform_entities e where e.kind in('lobby','training') and e.owner_id=$1 and coalesce(e.state->>'closed','false')<>'true' and coalesce(e.state->>'discarded','false')<>'true'
  union all select p.id,'Spelen · '||(p.state->'game'->>'mode'),'play',p.updated_at from dartflow_private.play_sessions p where p.status in('active','completed') and(p.owner_account_id=$1 or exists(select 1 from jsonb_array_elements(p.state->'participants')v where v->>'accountId'=$1::text or v->>'claimedBy'=$1::text))
@@ -218,7 +250,7 @@ export async function getOcheManagement(actor:string):Promise<OcheManagement>{
  const legacyRows=(await client.query<{id:string;name:string;kind:'home'|'venue';location_id:string;location_name:string;board_id:string;board_name:string;paired_at:Date|null;expires_at:Date;last_seen_at:Date|null}>(`select d.id,d.name,l.kind,l.id as location_id,l.name as location_name,b.id as board_id,b.name as board_name,d.paired_at,d.expires_at,d.last_seen_at from dartflow_private.board_screen_devices d join dartflow_private.location_boards lb on lb.board_id=d.board_id join dartflow_private.locations l on l.id=lb.location_id join dartflow_private.boards b on b.id=d.board_id
   where d.revoked_at is null and d.expires_at>clock_timestamp() and(d.paired_at is not null or d.pairing_expires_at>clock_timestamp()) and(l.owner_id=$1 or exists(select 1 from dartflow_private.location_members lm where lm.location_id=l.id and lm.user_id=$1)) order by d.created_at desc limit 500`,[actor])).rows;
  const legacyDevices:OcheManagement['legacyDevices']=legacyRows.map(row=>({id:row.id,name:row.name,scope:row.kind==='home'?'home':'location',locationId:row.location_id,locationName:row.location_name,boardId:row.board_id,boardName:row.board_name,paired:Boolean(row.paired_at),expiresAt:iso(row.expires_at),lastSeenAt:row.last_seen_at?iso(row.last_seen_at):null}));
- return {serverNow:await now(client),canManageLimits,home:await capacity(client,{scope:'home',ownerId:actor,locationId:null}),locations:choices,devices:await listDevices(client,actor),legacyDevices,homeSessions:sessions,selectedHomeSessionId:selected,defaultLocationMaximum:2};
+ return {layoutSupport:true,serverNow:await now(client),canManageLimits,home:await capacity(client,{scope:'home',ownerId:actor,locationId:null}),locations:choices,devices:await listDevices(client,actor),legacyDevices,homeSessions:sessions,selectedHomeSessionId:selected,defaultLocationMaximum:2};
 }
 /** Compatibility bridge: old private grants keep working and consume the same
  * capacity. New physical displays must start through /oche-live. Call before
@@ -230,15 +262,15 @@ export async function lockOcheLegacyBoardScope(client:Client,boardId:string):Pro
 export async function assertOcheLegacyActivationCapacity(client:Client,scope:Scope|null):Promise<void>{
  if(!scope)return;await sweepScope(client,scope);const count=await capacity(client,scope);if(count.aboveLimit)throw Object.assign(new DomainError('device_limit','Limiet bereikt. Ontkoppel eerst een bestaand scherm in Schermen.',409),{capacity:count});
 }
-export async function manageOcheDevice(actor:string,id:string,input:{action:'rename'|'assign'|'revoke'|'theme';name?:unknown;boardId?:unknown;theme?:unknown;clubId?:unknown;requestId:string}):Promise<{ok:true}>{
+export async function manageOcheDevice(actor:string,id:string,input:{action:'rename'|'assign'|'revoke'|'theme'|'configure';name?:unknown;boardId?:unknown;secondaryBoardId?:unknown;layout?:unknown;expectedRevision?:unknown;theme?:unknown;clubId?:unknown;requestId:string}):Promise<{ok:true}>{
  actor=uuid(actor);
- const deviceId=uuid(id),requestId=uuid(input.requestId);if(!['rename','assign','revoke','theme'].includes(input.action))throw new DomainError('invalid_action','Onbekende schermactie.');
+ const deviceId=uuid(id),requestId=uuid(input.requestId);if(!['rename','assign','revoke','theme','configure'].includes(input.action))throw new DomainError('invalid_action','Onbekende schermactie.');
  return ocheTransaction(async client=>{
   await lockRequest(client,`actor:${actor}`,'device',requestId);
   const before=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1',[deviceId])).rows[0];if(!before)throw new DomainError('not_found','Dit scherm bestaat niet.',404);
   await lockScope(client,scopeOf(before));await requireScopeManager(client,actor,scopeOf(before));
   const clubId=input.action==='theme'&&input.theme==='club'?uuid(input.clubId):null;
-  const payload={id:deviceId,action:input.action,name:input.name??null,boardId:input.boardId??null,...(input.action==='theme'?{theme:input.theme,...(input.theme==='club'?{clubId}:{})}: {})},replay=await receipt<{ok:true}>(client,`actor:${actor}`,'device',requestId,payload);if(replay)return replay;
+  const payload={id:deviceId,action:input.action,name:input.name??null,boardId:input.boardId??null,...(input.action==='theme'?{theme:input.theme,...(input.theme==='club'?{clubId}:{})}: {}),...(input.action==='configure'?{layout:input.layout,secondaryBoardId:input.secondaryBoardId??null,expectedRevision:input.expectedRevision}: {})},replay=await receipt<{ok:true}>(client,`actor:${actor}`,'device',requestId,payload);if(replay)return replay;
   const row=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1 for update',[deviceId])).rows[0];
   if(input.action==='revoke'){
    await client.query('update dartflow_private.oche_devices set revoked_at=coalesce(revoked_at,clock_timestamp()),grant_version=grant_version+case when revoked_at is null then 1 else 0 end where id=$1',[row.id]);
@@ -246,9 +278,10 @@ export async function manageOcheDevice(actor:string,id:string,input:{action:'ren
    await client.query("update dartflow_private.oche_reservations set state='cancelled' where replaces_device_id=$1 and state='approved'",[row.id]);
   }else{
    if(row.revoked_at)throw new DomainError('device_revoked','Dit scherm is ontkoppeld.',410);
-   if(input.action==='theme'){if(!['dartflow','onzetrots','club'].includes(String(input.theme)))throw new DomainError('invalid_theme','Kies een beschikbare huisstijl.');if(clubId)await requireOcheLocationClubTheme(client,row,clubId);await client.query('update dartflow_private.oche_devices set theme=$2,branding_club_id=$3 where id=$1',[row.id,input.theme,clubId]);}
+   if(input.action==='configure')await configure(client,row,{layout:input.layout,boardId:input.boardId,secondaryBoardId:input.secondaryBoardId,expectedRevision:input.expectedRevision});
+   else if(input.action==='theme'){if(!['dartflow','onzetrots','club'].includes(String(input.theme)))throw new DomainError('invalid_theme','Kies een beschikbare huisstijl.');if(clubId)await requireOcheLocationClubTheme(client,row,clubId);await client.query('update dartflow_private.oche_devices set theme=$2,branding_club_id=$3 where id=$1',[row.id,input.theme,clubId]);}
    else if(input.action==='rename')await client.query('update dartflow_private.oche_devices set name=$2 where id=$1',[row.id,ocheName(input.name)]);
-   else{const boardId=input.boardId===null||input.boardId===undefined?null:uuid(input.boardId);await requireBoard(client,scopeOf(row),boardId);await client.query('update dartflow_private.oche_devices set board_id=$2,grant_version=grant_version+1 where id=$1',[row.id,boardId]);}
+   else{const boardId=input.boardId===null||input.boardId===undefined?null:uuid(input.boardId);await requireConfiguration(client,scopeOf(row),row.layout,boardId,row.secondary_board_id);await client.query('update dartflow_private.oche_devices set board_id=$2,configuration_revision=configuration_revision+1,grant_version=grant_version+1 where id=$1',[row.id,boardId]);}
   }
   const result={ok:true as const};await saveReceipt(client,`actor:${actor}`,'device',requestId,payload,result);await audit(client,actor,`screen.${input.action}`,row.id);return result;
  });
@@ -286,4 +319,38 @@ export async function cleanupOcheDevices():Promise<void>{
  await database().query("update dartflow_private.oche_reservations set state='expired' where state='approved' and expires_at<=clock_timestamp()");
  await database().query('delete from dartflow_private.oche_device_receipts where expires_at<clock_timestamp()');
  await database().query("update dartflow_private.oche_installations set code_hash=null,code_cipher=null where expires_at<clock_timestamp() and state='pending' and code_hash is not null");
+}
+
+/** A device can request review; it cannot activate a layout or select a lane. */
+export async function proposeOcheLayout(token:string,input:{layout:unknown;requestId:string}):Promise<OchePairing>{
+ const layout=parseOcheLayout(input.layout),requestId=uuid(input.requestId);
+ return ocheTransaction(async client=>{
+  // Scope lock must precede authorizeOcheAccess's last_seen row update, matching
+  // management's scope -> device ordering even after a long stand-by period.
+  const access=readOcheAccess(token),before=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1',[uuid(access.deviceId)])).rows[0];if(!before)throw unavailable();
+  const principal=`device:${before.id}`;await lockRequest(client,principal,'layout-proposal',requestId);await lockScope(client,scopeOf(before));
+  const device=await authorizeOcheAccess(token,client);
+  const previous=await receipt<OchePairing>(client,principal,'layout-proposal',requestId,{layout});if(previous)return previous;
+  const current=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1 for update',[device.id])).rows[0];
+  if(current.revoked_at)throw unavailable();
+  if(current.scope==='home'&&layout.scoreboards!==1)throw new DomainError('invalid_layout','Mijn scherm thuis ondersteunt één scorebord.');
+  // One pending proposal per display; effective assignments stay intact.
+  await client.query("update dartflow_private.oche_installations set state='revoked',code_hash=null,code_cipher=null where target_device_id=$1 and state='pending'",[current.id]);
+  for(let attempt=0;attempt<32;attempt++){
+   const code=newOcheCode(),digest=codeDigest(code);await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))',[`oche:code:${digest}`]);
+   if((await client.query('select 1 from dartflow_private.oche_installations where code_hash=$1',[digest])).rowCount)continue;
+   const row=(await client.query<Installation>(`insert into dartflow_private.oche_installations(id,platform,secret_hash,code_hash,code_cipher,layout_proposal,target_device_id,proposal_revision,expires_at) values($1,$2,$3,$4,$5,$6,$7,$8,clock_timestamp()+interval '10 minutes') returning *`,[randomUUID(),current.platform,secretHash(randomBytes(32).toString('base64url')),digest,encryptOcheReceipt(code),layout,current.id,current.configuration_revision])).rows[0];
+   const response=pairing(row,code,await now(client));await saveReceipt(client,principal,'layout-proposal',requestId,{layout},response);return response;
+  }
+  throw new DomainError('pairing_unavailable','Schermindeling wijzigen is tijdelijk niet beschikbaar.',503);
+ });
+}
+export async function getOcheLayoutProposal(actor:string,code:string):Promise<OcheLayoutProposal>{
+ actor=uuid(actor);const client=database();await requireProfile(client,actor);
+ const row=(await client.query<Installation>("select * from dartflow_private.oche_installations where code_hash=$1 and state='pending' and expires_at>clock_timestamp()",[codeDigest(code)])).rows[0];if(!row)throw invalidCode();
+ if(!row.target_device_id)return {layoutProposal:row.layout_proposal??null,targetDeviceId:null};
+ const device=(await client.query<OcheDeviceRow>('select * from dartflow_private.oche_devices where id=$1',[row.target_device_id])).rows[0];if(!device||device.revoked_at)throw unavailable();
+ await requireScopeManager(client,actor,scopeOf(device));
+ if(device.configuration_revision!==row.proposal_revision)throw new DomainError('configuration_conflict','De indeling is gewijzigd. Maak op de tv een nieuw voorstel of wijzig via Schermen.',409);
+ return {layoutProposal:row.layout_proposal??null,targetDeviceId:device.id,device:(await listDevices(client,actor)).find(item=>item.id===device.id)??null};
 }
