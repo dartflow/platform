@@ -14,7 +14,7 @@ const client = new pg.Client({ connectionString: process.env.DARTFLOW_DATABASE_A
 await client.connect();
 try {
  await client.query('begin');
- for (const [key, name] of [['organizer','Danny Goldenbelt'],['player1','Michael de Groot'],['player2','Raymond van Dijk'],['outsider','Speler andere club']]) await client.query('insert into dartflow_private.profiles(id,name) values($1,$2) on conflict(id) do nothing',[ids[key],name]);
+ for (const [key, username, displayName] of [['organizer','dannygoldenbelt','Danny Goldenbelt'],['player1','michaeldegroot','Michael de Groot'],['player2','raymondvandijk','Raymond van Dijk'],['outsider','outsider','Speler andere club']]) await client.query('insert into dartflow_private.profiles(id,name,display_name) values($1,$2,$3) on conflict(id) do nothing',[ids[key],username,displayName]);
  if(local) {
   await client.query("update dartflow_private.profiles set email='fixture-'||id::text||'@example.invalid',email_verified=true where id=any($1::uuid[])",[[ids.organizer,ids.player1,ids.player2,ids.outsider]]);
   await client.query("insert into dartflow_private.platform_roles(user_id,role) values($1,'owner') on conflict(user_id) do nothing",[ids.organizer]);

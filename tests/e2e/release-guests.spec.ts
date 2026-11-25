@@ -1,18 +1,24 @@
 import {test,expect,type BrowserContext,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import type {OrganizerParticipants,OrganizerParticipantResponse} from '../../lib/event-guests-types';
+import type {MatchView} from '../../lib/types';
+import {choosePerDartInput} from './helpers/score-console';
 
 async function login(page:Page,name:string){await page.goto('/inloggen?next=/app');await page.getByRole('button',{name:new RegExp(name)}).click();await expect(page).toHaveURL('/app');}
 
 test('real web import previews without roster writes, applies guests once and preserves organizer authority',async({browser,baseURL},info)=>{
- test.setTimeout(60000);
+ test.setTimeout(90000);
  if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Guest acceptance requires the explicit loopback application.');
  const origin=new URL(baseURL).origin,owner=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'}),other=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});
  const roster=async(context:BrowserContext,id:string):Promise<OrganizerParticipants>=>{const r=await context.request.get(`/api/organizer-participants/${id}`);expect(r.status(),await r.text()).toBe(200);return r.json();};
+ const platform=async(action:Record<string,unknown>)=>{const r=await owner.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action}});expect(r.status(),await r.text()).toBe(200);return r.json();};
+ const readMatch=async(id:string):Promise<MatchView>=>{const r=await owner.request.get(`/api/matches/${id}`);expect(r.status(),await r.text()).toBe(200);return r.json();};
+ const matchAction=async(id:string,action:Record<string,unknown>,guestId?:string):Promise<MatchView>=>{const state=await readMatch(id),r=await owner.request.post(`/api/matches/${id}/actions`,{headers:{Origin:origin},data:{requestId:randomUUID(),expectedRevision:state.revision,action,...(guestId?{guestId}:{})}});expect(r.status(),await r.text()).toBe(200);return r.json();};
+ let activeGuestMatch:{id:string;guestId:string}|undefined;
  try{
   expect((await(await owner.request.get('/api/session')).json()).local).toBe(true);
   const manager=await owner.newPage(),outsider=await other.newPage();await login(manager,'Danny Goldenbelt');await login(outsider,'Michael de Groot');
-  const suffix=randomUUID().slice(0,8),first=`Gast Een ${suffix}`,second=`Gast Twee ${suffix}`,created=await owner.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action:{type:'tournament.create',ownership:'personal',visibility:'private',eligibility:'all',name:`Gastimport ${suffix}`,format:'knockout',capacity:8,boards:1,requireWriter:false}}});
+  const suffix=randomUUID().slice(0,8),first=`Gast Een ${suffix}`,second=`Gast Twee ${suffix}`,created=await owner.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action:{type:'tournament.create',ownership:'personal',visibility:'private',eligibility:'all',name:`Gastimport ${suffix}`,format:'knockout',capacity:8,boards:1,requireWriter:false,drawCheckedInOnly:true}}});
   expect(created.status(),await created.text()).toBe(200);const event=await created.json(),before=await roster(owner,event.id);expect(before.guests).toHaveLength(0);
   await manager.goto(`/app/hall/${event.id}`);const panel=manager.getByRole('region',{name:'Gastdeelnemers en import',exact:true});await expect(panel).toBeVisible();await panel.getByText('Deelnemerslijst controleren en importeren',{exact:true}).click();
   await panel.getByRole('textbox',{name:'CSV met name, username en type',exact:true}).fill(`name,username,type\n${first},,guest\n${second},,guest\n${first},,guest\n`);
@@ -27,5 +33,18 @@ test('real web import previews without roster writes, applies guests once and pr
   const forged=await other.request.post('/api/organizer-participants',{headers:{Origin:origin},data:{requestId:randomUUID(),expectedRevision:appliedRoster.revision,action:{type:'guest.checkin',entityId:event.id,guestId:appliedRoster.guests[0].id}}});expect(forged.status()).toBe(403);expect((await roster(owner,event.id)).guests).toEqual(appliedRoster.guests);
   const accounts=await(await owner.request.get('/api/platform')).json();for(const guest of appliedRoster.guests)expect(accounts.players.some((p:{id:string})=>p.id===guest.id)).toBe(false);
   await info.attach('real-import-preview-and-event-guests',{body:await manager.screenshot(),contentType:'image/png'});
- }finally{await Promise.allSettled([owner.close(),other.close()]);}
+  // The organiser is also the opposing account player. Guest writer priority
+  // must show one usable console, with Back returning to this match overview.
+  const guestId=appliedRoster.guests.find(guest=>guest.name===first)!.id,organizer=(await(await owner.request.get('/api/session')).json()).user.id;
+  const guestCheckin=await owner.request.post('/api/organizer-participants',{headers:{Origin:origin},data:{requestId:randomUUID(),expectedRevision:(await roster(owner,event.id)).revision,action:{type:'guest.checkin',entityId:event.id,guestId}}});expect(guestCheckin.status(),await guestCheckin.text()).toBe(200);
+  await platform({type:'competition.register',id:event.id});await platform({type:'competition.checkin',id:event.id});const planned=await platform({type:'competition.plan',id:event.id,drawMethod:'manual',manualPlayerIds:[guestId,organizer]});expect(planned.entity.state.fixtures).toHaveLength(1);expect(planned.entity.state.fixtures[0].players).toEqual([guestId,organizer]);
+  const started=await platform({type:'fixture.start',id:event.id,fixtureId:planned.entity.state.fixtures[0].id});activeGuestMatch={id:started.matchId,guestId};await matchAction(started.matchId,{type:'accept'},guestId);await matchAction(started.matchId,{type:'accept'});const live=await matchAction(started.matchId,{type:'start'},guestId);expect(live.permissions.canScore).toBe(false);expect(live.guestOperators?.find(guest=>guest.id===guestId)?.permissions.canScore).toBe(true);
+  await manager.setViewportSize({width:390,height:844});await manager.goto(`/wedstrijd/${live.id}`);const dialog=manager.getByRole('dialog',{name:'Schermvullende score-invoer',exact:true});await expect(dialog).toHaveCount(1);await expect(dialog).toContainText(`Gastbediening · ${first}`);await choosePerDartInput(manager);await expect(dialog.getByRole('button',{name:'S20',exact:true})).toBeEnabled();
+  await dialog.getByRole('button',{name:'Terug naar wedstrijd',exact:true}).click();await expect(dialog).toHaveCount(0);await expect(manager.getByRole('region',{name:'Lokale gastbediening',exact:true})).toBeVisible();await expect(manager.getByRole('button',{name:'Scoreweergave openen',exact:true})).toHaveCount(1);expect((await readMatch(live.id)).revision).toBe(live.revision);
+  await manager.getByRole('button',{name:'Scoreweergave openen',exact:true}).click();await expect(dialog).toHaveCount(1);await expect(dialog).toContainText(`Gastbediening · ${first}`);await expect(dialog.getByRole('button',{name:'S20',exact:true})).toBeEnabled();await dialog.getByRole('button',{name:'S20',exact:true}).click();await dialog.getByRole('button',{name:'Beurt vastleggen',exact:true}).click();
+  await expect.poll(async()=>(await readMatch(live.id)).visits.length).toBe(1);const accepted=await readMatch(live.id);expect(accepted.visits[0]).toMatchObject({player:guestId,dartHits:['S20'],score:20,remainingAfter:481});expect(accepted.guestPlayerIds).toEqual([guestId]);expect(accepted.players.some(player=>player.id===organizer)).toBe(true);expect(accepted.guestOperators?.find(guest=>guest.id===guestId)?.permissions.canScore).toBe(true);await info.attach('real-organizer-player-single-guest-console',{body:await manager.screenshot(),contentType:'image/png'});
+ }finally{
+  try{if(activeGuestMatch){let state=await readMatch(activeGuestMatch.id);const guestSide=state.players.findIndex(player=>player.id===activeGuestMatch!.guestId);for(let turn=0;state.status==='live'&&turn<100;turn++){const remaining=state.remaining[state.turn],score=state.turn===guestSide?Math.min(180,remaining):0;state=await matchAction(state.id,{type:'score',score,darts:3,doubleConfirmed:score>0&&score===remaining},activeGuestMatch.guestId);}if(state.status==='result'){await matchAction(state.id,{type:'confirm'},activeGuestMatch.guestId);await matchAction(state.id,{type:'confirm'});}}}
+  finally{await Promise.allSettled([owner.close(),other.close()]);}
+ }
 });

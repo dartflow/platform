@@ -1,0 +1,540 @@
+[
+  {
+    "id": "qr-beginnen",
+    "title": "Vanaf de baan-QR naar je eerste pijl",
+    "category": "Beginnen",
+    "href": "/app/play",
+    "intro": "Scan de QR van de fysieke baan. Die opent dezelfde baan op je telefoon; de QR geeft niemand automatisch schrijfrechten.",
+    "steps": [
+      "Controleer baannaam en beschikbaarheid. Een gesloten, bezette of gereserveerde baan toont waarom je nog niet kunt beginnen.",
+      "Kies Start een spel en vul voor iedere gast een herkenbare voornaam in. Gebruik bij gelijke namen een toevoeging, bijvoorbeeld Sam links en Sam rechts.",
+      "Kies Eén telefoon of Eigen telefoons. Bij één telefoon bedient de aangewezen schrijver de hele partij.",
+      "Controleer deelnemers, starter, spelvorm, regels en legs. Start en voer de eerste beurt in."
+    ],
+    "examples": [
+      "Sam links en Sam rechts zijn twee afzonderlijke deelnemers, ook wanneer zij later dezelfde schermnaam gebruiken."
+    ],
+    "notes": [
+      "Een toegewezen officiële partij gebruikt de bestaande competitielobby en vastgelegde deelnemers. Meld je daarvoor aan met je eigen account."
+    ],
+    "keywords": [
+      "qr beginnen",
+      "Vanaf de baan-QR naar je eerste pijl",
+      "Beginnen"
+    ]
+  },
+  {
+    "id": "gasten-en-telefoons",
+    "title": "Gasten, eigen telefoons en bestaande profielen",
+    "category": "Beginnen",
+    "href": "/app/play",
+    "intro": "Vrijspel kan met alleen een voornaam. Iedere deelname krijgt een eigen tijdelijke identiteit; een latere naamwijziging maakt geen nieuwe speler.",
+    "steps": [
+      "Voeg iedere gast afzonderlijk toe. Kies bij een gedeeld toestel wie schrijft.",
+      "Laat een bestaande speler op het gedeelde toestel de eigen @gebruikersnaam en zescijferige spelers-PIN invoeren. De primaire accountsessie blijft dezelfde.",
+      "Deel bij Eigen telefoons uitsluitend de privé-deelnamelink met de bedoelde speler. De publieke baan-QR geeft geen scorebevoegdheid.",
+      "Lees vóór bevestigen voor welke speler de beurt wordt ingevoerd. Bij teams staat ook het actuele teamlid in beeld."
+    ],
+    "examples": [
+      "Op één telefoon voert Sam de beurt van Noor in; bij eigen telefoons kan Noor pas invoeren wanneer Noor aan de beurt is."
+    ],
+    "notes": [
+      "Bewaar een privélink zorgvuldig; stuur de link niet in een openbaar bericht of op Oche Live."
+    ],
+    "keywords": [
+      "gasten en telefoons",
+      "Gasten, eigen telefoons en bestaande profielen",
+      "Beginnen"
+    ]
+  },
+  {
+    "id": "gast-bewaren",
+    "title": "Een gastresultaat aan je profiel koppelen",
+    "category": "Resultaten",
+    "href": "/app/mymatches",
+    "intro": "Na afronding kan iedere gast de eigen deelname eenmaal bewaren. De oorspronkelijke partij, scorekaart en tegenstander blijven bestaan.",
+    "steps": [
+      "Open Bewaar mijn resultaat bij de juiste gast. Op één telefoon heeft iedere gast een eigen privélink of privé-QR.",
+      "Meld je aan of maak een account en controleer welke speler en partij je koppelt.",
+      "Bevestig de koppeling. Opnieuw openen met hetzelfde account geeft dezelfde koppeling; een ander account kan de deelname niet opnieuw claimen.",
+      "Gebruik de getoonde vervaldatum. Standaard is de claim zeven dagen na afronding geldig."
+    ],
+    "examples": [
+      "Noor scant de privé-QR met haar naam en meldt zich aan. Alleen Noors deelname wordt gekoppeld; Sams deelname blijft van Sam."
+    ],
+    "notes": [
+      "Een voornaam, openbaar partijnummer of baan-QR is geen claimbewijs.",
+      "Koppelen maakt vrijspel, training of een asynchrone uitdaging niet achteraf geschikt voor de landelijke rating.",
+      "Een verlopen claimlink wordt niet verlengd door opnieuw openen. Geregistreerde tegenstanders en officiële archieven houden hun eigen bewaarbeleid."
+    ],
+    "keywords": [
+      "gast bewaren",
+      "Een gastresultaat aan je profiel koppelen",
+      "Resultaten"
+    ]
+  },
+  {
+    "id": "hervatten-offline",
+    "title": "Hervatten en lokaal bewaarde beurten",
+    "category": "Herstel",
+    "href": "/app/play",
+    "intro": "Hervat partij opent dezelfde partij, inclusief leg, set, actieve speler, schrijver en laatst geaccepteerde beurt.",
+    "steps": [
+      "Open een actieve of onderbroken partij vanuit Spelen of Mijn wedstrijden. Een gast gebruikt de bestaande privésessie of privéherstellink.",
+      "Verwerkt betekent door de server geaccepteerd. Wacht op verbinding vermeldt hoeveel beurten alleen op dit toestel bewaard zijn. Controle nodig vraagt om beoordeling van twee verschillende lezingen.",
+      "Bij terugkeer haalt DartFlow eerst de actuele serverstand op. Bewaarde beurten worden daarna met hun oorspronkelijke actie-ID en volgorde verzonden.",
+      "Bewaar lokale gegevens totdat de server de opdrachten heeft bevestigd. Wis browser- of appgegevens niet zolang er invoer wacht."
+    ],
+    "examples": [
+      "Een beurt van 60 op 148 wordt bij herhaald verzenden één keer verwerkt: de geaccepteerde restscore is 88."
+    ],
+    "notes": [
+      "Oche Live en andere toestellen tonen uitsluitend de laatst geaccepteerde stand, met verbindingsstatus.",
+      "Een privéherstellink herstelt de serverpartij, maar kan gewiste lokale wachtrijgegevens niet terughalen.",
+      "Bij remote spel stopt lokale voortgang zodra een bevestigde tegenstandersbeurt ontbreekt."
+    ],
+    "keywords": [
+      "hervatten offline",
+      "Hervatten en lokaal bewaarde beurten",
+      "Herstel"
+    ]
+  },
+  {
+    "id": "schrijver-en-bord",
+    "title": "Schrijver overdragen en van bord wisselen",
+    "category": "Herstel",
+    "href": "/app/play",
+    "intro": "Score-invoer hoort bij de huidige schrijverstoewijzing. Een bordwissel bewaart de partijidentiteit en scorekaart.",
+    "steps": [
+      "Synchroniseer of beoordeel wachtende invoer vóór een overdracht. Controleer de laatst bevestigde beurt en stand.",
+      "Kies de nieuwe schrijver. Oude offline opdrachten blijven gekoppeld aan de eerdere toewijzing en kunnen controle nodig hebben.",
+      "Kies een beschikbare andere baan en bevestig de verplaatsing. De server controleert de beschikbaarheid tijdens de toewijzing.",
+      "Controleer het actuele baannummer. Bij een mislukte wissel blijft duidelijk op welke baan de partij staat."
+    ],
+    "examples": [
+      "Er zijn 12 beurten geaccepteerd en 2 lokaal bewaard. Verwerk of beoordeel die 2 eerst en draag daarna de schrijver over met de bevestigde stand."
+    ],
+    "notes": [
+      "Een oude hervattingsactie neemt een inmiddels opnieuw bezette baan niet over. Kies een andere vrije baan of hervat later.",
+      "Een officiële partij volgt de bestaande rechten van de wedstrijdleiding."
+    ],
+    "keywords": [
+      "schrijver en bord",
+      "Schrijver overdragen en van bord wisselen",
+      "Herstel"
+    ]
+  },
+  {
+    "id": "baantimer",
+    "title": "De baantimer en onderbroken partijen",
+    "category": "Herstel",
+    "href": "/app/play",
+    "intro": "Na 120 seconden zonder geaccepteerde nieuwe beurt volgt een waarschuwing van 60 seconden. Daarna wordt de fysieke baan vrijgegeven en blijft de partij onderbroken bewaard.",
+    "steps": [
+      "Lees de aftelling op telefoon en Oche Live. Beide gebruiken dezelfde serverdeadline.",
+      "Gebruik tijdens de waarschuwing zo nodig een verlenging. Er zijn maximaal twee gedeelde verlengingen voor dezelfde partij.",
+      "Na vrijgave hervat je de bewaarde partij op een beschikbare baan. Standaard is een onderbroken gastpartij zeven dagen hervatbaar vanaf de onderbreking.",
+      "De vervaldatum en het aantal gebruikte verlengingen blijven behouden na refresh, reconnect, nieuwe leg en bordwissel."
+    ],
+    "examples": [
+      "Na 120 seconden zonder nieuwe geaccepteerde beurt verschijnt de waarschuwing. Na nog 60 seconden komt het bord vrij en blijft de partij onderbroken bewaard."
+    ],
+    "notes": [
+      "Alleen een geldige nieuwe geaccepteerde beurt vernieuwt de activiteit. Refresh, presence, dubbele inzending en gewone correctie doen dat niet.",
+      "Offline invoer blijft bij de oorspronkelijke partij. Een opvolgende partij op dezelfde baan krijgt een eigen toegang en toewijzing.",
+      "De serverworker verwerkt de deadline ook wanneer alle schermen gesloten zijn. Eerder gewiste scores zijn alleen herstelbaar met een betrouwbare bron."
+    ],
+    "keywords": [
+      "baantimer",
+      "De baantimer en onderbroken partijen",
+      "Herstel"
+    ]
+  },
+  {
+    "id": "x01",
+    "title": "301, 501 en 701: openen, bust en finish",
+    "category": "Spelregels",
+    "href": "/app/play",
+    "intro": "301 staat bij een verse keuze standaard op dubbel openen en dubbel uit. 501 en 701 starten open en eindigen standaard op een dubbel.",
+    "steps": [
+      "Kies startscore, openingsregel, eindregel en legs vóór de eerste pijl. Een bewust opgeslagen preset kan andere vooraf zichtbare instellingen gebruiken.",
+      "Voer tijdens dubbel openen de werkelijke pijlen op volgorde in. Pijlen vóór de openingsdubbel tellen nul; die dubbel en resterende geldige pijlen tellen mee.",
+      "Gebruik na openen desgewenst totaalinvoer. Bevestig bij checkout het werkelijke aantal gebruikte pijlen en de einddubbel.",
+      "Gebruik Correctie om een geaccepteerde beurt via de toegestane route te herstellen. Undo van een opening herstelt ook de openingsstatus."
+    ],
+    "examples": [
+      "301 met S20, D16, T20: de S20 vóór de dubbel telt nul. D16 + T20 = 92; er blijft 209 over.",
+      "Bij dubbel uit zijn een negatieve rest, één over en nul zonder einddubbel bust. De stand gaat terug naar vóór de beurt.",
+      "Bullseye (DB) telt als openings- en einddubbel. Buitenbull (SB) is 25 en geen dubbel."
+    ],
+    "notes": [
+      "De server weigert onmogelijke totalen en checkouts binnen het gekozen aantal pijlen.",
+      "Vergelijk statistieken met dezelfde startscore, openingsregel, eindregel en bron. Dubbel-in-metingen vermelden welke geregistreerde pijlen meetellen."
+    ],
+    "keywords": [
+      "x01",
+      "301, 501 en 701: openen, bust en finish",
+      "Spelregels"
+    ]
+  },
+  {
+    "id": "cricket",
+    "title": "Cricket met treffers en punten",
+    "category": "Spelregels",
+    "href": "/app/play",
+    "intro": "Cricket gebruikt 20, 19, 18, 17, 16, 15 en bull. Drie treffers sluiten een doel.",
+    "steps": [
+      "Registreer per beurt maximaal drie werkelijke pijlen, in volgorde. Een triple blijft één pijl.",
+      "Single, dubbel en triple leveren één, twee en drie treffers. Buitenbull telt één en bullseye twee.",
+      "Overtollige treffers leveren punten zolang de tegenstander dat doel nog niet gesloten heeft.",
+      "Met punten wint wie alles sluit en minstens evenveel punten heeft. Zonder punten wint de eerste die alles sluit."
+    ],
+    "examples": [
+      "Bij twee treffers op 20 sluit T20 het doel en scoort het overschot 40 punten, zolang de tegenstander 20 open heeft."
+    ],
+    "notes": [
+      "Een doel dat alle zijden gesloten hebben levert geen punten meer op.",
+      "Oche Live toont de zeven doelen, treffers, punten en actieve speler. Treffermetingen gebruiken de werkelijk geregistreerde treffers en pijlen."
+    ],
+    "keywords": [
+      "cricket",
+      "Cricket met treffers en punten",
+      "Spelregels"
+    ]
+  },
+  {
+    "id": "tactics",
+    "title": "Tactics 5 en Tactics 3",
+    "category": "Spelregels",
+    "href": "/app/play",
+    "intro": "De standaard Tactics 5 gebruikt 20 tot en met 10 en bull, vijf treffers per doel en puntentelling.",
+    "steps": [
+      "Kies Tactics 5 of de afzonderlijke preset Tactics 3. Controleer puntentelling en eindregel vóór de start.",
+      "Voer de pijlen op volgorde in. Sluiten en overschot worden binnen dezelfde pijl verwerkt.",
+      "Tactics 5 vereist alle doelen gesloten en meer punten. Als alle zijden alles sluiten met gelijke punten, wordt de leg herkenbaar overgespeeld zonder legwinst.",
+      "Tactics 3 gebruikt drie treffers en de Cricket-eindregel: alles dicht en minstens evenveel punten."
+    ],
+    "examples": [
+      "Vier treffers op 20 + T20 sluit Tactics 5 en levert twee overtollige treffers: 40 punten zolang 20 bij de tegenstander open staat."
+    ],
+    "notes": [
+      "Een variant zonder punten toont vooraf de eigen eindregel. Een correctie rekent treffers, punten en de winstvoorwaarde opnieuw uit."
+    ],
+    "keywords": [
+      "tactics",
+      "Tactics 5 en Tactics 3",
+      "Spelregels"
+    ]
+  },
+  {
+    "id": "around",
+    "title": "Around the Clock instellen en spelen",
+    "category": "Oefenen",
+    "href": "/app/practice",
+    "intro": "Standaard speel je 1 tot en met 20 en daarna bull. Een geldige pijl verplaatst je één succes verder; een triple slaat geen doelen over.",
+    "steps": [
+      "Kies alle segmenten of uitsluitend singles, dubbels of triples. Kies afzonderlijk bull uit, beide bulls, alleen buitenbull of alleen bullseye.",
+      "Kies oplopend of aflopend en het aantal vereiste treffers per doel. Controleer de samenvatting.",
+      "Voer iedere pijl in. Resterende pijlen mogen direct op het volgende doel worden gebruikt.",
+      "Solo telt voltooiing en benodigde pijlen. Bij een directe partij wint de eerste die de gekozen reeks geldig voltooit."
+    ],
+    "examples": [
+      "Bij de standaard 1→20 telt T1 als één succes op 1; de volgende pijl moet 2 raken. S1, S2, S3 kan drie doelen in één beurt afronden."
+    ],
+    "notes": [
+      "De bullinstelling staat los van de segmentkeuze voor getallen. Vergelijk uitsluitend resultaten met dezelfde instellingen en meetregistratie."
+    ],
+    "keywords": [
+      "around",
+      "Around the Clock instellen en spelen",
+      "Oefenen"
+    ]
+  },
+  {
+    "id": "dubbelbingo",
+    "title": "Dubbelbingo, teams en kaartcodes",
+    "category": "Spelregels",
+    "href": "/app/play",
+    "intro": "Een kaart heeft negen unieke dubbels uit D1 tot en met D20. Iedereen gebruikt dezelfde kaart en posities.",
+    "steps": [
+      "Kies solo oefenen, twee tot vier losse spelers of twee teams. Leg de volgorde van teamleden vooraf vast.",
+      "Kies een horizontale, verticale of diagonale lijn, of volle kaart als eindregel.",
+      "Tik de werkelijk geraakte dubbel aan of kies Mis. Controleer maximaal drie pijlen vóór bevestigen. Singles en triples vullen geen vak.",
+      "Bij winst stopt de partij direct. De kaartcode kan dezelfde kaart voor een nieuwe, onafhankelijke partij openen."
+    ],
+    "examples": [
+      "Een geraakte D16 vult hetzelfde vak maar één keer. Een tweede D16 levert geen extra vak op. Stop direct bij de afgesproken winnende lijn."
+    ],
+    "notes": [
+      "Een herhaalde dubbel op een reeds gevuld vak geeft geen extra vak. Teams delen één kaart en leden gooien om beurten een volledige beurt.",
+      "De basisstatistiek toont treffers, pijlen en voltooiing. Een gericht raakpercentage vereist ook geregistreerde pogingen op die specifieke dubbel."
+    ],
+    "keywords": [
+      "dubbelbingo",
+      "Dubbelbingo, teams en kaartcodes",
+      "Spelregels"
+    ]
+  },
+  {
+    "id": "versla-mijn-leg",
+    "title": "Versla mijn leg maken en spelen",
+    "category": "Uitdagingen",
+    "href": "/app/uitdagingen",
+    "intro": "Een geschikte voltooide 301-, 501- of 701-leg kan een asynchrone uitdaging worden. De bronversie en spelregels worden vastgelegd.",
+    "steps": [
+      "Open de scorekaart in Historie en kies Daag uit met deze leg. Bij ongeschikte oude registratie staat de reden erbij.",
+      "Controleer bronspeler, startscore, opening, eindregel en vergelijking op pijlen of beurten. Kies de toegestane zichtbaarheid en deel de uitnodiging.",
+      "De ontvanger speelt op een eigen moment met dezelfde regels. Een historische beurt wordt pas na de eigen bevestigde beurt getoond.",
+      "Bekijk winnaar of gelijkspel. Kies Opnieuw proberen, Stuur een leg terug of Delen."
+    ],
+    "examples": [
+      "Jij gooit je eerste beurt; daarna verschijnt bronbeurt 1. Zonder betrouwbare werkelijke pijlaantallen is gelijk uit in dezelfde beurt een gelijkspel."
+    ],
+    "notes": [
+      "Ontbrekende checkoutpijlen, openingsmissers of vroeg geëindigde beurten worden niet uit totaalscores afgeleid. Ontbreekt betrouwbare pijlregistratie, dan geldt vooraf vergelijking op beurten; finishen in dezelfde beurt is gelijk.",
+      "Een latere broncorrectie verandert een lopende poging niet stilzwijgend. Een ongeldig verklaarde bron sluit nieuwe pogingen en krijgt een melding bij bestaande pogingen.",
+      "Deze poging is een oefenuitdaging. De oorspronkelijke partij telt eenmaal in haar oorspronkelijke statistieken."
+    ],
+    "keywords": [
+      "versla mijn leg",
+      "Versla mijn leg maken en spelen",
+      "Uitdagingen"
+    ]
+  },
+  {
+    "id": "finishtraining",
+    "title": "Finishtraining en persoonlijk advies",
+    "category": "Oefenen",
+    "href": "/app/practice",
+    "intro": "Een standaardsessie heeft vijf pogingen op dezelfde reststand. Iedere poging begint opnieuw en heeft maximaal drie pijlen.",
+    "steps": [
+      "Kies een finish zelf of open maximaal één persoonlijk voorstel na een partij. Het voorstel vermeldt de werkelijk geregistreerde reststanden en frequentie.",
+      "Voer iedere pijl in. Registreer voor dubbelpercentages ook het beoogde doel; pas een voorgestelde route aan wanneer je daarvan afwijkt.",
+      "Checkout of bust beëindigt de poging. De volgende poging start opnieuw op de gekozen stand.",
+      "Schakel routehulp aan of uit. Vergelijk successen, pijlen en geregistreerde dubbelpogingen met sessies onder dezelfde instellingen."
+    ],
+    "examples": [
+      "Bij doel 68 begint elk van de vijf pogingen opnieuw op 68. Een bust beëindigt de huidige poging; de volgende poging start weer op 68."
+    ],
+    "notes": [
+      "Totaalscores tonen geen bedoelde dubbels. Advies uit zulke historie gaat daarom over een openstaande finish, niet over een verzonnen zwakke dubbel.",
+      "Zonder bruikbare historie kun je zelf een finish kiezen. Een ontbrekend dubbelpercentage wordt niet als nul gepresenteerd."
+    ],
+    "keywords": [
+      "finishtraining",
+      "Finishtraining en persoonlijk advies",
+      "Oefenen"
+    ]
+  },
+  {
+    "id": "score-correcties",
+    "title": "Invoer, correcties en officiële uitslagen",
+    "category": "Wedstrijden",
+    "href": "/app/mymatches",
+    "intro": "De server bepaalt welke beurt is geaccepteerd en wie mag schrijven of corrigeren.",
+    "steps": [
+      "Controleer actieve speler en restscore. Voer een totaal of de benodigde afzonderlijke pijlen in.",
+      "Corrigeer invoer vóór bevestigen. Een geaccepteerde laatste beurt herstel je met de toegestane Undo of correctieactie.",
+      "Voor oudere of officiële correcties vermeld je een reden en volgt beoordeling door de bevoegde rol.",
+      "Een oudere correctie kan latere beurten of vervolgwedstrijden raken. Los de beoordeling op voordat een ongeldige uitslag wordt verwerkt."
+    ],
+    "examples": [
+      "Undo van S20, D16, T20 bij dubbel-in herstelt ook de oorspronkelijke ongeopende status als die beurt de eerste opening bevatte."
+    ],
+    "notes": [
+      "Verwerkt, Wacht op verbinding, Controle nodig en Te bevestigen zijn verschillende toestanden.",
+      "Een officiële bevestiging, bracketdoorstroming en ratingboeking volgen uitsluitend de geaccepteerde bevoegde verwerking."
+    ],
+    "keywords": [
+      "score correcties",
+      "Invoer, correcties en officiële uitslagen",
+      "Wedstrijden"
+    ]
+  },
+  {
+    "id": "oche-koppelen",
+    "title": "Een baan en Oche Live koppelen",
+    "category": "Banen",
+    "href": "/app/schermen",
+    "intro": "De spelersapp bedient invoer. Oche Live is het gekoppelde alleen-lezen baanscherm.",
+    "steps": [
+      "Open Schermen of de betreffende baan en maak of gebruik de bestaande koppeling.",
+      "Voer de getoonde koppelcode in op het bedoelde scherm en controleer de baannaam.",
+      "Kies de juiste rotatie. Controleer namen, actieve beurt en scorekaart in staand en liggend beeld.",
+      "Bij verbindingsverlies blijft de laatst bevestigde stand zichtbaar. Een onbekende spel- of regelversie vraagt om een schermupdate."
+    ],
+    "examples": [
+      "Kies op je eigen thuisscherm een actieve partij bij Schermen. De telefoon voert in; Oche Live toont uitsluitend de geaccepteerde stand."
+    ],
+    "notes": [
+      "De vaste baan-QR blijft dezelfde publieke bestemming. Privéclaim-, herstel- en schrijflinks horen niet op het baanscherm.",
+      "Cricket/Tactics hebben een doelenmatrix, Around toont het doel, bingo kaarten en finishtraining de reststand en sessievoortgang."
+    ],
+    "keywords": [
+      "oche koppelen",
+      "Een baan en Oche Live koppelen",
+      "Banen"
+    ]
+  },
+  {
+    "id": "historie-statistieken",
+    "title": "Historie, filters en rankinggevolgen",
+    "category": "Resultaten",
+    "href": "/app/mymatches",
+    "intro": "Vrijspel, training, uitdagingen en officiële wedstrijden behouden hun oorspronkelijke resultaatbestemming.",
+    "steps": [
+      "Open Historie voor je scorekaart, een gastbewaaractie of een geschikte leguitdaging.",
+      "Filter op spelvorm en waar van toepassing startscore, opening, eindregel en bron.",
+      "Vergelijk alleen meetwaarden die de registratie ondersteunt. Pijlaantallen en dubbelpogingen kunnen bij oudere gegevens ontbreken.",
+      "Gebruik de bestaande officiële competitie- en ratingregels voor toegelaten wedstrijden."
+    ],
+    "examples": [
+      "Een later geclaimde gastpartij blijft Vrijspel en wordt geen landelijke ratingpartij. Een Cricket-resultaat krijgt geen X01-gemiddelde."
+    ],
+    "notes": [
+      "Een gastclaim voegt dezelfde deelname eenmaal aan je eigen historie toe en verandert de oorspronkelijke rankingstatus niet.",
+      "Een onderbroken partij is geen gewonnen of bevestigde uitslag."
+    ],
+    "keywords": [
+      "historie statistieken",
+      "Historie, filters en rankinggevolgen",
+      "Resultaten"
+    ]
+  },
+  {
+    "id": "organiseren",
+    "title": "Verenigingen, rollen, competities en toernooien",
+    "category": "Organiseren",
+    "href": "/app/events",
+    "intro": "De bestaande rollen en reglementen bepalen wie een officiële partij mag plannen, oproepen, hervatten en bevestigen.",
+    "steps": [
+      "Open je vereniging, competitie of toernooi vanuit de bestaande navigatie.",
+      "Leg deelnemers, spelregels, planning en resultaatbestemmingen vast voordat de betreffende wedstrijd begint.",
+      "Gebruik de baan-QR voor de toegewezen officiële partij. Beide geplande spelers bevestigen de eigen identiteit.",
+      "Behandel onderbrekingen, correcties en betwiste uitslagen vanuit Wedstrijdleiding."
+    ],
+    "examples": [
+      "Een organisator kiest vooraf Tactics 3 voor een fase. Spelers gebruiken daarna de vastgelegde 12 doelen en drie marks."
+    ],
+    "notes": [
+      "Vrijspelrechten of het bezit van een baan-QR geven geen wedstrijdleidingrechten.",
+      "Leagues, circuits, persoonlijke rating en verenigingsstanden gebruiken dezelfde geaccepteerde oorspronkelijke officiële partij."
+    ],
+    "keywords": [
+      "organiseren",
+      "Verenigingen, rollen, competities en toernooien",
+      "Organiseren"
+    ]
+  },
+  {
+    "id": "account-meldingen-hulp",
+    "title": "Account, meldingen en probleemoplossing",
+    "category": "Ondersteuning",
+    "href": "/app/settings",
+    "intro": "Privégegevens, openbare identiteit en meldingskeuzes hebben ieder hun eigen instelling.",
+    "steps": [
+      "Bewerk volledige naam en displaynaam in Profiel. De volledige naam blijft privé; de vastgelegde @gebruikersnaam staat vast.",
+      "Open Meldingen voor inbox, categorievoorkeuren en Android-toestemming. Ontbrekende pushconfiguratie blokkeert spelen niet.",
+      "Open de informatieknop bij een functie voor het bijbehorende artikel. Help blijft doorzoekbaar op dezelfde termen als de interface.",
+      "Meld bij een probleem de partijreferentie en het tijdstip. Stuur geen PIN, privélink, token of wachtwoord mee."
+    ],
+    "examples": [
+      "Zoek op ‘gast bewaren’ in Help en open vanuit het antwoord het bijbehorende handleidingartikel."
+    ],
+    "notes": [
+      "Noodzakelijke score- en hersteluitleg staat ook in het lopende speelscherm voor een tijdelijke verbindingsonderbreking.",
+      "Voer de openbare baan- of partijreferentie door; deel privéherstel- en claimgegevens uitsluitend met de bedoelde deelnemer."
+    ],
+    "keywords": [
+      "account meldingen hulp",
+      "Account, meldingen en probleemoplossing",
+      "Ondersteuning"
+    ]
+  },
+  {
+    "id": "supporttickets",
+    "title": "Een supportvraag stellen en opvolgen",
+    "category": "Hulp & account",
+    "href": "/app/support",
+    "intro": "Bewaar je vraag en de reacties op één plek met een vast DF-nummer.",
+    "steps": [
+      "Doorzoek Help & FAQ. Kies Nieuw ticket wanneer je vraag nog niet beantwoord is.",
+      "Meld je aan. DartFlow bewaart de bedoelde ticketbestemming tijdens het aanmelden.",
+      "Kies categorie, onderwerp en omschrijving en sla het ticket op. Noteer het vaste DF-nummer.",
+      "Open Mijn supporttickets voor status en gesprek. Kijk wie aan zet is voordat je reageert.",
+      "Sluit je ticket wanneer de vraag is afgehandeld, of heropen het als de beschikbare actie dat toestaat."
+    ],
+    "examples": [
+      "Een reactie van support kan de status op Wacht op gebruiker zetten. Jouw antwoord zet de vraag terug bij support."
+    ],
+    "notes": [
+      "Deel geen wachtwoorden, pincodes of inlogcodes.",
+      "Je ziet alleen eigen tickets en openbare opvolging; interne supportnotities blijven privé.",
+      "Is de ontvangst niet bevestigd? Probeer dezelfde aanvraag opnieuw. Je invoer blijft staan."
+    ],
+    "keywords": [
+      "support",
+      "helpdesk",
+      "ticket",
+      "DF-nummer",
+      "reactie"
+    ]
+  },
+  {
+    "id": "meldingen-instellen",
+    "title": "Meldingen openen en kanalen instellen",
+    "category": "Hulp & account",
+    "href": "/app/settings/notifications",
+    "intro": "Houd je inbox, persoonlijke kanaalkeuzes en toesteltoestemming uit elkaar.",
+    "steps": [
+      "Open Jouw meldingen en klik of tik op het hele item om de juiste bestemming te openen.",
+      "Kies Instellingen → Meldingen voor de compacte categorieën met inbox, e-mail en push.",
+      "Controleer bij een vaste beheerstand waarom een kanaal door het platform wordt bepaald. Je eigen keuze blijft bewaard.",
+      "Kies welke productupdates je volgt. Een productabonnement verandert je deelname aan wedstrijden niet.",
+      "Schakel push voor dit toestel bewust in. Geef daarnaast toestemming in Android of je browser."
+    ],
+    "examples": [
+      "Je kunt toestelpush weigeren en toch nieuwe supportreacties in je inbox lezen."
+    ],
+    "notes": [
+      "Een geforceerde beheerstand geeft geen toesteltoestemming of extra toegangsrechten.",
+      "Als een bestemming vervallen is, keer dan terug naar jouw meldingen of open de betreffende functie opnieuw."
+    ],
+    "keywords": [
+      "meldingen",
+      "inbox",
+      "voorkeuren",
+      "browserpush",
+      "toestemming"
+    ]
+  },
+  {
+    "id": "productupdates",
+    "title": "Wat is nieuw lezen en releases publiceren",
+    "category": "Hulp & account",
+    "href": "/app/whats-new",
+    "intro": "Bekijk gepubliceerde verbeteringen voor het product en kanaal dat je gebruikt.",
+    "steps": [
+      "Open Meer → Wat is nieuw?",
+      "Kies DartFlow of Oche Live en het kanaal Web/PWA of Android.",
+      "Open de release om de volledige tekst en publicatiedatum te lezen.",
+      "Bevoegde platformbeheerders maken een opgeslagen concept in Releasebeheer en bekijken het voorbeeld.",
+      "Publicatie maakt de release zichtbaar. Een afzonderlijk bevestigde campagne kondigt de update aan bij in aanmerking komende ontvangers."
+    ],
+    "examples": [
+      "Een release voor Alle kanalen verschijnt bij zowel Web/PWA als Android."
+    ],
+    "notes": [
+      "Een concept is niet zichtbaar voor spelers.",
+      "Een testmelding gaat uitsluitend naar de gekozen proefontvanger en is geen campagne.",
+      "Redactionele releaseberichten staan los van deployments en Play Store-workflows."
+    ],
+    "keywords": [
+      "release",
+      "updates",
+      "nieuw",
+      "campagne",
+      "publiceren"
+    ]
+  }
+]

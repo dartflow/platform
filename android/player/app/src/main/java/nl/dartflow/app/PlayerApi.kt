@@ -11,6 +11,22 @@ import org.json.JSONObject
 
 class PlayerApiFailure(val status: Int, val code: String, val feedback: String, val retryAfterMs: Long = 0) : Exception(feedback)
 
+/** Rich, authenticated views can contain twenty bounded image attachments. This
+ * changes only the response buffer; request sizes and authorization stay fixed. */
+internal fun playerResponseBudget(value: String): Int = runCatching {
+    val raw = URI(value).rawPath.orEmpty()
+    val path = when {
+        raw == "/api/player/v1" -> "/"
+        raw.startsWith("/api/player/v1/") -> raw.removePrefix("/api/player/v1")
+        raw.startsWith("/api/") -> raw.removePrefix("/api")
+        else -> raw
+    }
+    val rich = path in listOf("/theme", "/theme/admin", "/community/feed", "/feed") ||
+        Regex("/feed/post/[A-Za-z0-9_-]{1,128}").matches(path) ||
+        Regex("/clubhouse(?:/[A-Za-z0-9_-]{1,128}(?:/(?:channels/[A-Za-z0-9_-]{1,128}|calendar\\.ics|calendar-feed))?)?").matches(path)
+    if (rich) 8_000_000 else 2_000_000
+}.getOrDefault(2_000_000)
+
 /** No cookies, redirects, HTTP caching or request/response logging. */
 class PlayerApi(val origin: String = BuildConfig.API_ORIGIN) {
     var identityProvider: (() -> PlayerRequestIdentity?)? = null
@@ -23,6 +39,11 @@ class PlayerApi(val origin: String = BuildConfig.API_ORIGIN) {
         require(uri.scheme == "https" || (BuildConfig.DEBUG && uri.scheme == "http" && uri.host in listOf("127.0.0.1", "localhost")))
     }
     fun serverNow() = System.currentTimeMillis() + serverOffsetMs
+    suspend fun calendar(path: String): ByteArray {
+        require(Regex("/clubhouse/[A-Za-z0-9_-]{1,128}/calendar\\.ics").matches(path))
+        return withPlayerRequestAuthorization(currentIdentity = { identityProvider?.invoke() }, bearer = { bearerProvider?.invoke(it) }, unauthorized = unauthorized,
+            request = { token -> request("${origin.trimEnd('/')}/api/player/v1$path", "GET", null, token, calendarResponse = true) }).text("calendar").toByteArray(Charsets.UTF_8)
+    }
     suspend fun call(path: String, body: JSONObject? = null, method: String = if (body == null) "GET" else "POST", anonymous: Boolean = false): JSONObject {
         require(path.startsWith('/') && !path.startsWith("//") && !path.contains("://") && !path.contains("..") && !path.contains('#'))
         val url = "${origin.trimEnd('/')}/api/player/v1$path"
@@ -32,6 +53,18 @@ class PlayerApi(val origin: String = BuildConfig.API_ORIGIN) {
             bearer = { identity -> bearerProvider?.invoke(identity) },
             unauthorized = unauthorized,
             request = { token -> request(url, method, body, token) },
+        )
+    }
+    /** A play capability authorizes only its play session and never replaces the signed-in account. */
+    suspend fun play(path: String, body: JSONObject? = null, capability: String? = null, challengeLink: String? = null): JSONObject {
+        require(path.startsWith("/play/") && !path.contains("..") && !path.contains('#') && !path.contains("://"))
+        require(capability == null || capability.length in 16..2048 && capability.all { it.isLetterOrDigit() || it in "-_.~" })
+        require(challengeLink == null || challengeLink.length in 16..2048 && challengeLink.all { it.isLetterOrDigit() || it in "-_.~" })
+        val method = if (body == null) "GET" else "POST"
+        if (identityProvider?.invoke() == null) return request("${origin.trimEnd('/')}/api$path", method, body, null, playCapability = capability, challengeLink = challengeLink)
+        return withPlayerRequestAuthorization(
+            currentIdentity = { identityProvider?.invoke() }, bearer = { identity -> bearerProvider?.invoke(identity) }, unauthorized = unauthorized,
+            request = { token -> request("${origin.trimEnd('/')}/api/player/v1$path", method, body, token, playCapability = capability, challengeLink = challengeLink) },
         )
     }
     suspend fun authCall(auth: JSONObject, path: String, body: JSONObject? = null, token: String? = null, method: String = "POST"): JSONObject {
@@ -45,16 +78,19 @@ class PlayerApi(val origin: String = BuildConfig.API_ORIGIN) {
         require(!key.startsWith("sb_secret_"))
         return request("$authUrl/auth/v1$path", method, body, token, key, authRequest = true)
     }
-    private suspend fun request(url: String, method: String, body: JSONObject?, token: String?, apiKey: String? = null, authRequest: Boolean = false): JSONObject = withContext(Dispatchers.IO) {
+    private suspend fun request(url: String, method: String, body: JSONObject?, token: String?, apiKey: String? = null, authRequest: Boolean = false, playCapability: String? = null, challengeLink: String? = null, calendarResponse: Boolean = false): JSONObject = withContext(Dispatchers.IO) {
+        val maximumResponseBytes = playerResponseBudget(url)
         val connection = URL(url).openConnection() as HttpURLConnection
         try {
             connection.instanceFollowRedirects = false
             connection.connectTimeout = 10_000; connection.readTimeout = 12_000
             connection.useCaches = false
             connection.requestMethod = method
-            connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("Accept", if (calendarResponse) "text/calendar" else "application/json")
             connection.setRequestProperty("Cache-Control", "no-store")
             token?.let { connection.setRequestProperty("Authorization", "Bearer $it") }
+            playCapability?.let { connection.setRequestProperty("X-DartFlow-Play-Capability", it) }
+            challengeLink?.let { connection.setRequestProperty("X-DartFlow-Challenge-Link", it) }
             apiKey?.let { connection.setRequestProperty("apikey", it) }
             if (body != null) {
                 val bytes = body.toString().toByteArray(Charsets.UTF_8)
@@ -71,14 +107,19 @@ class PlayerApi(val origin: String = BuildConfig.API_ORIGIN) {
             val bytes = stream?.use { input ->
                 val output = ByteArrayOutputStream()
                 val buffer = ByteArray(8192)
-                while (output.size() <= 2_000_000) {
-                    val count = input.read(buffer, 0, minOf(buffer.size, 2_000_001 - output.size()))
+                while (output.size() <= maximumResponseBytes) {
+                    val count = input.read(buffer, 0, minOf(buffer.size, maximumResponseBytes + 1 - output.size()))
                     if (count < 0) break
                     output.write(buffer, 0, count)
                 }
                 output.toByteArray()
             } ?: ByteArray(0)
-            if (bytes.size > 2_000_000) throw PlayerApiFailure(502, "response_size", "De servergegevens zijn te groot. Probeer opnieuw.")
+            if (bytes.size > maximumResponseBytes) throw PlayerApiFailure(502, "response_size", "De servergegevens zijn te groot. Probeer opnieuw.")
+            if (calendarResponse && status in 200..299) {
+                val calendar = String(bytes, Charsets.UTF_8)
+                require(connection.contentType.orEmpty().startsWith("text/calendar") && calendar.startsWith("BEGIN:VCALENDAR") && calendar.trimEnd().endsWith("END:VCALENDAR")) { "De agenda-export is ongeldig." }
+                return@withContext json("calendar" to calendar)
+            }
             val result = runCatching { JSONObject(String(bytes, Charsets.UTF_8)) }.getOrDefault(JSONObject())
             if (status !in 200..299) {
                 // Provider payloads can contain credentials/addresses. Do not surface them.

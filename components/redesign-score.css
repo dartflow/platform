@@ -1,0 +1,633 @@
+/* Web scoring lives in a body-level portal. Keep the panel styling with its
+   input surfaces so the same rules work for local, online and practice play. */
+.score-console[role="dialog"] {
+  --score-ink: var(--ch-bg, #101411);
+  --score-panel: var(--ch-surface, #191f1b);
+  --score-key: var(--ch-raised, #202923);
+  --score-line: var(--ch-border, #303c33);
+  --score-muted: var(--ch-muted, #aab7ad);
+  --score-text: var(--ch-text, #f2f5ef);
+  --score-lime: var(--ch-primary, #c5fa59);
+  --score-on-lime: var(--ch-on-primary, #18210d);
+  --score-warning: var(--ch-warning, #f8d18c);
+  --score-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --score-gap: clamp(8px, 1.6dvh, 16px);
+  --score-target: 48px;
+  --score-edge: max(14px, env(safe-area-inset-left), env(safe-area-inset-right));
+  gap: var(--score-gap);
+  padding: max(10px, env(safe-area-inset-top)) var(--score-edge) max(10px, env(safe-area-inset-bottom));
+  color: var(--score-text);
+  background: radial-gradient(ellipse at 10% 0%, #25433544, transparent 57%), var(--score-ink);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.score-console > .score-console-header {
+  height: auto;
+  min-height: 40px;
+  padding-block: 1px;
+  gap: 10px;
+}
+
+.score-console-header > span:nth-child(2) {
+  color: var(--score-muted);
+  font-size: clamp(.75rem, 1.6vw, .875rem);
+  font-weight: 700;
+}
+
+.score-console :is(.score-console-header button, .score-console-footer button, .score-console-options header button) {
+  border: 1px solid var(--score-line);
+  border-radius: 8px;
+  color: var(--score-text);
+  background: var(--score-panel);
+  padding: 7px 11px;
+  min-height: 40px;
+  font-size: .8125rem;
+  font-weight: 700;
+}
+
+.score-console :is(.score-console-connected, .score-console-offline) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  color: var(--score-muted);
+  font-size: .75rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.score-console :is(.score-console-connected, .score-console-offline)::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--score-lime);
+}
+
+.score-console .score-console-offline { color: var(--score-warning); }
+.score-console .score-console-offline::before { background: currentColor; }
+
+.score-console :is(.score-console-players, .dart-console-scoreboard .play-sides) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex: 0 0 auto;
+  align-items: stretch;
+  min-width: 0;
+  gap: 8px;
+}
+
+.score-console :is(.score-console-players, .dart-console-scoreboard .play-sides) > :only-child {
+  grid-column: 1 / -1;
+}
+
+.score-console :is(.score-console-players > div, .dart-console-scoreboard .play-sides > article) {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 0 7px;
+  align-content: center;
+  align-items: center;
+  min-height: 94px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--score-line);
+  background: var(--score-panel);
+}
+
+.score-console :is(.score-console-players > .is-active, .dart-console-scoreboard .play-sides > .play-turn) {
+  border-color: color-mix(in srgb, var(--score-lime), var(--score-panel) 54%);
+  background: linear-gradient(112deg, #a3ce5621, transparent 72%), var(--score-panel);
+  box-shadow: inset 3px 0 var(--score-lime);
+}
+
+.score-console :is(.score-console-players > div > span, .dart-console-scoreboard .play-sides h2) {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  color: var(--score-text);
+  font-size: .875rem;
+  line-height: 1.18;
+  margin: 0;
+  font-weight: 700;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.score-console :is(.console-remaining, .dart-console-scoreboard .play-big) {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  color: var(--score-text);
+  font: 800 clamp(2.6rem, 7vw, 3.65rem)/.95 var(--score-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.035em;
+  white-space: nowrap;
+}
+
+.score-console :is(.is-active > .console-remaining, .dart-console-scoreboard .play-turn > .play-big) {
+  color: var(--score-lime);
+}
+
+.score-console :is(.score-console-players > div > small, .dart-console-scoreboard .play-sides article > span) {
+  grid-column: 1;
+  grid-row: 2;
+  max-width: 15ch;
+  font-size: .6875rem;
+  line-height: 1.25;
+  color: var(--score-muted);
+}
+
+.score-console .dart-console-scoreboard {
+  flex: 0 0 auto;
+  max-height: 34%;
+  scrollbar-width: thin;
+}
+
+.score-console .dart-console-scoreboard .play-mode-bingo .play-sides {
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+}
+
+.score-console .dart-console-scoreboard .play-mode-bingo .play-sides > article {
+  min-height: 76px;
+  padding-inline: 8px;
+  gap: 4px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+}
+
+.score-console .dart-console-scoreboard .play-mode-bingo .play-sides h2 {
+  font-size: .75rem;
+}
+
+.score-console .dart-console-scoreboard .play-mode-bingo .play-big {
+  grid-column: 1;
+  justify-self: start;
+  font-size: 1.6rem;
+}
+
+.score-console .dart-console-scoreboard .play-mode-bingo .play-sides article > span {
+  grid-row: 3;
+  font-size: .625rem;
+}
+
+.score-console :is(.score-console-form, .score-input-mode > .visit-total-input) {
+  flex: 1 0 auto;
+  min-height: 0;
+  height: auto;
+  gap: 8px;
+}
+
+.score-console .score-input-mode { min-height: max-content; }
+.score-console .dart-console-input { scrollbar-width: thin; }
+
+.score-console .visit-total-input h2 {
+  font-size: .8125rem;
+  font-weight: 700;
+  color: var(--score-muted);
+}
+
+.score-console .score-console-entry {
+  min-height: 53px;
+  height: auto;
+  padding: 5px 12px;
+  flex: 0 0 auto;
+  color: var(--score-muted);
+  background: var(--score-panel);
+  border: 1px solid var(--score-line);
+  border-radius: 9px;
+}
+
+.score-console .score-console-entry > span {
+  font-size: .8125rem;
+  line-height: 1.22;
+  max-width: 68%;
+}
+
+.score-console .score-console-entry input {
+  color: var(--score-text);
+  font: 800 clamp(2rem, 7vw, 2.85rem)/1 var(--score-display);
+  font-variant-numeric: tabular-nums;
+  width: 4ch;
+}
+
+.score-console .score-console-entry input::placeholder { color: var(--score-muted); opacity: .66; }
+
+.score-console :is(.visit-total-darts, .score-console-finish, .visit-total-finish) {
+  min-height: 36px;
+  height: auto;
+  gap: 7px;
+  color: var(--score-muted);
+  font-size: .8125rem;
+}
+
+.score-console .score-console-finish label { flex: 1; }
+.score-console :is(.visit-total-darts, .score-console-finish, .dart-pad-segments) button {
+  min-height: 38px;
+  min-width: 42px;
+  border: 1px solid var(--score-line);
+  border-radius: 7px;
+  color: var(--score-text);
+  background: var(--score-panel);
+}
+
+.score-console .score-console-finish .score-console-dart-picks { gap: 4px; }
+.score-console :is(.visit-total-darts, .score-console-finish, .dart-pad-segments) button[aria-pressed="true"] {
+  border-color: var(--score-lime);
+  color: var(--score-lime);
+  background: color-mix(in srgb, var(--score-lime), var(--score-panel) 91%);
+}
+
+.score-console :is(.visit-total-finish, .score-console-finish) input[type="checkbox"] {
+  flex: none;
+  accent-color: var(--score-lime);
+}
+
+.score-console .score-console-keypad {
+  gap: 7px;
+  min-height: 0;
+  grid-template-rows: repeat(4, minmax(var(--score-target), 1fr));
+}
+
+.score-console :is(.score-console-keypad, .dart-score-pad .play-keypad, .dart-pad-special, .dart-around-input) button {
+  min-height: var(--score-target);
+  border: 1px solid var(--score-line);
+  border-radius: 8px;
+  background: var(--score-key);
+  color: var(--score-text);
+}
+
+.score-console .score-console-keypad button {
+  font: 800 clamp(1.45rem, 4.7vw, 2.15rem)/1 var(--score-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-console .score-console-keypad :is([aria-label="Gehele score wissen"], [aria-label="Laatste cijfer wissen"]) {
+  background: var(--score-panel);
+  color: var(--score-muted);
+  font: 700 1rem/1 var(--font);
+}
+
+.score-console :is(.score-console-keypad, .dart-score-pad, .dart-around-input) button:not(:disabled):active {
+  background: var(--score-lime);
+  color: var(--score-on-lime);
+  border-color: var(--score-lime);
+}
+
+.score-console :is(.score-console-confirm, .dart-score-pad .dart-pad-submit) {
+  height: auto;
+  min-height: max(46px, var(--score-target));
+  border-radius: 8px;
+  border: 1px solid var(--score-lime);
+  background: var(--score-lime);
+  color: var(--score-on-lime);
+  font: 800 .95rem/1.2 var(--font);
+}
+
+.score-console :is(.score-console-confirm, .dart-score-pad .dart-pad-submit):disabled {
+  opacity: 1;
+  border-color: var(--score-line);
+  color: var(--score-muted);
+  background: color-mix(in srgb, var(--score-panel), var(--score-ink) 25%);
+}
+
+.score-console :is(.score-console-message, .dart-console-status, .visit-total-input p[role="alert"], .dart-pad-error) {
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 2px 1px;
+  color: var(--score-muted);
+  font-size: .75rem;
+  line-height: 1.35;
+  overflow: visible;
+}
+
+.score-console :is(.score-console-message.has-warning, .visit-total-input p[role="alert"], .dart-pad-error) {
+  color: var(--score-warning);
+}
+
+.score-console :is(.score-console-footer, .dart-console-options) {
+  min-height: 40px;
+  flex: 0 0 auto;
+  color: var(--score-muted);
+  font-size: .75rem;
+}
+
+.score-console :is(.dart-console-options, .visit-total-attempts) > summary {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 5px 9px;
+  border: 1px solid var(--score-line);
+  border-radius: 7px;
+  color: var(--score-text);
+  background: var(--score-panel);
+  cursor: pointer;
+}
+
+.score-console :is(.dart-console-options, .visit-total-attempts) > summary::-webkit-details-marker { display: none; }
+.score-console :is(.dart-console-options, .visit-total-attempts) > summary::marker { content: ""; }
+.score-console :is(.dart-console-options, .visit-total-attempts) > summary::after {
+  content: "+";
+  margin-inline-start: auto;
+  color: var(--score-lime);
+  font-size: 1rem;
+  line-height: 1;
+}
+.score-console :is(.dart-console-options, .visit-total-attempts)[open] > summary::after { content: "−"; }
+
+.score-console :is(.score-console-options, .dart-console-options[open] > div, .visit-total-attempts[open]) {
+  z-index: 3;
+  border-color: var(--score-line);
+  background: var(--score-panel);
+  box-shadow: 0 10px 50px #000b;
+  scrollbar-width: thin;
+}
+
+.score-console .visit-total-attempts[open] { z-index: 4; }
+.score-console :is(.score-console-options, .dart-console-options[open], .visit-total-attempts[open]) :is(.field, label) {
+  color: var(--score-text);
+}
+
+.score-console :is(.score-console-options, .dart-console-options[open], .visit-total-attempts[open]) select {
+  min-height: 40px;
+  margin-block: 5px;
+  border: 1px solid var(--score-line);
+  border-radius: 7px;
+  background: var(--score-ink);
+  color: var(--score-text);
+}
+
+.score-console :is(.score-console-options, .dart-console-options[open]) .button { min-height: 44px; }
+
+.score-console .dart-score-pad .dart-pad-current {
+  color: var(--score-muted);
+  font-weight: 700;
+}
+
+.score-console .dart-score-pad .dart-pad-current strong {
+  color: var(--score-lime);
+  font: 800 1.55rem/1 var(--score-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-console .dart-score-pad .play-darts > span {
+  border-color: var(--score-line);
+  background: var(--score-panel);
+  color: var(--score-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-console .dart-score-pad .play-darts button {
+  color: var(--score-muted);
+  background: var(--score-panel);
+  border-color: var(--score-line);
+}
+
+.score-console .dart-score-pad .play-darts {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) 44px;
+}
+
+.score-console .dart-score-pad > .play-keypad {
+  min-height: 0;
+  grid-template-rows: repeat(4, minmax(var(--score-target), 1fr));
+}
+
+.score-console .dart-score-pad h2 { color: var(--score-text); }
+.score-console .dart-score-pad .dart-pad-special button {
+  font-size: .8125rem;
+  color: var(--score-text);
+  background: var(--score-panel);
+}
+
+.score-console .dart-score-pad .dart-pad-advanced summary { min-height: 38px; }
+.score-console .dart-around-input button { min-height: 60px; }
+
+.score-console :is(button, summary, input, select):focus-visible {
+  outline: 2px solid var(--score-lime);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .score-console :is(button:not(:disabled), summary):hover { border-color: var(--score-lime); }
+  .score-console :is(.score-console-keypad, .dart-score-pad .play-keypad) button:not(:disabled):hover { background: color-mix(in srgb, var(--score-key), var(--score-lime) 14%); }
+}
+
+@media (min-width: 960px) and (min-height: 650px) {
+  .score-console[role="dialog"] {
+    --score-edge: max(32px, calc((100vw - 1020px) / 2));
+    --score-target: 48px;
+    display: grid;
+    grid-template-columns: minmax(250px, .72fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    row-gap: 16px;
+    column-gap: clamp(20px, 4vw, 46px);
+    padding-block: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-bottom));
+  }
+
+  .score-console > .score-console-header {
+    grid-area: 1 / 1 / 2 / -1;
+    border-bottom: 1px solid var(--score-line);
+    padding-bottom: 12px;
+  }
+
+  .score-console > :is(.score-console-players, .dart-console-scoreboard) {
+    grid-area: 2 / 1;
+    align-self: start;
+    max-height: 100%;
+  }
+
+  .score-console :is(.score-console-players, .dart-console-scoreboard .play-sides) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .score-console :is(.score-console-players > div, .dart-console-scoreboard .play-sides > article) {
+    min-height: clamp(104px, 19dvh, 167px);
+    padding: 16px 19px;
+  }
+
+  .score-console :is(.score-console-players > div > span, .dart-console-scoreboard .play-sides h2) { font-size: 1rem; }
+  .score-console :is(.score-console-players > div > small, .dart-console-scoreboard .play-sides article > span) { font-size: .8125rem; }
+  .score-console :is(.console-remaining, .dart-console-scoreboard .play-big) { font-size: clamp(3.4rem, 9dvh, 5.5rem); }
+
+  .score-console .dart-console-scoreboard .play-mode-bingo .play-sides { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .score-console > :is(.score-console-form, .dart-console-input) {
+    grid-area: 2 / 2;
+    align-self: stretch;
+    height: 100%;
+    min-height: 0;
+    padding: 13px;
+    background: color-mix(in srgb, var(--score-panel), transparent 38%);
+    border: 1px solid var(--score-line);
+    border-radius: 13px;
+    overflow: auto;
+    scrollbar-width: thin;
+  }
+
+  .score-console > :is(.score-console-footer, .dart-console-options) {
+    grid-area: 3 / 2;
+    align-self: end;
+    margin: 0;
+  }
+
+  .score-console > .dart-console-status {
+    grid-area: 3 / 1;
+    align-self: center;
+  }
+
+  .score-console > .board-activity-phone {
+    grid-area: 3 / 1;
+    margin: 0;
+    max-height: 30dvh;
+    overflow: auto;
+  }
+
+  .score-console :is(.score-console-options, .dart-console-options[open] > div, .visit-total-attempts[open]) {
+    bottom: 66px;
+    left: calc(var(--score-edge) + (100vw - 2 * var(--score-edge)) * .42);
+    right: var(--score-edge);
+    max-width: none;
+    margin: 0;
+  }
+
+  .score-console .score-console-keypad button { font-size: 2.15rem; }
+}
+
+@media (max-height: 650px) {
+  .score-console[role="dialog"] { --score-gap: 6px; }
+  .score-console :is(.score-console-players > div, .dart-console-scoreboard .play-sides > article) { min-height: 74px; padding-block: 7px; }
+  .score-console :is(.console-remaining, .dart-console-scoreboard .play-big) { font-size: clamp(2.2rem, 6.7vw, 3rem); }
+  .score-console .score-console-entry { min-height: 43px; padding-block: 4px; }
+  .score-console :is(.score-console-form, .score-input-mode > .visit-total-input) { gap: 5px; }
+  .score-console .score-console-keypad { gap: 5px; }
+  .score-console :is(.score-console-message, .dart-console-status) { font-size: .6875rem; }
+}
+
+@media (max-width: 375px) {
+  .score-console[role="dialog"] { --score-edge: 10px; }
+  .score-console :is(.score-console-players > div > span, .dart-console-scoreboard .play-sides h2) { font-size: .8125rem; }
+  .score-console .score-console-entry > span { font-size: .75rem; }
+}
+
+@media (orientation: landscape) and (max-height: 550px) {
+  .score-console.dart-score-console[role="dialog"] { padding-block: 6px; gap: 5px 12px; }
+  .score-console.dart-score-console > .score-console-header { min-height: 28px; }
+  .score-console.dart-score-console .score-console-header button { min-height: 28px; padding-block: 2px; }
+  .score-console.dart-score-console > .dart-console-scoreboard { max-height: 100%; }
+  .score-console .dart-console-scoreboard .play-sides { grid-template-columns: minmax(0, 1fr); }
+  .score-console .dart-console-scoreboard .play-mode-bingo .play-sides { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .score-console .visit-total-input .score-console-keypad { grid-template-rows: repeat(3, minmax(var(--score-target), 1fr)); }
+  .score-console .dart-score-pad > .play-keypad { grid-template-rows: repeat(2, minmax(var(--score-target), 1fr)); }
+  .score-console .dart-score-pad :is(.dart-pad-segments, .dart-pad-special) button { min-height: 36px; }
+  .score-console .dart-console-options > summary { min-height: 30px; }
+}
+
+/* Keep secondary controls usable beside the larger score keys, including on
+   short screens; the console owns scrolling when content needs more room. */
+.score-console[role="dialog"] :is(.score-console-header button, .score-console-footer button,
+  .score-console-options header button, .visit-total-darts button, .play-darts button,
+  .score-console-finish button, .dart-pad-segments button, .dart-pad-special button,
+  .dart-console-options > summary, .visit-total-attempts > summary,
+  .score-console-options select, .dart-console-options select, .visit-total-attempts select) {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Short portrait phones retain the whole exact-dart keypad. Put its options in
+   the header; the accessible summary still names the stand and corrections. */
+@media (max-height: 620px) and (orientation: portrait) {
+  .score-console.dart-score-console[role="dialog"] { --score-gap: 4px; padding-block: 6px; }
+  .score-console.dart-score-console > .score-console-header { gap: 4px; padding-right: 52px; }
+  .score-console.dart-score-console .dart-console-scoreboard .play-sides article { min-height: 52px; padding: 4px 8px; }
+  .score-console.dart-score-console .dart-console-scoreboard .play-sides h2 { font-size: .75rem; line-height: 1.15; }
+  .score-console.dart-score-console .dart-console-scoreboard .play-big { font-size: 1.875rem; }
+  .score-console.dart-score-console .dart-console-scoreboard .play-sides article > span { font-size: .5625rem; }
+  .score-console.dart-score-console .dart-score-pad { gap: 3px; }
+  .score-console.dart-score-console .dart-pad-heading .dart-pad-current strong { font-size: 1.25rem; }
+  .score-console.dart-score-console .dart-score-pad > .play-keypad { gap: 4px; min-height: 204px; }
+  .score-console.dart-score-console .play-darts button { min-height: 44px; }
+  .score-console.dart-score-console > .dart-console-options {
+    position: absolute; top: 6px; right: var(--score-edge); width: 44px; margin: 0;
+  }
+  .score-console.dart-score-console > .dart-console-options > summary { width: 44px; padding: 0; font-size: 0; line-height: 0; justify-content: center; }
+  .score-console.dart-score-console > .dart-console-options > summary::after { content: '⋯'; font-size: 1.5rem; line-height: 1; margin: 0; }
+  .score-console.dart-score-console > .dart-console-options[open] > div { position: fixed; bottom: 54px; left: 10px; right: 10px; }
+}
+
+/* Compact core/legacy total consoles: use the header for correction options,
+   keeping the existing accessible button text and all 48px score keys. */
+@media (max-height: 620px) and (orientation: portrait) {
+  .score-console:not(.dart-score-console)[role="dialog"] > .score-console-header {
+    padding-right: 52px;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] > .score-console-footer {
+    position: absolute;
+    top: max(10px, env(safe-area-inset-top));
+    right: var(--score-edge);
+    min-height: 44px;
+    width: 44px;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] > .score-console-footer > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] > .score-console-footer > button {
+    width: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] > .score-console-footer > button::after {
+    content: '⋯';
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+  .score-console.dart-score-console .score-input-mode > .visit-total-input {
+    gap: 4px;
+  }
+}
+
+@media (max-height: 620px) and (orientation: portrait) {
+  .score-console:not(.dart-score-console)[role="dialog"] [data-console-back] {
+    white-space: nowrap;
+    flex: none;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] .scoped-chat-console {
+    flex: none;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] .scoped-chat-console .scoped-chat-trigger {
+    background: var(--score-panel) !important;
+    color: var(--score-text);
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+  .score-console:not(.dart-score-console)[role="dialog"] .scoped-chat-console .scoped-chat-trigger::after {
+    content: '◌';
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+}
+
+/* Reserve the header controls in both landscape input modes; optional double
+   attempts use the existing left-hand column beside total input. */
+@media (orientation: landscape) and (max-height: 550px) {
+  .score-console.dart-score-console[role="dialog"] {
+    grid-template-rows: 46px minmax(0, 1fr) auto auto;
+  }
+  .score-console.dart-score-console[role="dialog"]:has(.score-input-mode:not([hidden]) > .visit-total-input) > .dart-console-scoreboard {
+    max-height: calc(100% - 52px);
+  }
+  .score-console.dart-score-console .visit-total-attempts:not([open]) {
+    position: absolute;
+    left: var(--score-edge);
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    width: calc((100% - 2 * var(--score-edge) - 12px) * .35);
+  }
+}

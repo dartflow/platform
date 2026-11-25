@@ -95,6 +95,33 @@ class OcheUiTest {
         compose.runOnIdle { connection.value = ConnectionState(DisplayUi.Screen(waiting,0,SystemClock.elapsedRealtime()),offline = true) }
         compose.onAllNodesWithContentDescription("QR-code").assertCountEquals(0)
     }
+    @Test fun explicitLocationClubThemeExpiresWithoutChangingCanonicalScore() {
+        val tokens = mapOf("background" to "#06182F", "surface" to "#0C2856", "surfaceRaised" to "#173B69", "border" to "#89A9CD", "text" to "#FFFFFF", "muted" to "#C3D5EE", "primary" to "#A8CEFF", "onPrimary" to "#06182F", "secondary" to "#FFD800", "focus" to "#A8CEFF", "success" to "#91E5A6", "warning" to "#FFD47A", "error" to "#FFADAD")
+        val branding = ClubDisplayTheme("Blauwe club", null, 3, 301_000, tokens)
+        val match = Match("club-match", 3, "live", listOf(Player("Noor",79,0,0,null,0,0),Player("Sam",188,0,0,null,0,0)), 0, 301, 1, 1, emptyList(), emptyList(), "club-session")
+        val snapshot = DisplaySnapshot("live", 1000, "club-event", 3, "Baan 1", "Clubscherm", "location", null, null, match, null, theme = "club", clubTheme = branding)
+        val current = mutableStateOf(ConnectionState(DisplayUi.Screen(snapshot, 1000, SystemClock.elapsedRealtime())))
+        compose.setContent { MaterialTheme { Box(Modifier.fillMaxWidth().height(580.dp)) { OcheApp(current.value, {}) } } }
+        compose.onNodeWithText("Blauwe club via DartFlow").assertIsDisplayed()
+        compose.onNodeWithText("Powered by DartFlow").assertIsDisplayed()
+        compose.onNodeWithText("79").assertIsDisplayed()
+        compose.runOnIdle { current.value = ConnectionState(DisplayUi.Screen(snapshot, 400_000, SystemClock.elapsedRealtime()), offline = true, message = "Laatst ontvangen stand") }
+        compose.onNodeWithText("DARTFLOW · OCHE LIVE").assertIsDisplayed()
+        compose.onNodeWithText("79").assertIsDisplayed()
+        compose.onNodeWithText("SCOREKAART").assertIsDisplayed()
+    }
+    @Test fun competitionLobbyKeepsPublicConfirmationsAndJoiningQrVisibleInBothLayouts() {
+        val landscape = mutableStateOf(false)
+        val lobby = CompetitionLobby("Clubleague", 3, listOf("De Pijl" to true, "Noor" to false), "De Pijl", Long.MAX_VALUE)
+        compose.setContent { MaterialTheme { Box(Modifier.fillMaxWidth().height(if (landscape.value) 240.dp else 480.dp)) { CompetitionLobbyView(lobby, "https://dartflow.nl/baan/synthetic-board", landscape.value) } } }
+        compose.onNodeWithText("COMPETITIELOBBY").assertIsDisplayed()
+        compose.onNodeWithText("De Pijl · bevestigd").assertIsDisplayed()
+        compose.onNodeWithText("Noor · wacht op deelname").assertIsDisplayed()
+        compose.onNodeWithContentDescription("QR-code").assertIsDisplayed()
+        compose.runOnIdle { landscape.value = true }
+        compose.onNodeWithText("Noor · wacht op deelname").assertIsDisplayed()
+        compose.onNodeWithContentDescription("QR-code").assertIsDisplayed()
+    }
     @Test fun bullWaitsForActualPhoneConfirmationWithoutShowingAScoreTurn() {
         val match = Match("bull-match", 3, "ready", listOf(Player("Danny",501,0,0,null,0,0),Player("Rick",501,0,0,null,0,0)), 0, 501, 1, 1, emptyList(), emptyList(), "bull-session", bull = Bull("match", "confirming", 1, listOf(0,1), listOf(Triple(1,0,"DB"),Triple(1,1,"SB")), 0, listOf(false,false)))
         compose.setContent { MaterialTheme { Box(Modifier.fillMaxWidth().height(330.dp)) { LiveView(match, false, false) } } }

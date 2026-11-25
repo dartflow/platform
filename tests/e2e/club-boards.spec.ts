@@ -57,7 +57,9 @@ test("club boards provide permanent registration QR and live read-only scoring w
     await clubForm.getByRole("button", { name: "Vereniging aanmaken", exact: true }).click();
     await expect(manager).toHaveURL(/\/app\/clubs\/[a-f0-9-]{36}(?:\?|$)/);
     const clubId = new URL(manager.url()).pathname.split("/").at(-1)!;
-    await manager.getByRole("navigation", { name: "Vereniging", exact: true }).getByRole("link", { name: "Banen", exact: true }).click();
+    await manager.getByRole("navigation", { name: "Verenigingsonderdelen", exact: true }).getByRole("link", { name: "Locaties & banen", exact: true }).click();
+    await expect(manager).toHaveURL(`/app/clubs/${clubId}/locaties`);
+    await manager.getByRole("link", { name: "Verenigingsbanen beheren", exact: true }).click();
     await expect(manager).toHaveURL(`/app/clubs/${clubId}/banen`);
     await manager.getByRole("button", { name: "Baan toevoegen", exact: true }).click();
     let create = manager.locator("form").filter({ has: manager.getByRole("heading", { name: "Baan toevoegen", exact: true }) });
@@ -80,18 +82,23 @@ test("club boards provide permanent registration QR and live read-only scoring w
     // A visitor follows the permanent QR, authenticates as their own fixture account,
     // and returns to the board without joining the club or entering an event.
     await a.goto(playUrl!);
-    await a.getByRole("link", { name: "Registreren of aanmelden", exact: true }).click();
+    await a.getByRole("navigation", { name: "Spelmenu", exact: true }).getByRole("link", { name: "Aanmelden", exact: true }).click();
     expect(new URL(a.url()).searchParams.get("next")).toBe(playUrl);
     await a.getByRole("button", { name: /Michael de Groot/ }).click();
     await expect(a).toHaveURL(playUrl!);
-    await expect(a.getByRole("heading", { name: "Vrij spelen op deze baan", exact: true })).toBeVisible();
-    await a.getByRole("combobox", { name: "Spelvorm", exact: true }).selectOption("local");
-    await a.getByRole("combobox", { name: "Startscore", exact: true }).selectOption("301");
-    await a.getByRole("combobox", { name: "Best of legs", exact: true }).selectOption("1");
+    const boardStart = a.locator("form").filter({has:a.getByRole("heading", {name:"Vrij spelen op deze baan",exact:true})});
+    await expect(boardStart).toHaveCount(1);
+    await expect(boardStart).toBeVisible();
+    await boardStart.getByRole("combobox", { name: "Spelvorm", exact: true }).selectOption("local");
+    await boardStart.getByRole("combobox", { name: "Startscore", exact: true }).selectOption("301");
+    // This binding case explicitly customizes 301 for aggregate single-in.
+    // Separate fresh-301 scenarios verify its default double-in rules.
+    await boardStart.getByRole("combobox", { name: "Openen", exact: true }).selectOption("single");
+    await boardStart.getByRole("combobox", { name: "Best of legs", exact: true }).selectOption("1");
     // Keep this registration/binding case on its published fixed opener; the
     // separate release-bull-start case verifies the complete bull procedure.
-    await a.locator('select[name="startProcedure"]').selectOption('home-first');
-    await a.getByRole("button", { name: "Op deze baan starten", exact: true }).click();
+    await boardStart.locator('select[name="startProcedure"]').selectOption('home-first');
+    await boardStart.getByRole("button", { name: "Op deze baan starten", exact: true }).click();
     await expect(a).toHaveURL(/\/app\/lobby\/[a-f0-9-]{36}/);
     await expect(screen.getByRole("heading", { name: "Jouw tegenstander staat klaar.", exact: true })).toBeVisible();
     await expect(screen.getByRole("link", { name: "Open deze baan ↗", exact: true })).toHaveAttribute("href", playUrl!);

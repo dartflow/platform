@@ -4,7 +4,7 @@ import {matchView,newGame} from '../../lib/domain';
 import type {MatchState,Overview,Profile} from '../../lib/types';
 
 const actor='00000000-0000-4000-8000-000000000002',other='00000000-0000-4000-8000-000000000003';
-const profile:Profile={id:actor,name:'Eerste speler',username:'firstplayer',displayNameConfirmed:true};
+const profile:Profile={id:actor,name:'Eerste speler',username:'firstplayer',displayName:'Eerste speler',usernameLocked:true,displayNameConfirmed:true};
 const overview:Overview={profile,clubs:[],currentClub:null,events:[],matches:[],boards:[],participants:[],history:[],standings:[],permissions:{canManage:false}};
 function localOnly(baseURL:string|undefined){if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('UI fixtures require a loopback app.');}
 
@@ -31,11 +31,11 @@ test('one-phone PIN form masks leading zero, clears every attempt and retries an
   await expect(page.getByText('Geef je telefoon aan je tegenstander.',{exact:false})).toBeVisible();await expect(page.getByText('Tweede speler',{exact:true})).toHaveCount(0);
   const pin=page.getByLabel('Spelerspincode',{exact:true});await expect(pin).toHaveAttribute('type','password');await expect(pin).toHaveAttribute('inputmode','numeric');
   await expect(page.getByLabel('Gebruikersnaam',{exact:true})).toHaveAttribute('maxlength','81');await page.getByLabel('Gebruikersnaam',{exact:true}).fill('@'+'a'.repeat(80));await expect(page.getByLabel('Gebruikersnaam',{exact:true})).toHaveValue('@'+'a'.repeat(80));
-  await page.getByLabel('Gebruikersnaam',{exact:true}).fill('@ secondplayer');await pin.fill('012345');await expect(pin).toHaveValue('012345');await page.getByRole('button',{name:'Toevoegen',exact:true}).click();
+  await page.getByLabel('Gebruikersnaam',{exact:true}).fill('@secondplayer');await pin.fill('012345');await expect(pin).toHaveValue('012345');await page.getByRole('button',{name:'Toevoegen',exact:true}).click();
   await expect(pin).toBeEmpty();await expect(page.getByRole('alert').filter({hasText:'Gebruikersnaam of spelerspincode klopt niet.'})).toBeVisible();await expect(page.getByText('Tweede speler',{exact:true})).toHaveCount(0);
   await pin.fill('012345');await page.getByRole('button',{name:'Sluiten',exact:true}).click();await page.getByRole('button',{name:'Speler toevoegen',exact:true}).click();await expect(pin).toBeEmpty();
   await pin.fill('012345');await page.getByRole('button',{name:'Toevoegen',exact:true}).click();await expect(pin).toBeEmpty();await page.getByRole('button',{name:'Koppeling controleren zonder pincode',exact:true}).click();await expect(page.getByText('Tweede speler',{exact:true}).first()).toBeVisible();await expect(page.getByRole('button',{name:'Speler toevoegen',exact:true})).toHaveCount(0);
-  expect(requests).toHaveLength(3);expect(requests[0].pin).toBe('012345');expect(requests[1].username).toBe('@ secondplayer');expect(requests[2].requestId).toBe(requests[1].requestId);expect(requests[2].pin).toBe('');
+  expect(requests).toHaveLength(3);expect(requests[0].pin).toBe('012345');expect(requests[1].username).toBe('@secondplayer');expect(requests[2].requestId).toBe(requests[1].requestId);expect(requests[2].pin).toBe('');
   expect(await page.evaluate(async()=>(await(await fetch('/api/session')).json()).user.id)).toBe(actor);
   const stored=await page.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}}));expect(stored).not.toContain('012345');expect(stored).not.toContain('secondplayer');
   await page.reload();await expect(page.getByText('Tweede speler',{exact:true}).first()).toBeVisible();

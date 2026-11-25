@@ -11,12 +11,12 @@ adb shell wm density 160
 adb shell rm -rf /data/local/tmp/dartflow-ui-fixtures
 adb shell mkdir -p /data/local/tmp/dartflow-ui-fixtures
 ui_test_status=0
-./gradlew --no-daemon --max-workers=2 :app:connectedDevelopmentDebugAndroidTest || ui_test_status=$?
+./gradlew --no-daemon --info --max-workers=2 :app:connectedDevelopmentDebugAndroidTest || ui_test_status=$?
 
 screenshot_directory=app/build/reports/androidTests/screenshots
 mkdir -p "$screenshot_directory"
 screenshot_status=0
-for screenshot_name in compact-login.png compact-screens.png compact-events.png score-status-default.png score-status-large-font.png compact-home-feed.png; do
+for screenshot_name in compact-login.png compact-screens.png compact-events.png score-status-default.png score-status-large-font.png compact-home-feed.png clubhouse-premium-dark.png clubhouse-premium-light-large-font.png clubhouse-wizard-review.png clubhouse-theme-dartflow-dark.png clubhouse-theme-dartflow-light.png clubhouse-theme-blue-dark.png clubhouse-theme-blue-light.png clubhouse-theme-magenta-dark.png clubhouse-theme-magenta-light.png support-owner.png notification-settings.png release-campaign-preview.png score-practice-darts-large-font.png score-practice-total-compact.png score-input-settings.png redesign-play-closed-360.png redesign-play-open-360.png redesign-home-active-360.png redesign-settings-account-360.png redesign-settings-score-360.png redesign-settings-preferences-360.png redesign-lobby-360.png redesign-more.png redesign-pair-320-light-large.png redesign-home-empty-412-large.png; do
   screenshot_path="$screenshot_directory/$screenshot_name"
   if adb exec-out cat "/data/local/tmp/dartflow-ui-fixtures/$screenshot_name" > "$screenshot_path" &&
     [[ "$(od -An -tx1 -N8 "$screenshot_path" | tr -d ' \n')" == 89504e470d0a1a0a ]]; then
@@ -31,4 +31,5 @@ done
 if (( ui_test_status != 0 )); then
   exit "$ui_test_status"
 fi
+python3 -B ../ci/verify_native_tests.py --app player --kind ui
 exit "$screenshot_status"

@@ -19,7 +19,7 @@ test('persisted remote/hybrid setup gives each account its own turn while local 
  const run=(actor:string,action:PlatformCommand['action'])=>executePlatformCommand(actor,{requestId:randomUUID(),action});
  const migration=(await readFile(new URL('../supabase/migrations/20261111203744_per_player_remote_scoring.sql',import.meta.url),'utf8')).replace(/^\s*(?:begin|commit);\s*$/gmi,'');
  try{
-  for(const [index,id] of people.entries())await owner.query('insert into dartflow_private.profiles(id,name) values($1,$2)',[id,`Per-player fixture ${index}`]);
+  for(const [index,id] of people.entries())await owner.query('insert into dartflow_private.profiles(id,name,display_name) values($1,$2,$3)',[id,`perplayer${id.slice(0,8)}`,`Per-player fixture ${index}`]);
   for(const setup of ['remote','hybrid','localone','localtwo'])await t.test(`${setup}: server-derived input, no duplicate throw and scoped migration`,async()=>{
    const ownTurns=['remote','hybrid'].includes(setup);
    const lobby=await run(a,{type:'lobby.create',opponentId:b,setup,startScore:301,bestOfLegs:1,scoringMode:ownTurns?'shared-writer':'per-player'});

@@ -116,8 +116,8 @@ class PlayerUiTest {
 
     @Test fun loginHeadingsRenderReadableColorsOnDarkBackgrounds() {
         compose.setContent { DartFlowPlayerTheme { PlayerApp(PlayerUiState(loading = false), PlayerActions()) } }
-        assertReadableText("Klaar voor jouw volgende leg?", PlayerInk)
-        assertReadableText("Welkom bij DartFlow", PlayerPanel)
+        assertReadableText("Klaar voor jouw volgende leg?", playerDefaultColor("background"))
+        assertReadableText("Welkom bij DartFlow", playerDefaultColor("surface"))
     }
 
     @Test fun loginGoogleActionFitsSmallPhoneWithoutScrolling() {
@@ -158,8 +158,8 @@ class PlayerUiTest {
         val name = compose.onNodeWithText("Schermnaam").getUnclippedBoundsInRoot()
         val navigation = compose.onNodeWithText("Vandaag", useUnmergedTree = true).getUnclippedBoundsInRoot()
         assertTrue("Screen-name entry must initially be visible above bottom navigation", name.bottom < navigation.top)
-        assertReadableText("Oche Live-schermen", PlayerInk)
-        assertReadableText("Scherm koppelen", PlayerPanel)
+        assertReadableText("Oche Live-schermen", playerDefaultColor("background"))
+        assertReadableText("Scherm koppelen", playerDefaultColor("surface"))
         saveFixtureScreenshot("compact-screens.png")
     }
 
@@ -277,6 +277,7 @@ class PlayerUiTest {
         compose.onNodeWithText("Profiel & instellingen").assertDoesNotExist()
         compose.onNodeWithText("Meer").performClick()
         compose.onNode(hasScrollAction() and hasAnyDescendant(hasText("Profiel & instellingen"))).performTouchInput { swipeUp() }
+        compose.onNodeWithTag("more-group-Jouw account").performScrollTo().performClick()
         compose.onNodeWithText("Meldingen").performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
         compose.runOnIdle { assertEquals(PlayerScreen.NOTIFICATIONS to null, destination) }
     }
@@ -313,7 +314,7 @@ class PlayerUiTest {
 
     @Test fun onboardingRequiresNamesAndSixAsciiDigitsWithConfirmation() {
         var saved: List<String>? = null
-        compose.setContent { DartFlowPlayerTheme { PlayerApp(signedIn(profile(false, false)), PlayerActions(completeProfile = { u, d, p, c -> saved = listOf(u, d, p, c) })) } }
+        compose.setContent { DartFlowPlayerTheme { PlayerApp(signedIn(profile(false, false)), PlayerActions(read = { json("valid" to true, "available" to true, "username" to "danny") }, completeProfile = { f, u, d, p, c -> saved = listOf(f, u, d, p, c) })) } }
         compose.onNodeWithText("Begin met spelen").performScrollTo().assertIsNotEnabled()
         compose.onNodeWithText("Spelerspincode").performScrollTo().performTextInput("012345")
         compose.onNodeWithText("Herhaal spelerspincode").performScrollTo().performTextInput("012344")
@@ -321,7 +322,9 @@ class PlayerUiTest {
         compose.onNodeWithText("Herhaal spelerspincode").performScrollTo().performTextClearance()
         compose.onNodeWithText("Herhaal spelerspincode").performTextInput("012345")
         compose.onNodeWithText("Begin met spelen").performScrollTo().assertIsEnabled().performClick()
-        compose.runOnIdle { assertEquals(listOf("danny", "Danny", "012345", "012345"), saved) }
+        compose.runOnIdle { assertNull(saved) }
+        compose.onNodeWithText("Definitief vastleggen").performClick()
+        compose.runOnIdle { assertEquals(listOf("", "danny", "Danny", "012345", "012345"), saved) }
     }
 
     @Test fun scoreKeypadAndConfirmFit360By640WithoutScrolling() {

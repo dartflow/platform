@@ -6,6 +6,10 @@ on:
         description: Bouw alleen een gesigneerde eerste AAB; upload niet naar Play
         type: boolean
         default: false
+      check_play_access:
+        description: Controleer uitsluitend bestaande Oche Play-toegang en tracks
+        type: boolean
+        default: false
   pull_request:
     branches: [main]
   push:
@@ -15,6 +19,53 @@ permissions:
   contents: read
 
 jobs:
+  play-access:
+    name: Oche Play-toegang · ${{ matrix.environment }}
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.check_play_access
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        environment: [play-internal, play-production]
+    environment: ${{ matrix.environment }}
+    env:
+      PLAY_PACKAGE: ${{ vars.PLAY_PACKAGE_NAME }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Controleer de vaste Oche-identiteit
+        env:
+          PROVIDER: ${{ vars.PLAY_WIF_PROVIDER }}
+          ACCOUNT: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+        run: |
+          test "$GITHUB_REPOSITORY" = dartflow/platform
+          test "$GITHUB_REF" = refs/heads/main
+          test "$PLAY_PACKAGE" = nl.dartflow.ochelive
+          test -n "$PROVIDER"
+          test -n "$ACCOUNT"
+      - name: Autoriseer uitsluitend de toegangscontrole
+        id: play-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          workload_identity_provider: ${{ vars.PLAY_WIF_PROVIDER }}
+          service_account: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Lees bestaande Oche-tracks en openbare appcertificaten
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.play-auth.outputs.access_token }}
+        run: |
+          python3 android/oche-live/ci/play_release.py list-tracks --package "$PLAY_PACKAGE" --signing-certificates
+          printf 'Oche access checked; no bundle upload, track update or release commit requested.\n' >> "$GITHUB_STEP_SUMMARY"
+
   verify:
     name: Android lint, tests en debugbuild
     runs-on: ubuntu-24.04
@@ -38,13 +89,29 @@ jobs:
       - name: Test veilige Play-promotie zonder credentials
         run: python3 -B ci/test_play_release.py
       - name: Controleer en bouw
-        run: ./gradlew --no-daemon :app:lintStagingDebug :app:testStagingDebugUnitTest :app:assembleStagingDebug :app:lintProductionDebug :app:testProductionDebugUnitTest :app:bundleProductionRelease
+        run: |
+          python3 -B ../ci/test_verify_native_tests.py
+          python3 -B ../ci/test_diagnose_maven.py
+          ./gradlew --no-daemon --info :app:lintStagingDebug :app:testStagingDebugUnitTest :app:assembleStagingDebug :app:lintProductionDebug :app:testProductionDebugUnitTest :app:bundleProductionRelease
+          python3 -B ../ci/verify_native_tests.py --app oche --kind unit
+      - name: Diagnose publieke Maven-POMs na mislukte controle
+        if: failure()
+        working-directory: android/oche-live
+        run: python3 -B ../ci/diagnose_maven.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: oche-android-build-${{ github.sha }}
           path: |
             android/oche-live/app/build/outputs/apk/staging/debug/app-staging-debug.apk
             android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab
+          retention-days: 14
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: oche-android-unit-tests-${{ github.sha }}
+          path: |
+            android/oche-live/app/build/test-results/testStagingDebugUnitTest/*.xml
+            android/oche-live/app/build/test-results/testProductionDebugUnitTest/*.xml
           retention-days: 14
           if-no-files-found: error
 
@@ -94,11 +161,17 @@ jobs:
           arch: x86_64
           working-directory: android/oche-live
           disable-animations: true
-          script: ./gradlew --no-daemon :app:connectedStagingDebugAndroidTest
+          script: |
+            ./gradlew --no-daemon --info :app:connectedStagingDebugAndroidTest
+            python3 -B ../ci/verify_native_tests.py --app oche --kind ui
       - name: Test Android TV na begrensde service-readiness
         if: matrix.target == 'android-tv'
         working-directory: android/oche-live
         run: bash ci/run_tv_ui.sh
+      - name: Diagnose publieke Maven-POMs na mislukte schermproef
+        if: failure()
+        working-directory: android/oche-live
+        run: python3 -B ../ci/diagnose_maven.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:

@@ -15,21 +15,39 @@ import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.google.firebase.installations.FirebaseInstallations
+import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 internal object PlayerAuthCoordinator { val refresh = Mutex() }
-internal val playerPushCategories = listOf("Sociaal", "Wedstrijden", "Competitie", "Toernooien")
+internal val playerPushCategories = listOf("Sociaal", "Wedstrijden", "Competitie", "Toernooien", "Vereniging", "Supporttickets", "Productreleases", "Platformberichten", "Beveiliging", "Reserveringen", "Moderatie", "Chat")
+internal fun playerPushChannelId(category: String) = "dartflow-${playerPushCategories.indexOf(category)}"
+internal fun playerPushCategoryEnabled(binding: JSONObject, category: String): Boolean = category in playerPushCategories && binding.rows("preferences").none { it.text("category") == category && !it.optBoolean("enabled", true) }
+internal fun playerPushRegistration(installation: String, packageName: String, fid: String) = json("type" to "device.register", "installationId" to installation, "packageName" to packageName, "firebaseInstallationId" to fid, "sdkVersion" to "26.0.2")
+internal fun playerPendingNotification(value: JSONObject, origin: String): String? = value.text("id").takeIf { value.text("origin") == origin && runCatching { UUID.fromString(it).toString() == it }.getOrDefault(false) }
+internal suspend fun <T> Task<T>.playerAwait(): T = suspendCancellableCoroutine { continuation -> addOnSuccessListener { if (continuation.isActive) continuation.resume(it) }; addOnFailureListener { if (continuation.isActive) continuation.resumeWithException(it) }; addOnCanceledListener { continuation.cancel() } }
+internal val playerSupportPushEvents = mapOf("support-created" to "Nieuw supportticket", "support-user-replied" to "Nieuwe reactie op supportticket", "support-reopened" to "Ticket heropend", "support-answered" to "Reactie van DartFlow Support", "support-status-changed" to "Ticketstatus gewijzigd")
 internal fun playerPushPayload(data: Map<String, String>): Triple<String, String, String>? {
-    if (data.keys != setOf("id", "deviceId", "category") || data["category"] !in playerPushCategories) return null
+    val category = data["category"] ?: return null
+    val base = setOf("id", "deviceId", "category")
+    val expected = when (category) {
+        "Supporttickets" -> base + setOf("ticketNumber", "eventType")
+        "Productreleases", "Platformberichten" -> base + setOf("campaignTitle", "campaignBody")
+        else -> base
+    }
+    if (data.keys != expected || category !in playerPushCategories) return null
+    if (category == "Supporttickets" && (!Regex("DF-[1-9][0-9]{0,14}").matches(data["ticketNumber"].orEmpty()) || data["eventType"] !in playerSupportPushEvents)) return null
+    if (category in listOf("Productreleases", "Platformberichten") && listOf("campaignTitle" to 80, "campaignBody" to 180).any { (key, max) -> data[key].orEmpty().let { it.isBlank() || it.length > max || it.any { char -> Character.isISOControl(char) } } }) return null
     val id = data["id"].orEmpty(); val device = data["deviceId"].orEmpty()
-    if (runCatching { UUID.fromString(id).toString() == id && UUID.fromString(device).toString() == device }.getOrDefault(false)) return Triple(id, device, data["category"]!!)
+    if (runCatching { UUID.fromString(id).toString() == id && UUID.fromString(device).toString() == device }.getOrDefault(false)) return Triple(id, device, category)
     return null
 }
 internal fun playerPushBody(category: String) = when (category) {
@@ -38,16 +56,38 @@ internal fun playerPushBody(category: String) = when (category) {
     "Wedstrijden" -> "Er is een wedstrijdmelding. Open DartFlow voor de actuele informatie."
     else -> "Er staat een nieuwe melding voor je klaar. Open DartFlow voor de actuele informatie."
 }
+internal fun playerPushPresentation(data: Map<String, String>): Pair<String, String>? {
+    val (_, _, category) = playerPushPayload(data) ?: return null
+    return when (category) {
+        "Supporttickets" -> "DartFlow Support" to "${playerSupportPushEvents.getValue(data.getValue("eventType"))} · ${data.getValue("ticketNumber")}"
+        "Productreleases", "Platformberichten" -> data.getValue("campaignTitle") to data.getValue("campaignBody")
+        else -> "DartFlow" to playerPushBody(category)
+    }
+}
 internal fun playerPushBindingAllowed(binding: JSONObject, session: JSONObject, actor: String?, origin: String, permitted: Boolean): Boolean = binding.optBoolean("enabled") && !actor.isNullOrBlank() && binding.text("actorId") == actor && session.text("userId") == actor && session.text("accessToken").isNotBlank() && binding.text("origin") == origin && permitted
+
+internal fun playerPushShouldReceive(binding: JSONObject, session: JSONObject, actor: String?, origin: String, permitted: Boolean, deviceId: String, notificationId: String): Boolean = playerPushBindingAllowed(binding, session, actor, origin, permitted) && binding.text("deviceId") == deviceId && binding.optJSONArray("seen")?.strings()?.contains(notificationId) != true
 
 class PlayerApplication : Application() { override fun onCreate() { super.onCreate(); PlayerPush.initializeCached(this) } }
 
 /** Separate encrypted storage: Firebase never receives the DartFlow login token or player PIN. */
 internal object PlayerPush {
     private val background = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val lifecycle = Mutex()
+    private val epoch = AtomicLong()
+    private val receiptLock = Any()
     private fun store(context: Context) = PlayerSessionStore(context.applicationContext, "push")
     fun settings(context: Context): JSONObject = store(context).read()
-    fun permitted(context: Context) = Build.VERSION.SDK_INT < 33 || context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    fun permitted(context: Context) = (Build.VERSION.SDK_INT < 33 || context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) && (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).areNotificationsEnabled()
+    fun channels(context: Context) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val labels = listOf("Sociaal en uitdagingen", "Wedstrijden en baanoproepen", "Competities en verenigingsupdates", "Toernooien")
+        playerPushCategories.forEachIndexed { index, category -> manager.createNotificationChannel(NotificationChannel(playerPushChannelId(category), "DartFlow · ${labels.getOrElse(index) { category }}", NotificationManager.IMPORTANCE_DEFAULT).apply { description = "Open DartFlow voor de actuele informatie en je categorievoorkeuren."; lockscreenVisibility = Notification.VISIBILITY_PRIVATE }) }
+    }
+    fun channelAllowed(context: Context, category: String): Boolean = (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).getNotificationChannel(playerPushChannelId(category))?.importance != NotificationManager.IMPORTANCE_NONE
+    fun updatePreferences(context: Context, actor: String?, data: JSONObject) {
+        store(context).update { value -> if (value.text("actorId") == actor && value.optBoolean("enabled")) value.put("preferences", data.optJSONArray("preferences") ?: JSONArray()) else value }
+    }
     fun isEnabled(context: Context, actor: String?): Boolean {
         val current = settings(context)
         val session = PlayerSessionStore(context).read()
@@ -60,22 +100,29 @@ internal object PlayerPush {
         return FirebaseMessaging.getInstance()
     }
     fun initializeCached(context: Context) {
+        channels(context)
         val current = settings(context)
         if (isEnabled(context, current.text("actorId"))) runCatching { initialize(context, current.obj("sdk")).isAutoInitEnabled = true }
     }
-    suspend fun enable(context: Context, api: PlayerApi, actor: String, sdk: JSONObject) {
+    suspend fun enable(context: Context, api: PlayerApi, actor: String, sdk: JSONObject) = lifecycle.withLock {
         require(permitted(context)) { "Systeemmeldingen zijn niet toegestaan. Je meldingen blijven beschikbaar in DartFlow." }
+        require(api.origin == BuildConfig.API_ORIGIN && PlayerSessionStore(context).read().text("userId") == actor) { "Je account is gewijzigd. Open de actuele instellingen opnieuw." }
+        channels(context)
         val current = settings(context)
         val installation = current.text("installationId").ifBlank { UUID.randomUUID().toString() }
+        val started = epoch.get()
         val messaging = initialize(context, sdk)
         messaging.isAutoInitEnabled = true
         try {
-        val token = suspendCancellableCoroutine<String> { continuation -> messaging.token.addOnSuccessListener { if (continuation.isActive) continuation.resume(it) }.addOnFailureListener { if (continuation.isActive) continuation.resumeWithException(it) } }
+        messaging.register().playerAwait()
+        val fid = FirebaseInstallations.getInstance().id.playerAwait()
+        require(started == epoch.get() && PlayerSessionStore(context).read().text("userId") == actor) { "Je account is gewijzigd. Schakel meldingen opnieuw in voor je huidige account." }
         // Bind before accepting any incoming message; an old account/device binding cannot be reused.
-        val result = api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to json("type" to "device.register", "installationId" to installation, "packageName" to context.packageName, "token" to token)))
-        store(context).write(json("enabled" to true, "actorId" to actor, "installationId" to installation, "deviceId" to result.text("deviceId"), "token" to token, "sdk" to sdk, "origin" to api.origin, "seen" to JSONArray(), "acks" to JSONArray()))
+        val result = api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to playerPushRegistration(installation, context.packageName, fid)))
+        require(started == epoch.get() && PlayerSessionStore(context).read().text("userId") == actor) { "Je account is gewijzigd. Schakel meldingen opnieuw in voor je huidige account." }
+        store(context).write(json("enabled" to true, "actorId" to actor, "installationId" to installation, "deviceId" to result.text("deviceId"), "firebaseInstallationId" to fid, "sdk" to sdk, "origin" to api.origin, "registeredAt" to System.currentTimeMillis(), "seen" to JSONArray(), "acks" to JSONArray()))
         } catch (failure: Exception) {
-            clearLocal(context)
+            if (started == epoch.get()) clearLocal(context)
             throw failure
         }
     }
@@ -84,28 +131,38 @@ internal object PlayerPush {
         clearLocal(context)
         if (api != null && current.text("installationId").isNotBlank()) runCatching { api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to json("type" to "device.revoke", "installationId" to current.text("installationId")))) }
     }
-    fun clearLocal(context: Context) {
+    fun clearLocal(context: Context) = synchronized(receiptLock) {
+        epoch.incrementAndGet()
         val old = settings(context)
         store(context).write(json("installationId" to old.text("installationId"), "enabled" to false))
         (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancelAll()
-        if (FirebaseApp.getApps(context).isNotEmpty()) { FirebaseMessaging.getInstance().isAutoInitEnabled = false; FirebaseMessaging.getInstance().deleteToken() }
+        if (FirebaseApp.getApps(context).isNotEmpty()) {
+            FirebaseMessaging.getInstance().isAutoInitEnabled = false
+            background.launch { lifecycle.withLock { if (!settings(context).optBoolean("enabled")) runCatching { FirebaseMessaging.getInstance().unregister().playerAwait() } } }
+        }
     }
-    suspend fun sync(context: Context, api: PlayerApi, actor: String) {
+    suspend fun sync(context: Context, api: PlayerApi, actor: String) = lifecycle.withLock { syncRegistration(context, api, actor) }
+    private suspend fun syncRegistration(context: Context, api: PlayerApi, actor: String) {
         val current = settings(context)
         if (!current.optBoolean("enabled")) return
         if (current.text("actorId") != actor || !permitted(context)) { disable(context, api); return }
         initializeCached(context)
-        val token = current.text("token")
-        if (token.isNotBlank()) {
-            val result = api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to json("type" to "device.register", "installationId" to current.text("installationId"), "packageName" to context.packageName, "token" to token)))
-            store(context).update { value -> if (value.text("actorId") == actor && value.optBoolean("enabled")) value.put("deviceId", result.text("deviceId")) else value }
+        var fid = current.text("firebaseInstallationId")
+        if (fid.isBlank()) {
+            initialize(context, current.obj("sdk")).register().playerAwait()
+            fid = FirebaseInstallations.getInstance().id.playerAwait()
+        }
+        if (fid.isNotBlank() && isEnabled(context, actor)) {
+            val result = api.call("/push/actions", json("requestId" to UUID.randomUUID().toString(), "action" to playerPushRegistration(current.text("installationId"), context.packageName, fid)))
+            store(context).update { value -> if (value.text("actorId") == actor && value.optBoolean("enabled")) value.put("deviceId", result.text("deviceId")).put("registeredAt", System.currentTimeMillis()).also { if (it.text("firebaseInstallationId").isBlank() || it.text("firebaseInstallationId") == current.text("firebaseInstallationId")) it.put("firebaseInstallationId", fid); it.remove("token") } else value }
         }
         for (ack in current.rows("acks")) api.call("/push/actions", json("requestId" to ack.text("requestId"), "action" to json("type" to "delivery.ack", "id" to ack.text("id"), "deviceId" to ack.text("deviceId"), "stage" to ack.text("stage"))))
         val sent = current.rows("acks").map { it.text("requestId") }.toSet()
         store(context).update { value -> value.put("acks", JSONArray(value.rows("acks").filter { it.text("requestId") !in sent })) }
     }
-    fun rotated(context: Context, token: String) {
-        store(context).update { value -> if (value.optBoolean("enabled")) value.put("token", token) else value }
+    fun registered(context: Context, fid: String) {
+        val session = PlayerSessionStore(context).read()
+        store(context).update { value -> if (playerPushBindingAllowed(value, session, session.text("userId"), BuildConfig.API_ORIGIN, permitted(context))) value.put("firebaseInstallationId", fid) else value }
         background.launch { runCatching { backgroundApi(context)?.let { (api, actor) -> sync(context, api, actor) } } }
     }
     private suspend fun backgroundApi(context: Context): Pair<PlayerApi, String>? {
@@ -128,23 +185,26 @@ internal object PlayerPush {
         }
         return api to actor
     }
-    fun receive(context: Context, data: Map<String, String>) {
-        val (id, device, category) = playerPushPayload(data) ?: return
+    fun receive(context: Context, data: Map<String, String>) = synchronized(receiptLock) {
+        val (id, device, category) = playerPushPayload(data) ?: return@synchronized
         val current = settings(context)
-        if (!isEnabled(context, current.text("actorId")) || current.text("deviceId") != device || current.optJSONArray("seen")?.strings()?.contains(id) == true) return
+        if (!playerPushShouldReceive(current, PlayerSessionStore(context).read(), current.text("actorId"), BuildConfig.API_ORIGIN, permitted(context), device, id)) return@synchronized
         store(context).update { value -> value.put("seen", JSONArray((value.optJSONArray("seen")?.strings().orEmpty() + id).takeLast(200))).put("acks", JSONArray((value.rows("acks") + json("requestId" to UUID.randomUUID().toString(), "id" to id, "deviceId" to device, "stage" to "received")).takeLast(200))) }
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = "dartflow-${playerPushCategories.indexOf(category)}"
-        manager.createNotificationChannel(NotificationChannel(channel, "DartFlow · $category", NotificationManager.IMPORTANCE_DEFAULT).apply { description = "Algemene meldingen; actuele gegevens staan beveiligd in DartFlow."; lockscreenVisibility = Notification.VISIBILITY_PRIVATE })
+        val channel = playerPushChannelId(category)
+        channels(context)
         val intent = Intent(context, MainActivity::class.java).putExtra("dartflowPushId", id).putExtra("dartflowPushDevice", device).setAction("nl.dartflow.PUSH.$id").addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         val pending = PendingIntent.getActivity(context, id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val notification = Notification.Builder(context, channel).setSmallIcon(R.drawable.ic_notification).setContentTitle("DartFlow").setContentText(playerPushBody(category)).setStyle(Notification.BigTextStyle().bigText(playerPushBody(category))).setContentIntent(pending).setAutoCancel(true).setVisibility(Notification.VISIBILITY_PRIVATE).build()
-        try { manager.notify(id, 1, notification) } catch (_: SecurityException) { return }
+        // The server already applied current personal and administrative rules. A stale local
+        // category preference must not override a forced-on rule; OS/device consent still gates receipt.
+        val presentation = playerPushPresentation(data) ?: return@synchronized
+        val notification = Notification.Builder(context, channel).setSmallIcon(R.drawable.ic_notification).setContentTitle(presentation.first).setContentText(presentation.second).setStyle(Notification.BigTextStyle().bigText(presentation.second)).setContentIntent(pending).setAutoCancel(true).setVisibility(Notification.VISIBILITY_PRIVATE).build()
+        if (channelAllowed(context, category)) try { manager.notify(id, 1, notification) } catch (_: SecurityException) { /* Receipt remains real; Android did not allow a visible notification. */ }
         background.launch { runCatching { backgroundApi(context)?.let { (api, actor) -> sync(context, api, actor) } } }
     }
 }
 
 class PlayerMessagingService : FirebaseMessagingService() {
-    override fun onNewToken(token: String) { PlayerPush.rotated(applicationContext, token) }
+    override fun onRegistered(installationId: String) { PlayerPush.registered(applicationContext, installationId) }
     override fun onMessageReceived(message: RemoteMessage) { PlayerPush.receive(applicationContext, message.data) }
 }

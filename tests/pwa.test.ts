@@ -43,3 +43,14 @@ test('service worker only handles exact static artwork and never HTML, live data
   await fetchEvent('/assets/pwa/player-192.png');assert.equal(network,1);assert.equal(stored.size,1);
   await fetchEvent('/assets/pwa/player-192.png');assert.equal(network,1);
 });
+
+test('offline fallback stores only the marked anonymous shell; accepted account HTML and private APIs never enter a cache',async()=>{
+ const source=await readFile('public/sw.js','utf8'),handlers=new Map<string,(event:unknown)=>void>(),stored=new Map<string,unknown>(),calls:{path:string;credentials?:string}[]=[];let offline=false;
+ const key=(request:string|{url:string})=>typeof request==='string'?new URL(request,'https://dartflow.nl').href:request.url;
+ const cache={match:async(request:string|{url:string})=>stored.get(key(request)),put:async(request:string|{url:string},response:unknown)=>{stored.set(key(request),response);}};
+ const shell={ok:true,type:'basic',headers:new Headers({'X-DartFlow-Offline-Shell':'1','Content-Type':'text/html'}),text:async()=>'<script src="/_next/static/chunks/app-abc123.js"></script>',clone(){return this;}},account={ok:true,type:'basic',headers:new Headers({'Content-Type':'text/html'}),clone(){return this;}};
+ vm.runInNewContext(source,{self:{location:{origin:'https://dartflow.nl'},addEventListener:(n:string,h:(e:unknown)=>void)=>handlers.set(n,h),skipWaiting:async()=>{},clients:{claim:async()=>{}}},URL,caches:{open:async()=>cache,keys:async()=>[],delete:async()=>true},fetch:async(request:string|{url:string},init?:{credentials?:string})=>{if(offline)throw Error('offline');const path=new URL(key(request)).pathname;calls.push({path,credentials:init?.credentials});return path==='/speelsessie'?shell:account;}});
+ let installed:Promise<unknown>|undefined;handlers.get('install')!({waitUntil:(p:Promise<unknown>)=>{installed=p;}});await installed;assert.deepEqual(calls,[{path:'/speelsessie',credentials:'omit'},{path:'/_next/static/chunks/app-abc123.js',credentials:'omit'}]);assert.equal(stored.size,2);
+ const visit=(path:string)=>{let promise:Promise<unknown>|undefined;handlers.get('fetch')!({request:{url:new URL(path,'https://dartflow.nl').href,method:'GET',mode:'navigate'},respondWith:(p:Promise<unknown>)=>{promise=p;}});return promise;};
+ assert.equal(await visit(`/wedstrijd/${first}`),account);assert.equal(stored.size,2);assert.equal(visit('/api/session'),undefined);assert.equal(visit('/auth/callback?code=private'),undefined);offline=true;assert.equal(await visit(`/wedstrijd/${first}`),shell);assert.equal(await visit(`/spelen/${first}`),shell);assert.equal(stored.has(`https://dartflow.nl/wedstrijd/${first}`),false);
+});

@@ -14,7 +14,7 @@ test('Postgres transactions enforce scopes, retry identity, exclusive assignment
   const organizer = randomUUID(), p1 = randomUUID(), p2 = randomUUID(), outsider = randomUUID(), club = randomUUID(), otherClub = randomUUID(), event = randomUUID(), board = randomUUID(), board2 = randomUUID();
   const people = [organizer, p1, p2, outsider];
   try {
-    for (const [i, id] of people.entries()) await owner.query('insert into dartflow_private.profiles(id,name) values($1,$2)', [id, `Integration ${i}`]);
+    for (const [i, id] of people.entries()) await owner.query('insert into dartflow_private.profiles(id,name,display_name) values($1,$2,$3)', [id, `integration${id.slice(0,8)}`, `Integration ${i}`]);
     for (const id of [club, otherClub]) await owner.query('insert into dartflow_private.clubs(id,name) values($1,$2)', [id, `Test ${id}`]);
     for (const id of [organizer, p1, p2]) await owner.query('insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,$3)', [club, id, id === organizer ? 'organizer' : 'player']);
     await owner.query("insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,'player')", [otherClub, outsider]);

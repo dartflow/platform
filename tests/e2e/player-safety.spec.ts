@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 const actor='00000000-0000-4000-8000-000000000002',other='00000000-0000-4000-8000-000000000003',post='77777777-7777-4777-8777-777777777777';
-const profile={id:actor,name:'Synthetic player',username:'synthetic',pinConfigured:true,onboardingComplete:true,displayNameConfirmed:true};
+const profile={id:actor,name:'Synthetic player',username:'synthetic',displayName:'Synthetic player',usernameLocked:true,pinConfigured:true,onboardingComplete:true,displayNameConfirmed:true};
 const state={rulesVersion:'2026-11-18',rulesUrl:'https://dartflow.nl/communityregels',termsUrl:'https://dartflow.nl/voorwaarden',minimumAge:13,acceptedVersion:null,acceptedAt:null,requiresAcceptance:true,reportCategories:[],contactEmail:'info@dartflow.nl'};
 test('player web safety accepts explicit age/rules, reports a real reference and blocks at mobile width',async({browser,baseURL})=>{
  if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Only isolated loopback data may be used.');

@@ -1,5 +1,13 @@
 "use client";
+
+import PlayWorkspace,{PlayChallengesWorkspace,PlayPracticeWorkspace,AccountPlayHistory} from './play-workspace';
+import LegacyPlayControls from './legacy-play-controls';
+import X01OpeningField from './x01-opening-field';
+import {useCoreScoreQueue} from './use-core-score-queue';
+import CompetitionBoardLobbyPanel from "./competition-board-lobby";
 import GuestMatchControls from './guest-match-controls';
+import {useScoreInputPreferences} from '@/lib/score-input-preferences';
+import {ScoreInputControl} from './score-input-settings';
 import BullStartPanel,{StartProcedureFields,readWinByTwo} from './bull-start-panel';
 import OfflineConflictPanel from './offline-conflict-panel';
 
@@ -12,19 +20,28 @@ import {
   type ReactNode,
 } from "react";
 import PlatformWorkspace from "./platform-workspace";
+import DartflowMore from "./dartflow-more";
+import {DesktopNavigation, activeNav} from "./redesign-shell";
+import {ClubhouseThemeProvider,ClubhouseHeaderLogo} from "./clubhouse-theme";
 import SeasonWorkspace from './season-workspace';
 import FaqAdminWorkspace from './faq-admin';
+import SupportWorkspace from './support-workspace';
+import ProductReleasesWorkspace,{ProductReleaseAdminWorkspace,PlatformMessageWorkspace} from './product-releases';
+import NotificationSettingsWorkspace,{NotificationInboxPanel,NotificationOpenWorkspace} from './notifications-workspace';
+import NotificationAdminWorkspace from './notification-admin';
 import MatchCorrectionPanel from './match-correction-panel';
 import RankingsWorkspace from './rankings-workspace';
 import DartVisitInput from './dart-visit-input';
 import CricketCard from './cricket-card';
+import TacticsCard from './tactics-card';
 import {dartValue} from '@/lib/x01-rules';
 import {matchParticipants,matchSideIndex} from '@/lib/match-sides';
 import {FeedWorkspace} from './feed-workspace';
 import PlayerExperienceWorkspace from './player-experience';
 import type {PlayerExperience} from '@/lib/player-experience-types';
 import ScoreConsole from "./score-console";
-import {InstallDartflow} from "./pwa-install";
+import DartScoreConsole from './dart-score-console';
+
 import SprintDisplay from "./sprint-display";
 import OcheCelebration, {useOcheCelebration} from "./oche-celebration";
 import ClubBoardScreen from "./club-board-screen";
@@ -482,6 +499,18 @@ export default function DartflowApp() {
     return <PublicScreen token={path.split("/")[2]} />;
   if (path.startsWith("/baanscherm/"))
     return <ClubBoardScreen boardId={path.split("/")[2]} />;
+  const playSession = /^\/spelen\/[a-f0-9-]{36}$/.test(path);
+  const playChallenge = /^\/leg\/[a-f0-9-]{36}$/.test(path);
+  if (playSession || playChallenge || path === '/speelsessie') {
+    if (!session.data && !session.error) return <div className="app-loading"><p>Je speelomgeving openen…</p></div>;
+    const workspace = <main><PlayWorkspace
+      sessionId={playSession ? path.split('/')[2] : undefined}
+      challengeId={playChallenge ? path.split('/')[2] : undefined}
+      user={session.data?.user ?? undefined}
+    /></main>;
+    return session.data?.user ? <ClubhouseThemeProvider>{workspace}</ClubhouseThemeProvider> : workspace;
+  }
+  if(/^\/baan\/[a-f0-9-]{36}$/.test(path)&&session.data&&!session.data.user)return <PlayWorkspace boardId={path.split('/')[2]}/>;
   const readOnlyAlias = path.match(/^\/app\/(spectator|overlay)\/([^/]+)$/);
   if (readOnlyAlias)
     return (
@@ -579,6 +608,10 @@ export default function DartflowApp() {
     { href: "/app/mymatches", label: "Mijn wedstrijden", icon: "history" },
     { href: "/app/statistics", label: "Mijn profiel", icon: "users" },
     { href: "/app/settings", label: "Instellingen", icon: "sliders" },
+    { href: "/app/support", label: "Mijn supporttickets", icon: "users" },
+    { href: "/app/whats-new", label: "Wat is nieuw?", icon: "bolt" },
+    { href: "/app/notifications", label: "Jouw meldingen", icon: "history" },
+    { href: "/handleiding", label: "Handleiding", icon: "shield" },
     { href: "/help", label: "Help & FAQ", icon: "shield" },
   ];
   const organizeNav: { href: string; label: string; icon: IconName }[] = [
@@ -595,6 +628,10 @@ export default function DartflowApp() {
     ...(session.data.canManagePlatform
       ? [
           {href:"/app/help-beheer",label:"Helpbeheer",icon:"shield" as IconName},
+          {href:"/app/admin/support",label:"Supportbeheer",icon:"users" as IconName},
+          {href:"/app/admin/releases",label:"Releasebeheer",icon:"bolt" as IconName},
+          {href:"/app/admin/notifications",label:"Meldingen beheren",icon:"shield" as IconName},
+          {href:"/app/premium",label:"Premiumrechten",icon:"shield" as IconName},
           {href:"/app/blog",label:"Blogbeheer",icon:"shield" as IconName},
           {
             href: "/app/platform/integraties",
@@ -613,6 +650,7 @@ export default function DartflowApp() {
       "/app/manage",
       "/app/mail",
       "/app/platform",
+      "/app/admin",
       "/app/blog",
       "/app/venue-cast",
       "/app/venue",
@@ -639,115 +677,22 @@ export default function DartflowApp() {
     setClubId(value);
     localStorage.setItem("dartflow-club", value);
   };
+  const routeClubId = platformPath.match(/^\/app\/clubs\/([^/]+)/)?.[1];
+  const themeClub = data?.clubs.find(c=>c.id===routeClubId);
+  const activeClub = themeClub || data?.clubs.find(c=>c.id===clubId);
+  const tabs = [nav[0],nav[1],nav.find(n=>n.href==='/app/competities')!,nav.find(n=>n.href==='/app/hall')!];
   return (
-    <div className="app-shell v15-shell">
-      {mobileOpen && (
-        <button
-          className="mobile-scrim"
-          aria-label="Menu sluiten"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-      <aside className={`sidebar ${mobileOpen ? "is-open" : ""}`}>
-        <a className="brand" href="/">
-          <img src="/assets/dartflow-logo.svg" alt="DartFlow" />
-        </a>
-        <p className="brand-caption">SPEEL. ONTMOET. COMPETEER.</p>
-        <div className="workspace-switch">
-          <a className={!organizing ? "active" : ""} href="/app">
-            Spelen
-          </a>
-          {canOrganize && (
-            <a className={organizing ? "active" : ""} href="/app/dashboard">
-              Organiseren
-            </a>
-          )}
-        </div>
-        <div className="nav-caption">
-          {organizing ? "ORGANISATIE" : "JOUW WERKRUIMTE"}
-        </div>
-        <nav aria-label="Hoofdnavigatie">
-          {navigation.map((n) => (
-            <a
-              key={n.href}
-              href={n.href}
-              className={`nav-item ${n.href === path ? "active" : ""}`}
-              aria-current={n.href === path ? "page" : undefined}
-            >
-              <Icon name={n.icon} />
-              <span>{n.label}</span>
-            </a>
-          ))}
-          {!organizing && <InstallDartflow kind="player" />}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="club-context">
-            <Icon name="club" />
-            <span>JOUW OMGEVING</span>
-            <strong>
-              {clubId
-                ? data?.clubs.find((c) => c.id === clubId)?.name || "Vereniging"
-                : "Wereldwijd"}
-            </strong>
-            <small>Eén account · al jouw darts</small>
-          </div>
-          <div className="sidebar-footer">
-            <span />
-            DartFlow · DG Webservices
-          </div>
-        </div>
-      </aside>
+    <ClubhouseThemeProvider clubId={themeClub?.id ?? routeClubId}>
+    <div className="app-shell v15-shell clubhouse-app-shell df-redesign">
+      <DartflowMore open={mobileOpen} onClose={()=>setMobileOpen(false)} path={platformPath} club={activeClub} organizerLinks={canOrganize?organizeNav:[]} onLogout={()=>void logout()}/>
+      <DesktopNavigation path={platformPath} onMore={()=>setMobileOpen(true)} moreOpen={mobileOpen} canOrganize={canOrganize} canManagePlatform={Boolean(session.data.canManagePlatform)}/>
       <div className="main">
         <header className="topbar">
-          <button
-            className="icon-button mobile-menu"
-            aria-label="Menu openen"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Icon name="menu" />
-          </button>
-          <a className="mobile-brand" href="/">
-            <img src="/assets/dartflow-logo.svg" alt="DartFlow" />
+          <a className="mobile-brand" href="/app" aria-label="DartFlow · Vandaag">
+            <ClubhouseHeaderLogo />
           </a>
-          <div className="breadcrumb">
-            Mijn DartFlow <Icon name="chevron" />
-            <strong>{section}</strong>
-          </div>
+          <div className="breadcrumb"><strong>{section}</strong></div>
           <div className="topbar-right">
-            <WorkspaceTools overview={data} />
-            {environment !== "production" && (
-              <Badge>
-                {environment === "development" ? "DEVELOPMENT" : "STAGING"}
-              </Badge>
-            )}
-            <div className="profile">
-              <Avatar name={user.name} />
-              <div>
-                <strong>{user.name}</strong>
-                <small>{organizing ? "Organiseren" : "Speler"}</small>
-              </div>
-            </div>
-            <button
-              className="icon-button"
-              title="Uitloggen"
-              aria-label="Uitloggen"
-              onClick={() => void logout()}
-            >
-              <Icon name="logout" />
-            </button>
-          </div>
-        </header>
-        {session.data.local && (
-          <div className="local-banner">
-            <Icon name="shield" />
-            <span>
-              <strong>Lokale testomgeving</strong> · testaccounts, geen
-              productiegegevens
-            </span>
-            <a href="/inloggen">Testaccount wisselen</a>
-          </div>
-        )}
-        <main className="content">
           <div className="context-bar">
             <div>
               <Icon name="club" />
@@ -769,19 +714,42 @@ export default function DartflowApp() {
             </div>
             <Connection stale={overview.stale} updated={overview.updated} />
           </div>
+
+            <WorkspaceTools />
+            {environment !== "production" && (
+              <Badge>
+                {environment === "development" ? "DEVELOPMENT" : "STAGING"}
+              </Badge>
+            )}
+            <a className="profile" href="/app/settings" aria-label={`Profiel van ${user.name}`}>
+              <Avatar name={user.name} />
+            </a>
+          </div>
+        </header>
+        {session.data.local && (
+          <div className="local-banner">
+            <Icon name="shield" />
+            <span>
+              <strong>Lokale testomgeving</strong> · testaccounts, geen
+              productiegegevens
+            </span>
+            <a href="/inloggen">Testaccount wisselen</a>
+          </div>
+        )}
+        <main className="content">
           {user.pinConfigured===false&&!/^\/(?:wedstrijd|baan)\//.test(path)&&!/^\/app\/(?:training|match|lobby)(?:\/|$)/.test(platformPath)&&platformPath!=='/app/settings'&&<div className="notice" role="status">Je spelerspincode moet nog worden ingesteld. <a href="/app/settings">Spelerspincode instellen</a>. Je kunt op je eigen telefoon blijven spelen.</div>}
-          {path.startsWith("/wedstrijd/") ? (
+          {platformPath.startsWith('/app/notifications/')?<NotificationOpenWorkspace key={platformPath} id={platformPath.split('/')[3]}/>:platformPath==='/app/notifications'?<NotificationInboxPanel/>:platformPath==='/app/settings/notifications'?<NotificationSettingsWorkspace/>:platformPath.startsWith('/app/admin/support')?<SupportWorkspace path={platformPath} admin/>:platformPath.startsWith('/app/support')?<SupportWorkspace path={platformPath}/>:platformPath==='/app/admin/releases'?<ProductReleaseAdminWorkspace/>:platformPath==='/app/admin/notifications'?<NotificationAdminWorkspace/>:platformPath.startsWith('/app/whats-new')?<ProductReleasesWorkspace id={platformPath.split('/')[3]}/>:platformPath.startsWith('/app/platform-messages/')?<PlatformMessageWorkspace id={platformPath.split('/')[3]}/>:platformPath==="/app/uitdagingen"?<PlayChallengesWorkspace user={user}/>:platformPath==="/app/practice"?<PlayPracticeWorkspace user={user}/>:platformPath==="/app/play"?<PlayWorkspace user={user}/>:path.startsWith("/wedstrijd/") ? (
             <MatchPage
               id={path.split("/")[2]}
               user={user}
               overview={scorerOverview}
             />
           ) : path.startsWith("/baan/") ? (
-            <BoardPage
+            <><PlayWorkspace boardId={decodeURIComponent(path.split("/")[2])} user={user}/><BoardPage
               boardId={decodeURIComponent(path.split("/")[2])}
               user={user}
               overview={scorerOverview}
-            />
+            /></>
           ) : path === "/wedstrijdleiding" ? (
             data ? (
               <ManagementPage data={data} refresh={overview.refresh} />
@@ -796,7 +764,7 @@ export default function DartflowApp() {
           ) : path === "/evenementen" && data ? (
             <LegacyEventsPage data={data} refresh={overview.refresh} />
           ) : path === "/historie" ? (
-            <LegacyHistoryPage data={scorerOverview} />
+            <><AccountPlayHistory/><LegacyHistoryPage data={scorerOverview} /></>
           ) : platformPath === '/app/help-beheer' ? <FaqAdminWorkspace/> : platformPath === '/app/rankings' ? <RankingsWorkspace/> : platformPath === '/app/schermen' ? <OcheDeviceManager/> : platformPath.startsWith('/app/feed') ? <FeedWorkspace path={platformPath} userId={user.id} urgentActions={personal.data?.actions??[]}/> : /^\/app\/competities(?:\/|$)/.test(platformPath)?<SeasonWorkspace id={platformPath.split('/')[3]} user={user}/> : /^\/app\/(?:leagues|competitions)\/[^/]+$/.test(platformPath)?<SeasonCompatibility id={platformPath.split('/')[3]} user={user}><PlatformWorkspace path={platformPath} user={user} overview={data} clubId={clubId}/></SeasonCompatibility> : ['/app/speeldag','/app/baanfavorieten','/app/training-advies','/app/schermbeheer'].includes(platformPath)?<PlayerExperienceWorkspace path={platformPath}/> : platformPath === "/app/baan" ? (
             data ? (
               <>
@@ -838,7 +806,6 @@ export default function DartflowApp() {
             )
           ) : (
             <>
-            {platformPath==='/app'&&<PlayerExperienceWorkspace compact/>}
             <PlatformWorkspace
               key={platformPath}
               path={platformPath}
@@ -858,27 +825,12 @@ export default function DartflowApp() {
           </footer>
         </main>
       </div>
-      <nav className="bottom-nav" aria-label="Mobiele navigatie">
-        {nav.slice(0, 3).map((n) => (
-          <a
-            key={n.href}
-            href={n.href}
-            className={n.href === path ? "active" : ""}
-          >
-            <Icon name={n.icon} />
-            <span>{n.label}</span>
-          </a>
-        ))}
-        <a href="/app/friends">
-          <Icon name="users" />
-          <span>Vrienden</span>
-        </a>
-        <button onClick={() => setMobileOpen(true)}>
-          <Icon name="menu" />
-          <span>Meer</span>
-        </button>
+      <nav className="bottom-nav" aria-label="Hoofdnavigatie">
+        {tabs.map(n=><a key={n.href} href={n.href} className={activeNav(n.href,platformPath)?'active':''} aria-current={activeNav(n.href,platformPath)?'page':undefined}><Icon name={n.icon}/><span>{n.label}</span></a>)}
+        <button onClick={()=>setMobileOpen(true)} aria-expanded={mobileOpen} aria-label="Meer"><Icon name="menu"/><span>Meer</span></button>
       </nav>
     </div>
+    </ClubhouseThemeProvider>
   );
 }
 
@@ -1155,6 +1107,7 @@ function PlanMatch({
         ))}
       </div>
       <div className="field-grid three">
+        <X01OpeningField fresh startScore={startScore}/>
         <label className="field">
           Speltype
           <select
@@ -1575,6 +1528,7 @@ function BoardPage({
       <Heading kicker="BAANMODUS" title={board.name}>
         {data.club?.name || data.event.name}
       </Heading>
+      <CompetitionBoardLobbyPanel boardId={boardId} actorId={user.id} onChanged={lookup.refresh}/>
       <div className="panel board-wait">
         <img src="/assets/dartboard.svg" alt="Dartbord" />
         <Empty
@@ -1630,6 +1584,7 @@ function BoardPage({
                 boardId,
                 mode,
                 startScore: Number(startScore),
+                inRule: String(new FormData(event.currentTarget).get('inRule')),
                 bestOfLegs: Number(bestOfLegs),
                 ...(mode!=='solo'?{...Object.fromEntries(new FormData(event.currentTarget)),...readWinByTwo(new FormData(event.currentTarget))}:{}),
               });
@@ -1654,6 +1609,7 @@ function BoardPage({
               </select>
             </label>
             <div className="field-grid">
+              <X01OpeningField fresh startScore={startScore}/>
               <label className="field">
                 Startscore
                 <select
@@ -1725,7 +1681,9 @@ function MatchPage({
 }) {
   const live = usePolled<MatchView>(`/api/matches/${encodeURIComponent(id)}`);
   const { refresh: refreshMatch, accept: acceptMatch } = live;
-  const match = live.data;
+  const scoreQueue=useCoreScoreQueue(id,user.id,live.data,acceptMatch);
+  const scoreInputPreferences=useScoreInputPreferences(user.id);
+  const match = scoreQueue.projection;
   const actualBoard = usePolled<{
     board: { id: string; name: string };
     event: { id: string; name: string };
@@ -1773,6 +1731,7 @@ function MatchPage({
         sessionStorage.removeItem(storeKey);
         if (command.action.type === "score") {
           setScore("");
+          setDarts(3);
           sessionStorage.removeItem(scoreKey);
           setDoubleConfirmed(false);
           setDoubleAttempts(null);
@@ -1811,6 +1770,8 @@ function MatchPage({
     };
   }, [pending, conflict, submitPending]);
   function act(action: MatchAction,guestId?:string) {
+    if(action.type==='score'&&!guestId&&match?.offlineSupported===true&&Boolean(match.scoringState)){try{scoreQueue.enqueue(action);setScore('');setDarts(3);sessionStorage.removeItem(scoreKey);setDoubleConfirmed(false);setDoubleAttempts(null);setActionError('');}catch(error){setActionError(error instanceof Error?error.message:'Controleer de score.');}return;}
+    if(scoreQueue.pendingCount&&action.type!=='resolve-offline-conflict'){setActionError('Synchroniseer eerst de bewaarde scorebeurten.');return;}
     if (!match || pending&&action.type!=='resolve-offline-conflict' || sendingRef.current) return;
     const command = {
       requestId: crypto.randomUUID(),
@@ -1874,7 +1835,10 @@ function MatchPage({
     "Baan toegewezen";
   const disabled = sending || Boolean(pending);
   const winner = match.players.find((p) => p.id === match.winnerId);
-  const matchControls = <>
+  const requiredDarts=match.settings.discipline==='tactics'||match.settings.discipline==='cricket'||match.settings.inRule==='double'||Boolean(match.settings.outRule&&match.settings.outRule!=='double');
+  const scoreInputGame=match.settings.discipline==='tactics'?'tactics':match.settings.discipline==='cricket'?'cricket':'x01';
+  const inputPreference=<ScoreInputControl actorId={user.id} game={scoreInputGame} totalAllowed={!requiredDarts} reason={requiredDarts?'Deze spelregels vereisen de werkelijke pijlen; je voorkeur blijft bewaard.':undefined}/>;
+  const matchControls = <>{inputPreference}
             <div className="match-actions">
               {match.settings.discipline!=='cricket'&&match.permissions.canScore&&match.settings.inRule!=='double'&&(!match.settings.outRule||match.settings.outRule==='double')&&<button type="button" className="button ghost small" disabled={disabled||!live.online} onClick={()=>act({type:'score',score:0,darts:3,bust:true})}>Bust · nul punten</button>}
               {match.permissions.canPause && (
@@ -2020,14 +1984,19 @@ function MatchPage({
               </div>
             )}
   </>;
-  const detailedScoring=match.settings.discipline==='cricket'||match.settings.inRule==='double'||Boolean(match.settings.outRule&&match.settings.outRule!=='double');
+  const detailedScoring=requiredDarts||scoreInputPreferences.modes.x01==='per-dart';
   const startProcedurePending = Boolean(match.settings.startProcedure && (match.startDecision?.starter === undefined || match.bull && match.bull.status !== 'complete'));
-  const activeConsole = match.offlineConflict?.status!=='open'&&(!match.bull||match.bull.status==='complete')&&!detailedScoring && consoleOpen && match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore);
+  const guestOwnsConsole=!match.permissions.canScore&&Boolean(match.guestOperators?.some(guest=>guest.permissions.canScore));
+  const primaryOwnsConsole=!guestOwnsConsole&&(playerIndex>=0||match.permissions.canScore);
+  const consoleCanOpen=match.offlineConflict?.status!=='open'&&(!match.bull||match.bull.status==='complete')&&match.status==='live';
+  const activeConsole=consoleCanOpen&&consoleOpen&&primaryOwnsConsole;
   return (
     <>
       {!activeConsole&&<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>}
-      {activeConsole && <ScoreConsole activity={<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} title={`${match.settings.startScore} · Leg ${match.legNumber} · Set ${match.setNumber}`} players={displayPlayers.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} message={actionError || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed,...(doubleAttempts==null?{}:{doubleAttempts})})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
-      {!detailedScoring&&match.status === "live" && !tablet && (playerIndex >= 0 || match.permissions.canScore) && <button className="button gold full" onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</button>}
+      {(scoreQueue.pendingCount>0||Boolean(scoreQueue.error))&&<div className="notice" role="status"><strong>{scoreQueue.pendingCount>0?(match.offlineConflict?.status==='open'?'Controle nodig':`Wacht op verbinding (${scoreQueue.pendingCount})`):'Toestelopslag'}</strong><p>{scoreQueue.error||'De beurten zijn op dit toestel bewaard.'}</p><button className="button" onClick={()=>void scoreQueue.flush()} disabled={scoreQueue.sending}>Wachtrij synchroniseren</button></div>}
+      {activeConsole && !detailedScoring && <ScoreConsole activity={<BoardActivityNotice activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} title={`${match.settings.startScore} · Leg ${match.legNumber} · ${match.currentThrower?.name??displayPlayers[match.turn].name}`} players={displayPlayers.map((player,index)=>({...player,remaining:match.remaining[index]}))} active={match.turn} score={score} onScore={updateScore} darts={darts} onDarts={setDarts} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={finish} doubleConfirmed={doubleConfirmed} onDoubleConfirmed={setDoubleConfirmed} canScore={match.permissions.canScore} busy={sending} disabled={disabled} offline={!live.online} allowOffline={match.offlineSupported===true&&Boolean(match.scoringState)} message={actionError || (scoreQueue.pendingCount ? `Wacht op verbinding (${scoreQueue.pendingCount}) · ${scoreQueue.error || "De beurten zijn op dit toestel bewaard."}` : scoreQueue.error) || (pending ? sending ? "Score verzenden…" : conflict ? "Controleer de stand en je bewaarde actie bij Darts & correctie." : "Actie bewaard · herstel de verbinding om opnieuw te verzenden." : live.error || (match.paused ? "Wedstrijd gepauzeerd." : match.correction ? "Een correctieverzoek wacht op beoordeling." : ""))} checkout={match.checkout} waiting={match.scoringMode==='per-player'?`${match.players[match.turn]?.name} is aan de beurt.`:`${writer} schrijft deze partij.`} chat={match.scoringMode==='per-player'&&playerIndex>=0?<ScopedChat kind="match" scopeId={id} actorId={user.id} label="Wedstrijdchat" inConsole/>:undefined} onBack={()=>setConsoleOpen(false)} onSubmit={()=>act({type:"score",score:Number(score),darts,doubleConfirmed:finish&&doubleConfirmed,...(doubleAttempts==null?{}:{doubleAttempts})})} options={<>{pending && !sending && <div className="notice"><p>{actionError || "Deze actie is bewaard met hetzelfde actie-ID."}</p><button className="button small" onClick={()=>void submitPending(pending)}>Zelfde actie opnieuw proberen</button><button className="button ghost small" onClick={()=>{setPending(null);setConflict(false);setActionError("");sessionStorage.removeItem(storeKey);}}>Bewaarde actie verwerpen</button></div>}{matchControls}</>} />}
+      {consoleCanOpen&&primaryOwnsConsole&&<button className="button gold full" onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</button>}
+      {match.status==='live'&&primaryOwnsConsole&&<div hidden={!detailedScoring}><DartScoreConsole title={`${match.settings.discipline==='tactics'?'Tactics':match.settings.discipline==='cricket'?'Cricket':match.settings.startScore} · Leg ${match.legNumber} · ${match.currentThrower?.name??displayPlayers[match.turn].name}`} open={activeConsole&&detailedScoring} onBack={()=>setConsoleOpen(false)} offline={!live.online} activity={<BoardActivityNotice compact activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>} message={(requiredDarts?'Deze spelregels vereisen werkelijke pijlen. ':'')+(actionError||scoreQueue.error||(scoreQueue.pendingCount?`Wacht op verbinding (${scoreQueue.pendingCount}) · beurten op dit toestel bewaard`:!match.permissions.canScore?`${writer} schrijft deze partij.`:match.checkout?`Finish: ${match.checkout}`:'Voer de werkelijk geworpen pijlen in.'))} scoreboard={<div className="score-console-players" aria-label="Actuele stand">{displayPlayers.map((player,index)=><div key={player.id} className={index===match.turn?'is-active':''}><span>{player.name}</span><strong className="console-remaining">{match.cricket?.points[index]??match.tactics?.points[index]??match.remaining[index]}</strong><small>{index===match.turn?'Aan de beurt':match.cricket||match.tactics?'Punten':'Restscore'}</small></div>)}</div>} options={<>{match.cricket&&<CricketCard cricket={match.cricket} names={displayPlayers.map(player=>player.name)}/>} {match.tactics&&<TacticsCard tactics={match.tactics} names={displayPlayers.map(player=>player.name)} turn={match.turn}/>} {matchControls}</>}><DartVisitInput disabled={disabled||!match.permissions.canScore||Boolean(match.offlineConflict?.status==='open')||Boolean(match.bull&&match.bull.status!=='complete')} thrower={match.currentThrower?.name??displayPlayers[match.turn].name} resetKey={`${match.revision}:${scoreQueue.pendingCount}`} onSubmit={hits=>act({type:'score',score:hits.reduce((sum,hit)=>sum+dartValue(hit),0),darts:hits.length,dartHits:hits})}/></DartScoreConsole></div>}
       <Heading
         kicker={`${event?.name || "BAANMODUS"}${match.boardId ? ` · ${boardName}` : ""}`}
         title={`${displayPlayers[0].name} — ${displayPlayers[1].name}`}
@@ -2043,6 +2012,7 @@ function MatchPage({
       <MatchInvitation matchId={match.id} />
       {(match.status==='confirmed'||match.primaryCorrection)&&<MatchCorrectionPanel matchId={match.id} revision={match.revision} onChange={refreshMatch}/>}
       {!!match.rankingDestinations?.length&&<section className="panel"><h2>Actuele rankinggevolgen</h2>{match.rankingDestinations.map(destination=><article key={destination.listId}><h3>{destination.name}</h3><p>{destination.kind==='circuit'?'Circuiteindplaats':'Partijrating'} · {destination.status==='booked'?'Geboekt':destination.status==='admitted'?'Vooraf toegelaten':destination.status==='void'?'Ongeldig verklaard':'Uitgesloten'} · {destination.policyVersion}</p>{destination.reason&&<p>{destination.reason}</p>}{destination.before&&destination.after&&<p>{match.players.map((player,index)=>`${player.name}: ${Math.round(destination.before![index])} → ${Math.round(destination.after![index])}`).join(' · ')}</p>}</article>)}<a href="/app/rankings">Stand en mutaties bekijken</a></section>}
+      <LegacyPlayControls sourceId={match.id} kind="match" canResume={match.freeSession?.canResume??false} canMove={match.freeSession?.canMove??false} onChanged={refreshMatch}/>
       {(match.rankingEligibility?.eligible||match.ranking)&&<section className="panel" aria-label="Rating voor deze partij"><h2>Spelersrating</h2>{match.ranking?.booking?<p>Oorspronkelijk uitslagbewijs: {match.players.map((player,index)=>`${player.name} ${Math.round(match.ranking!.booking!.before[index])} → ${Math.round(match.ranking!.booking!.after[index])}`).join(' · ')}</p>:<><p>{match.ranking?.status==='reserved'?'Beide spelers kozen voor rating. De definitief bevestigde uitslag wordt één keer geboekt.':'Deze partij telt voor rating als jullie daar allebei vóór de start voor kiezen.'}</p><ul>{match.players.map((player,index)=><li key={player.id}>{player.name}: {match.ranking?.consents[index]?'Akkoord met rating':'Nog geen akkoord met rating'}</li>)}</ul>{playerIndex>=0&&['called','ready'].includes(match.status)&&<button type="button" className="button" disabled={disabled} onClick={()=>act({type:'ranking-consent',consent:!match.ranking?.consents[playerIndex]})}>{match.ranking?.consents[playerIndex]?'Ratingkeuze intrekken':'Ik wil voor rating spelen'}</button>}</>}<a href={`/help?returnTo=${encodeURIComponent(`/wedstrijd/${match.id}`)}`}>Ratingvoorwaarden bekijken</a></section>}
       <div className="match-layout">
         <div>
@@ -2091,6 +2061,7 @@ function MatchPage({
               </span>
             </div>
             {match.cricket&&<CricketCard cricket={match.cricket} names={displayPlayers.map(player=>player.name)}/>}
+            {match.tactics&&<TacticsCard tactics={match.tactics} names={displayPlayers.map(player=>player.name)} turn={match.turn}/>}
             {match.currentThrower&&<p className="notice" role="status">Werper: <strong>{match.currentThrower.name}</strong> · vaste volgorde: {match.sideParticipants?.[match.turn].map(player=>player.name).join(" → ")}</p>}
             {match.checkout && match.status === "live" && (
               <div className="checkout">
@@ -2223,7 +2194,7 @@ function MatchPage({
                   </div>
                 )}
               </div>
-            ) : detailedScoring&&match.permissions.canScore ? <DartVisitInput key={match.revision} disabled={disabled} onSubmit={hits=>act({type:'score',score:hits.reduce((sum,hit)=>sum+dartValue(hit),0),darts:hits.length,dartHits:hits})}/> : match.permissions.canScore && !tablet ? (
+            ) : detailedScoring ? <p>Gebruik de scoreweergave om werkelijk geworpen pijlen vast te leggen.</p> : match.permissions.canScore && !tablet ? (
               <form
                 className="score-form"
                 onSubmit={(e) => {
@@ -2396,7 +2367,7 @@ function MatchPage({
                   )}
               </div>
             )}
-            <BullStartPanel match={match}onAction={act}disabled={disabled}/><GuestMatchControls match={match}busy={disabled}onAction={act}/>
+            <BullStartPanel match={match}onAction={act}disabled={disabled}/><GuestMatchControls actorId={user.id} match={match}busy={disabled}onAction={act} fullscreenAvailable={guestOwnsConsole&&consoleCanOpen} consoleOpen={consoleOpen} onConsoleOpen={()=>setConsoleOpen(true)} onConsoleBack={()=>setConsoleOpen(false)} offline={!live.online} message={actionError||live.error||undefined} activity={<BoardActivityNotice compact activity={match.boardActivity} offline={!live.online} onRefresh={refreshMatch}/>}/>
             <OfflineConflictPanel match={match}onAction={act}disabled={sending}/>
             {matchControls}
             <div className="revision-label">

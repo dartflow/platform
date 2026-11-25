@@ -19,7 +19,7 @@ test('fixed board displays isolate durable read-only devices, lifecycle snapshot
  const run=(actor:string,action:PlatformCommand['action'],expectedRevision?:number)=>executePlatformCommand(actor,{requestId:randomUUID(),action,...(expectedRevision===undefined?{}:{expectedRevision})});
  let token='';
  try{
-  for(const [index,id] of people.entries())await owner.query('insert into dartflow_private.profiles(id,name) values($1,$2)',[id,`Board screen fixture ${index}`]);
+  for(const [index,id] of people.entries())await owner.query("insert into dartflow_private.profiles(id,name,display_name) values($1,replace($2,' ',''),$2)",[id,`Board screen fixture ${index}`]);
   await owner.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[club,'Private screen fixture club']);
   for(const id of [manager,p1,p2])await owner.query('insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,$3)',[club,id,id===manager?'organizer':'player']);
   for(const id of events){await owner.query('insert into dartflow_private.events(id,club_id,name,date,capacity) values($1,$2,$3,current_date,8)',[id,club,'Private screen fixture event']);await owner.query('insert into dartflow_private.event_staff(event_id,user_id) values($1,$2)',[id,manager]);}

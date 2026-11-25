@@ -82,3 +82,65 @@
 }
 .oche-device-panel .oche-match-display[data-precall=true] .sprint-match-content{bottom:16cqh}.oche-device-panel .oche-precall{bottom:5cqh;left:4cqw;right:4cqw;max-height:10cqh;font-size:2.7cqw;padding:1.2cqh 2cqw}.oche-device-panel .oche-precall b{font-size:2.5cqw}
 .oche-layout-mini[data-scoreboards="2"]{justify-content:space-between;gap:12%;padding:5%}.oche-layout-mini[data-scoreboards="2"]>i{flex:0 0 31.64%;aspect-ratio:9/16}.oche-layout-mini[data-scoreboards="2"]:after{content:'← →';order:1;align-self:center;position:absolute;color:#b7f62b;font-size:.5em}.oche-layout-mini[data-scoreboards="2"]{position:relative}.oche-layout-mini[data-scoreboards="2"]:after{left:38%;right:38%;text-align:center}
+
+/* Pairing and management belong to the player UI; TV projection selectors above stay separate. */
+.oche-pair-redesign {
+ --pair-base:var(--df-ink,var(--bg,#101411));--pair-surface:var(--df-surface,var(--surface,#191f1b));--pair-raised:var(--df-raised,var(--ch-raised,#202923));--pair-line:var(--df-line,var(--line,#303c33));--pair-text:var(--df-text,var(--text,#f2f5ef));--pair-muted:var(--df-muted,var(--muted,#aab7ad));--pair-accent:var(--df-lime,var(--gold,#c5fa59));
+ background:radial-gradient(ellipse at 50% -10%,color-mix(in srgb,var(--pair-accent) 10%,transparent),transparent 54%),var(--pair-base);color:var(--pair-text);padding-block:22px;
+}
+.oche-pair-redesign .oche-account-brand{width:145px;margin-bottom:13px}
+.oche-pair-redesign .oche-account-card{background:var(--pair-surface);border-color:var(--pair-line);padding:clamp(13px,3vw,25px);border-radius:12px;max-width:650px;box-shadow:0 18px 56px #0002}
+.oche-pair-redesign .oche-account-card .eyebrow{color:var(--pair-accent);font-size:.6875rem;margin:0}
+.oche-pair-redesign .oche-account-card h1{color:var(--pair-text);font:800 clamp(1.34rem,5.5vw,1.75rem)/1.13 var(--display,'Barlow Condensed',sans-serif);margin:8px 0 12px}
+.oche-pair-redesign .oche-account-card p{color:var(--pair-muted);font-size:.8125rem;line-height:1.5}
+.oche-pair-redesign :is(.oche-device-form,.oche-device-login){border-top:1px solid var(--pair-line);padding-top:12px;gap:12px;margin-top:15px}
+.oche-pair-redesign :is(input,select){color:var(--pair-text);background:var(--pair-base);border-color:var(--pair-line);min-height:44px;padding:10px;font-size:.8125rem}
+.oche-pair-redesign .field{font-size:.8125rem;gap:6px}
+.oche-pair-code-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;min-width:0}
+.oche-pair-redesign .oche-pair-code-row .button{min-height:44px;padding:10px 12px;font-size:.75rem;white-space:normal;text-align:center}
+.oche-pair-redesign .oche-pair-code-row input{font-weight:750;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.oche-pair-destination{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px;margin:0;border:1px solid var(--pair-line);border-radius:10px;min-width:0}
+.oche-pair-destination legend{font-size:.75rem;font-weight:700;padding:0 6px}
+.oche-pair-redesign .oche-capacity{padding:12px;border-color:var(--pair-line);background:color-mix(in srgb,var(--pair-accent) 9%,var(--pair-surface));color:var(--pair-text);font-size:.75rem}
+.oche-pair-redesign .oche-capacity-full{border-color:#93763e;background:color-mix(in srgb,#93763e 16%,var(--pair-surface))}
+.oche-pair-redesign .oche-device-confirm{min-height:44px;align-items:center;line-height:1.5;font-size:.8125rem}
+.oche-pair-redesign .oche-device-confirm input{accent-color:var(--pair-accent);min-height:22px}
+.oche-pair-redesign .oche-account-back{font-size:.8125rem;color:var(--pair-muted);margin-top:18px;min-height:44px;display:inline-flex;align-items:center}
+.oche-pair-redesign :is(button,a,input,select):focus-visible{outline:3px solid var(--pair-accent);outline-offset:3px}
+.oche-device-manager{gap:16px}
+.oche-device-manager :is(.oche-device-home,.oche-device-limits,.oche-device-card){padding:16px;border-color:var(--df-line,var(--line,#303c33));background:var(--df-surface,var(--surface,#191f1b))}
+.oche-device-manager :is(.oche-device-home,.oche-device-limits)>h2,.oche-device-manager .oche-device-home h2{font-size:1rem;margin-bottom:8px}
+.oche-device-manager .oche-device-card{gap:12px}
+.oche-device-manager .oche-device-card h3{font-size:1rem;line-height:1.3}
+.oche-device-manager :is(p,dl,.field){font-size:.8125rem;line-height:1.5}
+.oche-device-manager :is(input,select){min-height:44px;padding:10px;background:var(--df-ink,var(--bg,#101411));border-color:var(--df-line,var(--line,#303c33));color:var(--df-text,var(--text,#f2f5ef))}
+.oche-device-manager .oche-device-list{gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.oche-device-manager .oche-device-home>form{margin-top:12px;gap:12px}
+.oche-device-manager .oche-location-capacity{padding-block:12px;gap:16px}
+@media(max-width:480px){.oche-pair-destination{grid-template-columns:minmax(0,1fr)}.oche-pair-code-row{grid-template-columns:minmax(0,1fr) minmax(100px,.7fr)}.oche-pair-redesign .oche-pair-code-row .button{padding-inline:8px}}
+@media(max-width:800px){.oche-account-page.oche-pair-redesign :is(.oche-device-form,.oche-device-login) :is(input,select):not([type=checkbox]){font-size:1rem;min-height:44px}}
+@media(max-width:800px){.dartflow-themed .df-redesign .oche-device-manager :is(input,select){font-size:1rem}}
+
+.oche-pair-redesign .button.gold{background:var(--pair-accent);border-color:var(--pair-accent);color:var(--df-on-lime,#18210d);box-shadow:none}
+.oche-pair-redesign .button.ghost{background:var(--pair-raised);border-color:var(--pair-line);color:var(--pair-text)}
+
+/* The shared Play renderer keeps its game rules inside the panel's own frame. */
+.oche-device-panel-content :is(.oche-play,.oche-play-update,.oche-play-x01-surface){width:100%;height:100%;min-height:0}
+.oche-device-panel .oche-play{padding:2cqw;gap:1cqh}
+.oche-device-panel .oche-play header{min-height:0;gap:1cqw;flex-wrap:wrap}
+.oche-device-panel .oche-play header>img,.oche-device-panel .oche-play header>.oche-club-wordmark,.oche-device-panel .oche-play header>div>p{display:none}
+.oche-device-panel .oche-play header>div{flex-basis:60%}.oche-device-panel .oche-play h1{font-size:6cqw}
+.oche-device-panel .oche-play-status{font-size:2.8cqw;max-width:100%;flex-basis:100%;text-align:center}
+.oche-device-panel .oche-play-context{font-size:2.7cqw;gap:1cqw;padding:1cqh 0}.oche-device-panel .oche-play-context strong{font-size:3.5cqw;flex-basis:100%}
+.oche-device-panel .oche-play article{padding:2cqw;border-radius:2cqw}.oche-device-panel .oche-play h2{font-size:4cqw}.oche-device-panel .oche-play p{font-size:2.7cqw}
+.oche-device-panel .oche-play-number{font-size:18cqw}.oche-device-panel .oche-play-around{gap:1cqh}.oche-device-panel .oche-play-around article{gap:1cqh}.oche-device-panel .oche-play-around .oche-play-number{font-size:14cqw}.oche-device-panel .oche-play-around progress{height:1.5cqh}
+.oche-device-panel .oche-play-marks thead th{font-size:max(10px,min(3.5cqw,var(--target-heading)))}.oche-device-panel .oche-play-marks tbody :is(th,td){font-size:max(11px,min(5cqw,var(--target-text)))}.oche-device-panel .oche-play-marks tfoot{font-size:max(12px,min(6cqw,var(--target-points)))}
+.oche-device-panel .oche-play-bingo{gap:2cqw}.oche-device-panel .oche-play-bingo-side h2{font-size:3.5cqw;margin-bottom:1cqh}.oche-device-panel .oche-play-bingo-card{gap:1cqw;max-width:100%;max-height:40cqh}.oche-device-panel .oche-play-bingo-card>div{font-size:5cqw;min-height:0;border-radius:1cqw}.oche-device-panel .oche-play-card-code{font-size:2.3cqw!important}.oche-device-panel .oche-play-bingo>aside{gap:1cqh}.oche-device-panel .oche-play-bingo>aside p{padding:1cqw}
+.oche-device-panel .oche-play-finish{gap:1cqh}.oche-device-panel .oche-play-attempts{gap:1cqw;max-height:22cqh}.oche-device-panel .oche-play-attempts>div{min-width:10cqw;padding:1cqw;font-size:3cqw}
+.oche-device-panel .oche-play-challenge{gap:2cqw}.oche-device-panel .oche-play-challenge .oche-play-number{font-size:15cqw}.oche-device-panel .oche-play-scorecard h3{font-size:2.5cqw}.oche-device-panel .oche-play-scorecard table{font-size:3.5cqw}.oche-device-panel .oche-play-challenge-rule{font-size:2.5cqw}
+.oche-device-panel .oche-play-last{font-size:2.7cqw;gap:1cqw;padding:1cqh;min-height:0;flex-wrap:wrap}.oche-device-panel .oche-play footer{min-height:0;gap:1cqw;font-size:2.2cqw;flex-wrap:wrap}.oche-device-panel .oche-play footer>span{flex-basis:100%}
+.oche-device-panel .oche-play-update{padding:5cqw;gap:3cqw}.oche-device-panel .oche-play-update img{width:45cqw}.oche-device-panel .oche-play-update h1{font-size:7cqw}.oche-device-panel .oche-play-update p{font-size:3.5cqw}
+.oche-screen-theme[data-oche-theme=club] .oche-device-panel-content,.oche-screen-theme[data-oche-theme=club] .oche-panel-empty{background:var(--oche-club-background);color:var(--oche-club-text)}
+.oche-screen-theme[data-oche-theme=club] .oche-device-wayfinding{--way-accent:var(--oche-club-primary);color:var(--oche-club-text)}
+.oche-screen-theme[data-oche-theme=club] .oche-wayfinder-card{background:linear-gradient(140deg,color-mix(in srgb,var(--oche-club-primary) 18%,var(--oche-club-surface)),var(--oche-club-background));border-color:var(--oche-club-border)}
+.oche-screen-theme[data-oche-theme=club] .oche-wayfinder-status{color:var(--oche-club-text);background:var(--oche-club-surface);border-color:var(--oche-club-border)}

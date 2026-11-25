@@ -5,7 +5,18 @@ import type {OcheDisplaySnapshot,OcheManagement,OchePairing} from '../../lib/och
 
 const origin='http://localhost:3000';
 async function login(page:Page,name='Michael de Groot',next='/app/schermen'){await page.goto(`/inloggen?next=${encodeURIComponent(next)}`);await page.getByRole('button',{name:new RegExp(name)}).click();await expect(page).toHaveURL(new URL(next,origin).href);}
-async function api<T>(context:BrowserContext,path:string,body?:unknown):Promise<T>{const response=body===undefined?await context.request.get(`/api/oche/v1/${path}`):await context.request.post(`/api/oche/v1/${path}`,{headers:{Origin:origin},data:body});expect(response.ok(),await response.text()).toBe(true);return response.json();}
+async function api<T>(context:BrowserContext,path:string,body?:unknown):Promise<T>{
+ let waited=0;
+ for(let retry=0;;retry++){
+  const response=body===undefined?await context.request.get(`/api/oche/v1/${path}`):await context.request.post(`/api/oche/v1/${path}`,{headers:{Origin:origin},data:body});
+  if(response.status()===429&&retry<2){
+   const header=response.headers()['retry-after'];
+   const seconds=Number(header);
+   if(header&&Number.isFinite(seconds)&&seconds>=0&&seconds<=60&&waited+seconds<=60){waited+=seconds;await new Promise(resolve=>setTimeout(resolve,Math.ceil(seconds*1000)+100));continue;}
+  }
+  expect(response.ok(),await response.text()).toBe(true);return response.json();
+ }
+}
 async function command(context:BrowserContext,action:Record<string,unknown>,revision?:number){const response=await context.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action,...(revision===undefined?{}:{expectedRevision:revision})}});expect(response.status(),await response.text()).toBe(200);return response.json();}
 async function setup(page:Page){await expect(page.getByRole('heading',{name:'Hoe staat dit scherm?',exact:true})).toBeVisible({timeout:60000});await page.getByRole('button',{name:/Horizontaal/}).click();await page.getByRole('button',{name:'Doorgaan',exact:true}).click();await page.getByRole('button',{name:/Eén scorebord/}).click();await page.getByRole('button',{name:'Opslaan en doorgaan',exact:true}).click();}
 async function pending(page:Page){await expect(page.locator('.oche-device-code')).toBeVisible({timeout:60000});return page.locator('.oche-device-code').innerText();}
@@ -21,7 +32,16 @@ test('two clean browser tabs reuse one installation; QR survives login, lost red
   // The QR only proposes the public code. Opening it never claims a slot.
   const manager=await owner.newPage();await manager.goto(`/koppel-scherm#code=${encodeURIComponent(code)}`);await expect(manager).toHaveURL('/koppel-scherm');await expect(manager.getByLabel('Koppelcode',{exact:true})).toHaveValue(code.replace(/[–\s-]/g,''));expect((await api<{state:string}>(display,'status')).state).toBe('pending');
   await manager.getByRole('link',{name:'Inloggen en doorgaan'}).click();expect(new URL(manager.url()).searchParams.get('next')).toBe('/koppel-scherm');expect(manager.url()).not.toContain('code=');await manager.getByRole('button',{name:/Michael de Groot/}).click();await expect(manager).toHaveURL('/koppel-scherm');await expect(manager.getByLabel('Koppelcode',{exact:true})).toHaveValue(code.replace(/[–\s-]/g,''));const previousClaim=await owner.request.post('/api/oche/v1/claim',{headers:{Origin:origin},data:{code:previousCode,scope:'home',name:prefix,requestId:randomUUID()}});expect(previousClaim.status()).toBeGreaterThanOrEqual(400);expect(previousClaim.status()).toBeLessThan(500);
-  let lost=false;await display.route('**/api/oche/v1/redeem',async route=>{if(lost){await route.continue();return;}lost=true;const response=await route.fetch();expect(response.status()).toBe(200);await route.abort('failed');});await manager.getByLabel('Schermnaam',{exact:true}).fill(prefix);await manager.getByRole('checkbox').check();await manager.getByRole('button',{name:'Dit scherm koppelen',exact:true}).click();await expect(manager.getByRole('heading',{name:'Koppeling bevestigd'})).toBeVisible();await first.bringToFront();await expect(first.getByRole('heading',{name:'Klaar voor jouw wedstrijd'})).toBeVisible();expect(lost).toBe(true);
+  let lost=false;const redeemNonces:string[]=[];
+  await display.route('**/api/oche/v1/redeem',async route=>{redeemNonces.push(String(route.request().postDataJSON().nonce));if(lost){await route.continue();return;}lost=true;const response=await route.fetch();expect(response.status()).toBe(200);await display.clearCookies({name:'dartflow-oche-access'});await display.clearCookies({name:'dartflow-oche-refresh'});await route.abort('failed');});
+  // Hold the real browser lock: an approved display must queue before it can create a nonce.
+  await first.evaluate(()=>new Promise<void>(held=>{void navigator.locks.request('dartflow-oche-redeem',()=>new Promise<void>(release=>{(window as unknown as {releaseTestRedeemLock:()=>void}).releaseTestRedeemLock=release;held();}));}));
+  try{
+   await manager.getByLabel('Schermnaam',{exact:true}).fill(prefix);await manager.getByRole('checkbox').check();await manager.getByRole('button',{name:'Dit scherm koppelen',exact:true}).click();await expect(manager.getByRole('heading',{name:'Koppeling bevestigd'})).toBeVisible();await first.bringToFront();
+   await expect.poll(()=>first.evaluate(async()=>(await navigator.locks.query()).pending?.filter(lock=>lock.name==='dartflow-oche-redeem').length??0)).toBeGreaterThan(0);
+   expect(redeemNonces.length).toBe(0);
+  }finally{await first.evaluate(()=>{(window as unknown as {releaseTestRedeemLock:()=>void}).releaseTestRedeemLock();});}
+  await expect(first.getByRole('heading',{name:'Klaar voor jouw wedstrijd'})).toBeVisible();expect(lost).toBe(true);expect(redeemNonces.length).toBeGreaterThanOrEqual(2);expect(new Set(redeemNonces).size).toBe(1);
   await second.reload();await expect(second.getByRole('heading',{name:'Klaar voor jouw wedstrijd'})).toBeVisible();const context=await api<OcheManagement>(owner,'context');expect(context.home.active).toBe(1);const device=context.devices.find(item=>item.name===prefix)!;expect(device).toBeTruthy();await second.close();
   const oldRefresh=(await display.cookies(`${origin}/api/oche/v1/refresh`)).find(cookie=>cookie.name==='dartflow-oche-refresh')!;expect(oldRefresh).toBeTruthy();let lostRefreshNonce='',retriedRefreshNonce='';await display.route('**/api/oche/v1/refresh',async route=>{const nonce=String(route.request().postDataJSON().nonce);if(lostRefreshNonce){retriedRefreshNonce=nonce;await route.continue();return;}lostRefreshNonce=nonce;const response=await route.fetch();expect(response.status()).toBe(200);await display.addCookies([oldRefresh]);await display.clearCookies({name:'dartflow-oche-access'});await route.abort('failed');});await display.clearCookies({name:'dartflow-oche-access'});await first.bringToFront();await expect.poll(()=>lostRefreshNonce).not.toBe('');await first.reload();await expect(first.getByRole('heading',{name:'Klaar voor jouw wedstrijd'})).toBeVisible();expect(retriedRefreshNonce).toBe(lostRefreshNonce);expect((await api<OcheManagement>(owner,'context')).home.active).toBe(1);
   const cookieList=await display.cookies(`${origin}/api/oche/v1/snapshot`);for(const cookie of cookieList.filter(item=>item.name.startsWith('dartflow-oche-')))expect(cookie.httpOnly).toBe(true);expect(await first.evaluate(()=>Object.entries(localStorage).some(([key])=>/secret|token/.test(key)))).toBe(false);

@@ -63,6 +63,7 @@ PLAYER_PIN_POLICY_RANGES = {
     'DARTFLOW_PLAYER_PIN_CONCURRENCY': (1, 8),
 }
 PLAYER_PIN_RUNTIME_KEYS = frozenset(PLAYER_PIN_POLICY_RANGES) | {'DARTFLOW_PLAYER_PIN_PEPPERS', 'DARTFLOW_PLAYER_PIN_PEPPER_VERSION'}
+FIREBASE_RUNTIME_KEYS = frozenset({'DARTFLOW_FIREBASE_ANDROID_CONFIG', 'DARTFLOW_FCM_SERVICE_ACCOUNT_JSON'})
 NOFOLLOW = os.O_NOFOLLOW | os.O_CLOEXEC
 DIRECTORY = NOFOLLOW | os.O_DIRECTORY | os.O_RDONLY
 CLEAN_ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C.UTF-8'}
@@ -350,7 +351,7 @@ def runtime_values(text, public):
     allowed = {'DARTFLOW_DATABASE_URL', 'DARTFLOW_ENV', 'DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY',
                'DARTFLOW_MAIL_ALLOWED_FROM', 'DARTFLOW_MAIL_ALLOWED_REPLY_TO', 'DARTFLOW_MAIL_TEST_RECIPIENTS', 'DARTFLOW_MAIL_MAX_MODE',
                'DARTFLOW_MAIL_WORKER_TOKEN', 'DARTFLOW_ADMIN_REQUIRE_MFA', 'SUPABASE_MANAGEMENT_TOKEN',
-               'DARTFLOW_TURN_SECRET', 'DARTFLOW_TURN_URLS'} | PLAYER_PIN_RUNTIME_KEYS
+               'DARTFLOW_TURN_SECRET', 'DARTFLOW_TURN_URLS'} | PLAYER_PIN_RUNTIME_KEYS | FIREBASE_RUNTIME_KEYS
     result = {}
     for line in text.splitlines():
         line = line.strip()
@@ -358,6 +359,13 @@ def runtime_values(text, public):
             continue
         key, separator, value = line.partition('=')
         require(separator and key in allowed and key not in result, 'Unknown or duplicate runtime variable')
+        if key in FIREBASE_RUNTIME_KEYS:
+            # One-line single quoting has identical literal JSON semantics in
+            # EnvironmentFile: spaces, double quotes and escaped PEM newlines survive.
+            require(2 < len(value) <= 16384 and value.startswith("'") and value.endswith("'")
+                    and value.count("'") == 2 and all(32 <= ord(c) < 127 for c in value), 'Invalid Firebase runtime encoding')
+            result[key] = value[1:-1]
+            continue
         if value.startswith('"'):
             require(len(value) >= 2 and value.endswith('"'), 'Unterminated runtime value')
             value = value[1:-1]
@@ -385,7 +393,62 @@ def runtime_values(text, public):
     if 'DARTFLOW_TURN_URLS' in result:
         require(all(re.fullmatch(r'turns?:[A-Za-z0-9.\[\]:-]+(?:\?transport=(?:udp|tcp))?', url) for url in result['DARTFLOW_TURN_URLS'].split(',')), 'Invalid TURN endpoint')
     validate_player_pin_runtime(result)
+    validate_firebase_runtime(result, expected_environment)
     return result
+
+
+def validate_firebase_runtime(values, environment):
+    """Validate optional fixed-project runtime options without logging any value."""
+    def read(key):
+        def constant(_):
+            raise Refused('Invalid Firebase runtime JSON')
+        try:
+            return json.loads(values[key], object_pairs_hook=unique_object, parse_constant=constant)
+        except (ValueError, RecursionError):
+            raise Refused('Invalid Firebase runtime JSON') from None
+
+    sdk_key = 'DARTFLOW_FIREBASE_ANDROID_CONFIG'
+    if sdk_key in values:
+        entries = read(sdk_key)
+        require(isinstance(entries, list) and len(entries) == 1, 'Expected one environment-bound Firebase Android config')
+        item = entries[0]
+        require(isinstance(item, dict) and set(item) == {'projectId', 'applicationId', 'senderId', 'apiKey', 'packageName'}
+                and all(isinstance(v, str) for v in item.values()), 'Invalid public Firebase Android fields')
+        package = {'staging': 'nl.dartflow.app.staging', 'production': 'nl.dartflow.app'}.get(environment)
+        require(package is not None and item['packageName'] == package and item['projectId'] == 'dartflow', 'Firebase project or environment package differs')
+        require(re.fullmatch(r'[0-9]{1,30}', item['senderId'])
+                and re.fullmatch(r'1:' + re.escape(item['senderId']) + r':android:[a-fA-F0-9]+', item['applicationId'])
+                and len(item['applicationId']) <= 200 and re.fullmatch(r'[A-Za-z0-9_-]{20,200}', item['apiKey']), 'Invalid Firebase Android identifiers')
+
+    credential_key = 'DARTFLOW_FCM_SERVICE_ACCOUNT_JSON'
+    if credential_key not in values:
+        return  # Existing non-Firebase bundles and SDK-only preparation remain valid.
+    credential = read(credential_key)
+    required = {'type', 'project_id', 'client_email', 'private_key'}
+    optional = {'private_key_id', 'client_id', 'auth_uri', 'token_uri', 'auth_provider_x509_cert_url', 'client_x509_cert_url', 'universe_domain'}
+    require(isinstance(credential, dict) and required <= set(credential) <= required | optional
+            and all(isinstance(v, str) for v in credential.values()), 'Invalid FCM service-account fields')
+    require(credential['type'] == 'service_account' and credential['project_id'] == 'dartflow'
+            and re.fullmatch(r'[a-z][a-z0-9-]{4,28}[a-z0-9]@dartflow\.iam\.gserviceaccount\.com', credential['client_email']), 'FCM identity must belong to the fixed Firebase project')
+    match = re.fullmatch(r'-----BEGIN PRIVATE KEY-----\n([A-Za-z0-9+/=\n]+)\n-----END PRIVATE KEY-----\n?', credential['private_key'])
+    require(match is not None and len(credential['private_key']) <= 12000, 'Invalid FCM private-key encoding')
+    try:
+        encoded = match[1].replace('\n', '')
+        decoded = base64.b64decode(encoded, validate=True)
+        require(128 <= len(decoded) <= 8192 and decoded[0] == 0x30
+                and base64.b64encode(decoded).decode('ascii') == encoded, 'Invalid FCM private-key encoding')
+    except ValueError:
+        raise Refused('Invalid FCM private-key encoding') from None
+    for name, pattern in [('private_key_id', r'[a-fA-F0-9]{40}'), ('client_id', r'[0-9]{1,32}')]:
+        require(name not in credential or re.fullmatch(pattern, credential[name]), 'Invalid FCM account metadata')
+    fixed = {'auth_uri': 'https://accounts.google.com/o/oauth2/auth', 'token_uri': 'https://oauth2.googleapis.com/token',
+             'auth_provider_x509_cert_url': 'https://www.googleapis.com/oauth2/v1/certs', 'universe_domain': 'googleapis.com'}
+    for name, expected in fixed.items():
+        require(name not in credential or credential[name] == expected, 'Unexpected FCM account endpoint')
+    if 'client_x509_cert_url' in credential:
+        prefix = 'https://www.googleapis.com/robot/v1/metadata/x509/'
+        require(credential['client_x509_cert_url'] in [prefix + credential['client_email'], prefix + credential['client_email'].replace('@', '%40')], 'Unexpected FCM account certificate endpoint')
+    require('DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY' in values, 'FCM requires the existing environment encryption key')
 
 
 def validate_player_pin_runtime(values):

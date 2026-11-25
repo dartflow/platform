@@ -1,0 +1,831 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-19T22:52:10.524526+00:00",
+  "scope": "Local source/build evidence only; synthetic fixtures, no hosted/device journey and no release authorization",
+  "baseCommit": "da269cf8c7081bd8cbe4d0211050d92929ac51d5",
+  "uncommittedSource": true,
+  "player": {
+    "localBuild": {
+      "result": "success",
+      "log": {
+        "path": "/tmp/dartflow-player-play-expansion-final-301.log",
+        "sha256": "5af1b9825fadec434de7123e08ae576b27fde285ed5694147f023d406705dee7",
+        "bytes": 20590
+      },
+      "summary": "BUILD SUCCESSFUL in 2m 44s"
+    },
+    "jvm": {
+      "production": {
+        "tests": 133,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "actualUniqueMethods": 133,
+        "reports": [
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerAuthorizationRaceTest.xml",
+            "sha256": "148d2ea7c88024556dfd0834fb30cfff963245fd07220f7928834e08847f9b5e",
+            "bytes": 1209
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerDataTest.xml",
+            "sha256": "d40a05848c751164a625269e95846a5b6baa8b1db4db048331e5461488cb7019",
+            "bytes": 2514
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerHomeFeedTest.xml",
+            "sha256": "5eff35a8709f0ab8474f0b4c68118bb9ee480dbd195bcb7a8386acc2e1796596",
+            "bytes": 1704
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerIdentityPushTest.xml",
+            "sha256": "f12367c8b5c3c4de10d730b3d0bdf06faa9f8c74b748c7ba10f7e208a87e7150",
+            "bytes": 2040
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerMatchProjectionTest.xml",
+            "sha256": "282240510176bafc16c1cdb6ad651577ff88b5c51cbc621e6ab4417fa8a7c9e7",
+            "bytes": 1292
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerMediaReadinessTest.xml",
+            "sha256": "ea729993a6d091b2b3839e2c1abfb7cc47224664d0b4e091e7e552ad263b842e",
+            "bytes": 788
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerMediaSafetyTest.xml",
+            "sha256": "fd5868ad9569deadbe6398d77e92c44f4920514cc8fe0030b19029cfd0e997b3",
+            "bytes": 901
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerOrganizerTest.xml",
+            "sha256": "4caddbba481b16d744a549cd75239b87e606d81754b8518c355a81261a130698",
+            "bytes": 4300
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerPlayEngineTest.xml",
+            "sha256": "989eddbc11f8bb875c1fe66bab9b2b47e6961215c815e4b2989a9623a58610d1",
+            "bytes": 1469
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerPlaySafetyTest.xml",
+            "sha256": "9219bca3c6ad1b1bcdcd9c42d0ee3b723bd57c3253983acbe0413faa93f6acf3",
+            "bytes": 1239
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerReleaseControlTest.xml",
+            "sha256": "94f65431c0ef63b0df83f7d079d145eb6da4c52945d98e9145084dff41f9f041",
+            "bytes": 2433
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerSafetyTest.xml",
+            "sha256": "926f6f7ee08177c0693e234f3624e560a42e437634d93f91e190206ddd1a80c6",
+            "bytes": 1218
+          },
+          {
+            "path": "android/player/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.app.PlayerScoreSnapshotsTest.xml",
+            "sha256": "1a24c273106c13e997e28a8cc682c8810207b154e804846a4584a4fd2c5d0de2",
+            "bytes": 1676
+          }
+        ]
+      },
+      "staging": {
+        "tests": 133,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "actualUniqueMethods": 133,
+        "reports": [
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerAuthorizationRaceTest.xml",
+            "sha256": "8f3167d0e9459974b336326add699773cd9c2724a94ceb6f11ce019cd1dc02ca",
+            "bytes": 1209
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerDataTest.xml",
+            "sha256": "531f1c83376c956350439eebb9d333acbc2c536b37170f6c004626fc0733af85",
+            "bytes": 2513
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerHomeFeedTest.xml",
+            "sha256": "3803498371424f931c678e01bbd1d492ec1d5bc181bbe045d80ceed15a5848a3",
+            "bytes": 1706
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerIdentityPushTest.xml",
+            "sha256": "643902b6a5931e98baaa84d9a2f02899f3afb20b184d422095aed10652adc648",
+            "bytes": 2041
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerMatchProjectionTest.xml",
+            "sha256": "f193fb927bffcb7a2a9ef1226273a6a78b02c6c76cda3c1e22db2f7f06463dba",
+            "bytes": 1292
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerMediaReadinessTest.xml",
+            "sha256": "63e1cba38ba43cd85fb3551d3764b0be85b9e64be2e315a17c1e2450215bc583",
+            "bytes": 788
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerMediaSafetyTest.xml",
+            "sha256": "0853194bbe4b5fb94b87dbe1526346d7361399b95f9b379d84531ee77f627b39",
+            "bytes": 901
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerOrganizerTest.xml",
+            "sha256": "d6f3b525988c8f4ecf00cc9e61210a2327c2543b9ea60d2f65e85b8db0d072a9",
+            "bytes": 4300
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerPlayEngineTest.xml",
+            "sha256": "c272e5a978d68e8b98eff9f5def2a559a31ecd2841eccd4d88c707474310cae8",
+            "bytes": 1470
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerPlaySafetyTest.xml",
+            "sha256": "d83d52291a48402420529d4a146a61a7192caf1913f38ebdc4b3c0606b8bb57b",
+            "bytes": 1243
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerReleaseControlTest.xml",
+            "sha256": "b45bfe9a58456eceb8bd424bb95825290f44e1aff4e608a3b9855cbd3c6b47c0",
+            "bytes": 2430
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerSafetyTest.xml",
+            "sha256": "a0e42d89efcd8727efe9206fa6f36188b59408cbeddb6f599fd10816b1beab7b",
+            "bytes": 1220
+          },
+          {
+            "path": "android/player/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.app.PlayerScoreSnapshotsTest.xml",
+            "sha256": "3c445263ae25fb25ac6fc331480130ee0cb27e92b701f487a4054a330d4207b3",
+            "bytes": 1676
+          }
+        ]
+      },
+      "development": {
+        "tests": 133,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "actualUniqueMethods": 133,
+        "reports": [
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerAuthorizationRaceTest.xml",
+            "sha256": "e3faaffb68106274438fc73428a86b31897443f675590fc9d5f3ef49da88591d",
+            "bytes": 1208
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerDataTest.xml",
+            "sha256": "94db50c28083047e6fe337b401042c43e62424db78cc2d553e3ef28daa91c433",
+            "bytes": 2514
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerHomeFeedTest.xml",
+            "sha256": "bce69b3e7777f829118a2cfaa30072308f1106f38d6e0f57990ff31f718353c0",
+            "bytes": 1706
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerIdentityPushTest.xml",
+            "sha256": "9d0f62422a1c2948a16c8e7e3ddf7806e9bc5c375db0c95c0e23cbccea5b03eb",
+            "bytes": 2044
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerMatchProjectionTest.xml",
+            "sha256": "1402123d8bc0e3d9061993306825b83beb268fd91cc12611f8ecfa3a883e03ab",
+            "bytes": 1290
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerMediaReadinessTest.xml",
+            "sha256": "32d88b67fd0c2a621825805b6e1cae87535308a4ef4dc7c654188543eadb3c1d",
+            "bytes": 786
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerMediaSafetyTest.xml",
+            "sha256": "5452cbee8ab10dcd1e80b86e9c54ed85a6d33bcb09edce8192777693d69da5ab",
+            "bytes": 905
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerOrganizerTest.xml",
+            "sha256": "ef0457e9345a0da425b4c94f73de9d8678f6c3a21ac8a856ee044f05f8f76606",
+            "bytes": 4302
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerPlayEngineTest.xml",
+            "sha256": "05ae84a63e678c3cc6b864fd688a4d0d9116ae23e600e11d932321b31e161d57",
+            "bytes": 1469
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerPlaySafetyTest.xml",
+            "sha256": "e49b96285c7d2272585cdc6d3a142cbe4621323b92fcec9782589eaa80c1ccaf",
+            "bytes": 1237
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerReleaseControlTest.xml",
+            "sha256": "2bd755aaa8c16832fe41f181bc707dee92ebb60189a952afb21e976fa3ad3233",
+            "bytes": 2430
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerSafetyTest.xml",
+            "sha256": "7313453fadece6cda6c68a23fbeeeb4d0f9feed5c47ddb09b5fcb85588ad13b7",
+            "bytes": 1220
+          },
+          {
+            "path": "android/player/app/build/test-results/testDevelopmentDebugUnitTest/TEST-nl.dartflow.app.PlayerScoreSnapshotsTest.xml",
+            "sha256": "154c72854ad357e2d655176a262a6352654316ff6e3aa09605b742012076db78",
+            "bytes": 1676
+          }
+        ]
+      }
+    },
+    "lint": {
+      "production": {
+        "errors": 0,
+        "warnings": 37,
+        "allSeverities": {
+          "Warning": 37,
+          "Hint": 1
+        },
+        "report": {
+          "path": "android/player/app/build/reports/lint-results-productionDebug.xml",
+          "sha256": "9cbf5b607d667ebd52c30e1ab0ef315db60cfe99122bcb280984d1f24a670c95",
+          "bytes": 39218
+        }
+      },
+      "staging": {
+        "errors": 0,
+        "warnings": 37,
+        "allSeverities": {
+          "Warning": 37,
+          "Hint": 1
+        },
+        "report": {
+          "path": "android/player/app/build/reports/lint-results-stagingDebug.xml",
+          "sha256": "9cbf5b607d667ebd52c30e1ab0ef315db60cfe99122bcb280984d1f24a670c95",
+          "bytes": 39218
+        }
+      },
+      "development": {
+        "errors": 0,
+        "warnings": 37,
+        "allSeverities": {
+          "Warning": 37,
+          "Hint": 1
+        },
+        "report": {
+          "path": "android/player/app/build/reports/lint-results-developmentDebug.xml",
+          "sha256": "9cbf5b607d667ebd52c30e1ab0ef315db60cfe99122bcb280984d1f24a670c95",
+          "bytes": 39218
+        }
+      }
+    },
+    "instrumentation": {
+      "sourceMethods": 73,
+      "compiledVariants": [
+        "production",
+        "staging",
+        "development"
+      ],
+      "executed": false,
+      "runtimeTests": null,
+      "runtimeSkipped": null,
+      "limitation": "No /dev/kvm and no installed SDK emulator engine; compilation is not an instrumentation pass.",
+      "sourceFiles": [
+        {
+          "path": "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerControlUiTest.kt",
+          "sha256": "b5a59c2eb34c1c7b78e4a9ea602060b9417df74562cdf7cb51c28f9a0eb84f00",
+          "bytes": 10021
+        },
+        {
+          "path": "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerIdentityLobbyUiTest.kt",
+          "sha256": "e430da6bdc599f653dd63ff95cd12c6dddfac3898406a872acda96c00c2a4e4e",
+          "bytes": 6950
+        },
+        {
+          "path": "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerPlayPersistenceTest.kt",
+          "sha256": "6020c07b10fba70b6c06bc0346b16582f8d7524165050238b802fa335881d93f",
+          "bytes": 6827
+        },
+        {
+          "path": "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerPlayUiTest.kt",
+          "sha256": "5e2b76238ee288ac0826e354d78b6f85e39d2dd2afe91fabde8e917ee4dd6ee9",
+          "bytes": 8398
+        },
+        {
+          "path": "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerReleaseUiTest.kt",
+          "sha256": "d7ea8db0fdc997b7b8503ded76d2bace0638390b821d55feb88204a11299351d",
+          "bytes": 29807
+        },
+        {
+          "path": "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerUiTest.kt",
+          "sha256": "9af3236bd0ad61c7faa675ccc7330ea24d68084f7b5ce35faec280841ef51aff",
+          "bytes": 35606
+        }
+      ]
+    },
+    "artifacts": [
+      {
+        "path": "android/player/app/build/outputs/apk/production/debug/app-production-debug.apk",
+        "sha256": "9a31504b0851d8dc3811c979759bfcc06517bbcf780c0a89519fe97671965e53",
+        "bytes": 64579839
+      },
+      {
+        "path": "android/player/app/build/outputs/apk/androidTest/production/debug/app-production-debug-androidTest.apk",
+        "sha256": "6530de7001b40fab9cec8ef87226a65c11d9ac5c95adf88cf4e1f48a24e7ae82",
+        "bytes": 1349956
+      },
+      {
+        "path": "android/player/app/build/outputs/apk/staging/debug/app-staging-debug.apk",
+        "sha256": "c30203e512a42c7fe4a2cb237c55c2a50f5192f21659e13e953a44af9affdceb",
+        "bytes": 64579749
+      },
+      {
+        "path": "android/player/app/build/outputs/apk/androidTest/staging/debug/app-staging-debug-androidTest.apk",
+        "sha256": "5296137f410bf09c70ff54d34a188d6323b4265366a54be191de36d35a1313eb",
+        "bytes": 1350423
+      },
+      {
+        "path": "android/player/app/build/outputs/apk/development/debug/app-development-debug.apk",
+        "sha256": "6ef73bcd7b53243849483d081ad9779c301dd9fdb3f71ecf75a47ae46b1a6c9c",
+        "bytes": 64580104
+      },
+      {
+        "path": "android/player/app/build/outputs/apk/androidTest/development/debug/app-development-debug-androidTest.apk",
+        "sha256": "250855516a84081afb84e4fb81e84307e3dd9c21cd460d7b0aec108badf70724",
+        "bytes": 1350452
+      },
+      {
+        "path": "android/player/app/build/outputs/bundle/productionRelease/app-production-release.aab",
+        "sha256": "f5b9fd234c40491ef4e0bb5cb73e935872f6ed71e4da990167da7c9f63b51724",
+        "bytes": 27951729,
+        "releaseSignaturePresent": false
+      }
+    ]
+  },
+  "oche": {
+    "localBuild": {
+      "result": "success",
+      "log": {
+        "path": "/tmp/dartflow-oche-play-expansion-final.log",
+        "sha256": "5a7044230452a1090035ebf60d1377828cc97c1f144eb1691d8170cf2db67a33",
+        "bytes": 14662
+      },
+      "summary": "BUILD SUCCESSFUL in 1m 23s"
+    },
+    "jvm": {
+      "staging": {
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "actualUniqueMethods": 32,
+        "reports": [
+          {
+            "path": "android/oche-live/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.ochelive.DisplayModelTest.xml",
+            "sha256": "93b8c3c5fab7e03e36a260dc0d9a422eafcb201ea14742d4e344310b169e8801",
+            "bytes": 4269
+          },
+          {
+            "path": "android/oche-live/app/build/test-results/testStagingDebugUnitTest/TEST-nl.dartflow.ochelive.PlayDisplayTest.xml",
+            "sha256": "de2089902211f5cadfc9384ee355493e93981df24bc1ab13a16381e25daec6f0",
+            "bytes": 984
+          }
+        ]
+      },
+      "production": {
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "actualUniqueMethods": 32,
+        "reports": [
+          {
+            "path": "android/oche-live/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.ochelive.DisplayModelTest.xml",
+            "sha256": "751c44252ffc368010378624a4e37b10b60f6284cac12669b376cbc0566d7ff0",
+            "bytes": 4268
+          },
+          {
+            "path": "android/oche-live/app/build/test-results/testProductionDebugUnitTest/TEST-nl.dartflow.ochelive.PlayDisplayTest.xml",
+            "sha256": "8396d2b57da491bd21e361cd749270c831bd05ea9cf9d81b993529eab4a708e1",
+            "bytes": 984
+          }
+        ]
+      }
+    },
+    "lint": {
+      "staging": {
+        "errors": 0,
+        "warnings": 24,
+        "allSeverities": {
+          "Warning": 24
+        },
+        "report": {
+          "path": "android/oche-live/app/build/reports/lint-results-stagingDebug.xml",
+          "sha256": "706e0f9d6737dadcf8413ce1cf88206ca1bb72da2ecb9cbe3ca68695dacd083a",
+          "bytes": 24877
+        }
+      },
+      "production": {
+        "errors": 0,
+        "warnings": 24,
+        "allSeverities": {
+          "Warning": 24
+        },
+        "report": {
+          "path": "android/oche-live/app/build/reports/lint-results-productionDebug.xml",
+          "sha256": "706e0f9d6737dadcf8413ce1cf88206ca1bb72da2ecb9cbe3ca68695dacd083a",
+          "bytes": 24877
+        }
+      }
+    },
+    "instrumentation": {
+      "sourceMethods": 15,
+      "compiledVariants": [
+        "staging",
+        "production"
+      ],
+      "executed": false,
+      "runtimeTests": null,
+      "runtimeSkipped": null,
+      "limitation": "No /dev/kvm and no installed SDK emulator engine; compilation is not an instrumentation pass.",
+      "sourceFiles": [
+        {
+          "path": "android/oche-live/app/src/androidTest/java/nl/dartflow/ochelive/OcheUiTest.kt",
+          "sha256": "4645a59e38f345ae3b05780e07c9a8dfbf2ace166693beaa10a900620cf0acb6",
+          "bytes": 8684
+        },
+        {
+          "path": "android/oche-live/app/src/androidTest/java/nl/dartflow/ochelive/PlayDisplayUiTest.kt",
+          "sha256": "819fc7d42e70b52cc39a20deecca925bd03484699417a4021b4a7f2b83fb26a5",
+          "bytes": 4488
+        },
+        {
+          "path": "android/oche-live/app/src/androidTest/java/nl/dartflow/ochelive/SecureStoreTest.kt",
+          "sha256": "6f93a97d764e83d8bace01a1b311c8b123a0fb4d3acfdda776803539d131bc4e",
+          "bytes": 998
+        }
+      ]
+    },
+    "artifacts": [
+      {
+        "path": "android/oche-live/app/build/outputs/apk/staging/debug/app-staging-debug.apk",
+        "sha256": "dff36b01acedf080bbff21fe5c986dedfb9c8cbc89a045ccaeb7cc77877121b6",
+        "bytes": 12185132
+      },
+      {
+        "path": "android/oche-live/app/build/outputs/apk/androidTest/staging/debug/app-staging-debug-androidTest.apk",
+        "sha256": "a39059692a0074877070da8a5dfb9ffe3cbed40cc7b0a8232b21761f31872219",
+        "bytes": 1109859
+      },
+      {
+        "path": "android/oche-live/app/build/outputs/apk/production/debug/app-production-debug.apk",
+        "sha256": "359a028c62e3d3a40eb1b5d9917b0d1eff21f4d28b0b6597cd0e2174ea99a02d",
+        "bytes": 12185061
+      },
+      {
+        "path": "android/oche-live/app/build/outputs/apk/androidTest/production/debug/app-production-debug-androidTest.apk",
+        "sha256": "c6bbc7c3cc270028c2e3efab760bec73f1500c27a4f9d10fa7dcc600b3269aff",
+        "bytes": 1109451
+      },
+      {
+        "path": "android/oche-live/app/build/outputs/bundle/productionRelease/app-production-release.aab",
+        "sha256": "df36678332324527ecd29a04d097118fdd83a7b1ac506804d5e237b52261dc48",
+        "bytes": 2828914,
+        "releaseSignaturePresent": false
+      }
+    ]
+  },
+  "sharedVectors": {
+    "path": "tests/fixtures/play-rules.json",
+    "sha256": "4ef398612239a8d5b135febca72755c75d033a62c599790b27bd35eec1d4df4e",
+    "bytes": 90405
+  },
+  "manual": {
+    "bundledBytesEqualCurrentServerSource": true,
+    "source": {
+      "path": "lib/content/manual.nl.json",
+      "sha256": "62fb3a6cbb43685b12a329d373a8f14c89c033a24c815e237962b959883de4f6",
+      "bytes": 24601
+    },
+    "bundled": {
+      "path": "android/player/app/src/main/assets/manual.nl.json",
+      "sha256": "62fb3a6cbb43685b12a329d373a8f14c89c033a24c815e237962b959883de4f6",
+      "bytes": 24601
+    }
+  },
+  "sourceFiles": [
+    {
+      "path": "android/ci/test_verify_native_tests.py",
+      "sha256": "ef1b3642f7e42e8050b681493722a366107cb8c0d53a96a63db249f5a5501479",
+      "bytes": 4853
+    },
+    {
+      "path": "android/ci/verify_native_tests.py",
+      "sha256": "c7dd9e264304bc2bb08f9d4ee6c73c4ed13875aaf3696c2510620017a7b66258",
+      "bytes": 4315
+    },
+    {
+      "path": "android/oche-live/app/build.gradle.kts",
+      "sha256": "b35b012bfcd5c8309278fb4afcab59188844b3610e378760be0276439f5a54c5",
+      "bytes": 4512
+    },
+    {
+      "path": "android/oche-live/app/src/androidTest/java/nl/dartflow/ochelive/PlayDisplayUiTest.kt",
+      "sha256": "819fc7d42e70b52cc39a20deecca925bd03484699417a4021b4a7f2b83fb26a5",
+      "bytes": 4488
+    },
+    {
+      "path": "android/oche-live/app/src/main/java/nl/dartflow/ochelive/DisplayModel.kt",
+      "sha256": "6373b9070e49a0882b776217c9ad5de31f3eb9699cc67bb9a5e6a9d96893467d",
+      "bytes": 15109
+    },
+    {
+      "path": "android/oche-live/app/src/main/java/nl/dartflow/ochelive/MainActivity.kt",
+      "sha256": "a36e5942eea54f3201757090872e2f59b08360a98f891af2de7c61fa6ff3450e",
+      "bytes": 39944
+    },
+    {
+      "path": "android/oche-live/app/src/main/java/nl/dartflow/ochelive/OcheViewModel.kt",
+      "sha256": "29d6bd6b38a9585b6ffd97864d0b194e8aab9dc2bf7a94dc73aeeec95228a78a",
+      "bytes": 8645
+    },
+    {
+      "path": "android/oche-live/app/src/main/java/nl/dartflow/ochelive/PlayDisplay.kt",
+      "sha256": "2b61ca5f1fb86d0d7f9be08ade9298feba3d190f03c8b538fd05ee78e8c12608",
+      "bytes": 19958
+    },
+    {
+      "path": "android/oche-live/app/src/test/java/nl/dartflow/ochelive/PlayDisplayTest.kt",
+      "sha256": "bc939cd0df9043e79579a506812bacaaf7fa8a688369e08c1af4e8e81c1f4873",
+      "bytes": 3756
+    },
+    {
+      "path": "android/oche-live/ci/run_tv_ui.sh",
+      "sha256": "3563157e3d2ff663effb18e961e3d26349268abdc4e4ba8e3377896792e009c3",
+      "bytes": 4250
+    },
+    {
+      "path": "android/oche-live/version.properties",
+      "sha256": "c3c8619c99f04261c36d612b057e96a4136bac3e033af75815b79b2eee3c1d58",
+      "bytes": 18
+    },
+    {
+      "path": "android/player/app/build.gradle.kts",
+      "sha256": "7cb70d50cace951027d18ca39ca09a9ff68e93086283f4cbd546acf2bbcb42b7",
+      "bytes": 6122
+    },
+    {
+      "path": "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerPlayPersistenceTest.kt",
+      "sha256": "6020c07b10fba70b6c06bc0346b16582f8d7524165050238b802fa335881d93f",
+      "bytes": 6827
+    },
+    {
+      "path": "android/player/app/src/androidTest/java/nl/dartflow/app/PlayerPlayUiTest.kt",
+      "sha256": "5e2b76238ee288ac0826e354d78b6f85e39d2dd2afe91fabde8e917ee4dd6ee9",
+      "bytes": 8398
+    },
+    {
+      "path": "android/player/app/src/main/assets/manual.nl.json",
+      "sha256": "62fb3a6cbb43685b12a329d373a8f14c89c033a24c815e237962b959883de4f6",
+      "bytes": 24601
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/MainActivity.kt",
+      "sha256": "b2410df8964c690a09a286a7af3c890b05844110cc1ae042ef3f3dcb23ac5ce1",
+      "bytes": 6442
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerApi.kt",
+      "sha256": "95a6672778cb3e963e2988cdcb4d0252ed79068dde11cdc4ab9ac7a03abff979",
+      "bytes": 7846
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerCricket.kt",
+      "sha256": "cd6d9f11a438e0f27aae97e6bd6ef66ec5a4d44513a37b279236f185d70add08",
+      "bytes": 2873
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerDartEntry.kt",
+      "sha256": "69acffb3dc20769a9fd658f33470cedfa28d504254645be0aa0ac754980987a0",
+      "bytes": 3851
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerDiscovery.kt",
+      "sha256": "be8379546d24fb0826953e4ea13d7d2922f42c6ec3c4ac71c29e7e10f1fff9ef",
+      "bytes": 18372
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerLegacyResume.kt",
+      "sha256": "e0ab1227cda13ac974df580b1fca5d731a5c2cfbf88e9cdfa657f6fc36d1e0fb",
+      "bytes": 4574
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerLinks.kt",
+      "sha256": "c5fb72efd6875098661e7627759b5fa0af938d09548344d9c8316497474b5a1e",
+      "bytes": 6857
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerManual.kt",
+      "sha256": "89d54d217de3c5a55c3841e98cd17fa9772ccf662769d2a4e8f5b4fb3a30756d",
+      "bytes": 3597
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerMatchProjection.kt",
+      "sha256": "1b81556506f59bf20c93359f44e53e00ba26010b3949979cd89c9ea2137febfe",
+      "bytes": 12131
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerMatchQueue.kt",
+      "sha256": "2d2ebc0882fc22788427e9bb1309914359516b368e481fab09b1c406246a5242",
+      "bytes": 6089
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerModels.kt",
+      "sha256": "ce5a70e6f8e830568c3cc292ffc501d97455f6b4cf7f307dec2a8e32f10f4947",
+      "bytes": 7210
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerPlayControls.kt",
+      "sha256": "8ae60f976fc7f5cbc3935c1abcfae50971afeb381d8237f96a368a7136ddda20",
+      "bytes": 13838
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerPlayCoordinator.kt",
+      "sha256": "c856484f34889d83bf7706d5d01ebe92f9f404111b1125aaf010a40be9102927",
+      "bytes": 18674
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerPlayEngine.kt",
+      "sha256": "e9a87e7ad29526fa93e177361e31d5be8beea9535f71cb64e4c78f4b31103c0b",
+      "bytes": 17382
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerPlayGameViews.kt",
+      "sha256": "8b48a977a6c324538a83f36bc774fcf86a2d88b7329ab7e48cc0a91d85616dba",
+      "bytes": 9205
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerPlayHistory.kt",
+      "sha256": "cb8a0f9e2ca6c1dc3be98620d2fd4c15fc3e6ff6d662122e19f82fdc3c361f08",
+      "bytes": 13105
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerPlayModels.kt",
+      "sha256": "65d9d88aa7c2c33e4ae67534a5fd0070fc40869ee993fce100e6d375e71fdf15",
+      "bytes": 7720
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerPlayRulesEditor.kt",
+      "sha256": "a3063d46601731811956d8400a933f9a60b4ca762fe4b85fe634b3b2f3ae66e2",
+      "bytes": 5432
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerPlayScreens.kt",
+      "sha256": "a1a06ea01d8244bf89b4522e4422380ff2917d4ab6763870a2fe83fcc80074ae",
+      "bytes": 17307
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerPlayStatistics.kt",
+      "sha256": "65fb1ea6148b64332dd928010f9d4f13a480aaa1d66024c4b58d2c1324da76df",
+      "bytes": 6068
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerRuleFields.kt",
+      "sha256": "876e27ea9d52799e5eb906090b6ac823e5ed7d99c56778681b9b9124b904553a",
+      "bytes": 6262
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerScoreScreen.kt",
+      "sha256": "cbfde40a463553e2b1c88fb185cf6482c929f96ea4e568f0f48ff0e305b018e4",
+      "bytes": 13857
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerScreens.kt",
+      "sha256": "d8988ebb87ea323d1bb13299430e4ca31ffbdd95768205eb3a50f0640964b7ae",
+      "bytes": 120312
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerSessionStore.kt",
+      "sha256": "c5e6d10fb65e3a3fc3fc4ceec36e3c925d4c7e659e92ba1f58b3827aad55e3f0",
+      "bytes": 3896
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerStartProcedure.kt",
+      "sha256": "c6de8e11200241a04640716f2dc5a8b5b9d80fc2bf324e9dbc71eee0aa9bd1fe",
+      "bytes": 10535
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerTrainingQueue.kt",
+      "sha256": "979ed08fcffbbb1aab2b9412870dda9dca041ae3a5b11cda4dca4e6c679280e1",
+      "bytes": 7799
+    },
+    {
+      "path": "android/player/app/src/main/java/nl/dartflow/app/PlayerViewModel.kt",
+      "sha256": "9f9e0462a81c5cc36b71ebafe7f85b14f468a7e662a6ead83f8d7ae475476a26",
+      "bytes": 61156
+    },
+    {
+      "path": "android/player/app/src/production/AndroidManifest.xml",
+      "sha256": "87ecf5466eb2a40b8f5f5c4262100a9cee0d7a2b30e270b756476945e254ebc8",
+      "bytes": 1274
+    },
+    {
+      "path": "android/player/app/src/staging/AndroidManifest.xml",
+      "sha256": "87ecf5466eb2a40b8f5f5c4262100a9cee0d7a2b30e270b756476945e254ebc8",
+      "bytes": 1274
+    },
+    {
+      "path": "android/player/app/src/test/java/nl/dartflow/app/PlayerDataTest.kt",
+      "sha256": "f637f0d3eb5c62a51f49024927e26d1bb11dfe93d0eabc29f94218fe7852b7df",
+      "bytes": 12207
+    },
+    {
+      "path": "android/player/app/src/test/java/nl/dartflow/app/PlayerMatchProjectionTest.kt",
+      "sha256": "0ad02372ae3df4716482ddc656c4d6909dc7109d34e390164a96eadab7d0cad5",
+      "bytes": 5271
+    },
+    {
+      "path": "android/player/app/src/test/java/nl/dartflow/app/PlayerPlayEngineTest.kt",
+      "sha256": "82b1a89178d99975c3a1699bef1053a8b264dd0a6070c5e567efc367fd04a62d",
+      "bytes": 8199
+    },
+    {
+      "path": "android/player/ci/check_release_readiness.py",
+      "sha256": "3ebbbef6d31286221e79872a8088024b8fd8bfe7c62164d2498679735602a111",
+      "bytes": 6548
+    },
+    {
+      "path": "android/player/ci/run-native-ui-tests.sh",
+      "sha256": "a862c7a669952017d2e4ce24c1bc820bbe08f409c9f81cfc7406c11c9be9fda2",
+      "bytes": 1621
+    },
+    {
+      "path": "android/player/ci/test_check_release_readiness.py",
+      "sha256": "4be20cd84ad788039a4424b6e35c4c6a066fa8690e5e558ee68d99d1d4e235b2",
+      "bytes": 6107
+    },
+    {
+      "path": "android/player/version.properties",
+      "sha256": "571ca93c0c8c85eda46199c0ffbbc4bf24e0147b6a88a0f2a99f1ab523d86787",
+      "bytes": 18
+    }
+  ],
+  "supportChecks": {
+    "playerReleaseReadinessReceiptFirebaseTools": {
+      "passed": 16,
+      "failed": 0
+    },
+    "ocheReleaseTools": {
+      "passed": 19,
+      "failed": 0
+    },
+    "playerOutsideReleaseHelperGates": {
+      "passed": 11,
+      "failed": 0,
+      "path": "/tmp/dartflow-player-release-tools-0.4.0/"
+    },
+    "ocheOutsideReleaseHelperGates": {
+      "passed": 20,
+      "failed": 0,
+      "path": "/tmp/dartflow-oche-release-tools-1.3.0/"
+    }
+  },
+  "release": {
+    "signingPerformed": false,
+    "privateSigningKeyAccessed": false,
+    "githubPublicationPerformed": false,
+    "playUploadPerformed": false,
+    "deploymentPerformed": false,
+    "requiredNextGate": "Exact complete fully green MAIN web/Player/Oche CI with actual UI reports, all expected test methods and zero failures/skips; root owns release."
+  },
+  "ciGateChecks": {
+    "validatorOfflineTests": {
+      "passed": 11,
+      "failed": 0
+    },
+    "actualJvmXmlValidated": {
+      "playerPerVariant": 133,
+      "ochePerVariant": 32
+    },
+    "uiSourceInventoryMatchesReviewedReleaseInventory": {
+      "player": 73,
+      "oche": 15
+    },
+    "uiRuntimeExecuted": false,
+    "shellSyntaxPassed": true,
+    "workflowYamlAndRunBlockSyntaxPassed": true,
+    "scope": "After successful product builds, only Python/shell test gates and workflow wiring changed; no Android product source or Gradle input changed."
+  },
+  "ciWorkflows": [
+    {
+      "path": ".github/workflows/player-android-ci.yml",
+      "sha256": "1af0f2a73e8c244840d110f4757a5e0af1e2890abfdf1934b030f5d3fc06cdbd",
+      "bytes": 3697
+    },
+    {
+      "path": ".github/workflows/oche-android-ci.yml",
+      "sha256": "4a857ca15257b681251a54f3036dc7300a9beff54531a95dd8884755f19827e6",
+      "bytes": 12698
+    }
+  ]
+}

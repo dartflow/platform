@@ -1,0 +1,88 @@
+{
+  "syntheticOnly": true,
+  "externalMessagesSent": 0,
+  "origin": "https://dartflow.nl",
+  "logo": "/assets/dartflow-logo.png",
+  "files": [
+    {
+      "file": "friend-request.html",
+      "sha256": "56a72bed83031c7dda1821837dc386617eb7b33d7b743f6a71e74a7a9aef3e69"
+    },
+    {
+      "file": "friend-request.txt",
+      "sha256": "b756486f224337d781f7d0e72aff65fede1e9922d8d042b13a1306722bd0299d"
+    },
+    {
+      "file": "friend-accepted.html",
+      "sha256": "4bee9552dc7641203c6aa8d3cc2a0431801c37e4e7531c083c8d25fdfdda066b"
+    },
+    {
+      "file": "friend-accepted.txt",
+      "sha256": "2449e8ff8fa60b41a545678e839e356dabdd6067837c0a82d800ec31da456bf2"
+    },
+    {
+      "file": "room-invite.html",
+      "sha256": "eacf70ebc401a967605988bbcd51a223bc72e4d57a405265bc8222d230da5857"
+    },
+    {
+      "file": "room-invite.txt",
+      "sha256": "bddff498224d14d52447efd2ade61ab681e05fc228c044cd18021711d74970c0"
+    },
+    {
+      "file": "club-invite.html",
+      "sha256": "445995c5334d26f7a9f2c9deb3226757edcf7c771e3ff281462cd2f5bd353040"
+    },
+    {
+      "file": "club-invite.txt",
+      "sha256": "afefded01bf64ef7039e8d39fb800e17d3f9af374df789e674bf3c95ddb4c8da"
+    },
+    {
+      "file": "club-request.html",
+      "sha256": "7b228f8a4f984e6df2a9dbcaaba2fb4c8baaccb0a2f999cfeb51049eebde57f2"
+    },
+    {
+      "file": "club-request.txt",
+      "sha256": "94d44e522ccc56085d9368e6463f1e0b207bb8e9427b17e96ef1815faced7716"
+    },
+    {
+      "file": "challenge-invite.html",
+      "sha256": "d10a9042d8c4bb0cce136371b54315022b216321e1932d37352c604dceed9775"
+    },
+    {
+      "file": "challenge-invite.txt",
+      "sha256": "ba737b721bd59de180adb77178eceff3615d8f883fd7f1596ba668f88c345eea"
+    },
+    {
+      "file": "challenge-accepted.html",
+      "sha256": "8cd8543f1ecc10a7d91fbef837c814623148d32f4849bde516e6d2f0ef37672b"
+    },
+    {
+      "file": "challenge-accepted.txt",
+      "sha256": "0fea05351fda73100c4452b58daaa7bbb510be7cc4d8981bd88226a0ee171006"
+    },
+    {
+      "file": "competition-lobby-ready.html",
+      "sha256": "aaab5ce35b69137f0daa0718c2970fd2ea2692544dd0564e374113d9a92a1b34"
+    },
+    {
+      "file": "competition-lobby-ready.txt",
+      "sha256": "bc4a5e2893ab341633d54ab68acccb798a3abb16c57181432ef4dbeee0df1e42"
+    },
+    {
+      "file": "friend-accepted-neutral.html",
+      "sha256": "e6b977bbcb717c47346761c94087baf6ec9132b85d6d8723f5bc3225bb73b6c0"
+    },
+    {
+      "file": "friend-accepted-neutral.txt",
+      "sha256": "373e52e0f292b7b259216773f5274eba27acff019d0a8e928ef3748be4d8265f"
+    },
+    {
+      "file": "friend-request-escaped-long.html",
+      "sha256": "3ba84c00bc44ba7a31d114423e20eb4d94cf669ad8f1669e9f1bc64fcaaa9387"
+    },
+    {
+      "file": "friend-request-escaped-long.txt",
+      "sha256": "d47b0bc5ce9c3301870e1c58e3ff0d70b9a130bd47e83449fd41bcd47a5b1bd1"
+    }
+  ]
+}

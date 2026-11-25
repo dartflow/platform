@@ -3,6 +3,8 @@
 import {Component,type ReactNode} from 'react';
 import type {OcheDisplaySnapshot,OcheDisplayPanel} from '@/lib/oche-device-types';
 import SprintDisplay from './sprint-display';
+import OchePlayDisplay from './oche-play-display';
+import {coreTacticsPlay} from '@/lib/oche-play-projection';
 import OcheLiveStandby from './oche-live-standby';
 import OcheCelebration,{useOcheCelebration} from './oche-celebration';
 import BoardActivityNotice from './board-activity-notice';
@@ -24,7 +26,7 @@ export function OcheDeviceWayfinding({panels,offline}:{panels:OcheDisplayPanel[]
 }
 
 export default function OcheDevicePanel({snapshot,status='ready',offline,compact=false,refresh}:{snapshot:OcheDisplaySnapshot|null;status?:string;offline:boolean;compact?:boolean;refresh:()=>void}){
- const display=snapshot?.display,homeWaiting=snapshot?.scope==='home'&&!display?.snapshot.match;
+ const display=snapshot?.display,play=display?.snapshot.play??(display?coreTacticsPlay(display.snapshot,snapshot?.serverNow??0):undefined),homeWaiting=snapshot?.scope==='home'&&!display?.snapshot.match&&!play;
  const cue=useOcheCelebration(display?.snapshot,Boolean(display)&&!offline&&status==='ready');
  const activity=display?.snapshot.boardActivity?{...display.snapshot.boardActivity,canExtend:false}:undefined;
  const overlay=<OcheCelebration cue={cue}/>;
@@ -32,6 +34,6 @@ export default function OcheDevicePanel({snapshot,status='ready',offline,compact
  const scan=panelScan(snapshot,status,offline);
  const qr=scan?<figure className="oche-qr"><ClubBoardQr key={snapshot!.board!.id} boardId={snapshot!.board!.id} variant="oche" automatic/><figcaption>Scan en speel</figcaption></figure>:null;
  return <div className="oche-device-panel-content" data-theme={display?.snapshot.theme?.id??'dartflow'} data-panel-status={status}>
-  {status!=='ready'||!display||homeWaiting?<main className="oche-panel-empty" role="status"><OcheBrand theme={display?.snapshot.theme?.id}/><h2>{status==='unavailable'?'Baan niet beschikbaar':status==='error'?'Baan opnieuw synchroniseren':homeWaiting&&display?'De partij staat klaar':snapshot?.scope==='home'?'Klaar voor jouw wedstrijd':compact?'Nog geen baan toegewezen':'Wacht op een baan'}</h2><p>{status==='unavailable'?'Vraag een bevoegde beheerder om een andere baan te kiezen.':status==='error'?'De actuele stand van deze baan wordt opnieuw opgehaald.':snapshot?.scope==='home'?'Kies of start je eigen wedstrijd of oefensessie op je telefoon.':'De locatiebeheerder kan onder DartFlow → Schermen een baan toewijzen.'}</p></main>:display.snapshot.match?<SprintDisplay snapshot={display.snapshot} stale={offline} qr={null} compact={compact} automatic overlay={overlay} activityOverlay={activityOverlay}/>:<OcheLiveStandby data={display} error="" stale={offline} needsPairing={false} pairForm={null} qr={compact?null:qr} controls={null} overlay={overlay} activityOverlay={activityOverlay} automatic/>}
+  {status!=='ready'||!display||homeWaiting?<main className="oche-panel-empty" role="status"><OcheBrand theme={display?.snapshot.theme?.id}/><h2>{status==='unavailable'?'Baan niet beschikbaar':status==='error'?'Baan opnieuw synchroniseren':homeWaiting&&display?'De partij staat klaar':snapshot?.scope==='home'?'Klaar voor jouw wedstrijd':compact?'Nog geen baan toegewezen':'Wacht op een baan'}</h2><p>{status==='unavailable'?'Vraag een bevoegde beheerder om een andere baan te kiezen.':status==='error'?'De actuele stand van deze baan wordt opnieuw opgehaald.':snapshot?.scope==='home'?'Kies of start je eigen wedstrijd of oefensessie op je telefoon.':'De locatiebeheerder kan onder DartFlow → Schermen een baan toewijzen.'}</p></main>:play?<OchePlayDisplay play={play} boardName={display.board.name} eventName={display.snapshot.event.name} stale={offline} theme={display.snapshot.theme?.id} qr={compact?null:qr} compact={compact} automatic/>:display.snapshot.match?<SprintDisplay snapshot={display.snapshot} stale={offline} qr={null} compact={compact} automatic overlay={overlay} activityOverlay={activityOverlay}/>:<OcheLiveStandby data={display} error="" stale={offline} needsPairing={false} pairForm={null} qr={compact?null:qr} controls={null} overlay={overlay} activityOverlay={activityOverlay} automatic/>}
  </div>;
 }

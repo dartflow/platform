@@ -1,6 +1,8 @@
 package nl.dartflow.app
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.Manifest
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -9,7 +11,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
 import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
-import android.Manifest
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.runtime.*
 import androidx.core.net.toUri
@@ -17,6 +18,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.view.WindowCompat
 
 class MainActivity : ComponentActivity() {
     private val model: PlayerViewModel by viewModels()
@@ -25,14 +29,22 @@ class MainActivity : ComponentActivity() {
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // The app always uses its dark palette, including on light Android themes.
+        // A readable default is shown before the account's theme is resolved.
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.rgb(16, 18, 17)))
         intent?.data?.let { model.handleDeepLink(it.toString()) }
         intent?.getStringExtra("dartflowPushId")?.let(model::handlePushTap)
         setContent {
-            DartFlowPlayerTheme {
-                val state by model.ui.collectAsStateWithLifecycle()
+            val state by model.ui.collectAsStateWithLifecycle()
+            DartFlowPlayerTheme(state.theme, state.themeClockOffset) {
+                val background = PlayerInk
+                SideEffect {
+                    val controller = WindowCompat.getInsetsController(window, window.decorView)
+                    controller.isAppearanceLightStatusBars = background.luminance() > .5f
+                    controller.isAppearanceLightNavigationBars = background.luminance() > .5f
+                    @Suppress("DEPRECATION")
+                    window.navigationBarColor = background.toArgb()
+                }
                 var scanning by remember { mutableStateOf(false) }
                 LaunchedEffect(state.googleUrl) {
                     state.googleUrl?.let { url ->
@@ -41,7 +53,7 @@ class MainActivity : ComponentActivity() {
                         model.consumeGoogleUrl()
                     }
                 }
-                val keepAwake = state.screen == PlayerScreen.MATCH || state.screen == PlayerScreen.TRAINING
+                val keepAwake = state.screen == PlayerScreen.MATCH || state.screen == PlayerScreen.TRAINING || state.screen == PlayerScreen.PLAY_SESSION
                 DisposableEffect(keepAwake) {
                     if (keepAwake) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -50,10 +62,13 @@ class MainActivity : ComponentActivity() {
                 val actions = remember {
                     PlayerActions(
                         request = { path, body -> model.api.call(path, body) },
+                        playAction = model::playAction,
                         selectGuestOperator = model::selectGuestOperator,
-                        pushConsent = { enabled -> if (!enabled || PlayerPush.permitted(this@MainActivity)) model.setPushEnabled(enabled) else if (android.os.Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                        pushConsent = { enabled -> if (!enabled || PlayerPush.permitted(this@MainActivity)) model.setPushEnabled(enabled) else if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) else openNotificationSettings() },
+                        pushSettings = ::openNotificationSettings,
                         openNotification = model::handlePushTap,
-                        read = { model.api.call(it) },
+                        download = { model.api.calendar(it) },
+                        read = { if(it.startsWith("/play/"))model.api.play(it)else model.api.call(it) },
                         navigate = model::navigate, back = model::back, saveOrganizerDraft = model::saveOrganizerDraft, refresh = model::refresh, requestOtp = model::requestOtp,
                         verifyOtp = model::verifyOtp, google = model::startGoogle, localLogin = model::localLogin,
                         reviewLogin = model::reviewLogin,
@@ -77,6 +92,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    private fun openNotificationSettings() { startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)) }
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent); setIntent(intent)
         intent.data?.let { model.handleDeepLink(it.toString()) }

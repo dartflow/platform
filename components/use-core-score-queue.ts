@@ -1,0 +1,24 @@
+'use client';
+import {useCallback,useEffect,useRef,useState} from 'react';
+import {acceptCoreReplayResponse,enqueueCoreScore,projectCoreQueue,replayStoredCoreQueue,type CoreScoreQueue} from '@/lib/core-offline';
+import type {MatchAction,MatchView} from '@/lib/types';
+async function read<T>(url:string,body?:unknown):Promise<T>{const response=await fetch(url,{method:body?'POST':'GET',cache:'no-store',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});const value=await response.json();if(!response.ok)throw Object.assign(Error(value.error??'De partij is tijdelijk niet bereikbaar.'),{status:response.status});return value;}
+export function useCoreScoreQueue(id:string,actorId:string,canonical:MatchView|null,accept:(m:MatchView)=>void){
+ const key=`dartflow-core-queue-v1:${actorId}:${id}`,[record,setRecord]=useState<CoreScoreQueue|null>(null),ref=useRef<CoreScoreQueue|null>(null),[error,setError]=useState(''),[sending,setSending]=useState(false),busy=useRef(false);
+ const save=useCallback((value:CoreScoreQueue)=>{
+  try{localStorage.setItem(key,JSON.stringify(value));}catch{throw Error('Toestelopslag is niet beschikbaar. Je invoer is nog niet bewaard. Houd dit scherm open en maak opslagruimte vrij.');}
+  ref.current=value;setRecord(value);
+  try{localStorage.setItem(`dartflow-core-last-actor:${id}`,actorId);}catch{/* The durable queue remains authoritative when this navigation shortcut fails. */}
+ },[key,id,actorId]);
+ useEffect(()=>{try{const value=JSON.parse(localStorage.getItem(key)??'null')as CoreScoreQueue|null;if(value?.version===1&&value.actorId===actorId&&value.matchId===id){ref.current=value;setRecord(value);}}catch{/* A damaged record never grants score authority. */}},[key,id,actorId]);
+ useEffect(()=>{if(!canonical)return;try{const r=ref.current;if(r?.commands.length){const conflict=canonical.offlineConflict;if(conflict?.status==='resolved'&&r.commands.every(c=>r.acknowledged?.includes(c.requestId)||conflict.commands?.some(v=>v.requestId===c.requestId)||conflict.requestId===c.requestId)){localStorage.setItem(`${key}:resolved:${conflict.id}`,JSON.stringify({...r,resolution:{reason:conflict.reason??'',decision:conflict.decision??'keep-server',at:new Date().toISOString()}}));save({...r,base:canonical,commands:[],acknowledged:[]});}return;}save({version:1,actorId,matchId:id,base:canonical,commands:[]});}catch{setError('Toestelopslag is niet beschikbaar. De geaccepteerde stand en bestaande wachtrij blijven behouden. Houd dit scherm open en maak opslagruimte vrij.');}},[canonical,actorId,id,key,save]);
+ const flush=useCallback(async()=>{if(busy.current||!ref.current?.commands.length||!navigator.onLine)return;busy.current=true;setSending(true);try{
+  const r=ref.current,{response,latest}=await replayStoredCoreQueue(r,()=>read<MatchView>(`/api/matches/${id}`),body=>read(`/api/platform/matches/${id}/replay`,body));
+  if(!latest){setError(`Controle nodig: ${response.conflict?.message??'de huidige schrijver of wedstrijdleiding moet deze bewaarde reeks beoordelen.'} De invoer blijft op dit toestel bewaard.`);return;}
+  const current=ref.current??r,next=acceptCoreReplayResponse(current,response,latest);save(next);accept(latest);setError(response.conflict?.message??(next.commands.length&&next.acknowledged?.length?'Controle nodig: de stand veranderde tijdens het verwerken. De volledige reeks blijft bewaard voor vergelijking.':''));
+ }catch(e){setError(e instanceof Error?e.message:'De beurten blijven op dit toestel bewaard.');}finally{busy.current=false;setSending(false);}},[id,save,accept]);
+ useEffect(()=>{const timer=setInterval(()=>void flush(),4000);const reconnect=()=>void flush();window.addEventListener('online',reconnect);return()=>{clearInterval(timer);window.removeEventListener('online',reconnect);};},[flush]);
+ const enqueue=(action:Extract<MatchAction,{type:'score'}>)=>{const current=ref.current??(canonical?{version:1 as const,actorId,matchId:id,base:canonical,commands:[]}:null);if(!current)throw Error('Open eerst de actuele partij.');const command={requestId:crypto.randomUUID(),matchId:id,expectedRevision:current.base.revision+current.commands.length,offline:true,action};save(enqueueCoreScore(current,command));setError('');void flush();};
+ let projection=canonical??record?.base??null;if(record?.commands.length&&!canonical?.offlineConflict?.status){try{projection=projectCoreQueue(record);}catch{/* Show accepted reading; keep invalid local reading available for adjudication. */}}else if(record?.commands.length&&canonical?.offlineConflict?.status!=='open'){try{projection=projectCoreQueue(record);}catch{/* The accepted state stays available. */}}
+ return{projection,pendingCount:record?.commands.filter(c=>!record.acknowledged?.includes(c.requestId)).length??0,enqueue,flush,error,sending,record};
+}

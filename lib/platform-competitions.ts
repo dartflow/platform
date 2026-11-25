@@ -22,6 +22,7 @@ import {assertAccountActive} from './account-removal';
 import {publishTournamentDraw,manageTournamentRound,assertTournamentManagerReplay} from './tournament-management';
 import {tournamentFixtureReleased} from './tournament-pools';
 import {parseTournamentPlanning,buildTournamentPlan,type TournamentPlanningInput} from './tournament-planning';
+import {enqueueAuditedNotification} from './notification-audit-source';
 
 /** Receipt replay checks the original scope again, including a copy's independently authorized destination. */
 export async function revalidateCompetitionManagementCommand(client:PoolClient,actor:string,command:PlatformCommand):Promise<void>{
@@ -47,7 +48,7 @@ export async function joinLobbyMember(client:PoolClient,actor:string,row:EntityR
  const invited=await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='invited'",[row.id]);
  if(invited.rows.length&&!invited.rows.some(r=>r.user_id===actor))throw new DomainError('invite_recipient','Deze uitnodiging hoort bij een andere speler.',403);
  await addMember(client,row.id,actor,'member','active',input.pinAuthorizer?{pinLinkedBy:input.pinAuthorizer}:{});
- await enqueueDomainMail(client,{id:`${input.requestId}:challenge-accepted:${row.owner_id}`,templateId:'challenge-accepted',scope:'platform',recipientId:row.owner_id,entityId:row.id,variables:{eventName:row.state.name}});
+ await enqueueDomainMail(client,{actorId:actor,id:`${input.requestId}:challenge-accepted:${row.owner_id}`,templateId:'challenge-accepted',scope:'platform',recipientId:row.owner_id,entityId:row.id,variables:{eventName:row.state.name,startScore:String(row.state.settings?.startScore??501),bestOf:String(row.state.settings?.bestOfLegs??5),actionUrl:`/app/lobby/${row.id}`}});
 }
 
 export async function competitionAction(client: PoolClient, actor: string, command: PlatformCommand): Promise<PlatformResponse | null> {
@@ -61,7 +62,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
       const user = uuid(a.opponentId);
       if (user === actor || await blocked(client, actor, user)) throw new DomainError('blocked', 'Deze uitnodiging is niet toegestaan.', 403);
       await addMember(client, row.id, user, 'member', 'invited');
-      await enqueueDomainMail(client, { id: `${command.requestId}:challenge-invite:${user}`, templateId: 'challenge-invite', scope: 'platform', recipientId: user, variables: { actionUrl: `/app#lobby/${row.id}`, eventName: row.state.name }, entityId: row.id });
+      await enqueueDomainMail(client, { actorId:actor, id: `${command.requestId}:challenge-invite:${user}`, templateId: 'challenge-invite', scope: 'platform', recipientId: user, variables: { actionUrl: `/app#lobby/${row.id}`, eventName: row.state.name, startScore:String(row.state.settings?.startScore??501),bestOf:String(row.state.settings?.bestOfLegs??5) }, entityId: row.id });
     }
     return { ok: true, id: row.id, code, entity: await view(client, row, actor) };
   }
@@ -158,13 +159,13 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     await addMember(client, row.id, actor, self?.role ?? 'member', status, { registered: true, checkedIn: false, available: false, restUntil: 0 });
     if(status!=='pending')await client.query("insert into dartflow_private.entries(id,event_id,user_id,status,checked_in) values($1,$2,$3,$4,false) on conflict(event_id,user_id) do update set status=excluded.status,checked_in=false",[randomUUID(),row.state.eventId,actor,status==='active'?'registered':'waitlisted']);
     await syncCompetitionRoom(client,row,actor,status);
-    await enqueueDomainMail(client, { id: `${command.requestId}:entry:${actor}`, templateId: row.kind === 'league' ? 'competition-entry' : status==='pending'?'tournament-entry':status === 'waitlisted' ? 'tournament-waitlist' : 'tournament-approved', scope: row.club_id ? `club:${row.club_id}` : 'platform', recipientId: actor, entityId: row.id, variables: { eventName: row.state.name, status: status==='pending'?'In behandeling':status === 'active' ? 'Ingeschreven' : 'Wachtlijst' } });
+    await enqueueDomainMail(client, { actorId:actor, id: `${command.requestId}:entry:${actor}`, templateId: row.kind === 'league' ? 'competition-entry' : status==='pending'?'tournament-entry':status === 'waitlisted' ? 'tournament-waitlist' : 'tournament-approved', scope: row.club_id ? `club:${row.club_id}` : 'platform', recipientId: actor, entityId: row.id, variables: { eventName: row.state.name, status: status==='pending'?'In behandeling':status === 'active' ? 'Ingeschreven' : 'Wachtlijst' } });
   } else if (type === 'competition.withdraw') {
     if(self?.attributes.registered!==true||!['active','waitlisted','pending'].includes(self.status))throw new DomainError('registration_required','Je hebt geen actieve inschrijving.',409);
     if (row.state.fixtures?.some(f => f.players.includes(actor) && !['confirmed', 'bye'].includes(f.status))) throw new DomainError('active_fixture', 'Je bent ingedeeld. Vraag de wedstrijdleiding om een beslissing.', 409);
     await client.query("update dartflow_private.platform_members set attributes=jsonb_set(attributes,'{registered}','false'),status=case when role='owner' then 'active' else 'left' end where entity_id=$1 and user_id=$2", [row.id, actor]);
     await syncCompetitionRoom(client,row,actor,'left');
-    if(row.kind==='tournament')await enqueueDomainMail(client,{id:`${command.requestId}:withdrawn:${actor}`,templateId:'tournament-withdrawn',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:actor,entityId:row.id,variables:{eventName:row.state.name,status:'Uitgeschreven'}});
+    if(row.kind==='tournament')await enqueueDomainMail(client,{actorId:actor,id:`${command.requestId}:withdrawn:${actor}`,templateId:'tournament-withdrawn',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:actor,entityId:row.id,variables:{eventName:row.state.name,status:'Uitgeschreven'}});
     await client.query("update dartflow_private.entries set status='withdrawn',checked_in=false where event_id=$1 and user_id=$2",[row.state.eventId,actor]);
     const waiting = await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='waitlisted' order by created_at,user_id limit 1", [row.id]);
     if (self.status==='active'&&waiting.rows.length) {
@@ -172,7 +173,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
       await client.query("update dartflow_private.platform_members set status='active' where entity_id=$1 and user_id=$2", [row.id, user]);
       await client.query("update dartflow_private.entries set status='registered',checked_in=false where event_id=$1 and user_id=$2",[row.state.eventId,user]);
       await syncCompetitionRoom(client,row,user,'active');
-      await enqueueDomainMail(client, { id: `${command.requestId}:promoted:${user}`, templateId: 'tournament-promoted', scope: row.club_id ? `club:${row.club_id}` : 'platform', recipientId: user, entityId: row.id, variables: { eventName: row.state.name } });
+      await enqueueDomainMail(client, { actorId:actor, id: `${command.requestId}:promoted:${user}`, templateId: 'tournament-promoted', scope: row.club_id ? `club:${row.club_id}` : 'platform', recipientId: user, entityId: row.id, variables: { eventName: row.state.name } });
     }
   } else if(type==='competition.approve'){
     if(row.state.registrationOpen===false||row.state.fixtures?.length)throw new DomainError('registration_closed','De inschrijving is gesloten.',409);
@@ -182,7 +183,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     const count=await client.query("select count(*)::integer as n from dartflow_private.platform_members where entity_id=$1 and status='active' and attributes->>'registered'='true'",[row.id]),status=count.rows[0].n<(row.state.capacity??32)?'active':'waitlisted';
     await client.query('update dartflow_private.platform_members set status=$3 where entity_id=$1 and user_id=$2',[row.id,target,status]);
     await client.query("insert into dartflow_private.entries(id,event_id,user_id,status,checked_in) values($1,$2,$3,$4,false) on conflict(event_id,user_id) do update set status=excluded.status,checked_in=false",[randomUUID(),row.state.eventId,target,status==='active'?'registered':'waitlisted']);await syncCompetitionRoom(client,row,target,status);
-    await enqueueDomainMail(client,{id:`${command.requestId}:approved:${target}`,templateId:status==='active'?'tournament-approved':'tournament-waitlist',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:target,entityId:row.id,variables:{eventName:row.state.name,status:status==='active'?'Bevestigd':'Wachtlijst'}});
+    await enqueueDomainMail(client,{actorId:actor,id:`${command.requestId}:approved:${target}`,templateId:status==='active'?'tournament-approved':'tournament-waitlist',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:target,entityId:row.id,variables:{eventName:row.state.name,status:status==='active'?'Bevestigd':'Wachtlijst'}});
   } else if(type==='competition.reject'){
     if(row.kind!=='tournament')throw new DomainError('invalid_kind','Deze afwijzingsprocedure hoort bij een toernooiaanmelding.');
     await requireAccess(client,row,actor,true);const target=uuid(a.userId),entry=await member(client,row.id,target),reason=text(a.reason,500);
@@ -190,17 +191,17 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     if(row.state.fixtures?.some(f=>f.players.includes(target)&&!['confirmed','bye'].includes(f.status)))throw new DomainError('active_fixture','Beslis eerst over de ingedeelde partij.',409);
     await client.query("update dartflow_private.platform_members set attributes=attributes||$3::jsonb,status=case when role='owner' then 'active' else 'left' end where entity_id=$1 and user_id=$2",[row.id,target,JSON.stringify({registered:false,checkedIn:false,available:false,decisionReason:reason})]);
     await client.query("update dartflow_private.entries set status='withdrawn',checked_in=false where event_id=$1 and user_id=$2",[row.state.eventId,target]);await syncCompetitionRoom(client,row,target,'left');
-    await enqueueDomainMail(client,{id:`${command.requestId}:rejected:${target}`,templateId:'tournament-rejected',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:target,entityId:row.id,variables:{eventName:row.state.name,status:'Afgewezen',reason:'Bekijk het besluit in DartFlow'}});
+    await enqueueDomainMail(client,{actorId:actor,id:`${command.requestId}:rejected:${target}`,templateId:'tournament-rejected',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:target,entityId:row.id,variables:{eventName:row.state.name,status:'Afgewezen',reason:'Bekijk het besluit in DartFlow'}});
     if(entry.status==='active'){
       const waiting=await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='waitlisted' order by created_at,user_id limit 1",[row.id]);
-      if(waiting.rows.length){const user=waiting.rows[0].user_id;await client.query("update dartflow_private.platform_members set status='active' where entity_id=$1 and user_id=$2",[row.id,user]);await client.query("update dartflow_private.entries set status='registered',checked_in=false where event_id=$1 and user_id=$2",[row.state.eventId,user]);await syncCompetitionRoom(client,row,user,'active');await enqueueDomainMail(client,{id:`${command.requestId}:promoted:${user}`,templateId:row.kind==='tournament'?'tournament-promoted':'competition-entry',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:user,entityId:row.id,variables:{eventName:row.state.name,status:'Bevestigd'}});}
+      if(waiting.rows.length){const user=waiting.rows[0].user_id;await client.query("update dartflow_private.platform_members set status='active' where entity_id=$1 and user_id=$2",[row.id,user]);await client.query("update dartflow_private.entries set status='registered',checked_in=false where event_id=$1 and user_id=$2",[row.state.eventId,user]);await syncCompetitionRoom(client,row,user,'active');await enqueueDomainMail(client,{actorId:actor,id:`${command.requestId}:promoted:${user}`,templateId:row.kind==='tournament'?'tournament-promoted':'competition-entry',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:user,entityId:row.id,variables:{eventName:row.state.name,status:'Bevestigd'}});}
     }
   } else if(type==='competition.promote'){
     await requireAccess(client,row,actor,true);const target=uuid(a.userId),waiting=await member(client,row.id,target);if(waiting?.status!=='waitlisted')throw new DomainError('waitlist_required','Deze speler staat niet op de wachtlijst.',409);
     const count=await client.query("select count(*)::integer as n from dartflow_private.platform_members where entity_id=$1 and status='active' and attributes->>'registered'='true'",[row.id]);if(count.rows[0].n>=(row.state.capacity??32))throw new DomainError('capacity_reached','Er is geen bevestigde plek beschikbaar.',409);
     await client.query("update dartflow_private.platform_members set status='active' where entity_id=$1 and user_id=$2",[row.id,target]);await client.query("update dartflow_private.entries set status='registered',checked_in=false where event_id=$1 and user_id=$2",[row.state.eventId,target]);
     await syncCompetitionRoom(client,row,target,'active');
-    await enqueueDomainMail(client,{id:`${command.requestId}:promoted:${target}`,templateId:row.kind==='tournament'?'tournament-promoted':'competition-entry',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:target,entityId:row.id,variables:{eventName:row.state.name,status:'Bevestigd'}});
+    await enqueueDomainMail(client,{actorId:actor,id:`${command.requestId}:promoted:${target}`,templateId:row.kind==='tournament'?'tournament-promoted':'competition-entry',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:target,entityId:row.id,variables:{eventName:row.state.name,status:'Bevestigd'}});
   } else if (type === 'competition.checkin' || type === 'competition.available') {
     const target = a.userId ? uuid(a.userId) : actor;
     if (target !== actor) await requireAccess(client, row, actor, true);
@@ -252,7 +253,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
     if (typeof a.registrationOpen === 'boolean' && !row.state.fixtures?.length) row.state.registrationOpen = a.registrationOpen;
     if(row.kind==='tournament'&&(previous.name!==row.state.name||previous.date!==row.state.date||previous.location!==row.state.location)){
       const recipients=await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='active' and attributes->>'registered'='true'",[row.id]);
-      for(const recipient of recipients.rows)await enqueueDomainMail(client,{id:`${command.requestId}:changed:${recipient.user_id}`,templateId:'tournament-changed',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:recipient.user_id,entityId:row.id,variables:{eventName:row.state.name,date:String(row.state.date??''),location:String(row.state.location??'')}});
+      for(const recipient of recipients.rows)await enqueueDomainMail(client,{actorId:actor,id:`${command.requestId}:changed:${recipient.user_id}`,templateId:'tournament-changed',scope:row.club_id?`club:${row.club_id}`:'platform',recipientId:recipient.user_id,entityId:row.id,variables:{eventName:row.state.name,date:String(row.state.date??''),location:String(row.state.location??'')}});
     }
   } else if (type === 'fixture.assign') {
     await requireAccess(client,row,actor,true);
@@ -303,7 +304,7 @@ export async function competitionAction(client: PoolClient, actor: string, comma
   return { ok: true, id: row.id, ...(row.state.matchId ? { matchId: row.state.matchId } : {}), entity: await view(client, row, actor) };
 }
 async function lobbyAction(client: PoolClient, actor: string, command: PlatformCommand, row: EntityRow): Promise<PlatformResponse> {
-  const a = command.action;
+  const a = command.action,wasReady=row.state.ready?.[actor]===true;
   if (row.kind !== 'lobby') throw new DomainError('invalid_kind', 'Open eerst een wedstrijdlobby.');
   const boundBoard=typeof row.state.boardId==='string'?row.state.boardId:null;
   if(boundBoard){await eventAccess(client,actor,row.state.eventId!);if(!row.state.matchId&&Number(row.state.boardLeaseUntil??0)<=Date.now())throw new DomainError('board_session_expired','De wachtende baanopstelling is verlopen. Scan opnieuw.',409);}
@@ -377,9 +378,10 @@ async function lobbyAction(client: PoolClient, actor: string, command: PlatformC
     if (row.state.matchId) throw new DomainError('match_started', 'De wedstrijd is al gestart.', 409);
     row.state.closed = true;
     const others=await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and user_id<>$2 and status in ('active','invited')",[row.id,actor]);
-    for(const other of others.rows)await enqueueDomainMail(client,{id:`${command.requestId}:challenge-cancelled:${other.user_id}`,templateId:'challenge-cancelled',scope:'platform',recipientId:other.user_id,entityId:row.id,variables:{eventName:row.state.name,reason:'Uitnodiging ingetrokken'}});
+    for(const other of others.rows)await enqueueDomainMail(client,{actorId:actor,id:`${command.requestId}:challenge-cancelled:${other.user_id}`,templateId:'challenge-cancelled',scope:'platform',recipientId:other.user_id,entityId:row.id,variables:{eventName:row.state.name,reason:'Uitnodiging ingetrokken'}});
   } else throw new DomainError('invalid_action', 'Onbekende lobbyactie.');
   await save(client, row);
+  if(a.type==='lobby.ready'&&!wasReady&&row.state.ready?.[actor]===true){const recipients=(await client.query("select user_id from dartflow_private.platform_members where entity_id=$1 and status='active'",[row.id])).rows.map(p=>p.user_id);await enqueueAuditedNotification(client,{eventId:`lobby-ready:${row.id}:${command.requestId}`,templateId:'match-ready',actorId:actor,recipientIds:recipients,source:{kind:'lobby-ready',lobbyId:row.id,readyPlayerId:actor},href:`/app/lobby/${row.id}`,expiresAt:new Date(Date.now()+5*60_000).toISOString()});}
   return { ok: true, id: row.id, ...(row.state.matchId ? { matchId: row.state.matchId } : {}), entity: await view(client, row, actor) };
 }
 async function fixtureAction(client: PoolClient, actor: string, command: PlatformCommand, row: EntityRow) {
@@ -398,7 +400,7 @@ async function fixtureAction(client: PoolClient, actor: string, command: Platfor
       fixture.time = fixture.proposedTime; delete fixture.proposedTime; delete fixture.proposedBy; fixture.status = 'scheduled';
     }
     const recipients=a.type==='fixture.accept'?fixture.players:fixture.players.filter(p=>p!==actor);
-    for(const other of recipients)await enqueueDomainMail(client, { id: `${command.requestId}:fixture:${other}`, templateId: a.type === 'fixture.propose' ? 'fixture-changed' : 'fixture-scheduled', scope: row.club_id ? `club:${row.club_id}` : 'platform', recipientId: other!, entityId: row.id, variables: { eventName: row.state.name, date: String(fixture.time ?? fixture.proposedTime), actionUrl: `/app#leagues/${row.id}` } });
+    for(const other of recipients)await enqueueDomainMail(client, { actorId:actor, id: `${command.requestId}:fixture:${other}`, templateId: a.type === 'fixture.propose' ? 'fixture-changed' : 'fixture-scheduled', scope: row.club_id ? `club:${row.club_id}` : 'platform', recipientId: other!, entityId: row.id, variables: { eventName: row.state.name, date: String(fixture.time ?? fixture.proposedTime), actionUrl: `/app#leagues/${row.id}` } });
   } else if (a.type === 'fixture.start') {
     if (!participant) await requireAccess(client, row, actor, true); else await requireAccess(client, row, actor);
     if(!tournamentFixtureReleased(fixture))throw new DomainError('round_not_released','De wedstrijdleiding moet deze ronde eerst expliciet vrijgeven.',409);

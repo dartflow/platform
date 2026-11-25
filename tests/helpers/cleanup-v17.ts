@@ -4,6 +4,7 @@ import type {Client} from 'pg';
 export async function beginFixtureCleanup(client:Client,people:string[]){
  await client.query('rollback');await client.query('begin');
  const owned="select id from dartflow_private.platform_entities where owner_id=any($1::uuid[])";
+ await cleanupNotificationFixtures(client,people);
  await cleanupFeedFixtures(client,people);
  await client.query(`delete from dartflow_private.community_likes where user_id=any($1::uuid[]) or post_id in(select id from dartflow_private.community_posts where author_id=any($1::uuid[]) or scope_id in(${owned}))`,[people]);
  await client.query(`delete from dartflow_private.community_posts where parent_id is not null and (author_id=any($1::uuid[]) or scope_id in(${owned}))`,[people]);
@@ -17,6 +18,15 @@ export async function beginFixtureCleanup(client:Client,people:string[]){
  await client.query('delete from dartflow_private.location_boards where location_id in(select id from dartflow_private.locations where owner_id=any($1::uuid[]))',[people]);
  await client.query('delete from dartflow_private.locations where owner_id=any($1::uuid[])',[people]);
  await client.query('delete from dartflow_private.location_accounts where user_id=any($1::uuid[])',[people]);
+}
+
+/** Remove only deliveries received by, or actually authored by, these fixture accounts. */
+export async function cleanupNotificationFixtures(client:Client,people:string[]){
+ const jobs=`select o.id from dartflow_private.mail_outbox o where o.recipient_id=any($1::uuid[]) or exists(select 1 from dartflow_private.mail_events e where e.actor_id=any($1::uuid[]) and (e.environment,e.scope_key,e.event_id,e.template_id,e.recipient_key)=(o.environment,o.scope_key,o.event_id,o.template_id,o.recipient_key))`;
+ await client.query(`delete from dartflow_private.mail_provider_events where job_id in(${jobs})`,[people]);
+ await client.query(`delete from dartflow_private.mail_outbox where id in(${jobs})`,[people]);
+ await client.query('delete from dartflow_private.mail_events where actor_id=any($1::uuid[]) or recipient_key=any($2::text[])',[people,people.map(id=>`user:${id}`)]);
+ await client.query("delete from dartflow_private.native_push_inbox where recipient_id=any($1::uuid[]) or reference->>'actorId'=any($2::text[])",[people,people]);
 }
 
 /** Extend independent older cleanups without altering their transaction or physical ownership order. */

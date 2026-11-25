@@ -16,3 +16,8 @@ export function legacyDestination(hash:string):string|null {
   if(screen)return `/oche-live/${screen[1].toLowerCase()}`;
   return '/link-onbekend';
 }
+
+/** Scoped fragments are consumed locally by their own page and never prototype navigation. */
+export function ownsPrivatePlayFragment(pathname:string,hash:string):boolean{
+ return new RegExp(`^/spelen/${uuid}$`,'i').test(pathname)&&/^#(?:controller|participant|claim|recovery)=[0-9a-f-]{36}\.[A-Za-z0-9_-]{43}$/i.test(hash)||new RegExp(`^/leg/${uuid}$`,'i').test(pathname)&&/^#code=[A-Za-z0-9_-]{43}$/.test(hash);
+}

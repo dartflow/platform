@@ -7,6 +7,7 @@ import { closeDatabase, getMatch, getProfile } from '../lib/db';
 import { executePlatformCommand } from '../lib/platform';
 import { createCoreMatch, entity, save } from '../lib/platform-store';
 import { saveScoreboardName } from '../lib/profile-name';
+import{normalizeUsername}from'../lib/display-name';
 import type { PlatformCommand } from '../lib/platform-types';
 import type { MatchState } from '../lib/types';
 try{process.loadEnvFile('.env.local');}catch{/* CI supplies explicit loopback credentials. */}
@@ -18,6 +19,7 @@ test('profile confirmation and concurrent match creation keep one current scoreb
  const host=randomUUID(),legacy=randomUUID(),renamer=randomUUID(),secondHost=randomUUID(),people=[host,legacy,renamer,secondHost];
  const run=(actor:string,action:PlatformCommand['action'])=>executePlatformCommand(actor,{requestId:randomUUID(),action});
  const suffix=randomUUID().slice(0,6),label=(name:string)=>`${name} ${suffix}`;
+ const handle=(name:string)=>normalizeUsername(name.replaceAll(' ',''));
  const settings={startScore:501 as const,bestOfLegs:3,bestOfSets:1};
  async function waitForLock(pattern:string){
   for(let attempt=0;attempt<100;attempt++){
@@ -29,7 +31,8 @@ test('profile confirmation and concurrent match creation keep one current scoreb
   assert.fail('The concurrent command did not reach its expected real PostgreSQL lock.');
  }
  try{
-  await owner.query('insert into dartflow_private.profiles(id,name,display_name_confirmed) values($1,$2,true),($3,$4,false),($5,$6,true),($7,$8,true)',[host,label('Name race host'),legacy,'Nieuwe speler',renamer,label('Original board name'),secondHost,label('Second name race host')]);
+  for(const[id,name]of[[host,label('Name race host')],[renamer,label('Original board name')],[secondHost,label('Second name race host')]])await owner.query('insert into dartflow_private.profiles(id,name,display_name)values($1,$2,$3)',[id,handle(name),name]);
+  await owner.query("insert into dartflow_private.profiles(id,name,display_name_confirmed)values($1,'Nieuwe speler',false)",[legacy]);
   await t.test('a starting lobby waits for profile confirmation and snapshots the confirmed chosen name',async()=>{
    const lobby=await run(host,{type:'lobby.create',name:'Profile confirmation race fixture',setup:'remote'});
    // A pre-existing lobby may contain a legacy placeholder account at migration time.
@@ -37,9 +40,9 @@ test('profile confirmation and concurrent match creation keep one current scoreb
    await owner.query("update dartflow_private.platform_entities set state=jsonb_set(state,'{ready}',$2::jsonb) where id=$1",[lobby.id,JSON.stringify({[host]:true,[legacy]:true})]);
    let queued:Promise<PromiseSettledResult<Awaited<ReturnType<typeof run>>>[]>|undefined;
    try{
-    await holder.query('begin');await saveScoreboardName(holder,legacy,label('Confirmed chosen name'));
+    await holder.query('begin');await saveScoreboardName(holder,legacy,handle(label('Confirmed chosen name')),label('Confirmed chosen name'));
     queued=Promise.allSettled([run(host,{type:'lobby.start',id:lobby.id})]);
-    await waitForLock('select id,%from dartflow_private.profiles where id=any%for share');
+    await waitForLock('select p.id,l.name,%from dartflow_private.profiles p join%for share%');
     await holder.query('commit');
     const [result]=await queued;assert.equal(result.status,'fulfilled');
     const match=await getMatch(legacy,result.value.matchId!);assert.deepEqual(match.players.map(p=>p.name),[label('Name race host'),label('Confirmed chosen name')]);
@@ -55,8 +58,8 @@ test('profile confirmation and concurrent match creation keep one current scoreb
     const matchId=await createCoreMatch(holder,row,[secondHost,renamer],settings,'name-race');
     row.state.matchId=matchId;await save(holder,row);
     const original=(await holder.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[matchId])).rows[0].state;
-    queued=Promise.allSettled([run(renamer,{type:'profile.update',name:label('Concurrent chosen name')})]);
-    await waitForLock('update dartflow_private.profiles set name=$2,%display_name_confirmed=true where id=$1');
+    queued=Promise.allSettled([run(renamer,{type:'profile.update',displayName:label('Concurrent chosen name')})]);
+    await waitForLock('select name,display_name,full_name,username_locked_at,%for no key update');
     await holder.query('commit');
     const [result]=await queued;assert.equal(result.status,'fulfilled');
     const match=await getMatch(renamer,matchId),state=(await owner.query<{state:MatchState}>('select state from dartflow_private.matches where id=$1',[matchId])).rows[0].state;

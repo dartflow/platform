@@ -1,7 +1,9 @@
 {
   "production": {
     "packageName": "nl.dartflow.ochelive",
-    "sha256CertFingerprints": []
+    "sha256CertFingerprints": [
+      "D1:1D:97:4C:3B:F6:B0:1A:97:92:90:D9:C7:F5:D4:63:D7:DB:50:93:78:7C:F2:E6:8B:E5:1E:74:B1:6D:CB:62"
+    ]
   },
   "staging": {
     "packageName": "nl.dartflow.ochelive.staging",

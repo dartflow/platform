@@ -19,7 +19,7 @@ export function saveOcheLayout(storage:Pick<Storage,'setItem'|'getItem'>,layout:
 }
 export function hasActiveOcheMatch(snapshot:OcheDisplaySnapshot){
  const sources=snapshot.panels?.map(panel=>panel.snapshot)??[snapshot];
- return sources.some(source=>{const match=source?.display?.snapshot.match;return Boolean(match&&!['result','confirmed','disputed','abandoned','interrupted'].includes(match.status));});
+ return sources.some(source=>{const display=source?.display?.snapshot,match=display?.match,play=display?.play;return Boolean(play?.status==='active'&&play.game.status!=='finished'||match&&!['result','confirmed','disputed','abandoned','interrupted'].includes(match.status));});
 }
 export function ocheLayoutName(layout:OcheLayout|null|undefined){return !layout?'Bestaande automatische indeling':layout.orientation==='portrait'?'Verticaal · één scorebord':layout.scoreboards===2?'Horizontaal · twee scoreborden':'Horizontaal · één scorebord';}
 

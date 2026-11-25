@@ -4,6 +4,8 @@ import type { Fixture, PlatformState } from './platform-types';
 import type { Game } from './types';
 import {advanceTournamentFixtures,doubleEliminationFixtures,swissRoundFixtures,swissRoundLimit} from './tournament-formats';
 import {poolProof,poolStandings,tournamentFixtureReleased} from './tournament-pools';
+import {generateBotDartHits} from './training-bot';
+import {dartValue} from './x01-rules';
 
 export function roundRobin(players: string[], phase: 'pool' | 'league' = 'league', pool?: string): Fixture[] {
   if (players.length < 2 || new Set(players).size !== players.length || players.length > 128) throw new DomainError('invalid_players', 'Kies twee tot 128 unieke spelers.');
@@ -111,12 +113,13 @@ export function tournamentFixtures(players: string[], format: string, requestedP
   return fixtures;
 }
 export function newTraining(id: string, actor: string, input: Record<string, unknown>): PlatformState {
+  if(input.discipline==='tactics')throw new DomainError('training_rules_unavailable','Start Tactics via Spelen of Oefenen met de actuele spelregels.');
   if(input.focus!==undefined&&!['first9','checkout'].includes(String(input.focus)))throw new DomainError('invalid_focus','Kies First 9 of uitgooien.');
   const mode = input.mode === 'doubles' ? 'around' : input.mode === 'challenge' ? '170' : input.mode;
   if(input.focus==='first9'&&(mode!=='solo'||Number(input.startScore??501)!==501)||input.focus==='checkout'&&mode!=='170')throw new DomainError('invalid_focus','Deze instellingen horen niet bij de gekozen oefening.');
   if (!['solo', 'bot', 'around', '170'].includes(String(mode))) throw new DomainError('invalid_mode', 'Kies solo, Dartbot, doubles of de 170-challenge.');
   const settings = validateSettings({ ...input, startScore: Number(input.startScore ?? 501) as 301 | 501 | 701, bestOfLegs: mode === 'bot' ? Number(input.bestOfLegs ?? 3) : 1 });
-  if((mode==='bot'||mode==='around'||mode==='170')&&(settings.discipline==='cricket'||settings.inRule==='double'||settings.outRule&&settings.outRule!=='double'||settings.sideStartScores))throw new DomainError('training_rules_unavailable','Gebruik voor deze optionele spelregels solo training of een partij met een andere speler.');
+  if((mode==='bot'||mode==='around'||mode==='170')&&(settings.discipline==='cricket'||mode!=='bot'&&settings.inRule==='double'||settings.outRule&&settings.outRule!=='double'||settings.sideStartScores))throw new DomainError('training_rules_unavailable','Gebruik voor deze optionele spelregels solo training of een partij met een andere speler.');
   const game = newGame(id, [actor, 'Dartbot'], settings);
   if (mode === '170') { game.startScore = 170; game.remaining = [170, 170]; }
   const botAverage = Number(input.botAverage ?? 50);
@@ -124,6 +127,10 @@ export function newTraining(id: string, actor: string, input: Record<string, unk
   return { name: input.focus==='first9'?'First 9':mode === 'bot' ? 'Dartbot' : mode === 'around' ? 'Doubles around the board' : mode === '170' ? '170-challenge' : settings.discipline==='cricket'?'Solo Cricket':`Solo ${settings.startScore}`, mode: mode as PlatformState['mode'], completed: false, game, rounds: [], undo: [], botAverage,...(input.focus?{focus:input.focus}:{}) };
 }
 function botVisit(game: Game, average: number): Game {
+  if(game.inRule==='double'){
+    const hits=generateBotDartHits(game,average,maximum=>randomInt(maximum));
+    return scoreGame(game,hits.reduce((sum,hit)=>sum+dartValue(hit),0),hits.length,false,undefined,hits);
+  }
   const left = game.remaining[game.turn];
   if (left <= 170 && randomInt(100) < Math.min(80, average)) {
     for (let count = 1; count <= 3; count++) { try { return scoreGame(game, left, count, true); } catch { /* Try a legal finish. */ } }

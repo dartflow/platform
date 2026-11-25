@@ -2,6 +2,7 @@ package nl.dartflow.app
 
 import android.content.Intent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -153,7 +154,10 @@ internal object PlayerOrganizerDraft {
 }
 
 @Composable internal fun PlayerToggle(label: String, checked: Boolean, enabled: Boolean, change: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { Text(label, Modifier.weight(1f)); Switch(checked = checked, onCheckedChange = change, enabled = enabled) }
+    Row(Modifier.fillMaxWidth().toggleable(value = checked, enabled = enabled, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = change), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(label, Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
+    }
 }
 
 internal fun playerManagedEvent(state: PlayerUiState): JSONObject = state.resource.optJSONObject("entity")?.takeIf { it.text("id") == state.activeId }

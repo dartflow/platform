@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import type { Overview } from "@/lib/types";
+import {NotificationInboxPanel} from "./notifications-workspace";
 type Entry = {
   id: string;
   name: string;
@@ -19,11 +19,7 @@ type Data = {
   lobbies: Entry[];
   friends: { id: string; name: string; status: string }[];
 };
-export default function WorkspaceTools({
-  overview,
-}: {
-  overview: Overview | null;
-}) {
+export default function WorkspaceTools() {
   const [mode, setMode] = useState(""),
     [query, setQuery] = useState(""),
     [data, setData] = useState<Data | null>(null),
@@ -38,7 +34,7 @@ export default function WorkspaceTools({
     } else element?.close();
   }, [mode]);
   useEffect(() => {
-    if (!mode) return;
+    if (mode!=="search") return;
     let stopped = false;
     fetch("/api/platform", { cache: "no-store" })
       .then(async (response) => {
@@ -96,64 +92,7 @@ export default function WorkspaceTools({
         })),
       ]
     : [];
-  const notifications = data
-    ? [
-        ...data.friends
-          .filter((f) => f.status === "incoming")
-          .map((f) => ({
-            label: `${f.name} wil vrienden worden`,
-            type: "Vriendschapsverzoek",
-            href: "/app/friends",
-          })),
-        ...data.lobbies
-          .filter((e) =>
-            e.members.some(
-              (m) => m.id === data.profile.id && m.status === "invited",
-            ),
-          )
-          .map((e) => ({
-            label: e.name,
-            type: "Wedstrijduitnodiging",
-            href: `/app/lobby/${e.id}`,
-          })),
-        ...data.clubs
-          .filter((e) => e.canManage)
-          .flatMap((e) =>
-            e.members
-              .filter((m) => m.status === "pending")
-              .map((m) => ({
-                label: `${m.name} · ${e.name}`,
-                type: "Lidmaatschapsaanvraag",
-                href: `/app/clubs/${e.id}`,
-              })),
-          ),
-        ...(overview?.matches || [])
-          .filter(
-            (m) =>
-              m.status === "result" &&
-              m.players.some(
-                (p, i) => p.id === data.profile.id && !m.confirmations[i],
-              ),
-          )
-          .map((m) => ({
-            label: m.players.map((p) => p.name).join(" — "),
-            type: "Uitslag bevestigen",
-            href: `/wedstrijd/${m.id}`,
-          })),
-      ]
-    : [];
-  const visible =
-    mode === "notifications"
-      ? notifications
-      : query.trim()
-        ? entries
-            .filter((e) =>
-              e.label
-                .toLocaleLowerCase("nl-NL")
-                .includes(query.trim().toLocaleLowerCase("nl-NL")),
-            )
-            .slice(0, 20)
-        : [];
+  const visible = query.trim() ? entries.filter(e=>e.label.toLocaleLowerCase("nl-NL").includes(query.trim().toLocaleLowerCase("nl-NL"))).slice(0,20) : [];
   return (
     <div className="workspace-tools">
       <button
@@ -192,6 +131,7 @@ export default function WorkspaceTools({
       <dialog
         ref={dialog}
         className="workspace-dialog"
+        aria-label="Zoeken en meldingen"
         onCancel={() => setMode("")}
         onClick={(event) => {
           if (event.target === event.currentTarget) setMode("");
@@ -222,7 +162,6 @@ export default function WorkspaceTools({
               onClick={() => setMode("notifications")}
             >
               Meldingen
-              {notifications.length ? ` (${notifications.length})` : ""}
             </button>
           </div>
           {mode === "search" && (
@@ -236,6 +175,7 @@ export default function WorkspaceTools({
               />
             </label>
           )}
+          {mode === "notifications" ? <NotificationInboxPanel compact/> : <>
           {error && (
             <p className="notice error" role="alert">
               {error}
@@ -259,13 +199,9 @@ export default function WorkspaceTools({
             ))
           ) : (
             <p className="workspace-empty">
-              {mode === "notifications"
-                ? "Je hebt geen openstaande meldingen."
-                : query
-                  ? "Geen resultaten voor deze zoekopdracht."
-                  : "Zoek binnen de gegevens waarvoor jouw account toegang heeft."}
+              {query ? "Geen resultaten voor deze zoekopdracht." : "Zoek binnen de gegevens waarvoor jouw account toegang heeft."}
             </p>
-          )}
+          )}</>}
         </div>
       </dialog>
     </div>

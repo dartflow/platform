@@ -1,0 +1,8 @@
+
+Running 1 test using 1 worker
+
+(node:387202) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1/1] tests/e2e/player-flows.spec.ts:14:1 › mandatory profile completion and two-browser turn input cover home, hybrid and local shared writer
+  1 passed (13.3s)

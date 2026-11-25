@@ -70,13 +70,21 @@ internal fun playerStartResolved(match: PlayerMatch): Boolean = when (match.raw.
     if (conflict.text("status") != "open") return
     var reason by rememberSaveable(conflict.text("id")) { mutableStateOf("") }
     var confirm by remember { mutableStateOf(false) }
+    var decision by remember { mutableStateOf("keep-server") }
+    val canResolve = conflict.optBoolean("canResolve", match.permissions.optBoolean("canManage"))
     PlayerCard("Offline-invoer vraagt beoordeling") {
         Text("Een bewaarde actie hoort bij een oudere stand. Geaccepteerde beurten blijven behouden; de wedstrijd wacht op het besluit van de leiding.", color = PlayerMuted)
         Text("Invoerrevisie ${conflict.optInt("expectedRevision")} · serverrevisie ${conflict.optInt("canonicalRevision")}", color = PlayerMuted)
-        if (match.permissions.optBoolean("canManage")) {
+        listOf("canonical" to "Serverlezing", "offline" to "Bewaarde lokale lezing").forEach { (key,label) -> conflict.obj("readings").optJSONObject(key)?.let { reading ->
+            Text("$label: ${reading.optJSONArray("remaining")?.ints()?.joinToString(" – ").orEmpty()} · beurt ${reading.rows("visits").size}", color = if(key=="canonical")PlayerLime else PlayerText)
+            reading.rows("visits").takeLast(4).forEach { visit -> Text("${match.sideName(visit.optInt("playerIndex"))}: ${if(visit.optBoolean("bust"))"BUST" else visit.text("score")} · rest ${visit.text("remainingAfter")}", color = PlayerMuted) }
+        } }
+        match.raw.rows("nativePendingCommands").forEach { command -> Text("Wachtend vanaf ${command.optInt("expectedRevision")}: ${command.obj("action").optJSONArray("dartHits")?.strings()?.joinToString(" ") ?: command.obj("action").text("score")}", color=PlayerMuted) }
+        if (canResolve) {
             Field("Reden voor behouden serverstand", reason, { reason = it }, !state.busy, max = 1000)
-            Action("Controleer verwerpen oude offline-actie", !state.busy && state.online && reason.trim().length >= 3, false) { confirm = true }
+            Action("Controleer verwerpen oude offline-actie", !state.busy && state.online && reason.trim().length >= 3, false) { decision="keep-server";confirm = true }
+            if(conflict.obj("readings").optJSONObject("offline")!=null)Action("Controleer gebruiken volledige lokale lezing",!state.busy&&state.online&&reason.trim().length>=3,false){decision="use-offline";confirm=true}
         }
     }
-    if (confirm) androidx.compose.material3.AlertDialog(onDismissRequest = { confirm = false }, title = { Text("Geaccepteerde serverstand behouden?") }, text = { Text("De oude offline-actie wordt expliciet verworpen. Indien nodig voert de bevoegde schrijver daarna bewust een nieuwe actie in vanaf de actuele stand.") }, confirmButton = { androidx.compose.material3.TextButton(onClick = { confirm = false; actions.matchAction("resolve-offline-conflict", json("conflictId" to conflict.text("id"), "reason" to reason.trim())) }, enabled = !state.busy && state.online && match.permissions.optBoolean("canManage")) { Text("Bevestigen") } }, dismissButton = { androidx.compose.material3.TextButton(onClick = { confirm = false }) { Text("Terug") } })
+    if (confirm) androidx.compose.material3.AlertDialog(onDismissRequest = { confirm = false }, title = { Text(if(decision=="keep-server")"Geaccepteerde serverstand behouden?" else "Volledige lokale lezing vastleggen?") }, text = { Text(if(decision=="keep-server")"De oude offline-actie wordt expliciet verworpen. Indien nodig voert de bevoegde schrijver daarna bewust een nieuwe actie in vanaf de actuele stand." else "De getoonde gevalideerde lokale beurtvolgorde wordt met jouw reden gekozen. De server controleert de actuele partij en bewaart het besluit.") }, confirmButton = { androidx.compose.material3.TextButton(onClick = { confirm = false; actions.matchAction("resolve-offline-conflict", json("conflictId" to conflict.text("id"), "reason" to reason.trim(),"decision" to decision)) }, enabled = !state.busy && state.online && canResolve) { Text("Bevestigen") } }, dismissButton = { androidx.compose.material3.TextButton(onClick = { confirm = false }) { Text("Terug") } })
 }

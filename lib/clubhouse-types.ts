@@ -1,0 +1,23 @@
+import type {ClubEntity,ClubPermission} from './club-types';
+import type {FeedPage,ChatPage} from './community-types';
+import type {SeasonView} from './seasons-types';
+import type {CompetitionWizardLocation} from './competition-wizard-types';
+
+export type ThemeTokens = Record<'background'|'surface'|'surfaceRaised'|'border'|'text'|'muted'|'primary'|'onPrimary'|'secondary'|'focus'|'success'|'warning'|'error',string>;
+export type ThemePreference = {mode:'auto'|'dartflow'|'club';clubId:string|null;colorMode:'system'|'light'|'dark';revision:number};
+export type BrandingDesign = {primary:string;secondary:string;logoData:string|null;name:string};
+export type ThemeView = {preference:ThemePreference;effective:{clubId:string|null;name:string;brandingRevision:number;validUntil:string;logoData:string|null;tokens:{light:ThemeTokens;dark:ThemeTokens}};options:{clubId:string;name:string;brandingRevision:number;logoData:string|null}[];needsChoice:boolean};
+export type ClubhousePage = 'overview'|'feed'|'calendar'|'members'|'teams'|'competitions'|'matches'|'locations'|'tasks'|'dues'|'manage';
+export const CLUBHOUSE_PAGES:ClubhousePage[] = ['overview','feed','calendar','members','teams','competitions','matches','locations','tasks','dues','manage'];
+export type ClubTeam = {id:string;clubId:string;name:string;captainId:string;memberIds:string[];reserveIds:string[];active:boolean;revision:number};
+export type ClubActivity = {id:string;clubId:string;title:string;description:string;type:'club'|'training'|'match'|'social'|'meeting'|'other';organizerId:string|null;lastChange:string;updatedAt:string;startsAt:string;endsAt:string;timeZone:string;capacity:number;revision:number;location:string;organizerName:string;participants:{userId:string;name:string;status:'registered'|'waitlisted'}[];registered:number;waitlisted:number;myStatus:'registered'|'waitlisted'|null;canManage:boolean};
+export type ClubTask = {id:string;title:string;description:string;ownerId:string|null;deadline:string|null;startsAt:string|null;endsAt:string|null;function:string;activityId:string|null;status:'open'|'in_progress'|'done';capacity:number;revision:number;volunteerIds:string[];privateNote?:string;activity:{at:string;actorId:string;action:string}[]};
+export type ClubDue = {id:string;memberId:string;memberName:string;description:string;amountCents:number;paidCents:number;dueDate:string;revision:number};
+export type ClubChannel = {id:string;name:string;kind:'general'|'team'|'board';teamId:string|null;canWrite:boolean;unread:number;revision:number;canManage:boolean;canModerate:boolean};
+export type ClubhouseMatchSummary={id:string;matchId:string|null;seasonId:string|null;name:string;status:string;playerNames:string[];startsAt:string|null;endsAt:string|null;canOpen:boolean};
+export type ClubChannelPage={channel:ClubChannel;messages:ChatPage['messages'];cursor:number;hasMoreBefore:boolean;nextBefore:number|null};
+export type ClubBranding = {entitlement:{key:'association.branding.global';startsAt:string;endsAt:string;revokedAt:string|null;effective:boolean}|null;draft:BrandingDesign|null;published:BrandingDesign|null;revision:number;publishedRevision:number;canManage:boolean;canManageEntitlement:boolean};
+export type ClubModerationReport={id:string;reporterName:string;category:string;reason:string;status:string;decision:string|null;targetType:string;contentId:string|null;createdAt:string};
+export type ClubhouseView = {club:ClubEntity;page:ClubhousePage;permissions:ClubPermission[];pages:ClubhousePage[];theme:ThemeView;revision:number;metrics:{basis:'confirmed_results';period:{from:string;to:string};members:number;activeTeams:number;individualMatches:number;teamMatches:number};teams:ClubTeam[];activities:ClubActivity[];tasks:ClubTask[];dues:ClubDue[];channels:ClubChannel[];reports:ClubModerationReport[];branding:ClubBranding|null;competitions:SeasonView[];matches:ClubhouseMatchSummary[];locations:CompetitionWizardLocation[];nextMatch:ClubhouseMatchSummary|null;feed?:FeedPage;chat?:ChatPage;ownershipTransfer:{id:string;recipientId:string;expiresAt:string}|null};
+export type ClubhouseCommand = {requestId:string;expectedRevision?:number;action:{type:string;clubId:string;[key:string]:unknown}};
+export type ThemeCommand = {requestId:string;expectedRevision:number;action:{type:'preference';mode:ThemePreference['mode'];clubId:string|null;colorMode:ThemePreference['colorMode']}};

@@ -53,8 +53,33 @@ test('fixed board apps retain separate manifests, QR, live/offline state and exp
     await second.goto(b.screenUrl);await fallback.reload();await expect(fallback.getByRole('heading',{name:`Hoofdbaan ${suffix}`,exact:true})).toBeVisible();expect((await manifest(fallback)).data.start_url).toBe('/scorebord');
     expect(await fallback.evaluate(()=>localStorage.getItem('dartflow-scorebord-fixed-board-v1'))).toBe(a.id);expect(authRequests).toBe(0);
     await first.evaluate(async()=>{await navigator.serviceWorker.ready;await fetch('/assets/pwa/player-192.png');});
-    const cached=await first.evaluate(async()=>{const paths:string[]=[];for(const key of await caches.keys())if(key.startsWith('dartflow-static-')){const cache=await caches.open(key);for(const request of await cache.keys())paths.push(new URL(request.url).pathname);}return paths;});
-    expect(cached.length).toBeGreaterThan(0);expect(cached.every(path=>/^\/assets\/(?:pwa\/(?:player|scoreboard|oche-live)-(?:180|192|512)\.png|dartflow-logo\.svg|dartflow-icon\.svg|dartboard\.svg)$/.test(path))).toBe(true);
+    const cached=await first.evaluate(async()=>{
+      const entries:{url:string;method:string;status:number;responseType:string;hasSetCookie:boolean;contentType:string;anonymousShell:string|null}[]=[];
+      for(const key of await caches.keys())if(key.startsWith('dartflow-static-')){
+        const cache=await caches.open(key);
+        for(const request of await cache.keys()){
+          const response=await cache.match(request);
+          entries.push({url:request.url,method:request.method,status:response?.status??0,responseType:response?.type??'',hasSetCookie:response?.headers.has('set-cookie')??false,contentType:response?.headers.get('content-type')??'',anonymousShell:response?.headers.get('x-dartflow-offline-shell')??null});
+        }
+      }
+      return entries;
+    });
+    expect(cached.length).toBeGreaterThan(0);
+    for(const entry of cached){
+      const url=new URL(entry.url),path=url.pathname;
+      expect(url.origin).toBe(origin);expect(url.search).toBe('');expect(url.hash).toBe('');expect(path.includes('..')).toBe(false);
+      expect(entry.method).toBe('GET');expect(entry.responseType).toBe('basic');expect(entry.status).toBeGreaterThanOrEqual(200);expect(entry.status).toBeLessThan(300);expect(entry.hasSetCookie).toBe(false);
+      const artwork=/^\/assets\/(?:pwa\/(?:player|scoreboard|oche-live)-(?:180|192|512)\.png|dartflow-logo\.svg|dartflow-icon\.svg|dartboard\.svg)$/.test(path);
+      const immutableBundle=/^\/_next\/static\/(?:chunks|css|media)\/[A-Za-z0-9_./-]+\.(?:js|css|woff2)$/.test(path);
+      const anonymousShell=path==='/speelsessie'&&entry.anonymousShell==='1'&&entry.contentType.startsWith('text/html');
+      expect(artwork||immutableBundle||anonymousShell,`Unexpected cached path: ${path}`).toBe(true);
+      // Private account HTML, live APIs and mutation requests never become an
+      // offline response. The sole HTML exception is the marked anonymous shell.
+      expect(/^\/(?:api|auth|app|wedstrijd|spelen|baan|baanscherm|scorebord)(?:\/|$)/.test(path)).toBe(false);
+      if(entry.contentType.includes('text/html'))expect(anonymousShell).toBe(true);
+    }
+    expect(cached.filter(entry=>new URL(entry.url).pathname==='/speelsessie')).toHaveLength(1);
+    expect(cached.some(entry=>/^\/_next\/static\/(?:chunks|css|media)\//.test(new URL(entry.url).pathname))).toBe(true);
 
   }finally{
     await viewer.setOffline(false);if(training)await command(owner,{type:'training.finish',id:training.id},training.entity.revision).catch(()=>{});
@@ -67,13 +92,13 @@ test('player start retains login intent, native prompt is used and standalone in
   try{
     const page=await context.newPage();await page.goto('/speler');await page.getByRole('link',{name:'Inloggen',exact:true}).click();expect(new URL(page.url()).searchParams.get('next')).toBe('/speler');
     await page.getByRole('button',{name:/Danny Goldenbelt/}).click();await expect(page).toHaveURL('/speler');expect((await manifest(page)).data.name).toBe('DartFlow Speler');
-    // The desktop/menu button is tested on a wide viewport; phone menus keep the same component.
-    await page.setViewportSize({width:1400,height:900});const button=page.getByRole('button',{name:'Installeer DartFlow',exact:true});await expect(button).toBeVisible();
+    // The shared More menu retains the existing install action on desktop and phone.
+    await page.setViewportSize({width:1400,height:900});await page.getByRole('button',{name:'Meer',exact:true}).click();const button=page.getByRole('dialog',{name:'Meer DartFlow',exact:true}).getByRole('button',{name:'Installeer DartFlow',exact:true});await button.scrollIntoViewIfNeeded();await expect(button).toBeVisible();
     await page.evaluate(()=>{const event=new Event('beforeinstallprompt',{cancelable:true}) as Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:string}>};(window as Window&{pwaPrompts?:number}).pwaPrompts=0;event.prompt=async()=>{(window as Window&{pwaPrompts?:number}).pwaPrompts!++;};event.userChoice=Promise.resolve({outcome:'dismissed'});window.dispatchEvent(event);});
     await button.click();expect(await page.evaluate(()=>(window as Window&{pwaPrompts?:number}).pwaPrompts)).toBe(1);await expect(page.getByRole('dialog',{name:'Installeer DartFlow'})).toHaveCount(0);
     await page.evaluate(()=>window.dispatchEvent(new Event('appinstalled')));await expect(button).toBeVisible();
     await button.click();await expect(page.getByRole('dialog',{name:'Installeer DartFlow'})).toBeVisible();await expect(page.getByRole('link',{name:'/speler',exact:true})).toBeVisible();
-    await standalone.addInitScript(()=>Object.defineProperty(navigator,'standalone',{get:()=>true}));const installed=await standalone.newPage();await login(installed,'/speler');await expect(installed.getByRole('button',{name:'Installeer DartFlow',exact:true})).toHaveCount(0);
+    await standalone.addInitScript(()=>Object.defineProperty(navigator,'standalone',{get:()=>true}));const installed=await standalone.newPage();await login(installed,'/speler');await installed.getByRole('button',{name:'Meer',exact:true}).click();await expect(installed.getByRole('button',{name:'Installeer DartFlow',exact:true})).toHaveCount(0);
     expect((await manifest(installed)).data.id).toBe('/speler');
   }finally{await Promise.allSettled([context.close(),standalone.close()]);}
 });

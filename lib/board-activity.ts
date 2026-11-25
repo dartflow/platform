@@ -2,7 +2,7 @@ import {matchParticipants,matchSideIndex} from './match-sides';
 import {createHash,randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {database,eventAccess} from './db';
-import {DomainError,newGame} from './domain';
+import {DomainError} from './domain';
 import {assertPhysicalBoardEvent,locationManager,physicalBoard} from './location-access';
 import {assertBoardUnreserved} from './platform-locks';
 import type {Client,EntityRow} from './platform-store';
@@ -37,12 +37,12 @@ export async function readBoardActivity(client:Client,boardId:string,actorId?:st
  const row=(await client.query<ActivityRow>('select s.* from dartflow_private.board_activity_links l join dartflow_private.board_activity_sessions s on s.id=l.session_id where l.board_id=$1',[identity(boardId)])).rows[0];
  return row?projection(row,await serverNow(client),actorId?await participant(client,row,actorId):false):null;
 }
-/** Source -> physical boards in UUID order -> session; inspect the clock only after all locks. */
+/** Event -> canonical source -> sorted physical boards -> session; inspect the clock after every lock. */
 export async function lockBoardActivity(client:Client,sessionId:string,additionalBoardIds:string[]=[]):Promise<LockedBoardActivity|null>{
  const before=(await client.query<ActivityRow>('select * from dartflow_private.board_activity_sessions where id=$1',[identity(sessionId)])).rows[0];if(!before)return null;
- if(before.source_kind!=='match')await client.query('select id from dartflow_private.platform_entities where id=$1 for update',[before.source_id]);
  await client.query('select id from dartflow_private.events where id=$1 for update',[before.event_id]);
  if(before.source_kind==='match')await client.query('select id from dartflow_private.matches where id=$1 for update',[before.source_id]);
+ else await client.query('select id from dartflow_private.platform_entities where id=$1 for update',[before.source_id]);
  const afterSource=(await client.query<ActivityRow>('select * from dartflow_private.board_activity_sessions where id=$1',[sessionId])).rows[0];if(!afterSource)return null;
  await client.query('select id from dartflow_private.boards where id=any($1::uuid[]) order by id for update',[[...new Set([...afterSource.board_ids,...additionalBoardIds])].sort()]);
  const row=(await client.query<ActivityRow>('select * from dartflow_private.board_activity_sessions where id=$1 for update',[sessionId])).rows[0];if(!row)return null;
@@ -64,7 +64,7 @@ export async function ensureBoardActivity(client:Client,input:{sourceId:string;s
   for(const board of boards)await client.query('insert into dartflow_private.board_activity_links(board_id,session_id) values($1,$2) on conflict(board_id) do nothing',[board,previous.id]);
   return projection(updated,locked.now);
  }
- if(previous?.kind==='free'&&previous.status==='released')throw new DomainError('board_session_expired','Deze vrije baanopstelling is beëindigd. Scan opnieuw.',409);
+ // Interrupted free play keeps its source and shared extension budget.
  const now=await serverNow(client),id=randomUUID();
  const row=(await client.query<ActivityRow>('insert into dartflow_private.board_activity_sessions(id,source_kind,source_id,event_id,kind,board_ids,actor_ids,activity_at,deadline_at,warning_epoch,extensions_used) values($1,$2,$3,$4,$5,$6,$7,to_timestamp($8::double precision/1000),to_timestamp(($8::double precision+180000)/1000),$9,$10) returning *',[id,input.sourceKind,input.sourceId,input.eventId,input.kind??'free',boards,input.actorIds,now,randomUUID(),previous?.extensions_used??0])).rows[0];
  for(const board of boards)await client.query('insert into dartflow_private.board_activity_links(board_id,session_id) values($1,$2)',[board,id]);
@@ -185,7 +185,7 @@ export async function releaseBoardActivity(client:Client,input:{sessionId:string
  if(input.reason==='timeout'&&(row.status!=='active'||now<millis(row.deadline_at)))return locked.view;
  const assigned=await client.query('select board_id from dartflow_private.board_activity_links where session_id=$1 order by board_id',[row.id]);
  if(!assigned.rowCount)return locked.view;
- let terminal:ActivityRow['status']=input.reason==='completed'?'completed':row.kind==='official'?'interrupted':'released';
+ let terminal:ActivityRow['status']=input.reason==='completed'?'completed':'interrupted';
  if(row.source_kind==='match'){
   const state:MatchState=(await client.query('select state from dartflow_private.matches where id=$1',[row.source_id])).rows[0]?.state;
   if(state?.boardId){
@@ -195,24 +195,18 @@ export async function releaseBoardActivity(client:Client,input:{sessionId:string
     state.status='interrupted';state.paused=true;state.correction=null;state.boardInterruption={sessionId:row.id,reason:input.reason==='forced'?'forced':'timeout',at:new Date(now).toISOString(),previousStatus:beforeStatus};
     const target=(await client.query<{id:string;kind:'league'|'tournament';owner_id:string}>("select e.id,e.kind,e.owner_id from dartflow_private.platform_match_links l join dartflow_private.platform_entities e on e.id=l.entity_id where l.match_id=$1 and e.kind in('league','tournament')",[state.id])).rows[0];
     if(target)await client.query('insert into dartflow_private.community_messages(id,scope_kind,scope_id,author_id,body) values($1,$2,$3,$4,$5)',[randomUUID(),target.kind,target.id,target.owner_id,`Oche Live: de fysieke baan van ${state.players.map(p=>p.name).join(' tegen ')} is vrijgegeven wegens ${input.reason==='forced'?'een ingreep van de locatiebeheerder':'inactiviteit'}. De partij is onderbroken; voortgang en speelschema blijven behouden. De wedstrijdleiding kan de partij op een baan hervatten.`]);
-   }else if(terminal==='released'){
-    state.status='abandoned';state.game=newGame(state.id,matchParticipants(state).map(p=>p.id),state.settings);state.previousSets=[];state.winnerId=null;state.resultRevision=null;state.resultPublished=false;state.accepted=[false,false];state.confirmations=[false,false];state.correction=null;state.dispute=null;state.paused=false;state.delegatedWriterId=null;
-    await client.query('delete from dartflow_private.visits where match_id=$1',[state.id]);await client.query('delete from dartflow_private.match_confirmations where match_id=$1',[state.id]);
    }
    await client.query('update dartflow_private.matches set board_id=null,state=$2,revision=$3,updated_at=clock_timestamp() where id=$1',[state.id,JSON.stringify(state),state.revision]);
   }
  }
- if(terminal==='released'){
-  const entities=(await client.query<{id:string;state:{name:string;setup?:string;matchId?:string}}>("select e.id,e.state from dartflow_private.platform_entities e where e.id=$1 or(e.kind='lobby' and e.state->>'matchId'=$1::text)",[row.source_id])).rows;
-  for(const entity of entities){
-   await client.query("update dartflow_private.platform_entities set state=$2,invite_hash=null,invite_expires_at=clock_timestamp(),revision=revision+1 where id=$1",[entity.id,JSON.stringify({name:entity.state.name,closed:true,completed:true,discarded:true,expiredAt:new Date(now).toISOString(),boardHeld:false,boardLeaseUntil:0,boardSessionId:row.id,...(entity.state.matchId?{matchId:entity.state.matchId}:{}),...(entity.state.setup?{setup:entity.state.setup}:{})})]);
-   await client.query('delete from dartflow_private.invitation_codes where entity_id=$1',[entity.id]);
-  }
+ if(terminal==='interrupted'&&row.source_kind!=='match'){
+  await client.query("update dartflow_private.platform_entities set state=state||$2::jsonb,revision=revision+1 where id=$1",[row.source_id,JSON.stringify({interrupted:true,interruptedAt:new Date(now).toISOString(),boardHeld:false,boardLeaseUntil:0})]);
  }
+ if(terminal==='interrupted'&&row.source_kind==='match')await client.query("update dartflow_private.platform_entities set state=state||'{\"interrupted\":true,\"boardHeld\":false,\"boardLeaseUntil\":0}'::jsonb,revision=revision+1 where kind='lobby'and state->>'matchId'=$1::text",[row.source_id]);
+
  await client.query('delete from dartflow_private.board_activity_links where session_id=$1',[row.id]);
  await client.query('update dartflow_private.location_boards set closed_at=clock_timestamp(),close_after_session=false where board_id=any($1::uuid[]) and close_after_session',[row.board_ids]);
  const updated=(await client.query<ActivityRow>('update dartflow_private.board_activity_sessions set status=$2,ended_at=to_timestamp($3::double precision/1000),reason=$4 where id=$1 returning *',[row.id,terminal,now,input.reason])).rows[0];
- if(terminal==='released')await client.query('select dartflow_private.purge_abandoned_board_payloads($1)',[row.id]);
  await client.query('insert into dartflow_private.audit_events(actor_id,event_id,match_id,action,detail) values($1,$2,$3,$4,$5)',[input.actorId??null,row.event_id,row.source_kind==='match'?row.source_id:null,`board.${input.reason}`,JSON.stringify({sessionId:row.id,sourceId:row.source_id,boardIds:row.board_ids,deadlineAt:millis(row.deadline_at),releasedAt:now,kind:row.kind})]);
  return projection(updated,now);
 }

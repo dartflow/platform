@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import {InstallDartflow} from "./pwa-install";
 import type { ClubBoardScreenView } from "@/lib/types";
 import SprintDisplay from "./sprint-display";
+import OchePlayDisplay from "./oche-play-display";
+import {coreTacticsPlay} from "@/lib/oche-play-projection";
 import BoardActivityNotice from "./board-activity-notice";
 import OcheLiveStandby from "./oche-live-standby";
 import OcheCelebration,{useOcheCelebration} from "./oche-celebration";
@@ -133,7 +135,8 @@ export default function ClubBoardScreen({ boardId, installKind = 'board' }: { bo
   const pairForm=<form className="board-pair-form" onSubmit={event=>void pair(event)}><label htmlFor="screen-pair-code">Koppelcode van de wedstrijdleiding</label><input id="screen-pair-code" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={30} value={pairCode} onChange={event=>setPairCode(event.target.value)} required placeholder="XXXX XXXX XXXX"/><button className="button gold" type="submit" disabled={pairBusy}>{pairBusy?'Koppelen…':'Dit baanscherm koppelen'}</button>{error&&<p className="notice error" role="alert">{error}</p>}</form>;
   const options=<details className="oche-options"><summary aria-label="Schermopties" title="Schermopties">•••</summary><div><ScreenWakeLock/>{data&&!needsPairing&&!data.screen?.paired&&<details><summary>Dit apparaat registreren</summary>{pairForm}</details>}{data?.screen?.paired&&<small>Apparaat gekoppeld aan {data.board.name}</small>}</div></details>;
   const qr=data?<figure className="oche-qr"><ClubBoardQr boardId={data.board.id} variant="oche"/><figcaption><a href={data.board.playUrl} aria-label="Open deze baan ↗">Open deze baan met je telefoon</a></figcaption></figure>:null;
-  return <div className={`club-board-screen${data?.snapshot.match?' club-board-screen-live':''}`}>{offline}{data?.snapshot.match?<>
+  const play=data?.snapshot.play??(data?coreTacticsPlay(data.snapshot,data.snapshot.boardActivity?.serverNow??0):undefined);
+  return <div className={`club-board-screen${data?.snapshot.match||play?' club-board-screen-live':''}`}>{offline}{play&&data?<OchePlayDisplay play={play} boardName={data.board.name} eventName={data.snapshot.event.name} stale={stale} theme={data.snapshot.theme?.id} qr={<ClubBoardQr boardId={data.board.id}/>} controls={<>{install}{options}</>}/>:data?.snapshot.match?<>
     <SprintDisplay controls={<>{install}{options}</>} snapshot={data.snapshot} stale={stale} qr={<ClubBoardQr boardId={data.board.id}/>} scanInstruction={scanInstruction} overlay={overlay} activityOverlay={<BoardActivityNotice activity={data.snapshot.boardActivity} display boardId={boardId} offline={stale} onRefresh={refreshScreen}/>}/>
   </>:<OcheLiveStandby data={data} error={error} stale={stale} needsPairing={needsPairing} pairForm={pairForm} qr={qr} controls={<>{install}{options}</>} overlay={overlay}/>}</div>;
 }

@@ -1,4 +1,10 @@
 "use client";
+import ScoreInputSettings from './score-input-settings';
+import {RedesignedToday} from './redesign-shell';
+import LegacyTrainingOffline from './legacy-training-offline';
+import X01OpeningField from './x01-opening-field';
+import ProfileIdentityFields from './profile-identity-fields';
+import {socialIdentityLabel} from '@/lib/public-identity';
 
 import {
   useCallback,
@@ -10,20 +16,15 @@ import {
 import type { Overview, Profile, MatchView, ResultView, ClubBoardView } from "@/lib/types";
 import { ClubBoardQr } from "./club-board-screen";
 import MailWorkspace from "./mail-workspace";
-import ScoreConsole from "./score-console";
-import DartVisitInput from "./dart-visit-input";
-import CricketCard from "./cricket-card";
-import {dartValue} from "@/lib/x01-rules";
-import type {CricketState} from "@/lib/cricket";
 import LocalPlayerAdd from "./local-player-add";
-import BoardActivityNotice from "./board-activity-notice";
 import ScreenDeviceManager from "./screen-device-manager";
 import IntegrationsPanel from "./integrations-panel";
 import BlogWorkspace from "./blog-workspace";
-import { MailPreferences } from "./mail-policy-panel";
 import {CommunityRulesGate,SafetyActions} from './player-safety';
 import {FeedSpace,ScopedChat} from './community-space';
 import {ClubWorkspace} from './club-ui';
+import ClubhouseWorkspace,{PlatformBrandingAdministration} from './clubhouse-workspace';
+import {ThemePreferencePicker} from './clubhouse-theme';
 import LocationWorkspace from './location-workspace';
 import type {ClubEntity} from '@/lib/club-types';
 import RankingEventPanel from './ranking-event-panel';
@@ -124,7 +125,7 @@ function ShareInvitation({ section, id, entity }: { section: string; id: string;
   const [copyStatus, setCopyStatus] = useState("");
   const link = invitationLink(section, id, code);
   return code ? (
-    <div className="notice">
+    <div className={`notice${section==='lobby'?' play-lobby-code':''}`}>
       <strong>Uitnodigingscode</strong>
       <p className="workspace-code">{code}</p>
       <p>Deel de code of link met de bedoelde speler. Een nieuwe uitnodiging is zeven dagen geldig.</p>
@@ -177,6 +178,11 @@ const number = (v: unknown, fallback = 0) =>
 const statusLabel: Record<string, string> = {
   active: "Actief",
   finished: "Afgerond",
+  completed: "Afgerond",
+  draft: "Concept",
+  archived: "Gearchiveerd",
+  cancelled: "Geannuleerd",
+  canceled: "Geannuleerd",
   open: "Inschrijving open",
   planned: "Gepland",
   scheduled: "Gepland",
@@ -419,11 +425,17 @@ function iso(value: unknown) {
 }
 
 function ruleInput(form:FormData){
+  if(form.get('discipline')==='tactics')return{...readWinByTwo(form),discipline:'tactics' as const,tacticsPreset:form.get('tacticsPreset')==='tactics-3'?'tactics-3' as const:'tactics-5' as const,tacticsMode:form.get('tacticsMode')==='no-score'?'no-score' as const:'standard' as const};
   if(form.get('discipline')==='cricket')return{...readWinByTwo(form),discipline:'cricket' as const,cricketMode:form.get('cricketMode')==='no-score'?'no-score' as const:'standard' as const};
   const inRule=text(form.get('inRule')),outRule=text(form.get('outRule')),home=text(form.get('homeStart')),away=text(form.get('awayStart'));
-  return {...readWinByTwo(form),...(inRule==='double'?{inRule}:{}),...(outRule&&outRule!=='double'?{outRule}:{}),...(home||away?{sideStartScores:[Number(home),Number(away)]}:{})};
+  return {...readWinByTwo(form),...(['single','double'].includes(inRule)?{inRule}:{}),...(outRule&&outRule!=='double'?{outRule}:{}),...(home||away?{sideStartScores:[Number(home),Number(away)]}:{})};
 }
-function RulesFields(){const[discipline,setDiscipline]=useState('x01');return <details className="panel"><summary>Discipline, spelregels en handicap</summary><div className="field-grid"><label className="field">Discipline<select name="discipline"value={discipline}onChange={event=>setDiscipline(event.target.value)}><option value="x01">X01</option><option value="cricket">Cricket</option></select></label>{discipline==='cricket'?<Field label="Cricketvariant"name="cricketMode"defaultValue="standard"><option value="standard">Standaard · marks en punten</option><option value="no-score">No score · als eerste sluiten</option></Field>:<><Field label="Openen" name="inRule" defaultValue="single"><option value="single">Open in</option><option value="double">Double in</option></Field><Field label="Uitgooien" name="outRule" defaultValue="double"><option value="double">Double out</option><option value="straight">Straight out</option><option value="master">Master out</option></Field><Field label="Handicap startscore zijde 1" name="homeStart" type="number"/><Field label="Handicap startscore zijde 2" name="awayStart" type="number"/></>}</div><p>Cricket heeft eigen marks en statistieken. Afwijkende X01-regels en Cricket tellen niet voor de landelijke X01-spelersrating.</p></details>;}
+function RulesFields({allowTactics=true,freshX01=false,bot=false}:{allowTactics?:boolean;freshX01?:boolean;bot?:boolean}){
+ const[discipline,setDiscipline]=useState('x01');
+ if(bot)return <details className="panel"><summary>Openingsregel</summary><X01OpeningField fresh={freshX01}/><p>Dartbot gebruikt dubbel uit. De bot registreert zijn eigen geldige pijlen op de server.</p></details>;
+ return <details className="panel"><summary>Discipline, spelregels en handicap</summary><div className="field-grid">{!bot&&<label className="field">Discipline<select name="discipline"value={discipline}onChange={event=>setDiscipline(event.target.value)}><option value="x01">X01</option><option value="cricket">Cricket</option>{allowTactics&&<option value="tactics">Tactics</option>}</select></label>}
+ {discipline==='tactics'?<><Field label="Tactics-preset"name="tacticsPreset"defaultValue="tactics-5"><option value="tactics-5">Tactics 5 · 20–10 en bull · 5 treffers</option><option value="tactics-3">Tactics 3 · 20–10 en bull · 3 treffers</option></Field><Field label="Tacticsvariant"name="tacticsMode"defaultValue="standard"><option value="standard">Met punten</option><option value="no-score">Zonder punten · als eerste sluiten</option></Field><p>Tactics 5 vereist bij punten strikt meer punten; een volledig gesloten gelijk veld wordt in dezelfde leg overgespeeld. Tactics 3 mag bij gelijke punten sluiten.</p></>:discipline==='cricket'?<Field label="Cricketvariant"name="cricketMode"defaultValue="standard"><option value="standard">Standaard · marks en punten</option><option value="no-score">No score · als eerste sluiten</option></Field>:<><X01OpeningField fresh={freshX01}/><Field label="Uitgooien" name="outRule" defaultValue="double"><option value="double">Double out</option><option value="straight">Straight out</option><option value="master">Master out</option></Field><Field label="Handicap startscore zijde 1" name="homeStart" type="number"/><Field label="Handicap startscore zijde 2" name="awayStart" type="number"/></>}</div><p>Cricket en Tactics houden eigen marks en statistieken bij. Deze disciplines en afwijkende X01-regels tellen niet voor de landelijke X01-spelersrating.</p></details>;
+}
 
 export default function PlatformWorkspace({
   path,
@@ -540,7 +552,7 @@ export default function PlatformWorkspace({
   if (page === "platform") return <IntegrationsPanel />;
   if (page === "mail") return <MailWorkspace clubId={clubId} />;
   return (
-    <div className="platform-workspace">
+    <div className="platform-workspace" data-workspace={page}>
       {(!online || error) && (
         <div className="notice error" role="alert">
           {error ||
@@ -640,6 +652,8 @@ export default function PlatformWorkspace({
         />
       ) : page === "camera" ? (
         <CameraPreflight />
+      ) : page === "premium" ? (
+        <PlatformBrandingAdministration/>
       ) : page === "settings" ? (
         <Preferences data={data} command={command} busy={busy} />
       ) : [
@@ -684,39 +698,9 @@ function Dashboard({
   organizer: boolean;
   clubId: string;
 }) {
-  const personalMatches = data.matches || overview?.matches || [];
-  const current = personalMatches.find(
-    (m) =>
-      m.status === "live" && m.players.some((p) => p.id === data.profile.id),
-  );
-  const results =
-    personalMatches.filter(
-      (m) =>
-        m.status === "result" &&
-        m.players.some(
-          (p, i) => p.id === data.profile.id && !m.confirmations[i],
-        ),
-    ) || [];
-  const competitions = [...data.leagues, ...data.tournaments].filter(
-    (e) => (e.clubId || "") === clubId,
-  );
-  const scopedTraining = data.trainings.filter(
-    (e) => e.ownerId === data.profile.id,
-  );
-  return (
-    <>
-      <Title title={organizer ? "Organiseren" : "Vandaag"}>
-        {new Intl.DateTimeFormat("nl-NL", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          timeZone: "Europe/Amsterdam",
-        }).format(new Date())}{" "}
-        · {data.clubs.find((c) => c.id === clubId)?.name || "Wereldwijd"}
-      </Title>
-      <GuestClaimsPanel/>
-      {organizer ? (
-        <>
+  const competitions = [...data.leagues,...data.tournaments].filter(e=>(e.clubId||'')===clubId);
+  if (!organizer) return <><GuestClaimsPanel/><RedesignedToday data={data} overview={overview} clubId={clubId}/></>;
+  return <><Title title="Organiseren">{new Intl.DateTimeFormat('nl-NL',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Amsterdam'}).format(new Date())} · {data.clubs.find(c=>c.id===clubId)?.name||'Wereldwijd'}</Title><GuestClaimsPanel/>
           <div className="workspace-metrics">
             <Metric label="Evenementen" value={competitions.length} />
             <Metric
@@ -776,139 +760,7 @@ function Dashboard({
               </Tile>
             )}
           </div>
-        </>
-      ) : (
-        <>
-          <div className="workspace-dashboard-grid">
-            <section className="panel workspace-active workspace-tile">
-              <p className="eyebrow">JOUW WEDSTRIJD</p>
-              <h2>
-                {current
-                  ? "Actieve wedstrijd"
-                  : results.length
-                    ? "Uitslag bevestigen"
-                    : "Klaar voor je volgende partij?"}
-              </h2>
-              {current ? (
-                <>
-                  <div className="workspace-active-score">
-                    {current.players.map((p, i) => (
-                      <div key={p.id}>
-                        <span className="avatar">
-                          {p.name
-                            .split(" ")
-                            .map((x) => x[0])
-                            .slice(0, 2)
-                            .join("")}
-                        </span>
-                        <strong>{p.name}</strong>
-                        <b>
-                          {current.legs[i]}
-                          <small> legs</small>
-                        </b>
-                      </div>
-                    ))}
-                  </div>
-                  <a className="button gold" href={`/wedstrijd/${current.id}`}>
-                    Hervat je partij ↗
-                  </a>
-                </>
-              ) : results[0] ? (
-                <a className="button gold" href={`/wedstrijd/${results[0].id}`}>
-                  Bevestig je uitslag ↗
-                </a>
-              ) : (
-                <>
-                  <p>
-                    Speel een oefenleg, nodig een vriend uit of scan de QR-code
-                    bij de baan.
-                  </p>
-                  <Link to="play" primary>
-                    Naar Spelen
-                  </Link>
-                </>
-              )}
-            </section>
-            <section className="panel workspace-shortcuts">
-              <h2>Direct spelen</h2>
-              <Link to="practice">
-                Oefenwedstrijd <small>Lokaal of online</small>
-              </Link>
-              <Link to="lobby">Wedstrijdcode invoeren</Link>
-              <a href="/spelen" className="button ghost">
-                Baanmodus op locatie ↗
-              </a>
-            </section>
-          </div>
-          <div className="workspace-grid two">
-            <section className="panel">
-              <div className="section-heading">
-                <h2>Jouw programma</h2>
-                <Link to="events">Alle evenementen</Link>
-              </div>
-              {competitions.length ? (
-                competitions.slice(0, 4).map((e) => (
-                  <a
-                    className="workspace-row"
-                    key={e.id}
-                    href={`/app/${e.kind === "league" ? "leagues" : "hall"}/${e.id}`}
-                  >
-                    <div>
-                      <strong>{e.name}</strong>
-                      <small>{iso(e.state.date)}</small>
-                    </div>
-                    <Label value={e.state.status || "open"} />
-                  </a>
-                ))
-              ) : (
-                <Empty>Je hebt hier nog geen competitie of toernooi.</Empty>
-              )}
-            </section>
-            <section className="panel">
-              <div className="section-heading">
-                <h2>Vrienden</h2>
-                <Link to="friends">Bekijk vrienden</Link>
-              </div>
-              {data.friends.filter((f) => f.status === "friend").length ? (
-                data.friends
-                  .filter((f) => f.status === "friend")
-                  .slice(0, 4)
-                  .map((f) => (
-                    <div className="workspace-row" key={f.id}>
-                      <strong>{f.name}</strong>
-                      <Label value={f.favorite ? "Favoriet" : "Vriend"} />
-                    </div>
-                  ))
-              ) : (
-                <Empty>Voeg een vriend toe en daag elkaar uit.</Empty>
-              )}
-            </section>
-          </div>
-          <div className="workspace-metrics">
-            <Metric
-              label="Bevestigde uitslagen"
-              value={data.history?.length || overview?.history.length || 0}
-            />
-            <Metric label="Trainingen" value={scopedTraining.length} />
-            <Metric
-              label="Vriendschapsverzoeken"
-              value={data.friends.filter((f) => f.status === "incoming").length}
-            />
-            <Metric
-              label="Eigen verenigingen"
-              value={
-                data.clubs.filter((c) =>
-                  c.members.some(
-                    (m) => m.id === data.profile.id && m.status === "active",
-                  ),
-                ).length
-              }
-            />
-          </div>
-        </>
-      )}
-    </>
-  );
+  </>;
 }
 function Metric({ label, value }: { label: string; value: number }) {
   return (
@@ -1025,8 +877,6 @@ function Training({
   id,
   command,
   busy,
-  error,
-  online,
 }: {
   data: Platform;
   id?: string;
@@ -1036,30 +886,6 @@ function Training({
   online: boolean;
 }) {
   const entity = data.trainings.find((e) => e.id === id);
-  const [score, setScore] = useState("");
-  const [double, setDouble] = useState(false);
-  const [visitDarts, setVisitDarts] = useState("3");
-  const [doubleAttempts,setDoubleAttempts]=useState<number|null>(null);
-  const [consoleOpen,setConsoleOpen]=useState(true);
-  const [pendingScore,setPendingScore]=useState<(ImmutableAttempt & {action:Action})|null>(null);
-  const scoreSending=useRef(false);
-  const pendingKey=`dartflow-training-score:${data.profile.id}:${id || ''}`;
-  const draftKey=`dartflow-training-draft:${data.profile.id}:${id || ''}`;
-  useEffect(()=>{
-    try{
-      const saved=sessionStorage.getItem(pendingKey),draft=sessionStorage.getItem(draftKey);
-      if(saved){const pending=JSON.parse(saved) as ImmutableAttempt & {action:Action};if(pending.action.type==='training.score' && pending.action.id===id && typeof pending.requestId==='string' && Number.isSafeInteger(pending.expectedRevision)){setPendingScore(pending);setScore(String(pending.action.score??''));setDouble(pending.action.doubleConfirmed===true);setVisitDarts(String(pending.action.darts||3));setDoubleAttempts(typeof pending.action.doubleAttempts==='number'?pending.action.doubleAttempts:null);}}
-      else if(draft)setScore(draft.replace(/\D/g,'').slice(0,3));
-    }catch{/* Private draft storage is optional. */}
-  },[pendingKey,draftKey,id]);
-  function updateTrainingScore(value:string){const next=value.replace(/\D/g,'').slice(0,3);setScore(next);setDouble(false);setDoubleAttempts(null);try{sessionStorage.setItem(draftKey,next);}catch{/* Optional draft storage. */}}
-  async function submitTrainingScore(input?:{score:number;darts:number;dartHits:string[]}){
-    if(!entity||scoreSending.current||busy)return;
-    const pending=pendingScore || {requestId:crypto.randomUUID(),expectedRevision:entity.revision,action:{type:'training.score',id:entity.id,score:number(score),darts:number(visitDarts,3),doubleConfirmed:double,...(doubleAttempts==null?{}:{doubleAttempts}),...(input??{})}};
-    scoreSending.current=true;setPendingScore(pending);try{sessionStorage.setItem(pendingKey,JSON.stringify(pending));}catch{/* The in-memory attempt still keeps its identity. */}
-    try{const result=await command(pending.action,entity,pending);if(result){setPendingScore(null);setScore('');setDouble(false);setDoubleAttempts(null);try{sessionStorage.removeItem(pendingKey);sessionStorage.removeItem(draftKey);}catch{/* Optional draft storage. */}}}finally{scoreSending.current=false;}
-  }
-
   if (!entity)
     return (
       <>
@@ -1114,7 +940,7 @@ function Training({
                   <option>701</option>
                 </Field>
               )}
-              {item.mode === "solo"&&<RulesFields/>}
+              {["solo","bot"].includes(item.mode)&&<RulesFields allowTactics={false} freshX01 bot={item.mode==='bot'}/>}
               {item.mode === "bot" && (
                 <Field
                   label="Doelgemiddelde Dartbot"
@@ -1150,278 +976,10 @@ function Training({
         </section>
       </>
     );
-  if(entity.state.discarded)return <><Title title="Baanpartij beëindigd"/><section className="panel"><p>De baan is vrijgegeven. De voorlopige scores van deze afgebroken partij zijn gewist.</p><a className="button gold" href="/app/spelen">Nieuwe partij starten</a></section></>;
-  const game = record(entity.state.game);
-  const detailedScoring=game.discipline==='cricket'||game.inRule==='double'||Boolean(game.outRule&&game.outRule!=='double');
-  const remain = Array.isArray(game.remaining) ? game.remaining : [];
-  const visits = list(game.visits);
-  const finished =
-    entity.state.completed === true ||
-    entity.state.status === "finished" ||
-    game.status === "finished";
-  return (
-    <>
-      {(!consoleOpen||finished)&&<BoardActivityNotice activity={entity.boardActivity} offline={!online}/>}
-      {!finished && entity.state.mode !== 'around' && !detailedScoring && consoleOpen && <ScoreConsole activity={<BoardActivityNotice activity={entity.boardActivity} offline={!online}/>} title={entity.name} players={[{id:data.profile.id,name:data.profile.name,remaining:number(remain[0] ?? entity.state.target ?? entity.state.remaining,501)},...(entity.state.mode==='bot'&&remain.length>1?[{id:'dartbot',name:'Dartbot',remaining:number(remain[1])}]:[])]} active={number(game.turn,0)} score={score} onScore={updateTrainingScore} darts={number(visitDarts,3)} onDarts={value=>setVisitDarts(String(value))} doubleAttempts={doubleAttempts} onDoubleAttempts={setDoubleAttempts} finish={score!==''&&number(score)===number(remain[0]??entity.state.remaining??entity.state.target)} doubleConfirmed={double} onDoubleConfirmed={setDouble} canScore={!finished} busy={busy} disabled={busy||Boolean(pendingScore)} offline={!online} message={error || (pendingScore&&!busy?'Controleer de stand. Je bewaarde worp kan met hetzelfde actie-ID opnieuw worden verzonden.':'')} checkout={text(entity.state.checkout||game.checkout)} onBack={()=>setConsoleOpen(false)} onSubmit={()=>void submitTrainingScore()} options={<>
-        {pendingScore&&!busy&&<div className="notice"><p>Dezelfde bewaarde worp opnieuw verzenden boekt nooit een extra beurt.</p><Button onClick={()=>void submitTrainingScore()}>Zelfde worp opnieuw proberen</Button><Button onClick={()=>{setPendingScore(null);try{sessionStorage.removeItem(pendingKey);}catch{/* Optional storage. */}}}>Bewaarde worp verwerpen</Button></div>}
-        <Button disabled={busy||Boolean(pendingScore)||!Array.isArray(entity.state.undo)||!entity.state.undo.length} onClick={()=>void command({type:'training.undo',id:entity.id},entity)}>Laatste beurt terug</Button>
-        <Button disabled={busy||Boolean(pendingScore)} onClick={()=>void command({type:'training.finish',id:entity.id},entity)}>Training bewaren en beëindigen</Button>
-      </>} />}
-      {!finished && entity.state.mode !== 'around' && !detailedScoring && <Button primary onClick={()=>setConsoleOpen(true)}>Scoreweergave openen</Button>}
-
-      <Title
-        title={entity.name}
-        actions={
-          typeof entity.state.boardId === "string" ? (
-            <a
-              className="button ghost small"
-              href={`/baan/${encodeURIComponent(entity.state.boardId)}`}
-            >
-              Vaste baan openen
-            </a>
-          ) : (
-            <Link to="training">Alle trainingen</Link>
-          )
-        }
-      />
-      {typeof entity.state.boardId === "string" &&
-        !finished &&
-        entity.state.boardHeld === true && (
-          <BoundBoardScreen
-            boardId={entity.state.boardId}
-            command={command}
-            busy={busy}
-          />
-        )}
-      <div className="workspace-grid two">
-        <section className="panel training-console">
-          <Label value={entity.state.mode} />
-          {Boolean(game.cricket)&&<CricketCard cricket={game.cricket as CricketState} names={[data.profile.name]}/>}
-          <p className="eyebrow">
-            {finished ? "TRAINING AFGEROND" : "JOUW RESTSCORE"}
-          </p>
-          <strong className="training-remaining">
-            {entity.state.mode === "around"
-              ? finished
-                ? "✓"
-                : Array.isArray(entity.state.rounds) &&
-                    entity.state.rounds.length === 20
-                  ? "Bull"
-                  : text(
-                      Array.isArray(entity.state.rounds)
-                        ? entity.state.rounds.length + 1
-                        : 1,
-                    )
-              : remain.length
-                ? text(remain[0])
-                : text(
-                    entity.state.mode === "around"
-                      ? Math.min(
-                          21,
-                          Array.isArray(entity.state.rounds)
-                            ? entity.state.rounds.length + 1
-                            : 1,
-                        )
-                      : entity.state.target || entity.state.remaining,
-                    "—",
-                  )}
-          </strong>
-          {entity.state.mode === "around" ? (
-            <>
-              <p>
-                Drie darts op dubbel{" "}
-                {Array.isArray(entity.state.rounds) &&
-                entity.state.rounds.length === 20
-                  ? "Bull"
-                  : text(
-                      Array.isArray(entity.state.rounds)
-                        ? entity.state.rounds.length + 1
-                        : 1,
-                    )}
-              </p>
-              <div className="button-row">
-                {[0, 1, 2, 3].map((hits) => (
-                  <Button
-                    key={hits}
-                    disabled={busy || finished}
-                    primary={hits > 0}
-                    onClick={() =>
-                      void command(
-                        {
-                          type: "training.score",
-                          id: entity.id,
-                          hits,
-                          darts: 3,
-                        },
-                        entity,
-                      )
-                    }
-                  >
-                    {hits} geraakt
-                  </Button>
-                ))}
-              </div>
-            </>
-          ) : detailedScoring ? <><DartVisitInput disabled={finished||busy||Boolean(pendingScore)} onSubmit={hits=>void submitTrainingScore({score:hits.reduce((sum,hit)=>sum+dartValue(hit),0),darts:hits.length,dartHits:hits})}/>{pendingScore&&!busy&&<Button onClick={()=>void submitTrainingScore()}>Zelfde bewaarde beurt opnieuw proberen</Button>}</> : (
-            <form
-              onSubmit={async (e) => {e.preventDefault();await submitTrainingScore();}}
-            >
-              <label className="field">
-                Beurtscore
-                <input
-                  autoComplete="off"
-                  type="number"
-                  min="0"
-                  max="180"
-                  inputMode="numeric"
-                  required
-                  value={score}
-                  onChange={(e) => updateTrainingScore(e.target.value)}
-                  disabled={finished || busy || Boolean(pendingScore)}
-                />
-              </label>
-              <label className="field">
-                Gegooide darts
-                <select
-                  value={visitDarts}
-                  onChange={(event) => setVisitDarts(event.target.value)}
-                  disabled={finished || busy}
-                >
-                  {[1, 2, 3].map((count) => (
-                    <option key={count}>{count}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="workspace-checkbox">
-                <input
-                  type="checkbox"
-                  checked={double}
-                  onChange={(e) => setDouble(e.target.checked)}
-                />
-                Laatste dart is een dubbel
-              </label>
-              <div className="button-row">
-                {[26, 45, 60, 100, 140, 180].map((n) => (
-                  <Button
-                    disabled={busy || finished}
-                    key={n}
-                    onClick={() => updateTrainingScore(String(n))}
-                  >
-                    {n}
-                  </Button>
-                ))}
-              </div>
-              <button className="button gold full" disabled={busy || finished || Boolean(pendingScore)}>
-                {busy ? "Opslaan…" : "Score invoeren"}
-              </button>
-            </form>
-          )}
-          <div className="button-row">
-            {finished && (
-              <Button
-                primary
-                disabled={busy}
-                onClick={() => {
-                  void command({
-                    type:
-                      typeof entity.state.boardId === "string"
-                        ? "board.start"
-                        : "training.create",
-                    ...(typeof entity.state.boardId === "string"
-                      ? { boardId: entity.state.boardId }
-                      : {}),
-                    mode: entity.state.mode,
-                    startScore:
-                      entity.state.mode === "170"
-                        ? 501
-                        : number(game.startScore, 501),
-                    botAverage: number(entity.state.botAverage, 45),
-                  }).then((result) => {
-                    if (result?.id) navigate(`/app/training/${result.id}`);
-                  });
-                }}
-              >
-                Opnieuw trainen
-              </Button>
-            )}
-            <Button
-              disabled={
-                busy ||
-                (finished && typeof entity.state.boardId === "string" && entity.state.boardHeld !== true) ||
-                (entity.state.mode === "around"
-                  ? !Array.isArray(entity.state.rounds) ||
-                    !entity.state.rounds.length
-                  : !Array.isArray(entity.state.undo) ||
-                    !entity.state.undo.length)
-              }
-              onClick={() =>
-                void command({ type: "training.undo", id: entity.id }, entity)
-              }
-            >
-              Laatste beurt terug
-            </Button>
-            <Button
-              disabled={busy || finished}
-              onClick={() =>
-                void command({ type: "training.finish", id: entity.id }, entity)
-              }
-            >
-              Training bewaren en beëindigen
-            </Button>
-          </div>
-        </section>
-        <section className="panel">
-          <h2>Trainingsoverzicht</h2>
-          {finished && typeof entity.state.boardId === "string" && entity.state.boardHeld !== true && <p className="muted-copy">Je training en historie zijn bewaard. De baan is weer vrij. Scan de vaste baan-QR om een volgende partij te beginnen.</p>}
-          {entity.state.mode === "170" && (
-            <p>
-              Nog {Math.max(0, 9 - number(list(game.stats)[0]?.darts))} darts in
-              deze poging.
-            </p>
-          )}
-          {entity.state.mode === "around" &&
-            Array.isArray(entity.state.rounds) && (
-              <div className="workspace-scroll">
-                {entity.state.rounds.map((hits, index) => (
-                  <div className="workspace-row" key={index}>
-                    <strong>{index === 20 ? "Bull" : `D${index + 1}`}</strong>
-                    <span>{number(hits)} / 3 raak</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          {entity.state.mode === "bot" && remain.length > 1 && (
-            <p>
-              Dartbot resterend: <strong>{text(remain[1])}</strong>
-            </p>
-          )}
-          <p className="muted-copy">
-            {text(entity.state.checkout || game.checkout)}
-          </p>
-          <div className="workspace-scroll">
-            {visits.length ? (
-              visits
-                .slice()
-                .reverse()
-                .map((v, i) => (
-                  <div className="workspace-row" key={i}>
-                    <span>
-                      {number(v.playerIndex) === 1 ? "Dartbot" : "Jij"} ·{" "}
-                      {number(v.darts, 3)} darts
-                    </span>
-                    <strong>{v.bust ? "BUST" : text(v.score)}</strong>
-                    <span>{text(v.remainingAfter)} rest</span>
-                  </div>
-                ))
-            ) : (
-              <Empty>Je opgeslagen beurten verschijnen hier.</Empty>
-            )}
-          </div>
-        </section>
-      </div>
-    </>
-  );
+  if(entity.state.discarded)return <section className="panel"><h2>Deze oude training is verwijderd</h2><a href="/app/spelen">Nieuwe partij starten</a></section>;
+  return <LegacyTrainingOffline key={entity.id} actorId={data.profile.id} actorName={data.profile.name} initial={entity}/>;
 }
+
 function Friends({
   data,
   command,
@@ -1431,6 +989,10 @@ function Friends({
   command: Command;
   busy: boolean;
 }) {
+  const [search,setSearch]=useState(''),[found,setFound]=useState<Profile[]>(data.players),[searchError,setSearchError]=useState(''),[nextOffset,setNextOffset]=useState<number|null>(null),[moreBusy,setMoreBusy]=useState(false);
+  const searchRef=useRef(search);searchRef.current=search;
+  useEffect(()=>{let active=true;const controller=new AbortController(),timer=setTimeout(()=>{void fetch('/api/players?'+new URLSearchParams({search}),{credentials:'same-origin',cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw Error('Zoeken is niet gelukt. Probeer opnieuw.');return response.json()as Promise<{players:Profile[];nextOffset:number|null}>;}).then(result=>{if(active){setFound(result.players);setNextOffset(result.nextOffset);setSearchError('');}}).catch(error=>{if(active)setSearchError(error instanceof Error?error.message:'Zoeken is niet gelukt.');});},200);return()=>{active=false;clearTimeout(timer);controller.abort();};},[search]);
+  const query=search.normalize('NFKC').toLowerCase().replace(/^@/,'');
   return (
     <>
       <Title title="Vrienden">
@@ -1447,20 +1009,13 @@ function Friends({
           });
         }}
       >
-        <Field label="Speler" name="userId" required>
-          <option value="">Kies een speler</option>
-          {data.players
-            .filter(
-              (p) =>
-                p.id !== data.profile.id &&
-                !data.friends.some((f) => f.id === p.id),
-            )
-            .map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-        </Field>
+        <label className="field">Zoek op displaynaam of gebruikersnaam<input value={search}onChange={e=>setSearch(e.target.value)}type="search"/></label>
+        {searchError&&<p role="alert">{searchError}</p>}
+        <fieldset className="player-search-results"><legend>Speler kiezen</legend>
+          {found.filter(p=>p.id!==data.profile.id&&!data.friends.some(f=>f.id===p.id)&&(!query||[p.displayName,p.username].some(value=>value?.normalize('NFKC').toLowerCase().includes(query)))).map(p=><label className="player-search-result"key={p.id}><input type="radio"name="userId"value={p.id}required/><span className="player-search-avatar"aria-hidden="true">{Array.from(p.displayName||p.username||'S').slice(0,2).join('').toUpperCase()}</span><span><strong>{p.displayName||p.username||'Speler'}</strong>{p.username&&<small>@{p.username}</small>}</span></label>)}
+        </fieldset>
+        {nextOffset!==null&&<button className="button ghost"type="button"disabled={moreBusy}onClick={async()=>{setMoreBusy(true);const captured=search;try{const response=await fetch('/api/players?'+new URLSearchParams({search,offset:String(nextOffset)}),{credentials:'same-origin',cache:'no-store'});if(!response.ok)throw Error('Volgende spelers ophalen is niet gelukt.');const result=await response.json()as{players:Profile[];nextOffset:number|null};if(searchRef.current===captured){setFound(prior=>[...prior,...result.players.filter(player=>!prior.some(p=>p.id===player.id))]);setNextOffset(result.nextOffset);}}catch(error){if(searchRef.current===captured)setSearchError(error instanceof Error?error.message:'Probeer opnieuw.');}finally{setMoreBusy(false);}}}>Meer spelers tonen</button>}
+        <a href="/help/profiel-zoeken">Hulp bij het vinden van de juiste speler</a>
       </Form>
       <section className="panel">
         <h2>Vrienden & verzoeken</h2>
@@ -1468,7 +1023,7 @@ function Friends({
           data.friends.map((f) => (
             <div className="workspace-row" key={f.id}>
               <div>
-                <strong>{f.name}</strong>
+                <strong>{socialIdentityLabel(f)}</strong>
                 <small>
                   {f.status === "incoming"
                     ? "Wil vrienden worden"
@@ -1595,7 +1150,7 @@ function Clubs({
     (e) => e.id === id || text(e.state.code) === id,
   );
   if (entity) {
-    if('clubDetails' in entity&&section!=='banen')return <><ClubNavigation id={entity.id}/><ClubWorkspace entity={entity as unknown as ClubEntity} actorId={data.profile.id} players={data.players} command={(action,current)=>command(action as Action,current as unknown as Entity)} busy={busy}/></>;
+    if('clubDetails' in entity&&section!=='banen'){const club=entity as unknown as ClubEntity;return club.clubAccess.isMember&&club.clubDetails.lifecycle==='active'?<ClubhouseWorkspace clubId={entity.id} section={section} actorId={data.profile.id} players={data.players} legacyCommand={(action,current)=>command(action as Action,current as unknown as Entity)} legacyBusy={busy}/>:<><ClubNavigation id={entity.id}/><ClubWorkspace entity={club} actorId={data.profile.id} players={data.players} command={(action,current)=>command(action as Action,current as unknown as Entity)} busy={busy}/></>;}
     const own = entity.members.find((m) => m.id === data.profile.id);
     const manager = entity.canManage === true;
     if (section === "banen") return <>
@@ -2299,24 +1854,13 @@ function Lobby({
             )
           }
         />
-        {typeof entity.state.boardId === "string" &&
-          !entity.state.closed &&
-          selfActive && (
-            <BoundBoardScreen
-              boardId={entity.state.boardId}
-              command={command}
-              busy={busy}
-            />
-          )}
-        <div className="workspace-grid two">
-          <section className="panel">
-            <h2>Wedstrijdlobby</h2>
-            <p className="muted-copy">
-              Deel de code of uitnodigingslink met je tegenstander.
-            </p>
+        <div className="workspace-grid two play-lobby-layout">
+          <section className="panel play-lobby-main">
             <ShareInvitation section="lobby" id={entity.id} entity={entity} />
+            <h2>Spelers</h2>
             {entity.ownerId===data.profile.id&&selfActive&&typeof entity.state.boardId==='string'&&['localone','localtwo'].includes(text(entity.state.setup))&&!entity.state.matchId&&!entity.state.closed&&entity.members.filter(member=>member.status==='active').length===1&&<LocalPlayerAdd key={entity.id} lobbyId={entity.id} revision={entity.revision} boardId={entity.state.boardId} disabled={busy} onRefresh={onRefresh}/>}
-            {selfActive&&!entity.state.matchId&&!entity.state.closed&&['remote','hybrid'].includes(text(entity.state.setup))&&<label className="field">Mijn fysieke baan (optioneel)<select value={text(record(entity.state.remoteBoardIds)[data.profile.id])} disabled={busy} onChange={event=>{if(event.target.value)void command({type:'lobby.board.bind',id:entity.id,boardId:event.target.value},entity);}}><option value="">Thuis zonder gekoppeld baanscherm</option>{(data.clubBoards??[]).filter(board=>(!board.occupied&&!board.blocked&&!board.closed&&!board.closePending)||board.id===record(entity.state.remoteBoardIds)[data.profile.id]).map(board=><option key={board.id} value={board.id}>{board.name}</option>)}</select><small>Deze vaste baan volgt dezelfde live stand en deadline als je tegenstander.</small></label>}
+
+            <div className="play-lobby-players">
             {entity.members.map((m) => (
               <div className="workspace-row" key={m.id}>
                 <strong>{m.name}</strong>
@@ -2325,37 +1869,8 @@ function Lobby({
                 />
               </div>
             ))}
+            </div>
             <div className="button-row">
-              {entity.ownerId === data.profile.id &&
-                !record(entity.state.settings).startProcedure &&
-                !entity.state.matchId &&
-                !entity.state.closed && (
-                  <label className="field">
-                    Eerste gooier
-                    <select
-                      value={text(entity.state.starterId, entity.ownerId)}
-                      disabled={busy}
-                      onChange={(event) =>
-                        void command(
-                          {
-                            type: "lobby.starter",
-                            id: entity.id,
-                            starterId: event.target.value,
-                          },
-                          entity,
-                        )
-                      }
-                    >
-                      {entity.members
-                        .filter((member) => member.status === "active")
-                        .map((member) => (
-                          <option key={member.id} value={member.id}>
-                            {member.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                )}
               {!selfActive && !entity.state.closed && !entity.state.matchId && (
                 <Button
                   primary
@@ -2390,8 +1905,10 @@ function Lobby({
                 Ik sta klaar aan het bord
               </Button>
               <Button
+                primary={Boolean(ready[data.profile.id])}
                 disabled={
                   busy ||
+                  !selfActive ||
                   entity.state.closed === true ||
                   Boolean(entity.state.matchId) ||
                   entity.members.filter((member) => member.status === "active")
@@ -2436,11 +1953,56 @@ function Lobby({
               </p>
             )}
           </section>
-          <section className="panel">
-            <h2>Bordcontrole</h2>
+          <details className="panel play-lobby-settings">
+            <summary>Wedstrijdinstellingen</summary>
+              {entity.ownerId === data.profile.id &&
+                !record(entity.state.settings).startProcedure &&
+                !entity.state.matchId &&
+                !entity.state.closed && (
+                  <label className="field">
+                    Eerste gooier
+                    <select
+                      value={text(entity.state.starterId, entity.ownerId)}
+                      disabled={busy}
+                      onChange={(event) =>
+                        void command(
+                          {
+                            type: "lobby.starter",
+                            id: entity.id,
+                            starterId: event.target.value,
+                          },
+                          entity,
+                        )
+                      }
+                    >
+                      {entity.members
+                        .filter((member) => member.status === "active")
+                        .map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                )}
+
+            {selfActive&&!entity.state.matchId&&!entity.state.closed&&['remote','hybrid'].includes(text(entity.state.setup))&&<label className="field">Mijn fysieke baan (optioneel)<select value={text(record(entity.state.remoteBoardIds)[data.profile.id])} disabled={busy} onChange={event=>{if(event.target.value)void command({type:'lobby.board.bind',id:entity.id,boardId:event.target.value},entity);}}><option value="">Thuis zonder gekoppeld baanscherm</option>{(data.clubBoards??[]).filter(board=>(!board.occupied&&!board.blocked&&!board.closed&&!board.closePending)||board.id===record(entity.state.remoteBoardIds)[data.profile.id]).map(board=><option key={board.id} value={board.id}>{board.name}</option>)}</select><small>Deze vaste baan volgt dezelfde live stand en deadline als je tegenstander.</small></label>}
+        {typeof entity.state.boardId === "string" &&
+          !entity.state.closed &&
+          selfActive && (
+            <BoundBoardScreen
+              boardId={entity.state.boardId}
+              command={command}
+              busy={busy}
+            />
+          )}
+
+            <h3>Bordcontrole</h3>
             <p>
-              {text(record(entity.state.settings).startScore, 501)} · dubbel uit
-              · best of {text(record(entity.state.settings).bestOfLegs, 3)}
+              {text(record(entity.state.settings).discipline, 'x01') === 'x01' ? <>
+                X01 {text(record(entity.state.settings).startScore, 501)} · {record(entity.state.settings).inRule === 'double' ? 'dubbel in' : 'enkel in'} · {record(entity.state.settings).outRule === 'straight' ? 'vrij uit' : record(entity.state.settings).outRule === 'master' ? 'master uit' : 'dubbel uit'}
+              </> : text(record(entity.state.settings).discipline) === 'tactics' ? 'Tactics' : 'Cricket'}
+              {' · '}best of {text(record(entity.state.settings).bestOfLegs, 3)}
             </p>
             <p>
               {
@@ -2459,7 +2021,7 @@ function Lobby({
               Start pas als beide spelers klaar zijn. Scores worden door de
               server verwerkt en gedeeld.
             </p>
-          </section>
+          </details>
         </div>
       </>
     );
@@ -2492,7 +2054,7 @@ function Lobby({
           }}
         >
           <Field label="Wedstrijdnaam" name="name" />
-          <RulesFields/>
+          <RulesFields freshX01/>
           <StartProcedureFields/>
           <Field
             label="Tegenstander"
@@ -2588,6 +2150,23 @@ function Competitions({
       : page === "events"
         ? [...data.leagues, ...data.tournaments]
         : data.tournaments;
+  const eventStatus=(event:Entity)=>{
+    const value=String(event.state.status??'');
+    if(event.state.archived===true)return 'archived';
+    if(event.state.cancelled===true)return 'cancelled';
+    if(event.state.closed===true||event.state.completed===true)return 'completed';
+    if(['finished','completed','cancelled','canceled','archived'].includes(value))return value;
+    if(list(event.state.fixtures).some(fixture=>fixture.status==='live'))return 'live';
+    if(list(event.state.fixtures).some(fixture=>['scheduled','proposed'].includes(text(fixture.status))))return 'planned';
+    return value||'open';
+  };
+  const statusPriority=(event:Entity)=>{
+    const value=eventStatus(event);
+    if(['finished','completed','cancelled','canceled','archived'].includes(value))return 3;
+    if(['active','live','playing','started'].includes(value))return 0;
+    return value==='draft'?2:1;
+  };
+  const listedEntities=[...entities].sort((a,b)=>statusPriority(a)-statusPriority(b)||(Date.parse(String(a.state.startsAt??a.state.date))||Infinity)-(Date.parse(String(b.state.startsAt??b.state.date))||Infinity)||a.name.localeCompare(b.name,'nl'));
   const entity = entities.find((e) => e.id === id);
   if (entity) {
     const manager = entity.canManage === true;
@@ -3206,9 +2785,9 @@ function Competitions({
       )}
       <div className="workspace-grid">
         {entities.length ? (
-          entities.map((e) => (
-            <article className="panel workspace-tile" key={e.id}>
-              <Label value={e.state.status || "open"} />
+          listedEntities.map((e) => (
+            <article className="panel workspace-tile" key={e.id} data-status={eventStatus(e)}>
+              <Label value={eventStatus(e)} />
               <h2>{e.name}</h2>
               <p>{iso(e.state.date)}</p>
               <p>
@@ -3587,6 +3166,8 @@ function Preferences({
         Kies hoe anderen jou vinden en contact met je opnemen.
       </Title>
       <ProfileStatisticsLinks/>
+      <section className="panel"><ThemePreferencePicker/></section>
+      <ScoreInputSettings actorId={data.profile.id}/>
       <PlayerPinSettings user={data.profile}/>
       <Form
         title="Jouw profiel"
@@ -3594,19 +3175,14 @@ function Preferences({
         onSubmit={async (form) => {
           await command({
             type: "profile.update",
-            name: text(form.get("name")),
+            username: text(form.get("username")),
+            fullName:text(form.get("fullName")),
             displayName:text(form.get('displayName')),
             showPublicStatistics:form.get('showPublicStatistics')==='on',
           });
         }}
       >
-        <Field
-          label="Gebruikersnaam (uniek in DartFlow)"
-          name="name"
-          defaultValue={data.profile.username??data.profile.name}
-          required
-        />
-        <Field label="Weergavenaam" name="displayName" defaultValue={data.profile.displayName??data.profile.name} required/>
+        <ProfileIdentityFields user={data.profile}disabled={busy}/>
         <label className="workspace-checkbox"><input name="showPublicStatistics" type="checkbox" defaultChecked={data.profile.showPublicStatistics===true}/>Historische profielcijfers tonen op openbare Oche Live-baanschermen</label>
       </Form>
       <Form
@@ -3637,7 +3213,7 @@ function Preferences({
           Vriendschapsverzoeken ontvangen
         </label>
       </Form>
-      <MailPreferences />
+      <section className="panel" id="meldingen"><h2>Meldingen</h2><p>Beheer inbox, e-mail en push in één compact overzicht.</p><a className="button" href="/app/settings/notifications">Meldingsinstellingen openen</a><a className="button ghost" href="/app/notifications">Jouw meldingen</a></section>
       <section className="panel">
         <h2>Jouw account</h2>
         <p>{data.profile.name}</p>

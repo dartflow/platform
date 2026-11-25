@@ -153,7 +153,7 @@ class OcheViewModel(application: Application) : AndroidViewModel(application) {
         if (cacheChanged || layoutChanged) persist()
         forceSnapshot = false
         val reset = reconnect || body.optBoolean("reset") || configurationChanged
-        val cue = events.observe(snapshot.match, reset)
+        val cue = events.observe(snapshot.match ?: snapshot.play?.x01Match, reset)
         // v1 reset describes the primary cursor. A primary match/source change must
         // not swallow a new right-board event; each pane detects its own source gap.
         val panelCues = panelEvents.observe(snapshot.panels, reconnect || configurationChanged)

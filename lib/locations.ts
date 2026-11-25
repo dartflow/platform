@@ -10,6 +10,7 @@ import type {Client} from './platform-store';
 import type {PlatformCommand,PlatformResponse} from './platform-types';
 import type {BoardReservation,LocationBoard,LocationOverview,PhysicalLocation} from './location-types';
 import {activeBoardReservation,locationManager,physicalBoard,reservationOrganizer as organizer,canOrganizeReservedEvent as currentOrganizer} from './location-access';
+import {enqueueAuditedNotification} from './notification-audit-source';
 
 type LocationRow={id:string;owner_id:string;kind:'home'|'venue';name:string;timezone:string};
 type ReservationRow={id:string;location_id:string;requester_id:string;club_id:string;event_id:string;preferred_board_id:string|null;starts_at:Date;ends_at:Date;board_count:number;max_matches:number;status:BoardReservation['status'];revision:number;reason:string};
@@ -149,6 +150,8 @@ export async function locationAction(client:PoolClient,actor:string,command:Plat
   const preferredBoardId=a.preferredBoardId===undefined?null:uuid(a.preferredBoardId);
   if(preferredBoardId&&!(await client.query('select 1 from dartflow_private.location_boards lb join dartflow_private.boards b on b.id=lb.board_id where lb.location_id=$1 and lb.board_id=$2 and lb.reservation_enabled and lb.archived_at is null and lb.closed_at is null and not lb.close_after_session and not b.blocked',[loc.id,preferredBoardId])).rowCount)throw new DomainError('board_unavailable','Deze aangevraagde baan is niet beschikbaar bij de gekozen locatie.',409);
   const id=randomUUID();await client.query('insert into dartflow_private.board_reservations(id,location_id,requester_id,club_id,event_id,starts_at,ends_at,board_count,max_matches,preferred_board_id) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[id,loc.id,actor,event.club_id,event.id,start.toISOString(),end.toISOString(),boardCount,maxMatches,preferredBoardId]);
+  const managers=(await client.query('select owner_id as id from dartflow_private.locations where id=$1 union select user_id from dartflow_private.location_members where location_id=$1',[loc.id])).rows.map(p=>p.id);
+  await enqueueAuditedNotification(client,{eventId:`reservation:${id}:requested`,templateId:'reservation-requested',actorId:actor,recipientIds:managers,source:{kind:'reservation',reservationId:id,revision:0},href:'/app/locations',status:'Er staat een nieuwe baanreserveringsaanvraag klaar.'});
   await audit(client,actor,a.type,{reservationId:id,locationId:loc.id,startsAt:start.toISOString(),endsAt:end.toISOString(),boardCount,maxMatches,preferredBoardId},event.id,event.club_id);return {ok:true,id};
  }
  if(['reservation.accept','reservation.decline','reservation.cancel'].includes(a.type)){
@@ -178,6 +181,8 @@ export async function locationAction(client:PoolClient,actor:string,command:Plat
   }
   const reason=a.reason===undefined?'':typeof a.reason==='string'?a.reason.trim().slice(0,300):'';
   await client.query('update dartflow_private.board_reservations set status=$2,revision=revision+1,reason=$3,decided_by=$4,decided_at=now() where id=$1',[r.id,desired,reason,actor]);
+  const recipients=(await client.query('select owner_id as id from dartflow_private.locations where id=$1 union select user_id from dartflow_private.location_members where location_id=$1 union select user_id from dartflow_private.club_memberships where club_id=$2 union select user_id from dartflow_private.event_staff where event_id=$3',[loc.id,r.club_id,r.event_id])).rows.map(p=>p.id);
+  await enqueueAuditedNotification(client,{eventId:`reservation:${r.id}:${command.requestId}`,templateId:'reservation-updated',actorId:actor,recipientIds:[r.requester_id,...recipients],source:{kind:'reservation',reservationId:r.id,revision:r.revision+1},href:'/app/locations',status:desired==='accepted'?'Je reservering is bevestigd.':desired==='declined'?'De reserveringsaanvraag is afgewezen.':'De reservering is geannuleerd.'});
   await audit(client,actor,a.type,{reservationId:r.id,locationId:loc.id,boardIds,startsAt:r.starts_at.toISOString(),endsAt:r.ends_at.toISOString()},r.event_id,r.club_id);return {ok:true,id:r.id};
  }
  if(!a.type.startsWith('location.'))return null;
@@ -188,8 +193,8 @@ export async function locationAction(client:PoolClient,actor:string,command:Plat
   if(loc.kind!=='venue')throw new DomainError('forbidden','Een thuisbaan heeft alleen een eigenaar.',403);
   const user=uuid(a.userId);if(user===loc.owner_id)throw new DomainError('location_owner','De eigenaar is geen gedelegeerde beheerder.');
   if(!(await client.query('select 1 from dartflow_private.profiles where id=$1',[user])).rowCount)throw new DomainError('profile_missing','Dit spelersprofiel bestaat niet.',404);
-  if(a.type==='location.manager.add')await client.query('insert into dartflow_private.location_members(location_id,user_id,granted_by) values($1,$2,$3) on conflict do nothing',[loc.id,user,actor]);
-  else await client.query('delete from dartflow_private.location_members where location_id=$1 and user_id=$2',[loc.id,user]);
+  const changed=a.type==='location.manager.add'?await client.query('insert into dartflow_private.location_members(location_id,user_id,granted_by) values($1,$2,$3) on conflict do nothing returning user_id',[loc.id,user,actor]):await client.query('delete from dartflow_private.location_members where location_id=$1 and user_id=$2 returning user_id',[loc.id,user]);
+  if(changed.rowCount)await enqueueAuditedNotification(client,{eventId:`location-role:${loc.id}:${command.requestId}`,templateId:'location-role-changed',actorId:actor,recipientIds:[user],source:{kind:'location-role',locationId:loc.id,playerId:user,manager:a.type==='location.manager.add'},href:'/app/locations',status:a.type==='location.manager.add'?'Je hebt gedeeld fysiek locatiebeheer gekregen.':'Je gedeelde fysieke locatiebeheer is ingetrokken.'});
  }else if(a.type==='location.board.create'){
   if(loc.kind==='home'&&(await client.query('select 1 from dartflow_private.location_boards where location_id=$1',[loc.id])).rowCount)throw new DomainError('home_board_exists','Je hebt al een vaste thuisbaan.',409);
   const existing=await client.query<{count:number}>('select count(*)::int as count from dartflow_private.location_boards where location_id=$1',[loc.id]);if(existing.rows[0].count>=32)throw new DomainError('location_capacity','Een locatie heeft maximaal 32 vaste banen.',409);

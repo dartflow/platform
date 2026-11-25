@@ -19,6 +19,7 @@ class PlayerSessionStore(context: Context, slot: String = "session") {
     private val alias = "dartflow-player-$slot-v1"
     private val aad = "DartFlow Speler $slot v1:${context.packageName}".toByteArray()
     private val sessionSlot = slot == "session"
+    private val maxBytes = if (slot in listOf("play", "match-queue", "training-queue")) 2_000_000 else if (slot == "theme" || slot == "session" || slot.startsWith("club-feed-draft")) 600_000 else 100_000
     companion object { private val storageLock = Any() }
     private fun key(): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -32,7 +33,7 @@ class PlayerSessionStore(context: Context, slot: String = "session") {
         val value = prefs.getString("session", null) ?: return@synchronized JSONObject()
         try {
             val bytes = Base64.decode(value, Base64.NO_WRAP)
-            require(bytes.size > 28 && bytes.size <= 100_000)
+            require(bytes.size > 28 && bytes.size <= maxBytes)
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, bytes.copyOfRange(0, 12)))
             cipher.updateAAD(aad)
@@ -46,7 +47,9 @@ class PlayerSessionStore(context: Context, slot: String = "session") {
         if (sessionSlot && latest.text("userId").isNotBlank() && latest.text("userId") == merged.text("userId") && latest.text("accessToken") != merged.text("accessToken") && latest.optLong("expiresAt") > merged.optLong("expiresAt")) listOf("accessToken", "refreshToken", "expiresAt").forEach { key -> if (latest.has(key)) merged.put(key, latest.get(key)) }
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key()); cipher.updateAAD(aad)
-        val encrypted = cipher.iv + cipher.doFinal(merged.toString().toByteArray(Charsets.UTF_8))
+        val plain = merged.toString().toByteArray(Charsets.UTF_8)
+        require(plain.size + 28 <= maxBytes) { "De beveiligde opslag is vol. Synchroniseer eerst je wachtende invoer." }
+        val encrypted = cipher.iv + cipher.doFinal(plain)
         check(prefs.edit().putString("session", Base64.encodeToString(encrypted, Base64.NO_WRAP)).commit()) { "Beveiligde sessieopslag is niet beschikbaar." }
     }
     fun update(transform: (JSONObject) -> JSONObject) = synchronized(storageLock) { write(transform(read())) }

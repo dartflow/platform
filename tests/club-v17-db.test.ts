@@ -7,8 +7,11 @@ import {executePlatformCommand,getPlatformOverview} from '../lib/platform';
 import {clubView} from '../lib/club-domain';
 import {entity} from '../lib/platform-store';
 import {clubPermission,clubReviewerMailApplicable,clubInvitationMailApplicable} from '../lib/club-access';
+import {executeClubhouseCommand} from '../lib/clubhouse';
+import type {ClubhouseView} from '../lib/clubhouse-types';
 import type {ClubEntity} from '../lib/club-types';
 import type {PlatformCommand} from '../lib/platform-types';
+import {cleanupNotificationFixtures} from './helpers/cleanup-v17';
 try{process.loadEnvFile('.env.local');}catch{/* Explicit loopback-only database required. */}
 const local=(input:string|undefined)=>{try{return Boolean(input&&['localhost','127.0.0.1','[::1]'].includes(new URL(input).hostname));}catch{return false;}};
 const configured=process.env.DARTFLOW_DATA_MODE==='local'&&local(process.env.DARTFLOW_DATABASE_URL)&&local(process.env.DARTFLOW_DATABASE_ADMIN_URL);
@@ -19,7 +22,7 @@ test('v17 club ownership, scoped grants, intake, targeted invitations and durabl
  const run=(actor:string,action:PlatformCommand['action'],expectedRevision?:number,requestId=randomUUID())=>executePlatformCommand(actor,{requestId,action,...(expectedRevision===undefined?{}:{expectedRevision})});
  const project=async(actor:string,id:string)=>(await getPlatformOverview(actor)).clubs.find(c=>c.id===id) as ClubEntity;
  try{
-  for(const [index,id]of people.entries())await admin.query('insert into dartflow_private.profiles(id,name) values($1,$2)',[id,`Club v17 fixture ${index}`]);
+  for(const [index,id]of people.entries())await admin.query('insert into dartflow_private.profiles(id,name,display_name,display_name_confirmed) values($1,$2,$3,true)',[id,`clubv17${id.slice(0,8)}`,`Club v17 fixture ${index}`]);
   const created=await run(owner,{type:'club.create',name:'V17 transactional club',capacity:8}),club=created.id!;clubs.push(club);
   const other=(await run(outsider,{type:'club.create',name:'V17 separate club'})).id!;clubs.push(other);
   for(const target of [reviewer,bob]){await run(target,{type:'club.request',id:club});await run(owner,{type:'club.approve',id:club,userId:target});}
@@ -70,13 +73,22 @@ test('v17 club ownership, scoped grants, intake, targeted invitations and durabl
   });
   await t.test('ownership transfer is atomic and retained exactly once; lifecycle immediately revokes scoped grants',async()=>{
    const staleOwnerRow=await entity(database(),club);
-   const race=await Promise.allSettled([run(owner,{type:'club.transfer',id:club,userId:reviewer}),run(owner,{type:'club.transfer',id:club,userId:bob})]);assert.equal(race.filter(r=>r.status==='fulfilled').length,1);const record=(await admin.query("select e.owner_id,count(*) filter(where m.role='owner' and m.status='active')::int owners from dartflow_private.platform_entities e join dartflow_private.platform_members m on m.entity_id=e.id where e.id=$1 group by e.owner_id",[club])).rows[0];assert.equal(record.owners,1);assert.notEqual(record.owner_id,owner);const refreshed=await clubView(database(),staleOwnerRow,owner);assert.equal(refreshed.ownerId,record.owner_id);assert.equal(refreshed.clubAccess.isOwner,false);assert.equal(refreshed.clubDetails.requests.some(r=>r.userId===alice),false);await assert.rejects(run(owner,{type:'club.role.save',id:club,name:'Stale owner',permissions:[]}),{status:403});
+   await assert.rejects(run(owner,{type:'club.transfer',id:club,userId:reviewer}),{code:'transfer_acceptance_required'});
+   const offered=await executeClubhouseCommand(owner,{requestId:randomUUID(),action:{type:'ownership.offer',clubId:club,recipientId:reviewer}})as ClubhouseView;
+   const transferId=offered.ownershipTransfer!.id;assert.equal(offered.club.ownerId,owner);
+   await assert.rejects(executeClubhouseCommand(bob,{requestId:randomUUID(),action:{type:'ownership.accept',clubId:club,transferId}}),{code:'transfer_expired'});
+   const attempts=[randomUUID(),randomUUID()].map(requestId=>({requestId,action:{type:'ownership.accept',clubId:club,transferId}}));
+   const race=await Promise.allSettled(attempts.map(command=>executeClubhouseCommand(reviewer,command)));assert.equal(race.filter(r=>r.status==='fulfilled').length,1);const failed=race.find(r=>r.status==='rejected')as PromiseRejectedResult;assert.equal(failed.reason.code,'transfer_expired');
+   await executeClubhouseCommand(reviewer,attempts[race.findIndex(r=>r.status==='fulfilled')]);
+   assert.equal((await admin.query("select count(*)::int n from dartflow_private.club_ownership_transfers where club_id=$1 and status='accepted'",[club])).rows[0].n,1);
+   const record=(await admin.query("select e.owner_id,count(*) filter(where m.role='owner' and m.status='active')::int owners from dartflow_private.platform_entities e join dartflow_private.platform_members m on m.entity_id=e.id where e.id=$1 group by e.owner_id",[club])).rows[0];assert.equal(record.owners,1);assert.notEqual(record.owner_id,owner);const refreshed=await clubView(database(),staleOwnerRow,owner);assert.equal(refreshed.ownerId,record.owner_id);assert.equal(refreshed.clubAccess.isOwner,false);assert.equal(refreshed.clubDetails.requests.some(r=>r.userId===alice),false);await assert.rejects(run(owner,{type:'club.role.save',id:club,name:'Stale owner',permissions:[]}),{status:403});
    await assert.rejects(database().query("update dartflow_private.platform_members set status='left' where entity_id=$1 and user_id=$2",[club,record.owner_id]),{code:'23514'});
    await run(record.owner_id,{type:'club.deactivate',id:club});assert.equal(await clubPermission(database(),club,reviewer,'members.approve'),false);await assert.rejects(run(bob,{type:'club.request',id:club}),{code:'club_inactive'});await run(record.owner_id,{type:'club.restore',id:club});assert.equal((await project(record.owner_id,club)).clubDetails.lifecycle,'active');
    await run(record.owner_id,{type:'club.deactivate',id:club});await admin.query("update dartflow_private.platform_entities set state=jsonb_set(state,'{deleteAfter}',to_jsonb('2000-01-01T00:00:00Z'::text)) where id=$1",[club]);await assert.rejects(run(record.owner_id,{type:'club.restore',id:club}),{code:'restore_expired'});
   });
- }finally{
+ }finally{try{
+  await cleanupNotificationFixtures(admin,people);
   for(const club of clubs){for(const table of ['mail_outbox','mail_events','mail_templates','mail_template_versions','mail_policies'])await admin.query(`delete from dartflow_private.${table} where scope_key=$1`,[`club:${club}`]);await admin.query('delete from dartflow_private.club_join_requests where club_id=$1',[club]);await admin.query('delete from dartflow_private.club_invites where club_id=$1',[club]);await admin.query('delete from dartflow_private.platform_audit where entity_id=$1',[club]);await admin.query('delete from dartflow_private.platform_entities where id=$1',[club]);await admin.query('delete from dartflow_private.club_memberships where club_id=$1',[club]);await admin.query('delete from dartflow_private.club_intake_versions where club_id=$1',[club]);await admin.query('delete from dartflow_private.clubs where id=$1',[club]);}
-  await admin.query('delete from dartflow_private.platform_audit where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);await admin.end();await closeDatabase();
+  await admin.query('delete from dartflow_private.platform_audit where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);await admin.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[people]);}finally{await admin.end();await closeDatabase();}
  }
 });

@@ -1,3 +1,4 @@
+import {readFeedExtras} from './feed-content';
 import {randomUUID} from 'node:crypto';
 import {DomainError} from './domain';
 import {requireCommunityRules} from './player-safety';
@@ -5,6 +6,7 @@ import {clubIsActiveMember,clubPermission} from './club-access';
 import {blocked,entity,member,requireAccess,text,transaction,uuid,type Client} from './platform-store';
 import type {PlatformCommand,PlatformResponse} from './platform-types';
 import type {ChatPage,CommunityKind,CommunityScope,FeedPage,FeedPost} from './community-types';
+import {enqueueAuditedNotification} from './notification-audit-source';
 
 export const PLATFORM_FEED_ID='00000000-0000-4000-8000-000000000017';
 const kinds=['platform','club','league','tournament','match'];
@@ -51,17 +53,18 @@ export async function communityScopes(client:Client,actor:string):Promise<Commun
  for(const row of rows.rows)try{result.push(await communityScope(client,actor,row.kind,row.id,true));}catch(error){if(!(error instanceof DomainError&&[403,404].includes(error.status)))throw error;}
  return result;
 }
-export function decodeFeedCursor(value:unknown):{at:string;id:string}|null{
+export function decodeFeedCursor(value:unknown):{at:string;id:string;score?:number}|null{
  if(value===undefined||value===null||value==='')return null;
- try{if(typeof value!=='string'||value.length>240)throw 0;const data=JSON.parse(Buffer.from(value,'base64url').toString());if(typeof data.at!=='string'||!/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(data.at)||!Number.isFinite(Date.parse(data.at)))throw 0;return {at:data.at,id:uuid(data.id)};}catch{throw new DomainError('invalid_cursor','Dit synchronisatiepunt is ongeldig. Vernieuw de feed.');}
+ try{if(typeof value!=='string'||value.length>240)throw 0;const data=JSON.parse(Buffer.from(value,'base64url').toString());if(typeof data.at!=='string'||!/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(data.at)||!Number.isFinite(Date.parse(data.at)))throw 0;if(data.score!==undefined&&(!Number.isSafeInteger(data.score)||data.score<0))throw 0;return {at:data.at,id:uuid(data.id),...(data.score===undefined?{}:{score:data.score})};}catch{throw new DomainError('invalid_cursor','Dit synchronisatiepunt is ongeldig. Vernieuw de feed.');}
 }
-const encodeCursor=(post:FeedPost)=>Buffer.from(JSON.stringify({at:post.createdAt,id:post.id})).toString('base64url');
+const encodeCursor=(post:FeedPost,sort='recent')=>Buffer.from(JSON.stringify({at:post.createdAt,id:post.id,...(sort==='popular'?{score:post.likes}:{})})).toString('base64url');
 const hiddenAuthors=`not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$1 and b.target_id=p.author_id) or(b.target_id=$1 and b.source_id=p.author_id)))`;
-export async function getCommunityFeed(actorId:string,options:{kind?:unknown;id?:unknown;cursor?:unknown;parentId?:unknown}={}):Promise<FeedPage>{
- const actor=uuid(actorId),cursor=decodeFeedCursor(options.cursor),parent=options.parentId?uuid(options.parentId):null;
- return transaction(async client=>{
-  const all=await communityScopes(client,actor);
+export async function getCommunityFeed(actorId:string,options:{kind?:unknown;id?:unknown;cursor?:unknown;parentId?:unknown;sort?:unknown;scopeOnly?:boolean;limit?:number}={},existingClient?:Client):Promise<FeedPage>{
+ const limit=options.limit??30;if(!Number.isInteger(limit)||limit<1||limit>30)throw new DomainError('invalid_limit','Ongeldige paginagrootte.');
+ const actor=uuid(actorId),cursor=decodeFeedCursor(options.cursor),parent=options.parentId?uuid(options.parentId):null,sort=options.sort??'recent';if(!['recent','popular'].includes(String(sort))||sort==='popular'&&cursor&&cursor.score===undefined)throw new DomainError('invalid_sort','Kies recent of populair en ververs de feed.');
+ const run=async(client:Client)=>{
   const chosen=options.kind&&options.kind!=='my'?communityIdentity(options.kind,options.id):null;
+  const all=options.scopeOnly&&chosen?[await communityScope(client,actor,chosen.kind,chosen.id,true)]:await communityScopes(client,actor);
   if(chosen?.kind==='match')throw new DomainError('invalid_scope','Een wedstrijd heeft een privéchat en geen feed.');
   const scopes=chosen?[await communityScope(client,actor,chosen.kind,chosen.id,true)]:all;
   if(parent){
@@ -72,22 +75,22 @@ export async function getCommunityFeed(actorId:string,options:{kind?:unknown;id?
    (select count(*)::int from dartflow_private.community_likes l where l.post_id=p.id) as likes,
    exists(select 1 from dartflow_private.community_likes l where l.post_id=p.id and l.user_id=$1) as liked,
    (select count(*)::int from dartflow_private.community_posts r where r.parent_id=p.id and not r.deleted and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$1 and b.target_id=r.author_id) or(b.target_id=$1 and b.source_id=r.author_id)))) as "replyCount"
-   from dartflow_private.community_posts p join dartflow_private.profiles a on a.id=p.author_id
+   from dartflow_private.community_posts p join dartflow_private.profile_labels a on a.id=p.author_id
    where not p.deleted and ${hiddenAuthors} and exists(select 1 from jsonb_to_recordset($2::jsonb) s(kind text,id uuid) where s.kind=p.scope_kind and s.id=p.scope_id)
    and (($3::uuid is null and p.parent_id is null) or p.parent_id=$3)
-   and ($4::timestamptz is null or (p.created_at,p.id)<($4::timestamptz,$5::uuid)) order by p.created_at desc,p.id desc limit 31`,[actor,JSON.stringify(scopes),parent,cursor?.at??null,cursor?.id??null]);
-  const posts=rows.slice(0,30).map(post=>{const scope=scopes.find(s=>s.kind===post.scopeKind&&s.id===post.scopeId)!;return {...post,scopeName:scope.name,canDelete:post.authorId===actor||scope.canModerate};});
-  return {posts,nextCursor:rows.length>30?encodeCursor(posts.at(-1)!):null,scopes:all};
- });
+   and ($4::timestamptz is null or ($6='recent' and(p.created_at,p.id)<($4::timestamptz,$5::uuid))or($6='popular'and((select count(*) from dartflow_private.community_likes l where l.post_id=p.id),p.created_at,p.id)<($7::bigint,$4::timestamptz,$5::uuid))) order by case when $6='popular' then(select count(*) from dartflow_private.community_likes l where l.post_id=p.id)else 0 end desc,p.created_at desc,p.id desc limit $8`,[actor,JSON.stringify(scopes),parent,cursor?.at??null,cursor?.id??null,sort,cursor?.score??0,limit+1]);
+  const posts:FeedPost[]=[];for(const post of rows.slice(0,limit)){const scope=scopes.find(s=>s.kind===post.scopeKind&&s.id===post.scopeId)!;posts.push({...post,scopeName:scope.name,canDelete:post.authorId===actor||scope.canModerate,extras:await readFeedExtras(client,actor,post.id,post.authorId===actor&&scope.canWrite&&post.parentId===null,scope.canModerate,scope.kind==='platform'?'platform':`${scope.kind}:${scope.id}`)});}
+  return {posts,nextCursor:rows.length>limit?encodeCursor(posts.at(-1)!,String(sort)):null,scopes:all};
+ };return existingClient?run(existingClient):transaction(run);
 }
-export async function getCommunityChat(actorId:string,kindValue:unknown,idValue:unknown,after=0):Promise<ChatPage>{
+export async function getCommunityChat(actorId:string,kindValue:unknown,idValue:unknown,after=0,before=0):Promise<ChatPage>{
  const actor=uuid(actorId),{kind,id}=communityIdentity(kindValue,idValue);
  if(kind==='platform')throw new DomainError('invalid_scope','Platformberichten staan in de feed.');
- if(!Number.isSafeInteger(after)||after<0)throw new DomainError('invalid_cursor','Ongeldig synchronisatiepunt.');
+ if(!Number.isSafeInteger(after)||after<0||!Number.isSafeInteger(before)||before<0||after>0&&before>0)throw new DomainError('invalid_cursor','Ongeldig synchronisatiepunt.');
  return transaction(async client=>{
   const scope=await communityScope(client,actor,kind,id,true);
-  const result=await client.query<ChatPage['messages'][number]>(`select * from(select m.id,m.sequence::float8 as sequence,m.author_id as "authorId",p.name as "authorName",case when m.deleted then '' else m.body end as body,m.deleted,m.created_at as "createdAt" from dartflow_private.community_messages m join dartflow_private.profile_labels p on p.id=m.author_id where m.scope_kind=$1 and m.scope_id=$2 and ($3=0 or m.sequence>$3) and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$4 and b.target_id=m.author_id) or(b.target_id=$4 and b.source_id=m.author_id))) order by case when $3=0 then -m.sequence else m.sequence end limit 100) recent order by sequence`,[kind,id,after,actor]);
-  return {scope,messages:result.rows,cursor:result.rows.at(-1)?.sequence??after};
+  const result=await client.query<ChatPage['messages'][number]>(`select * from(select m.id,m.sequence::float8 as sequence,m.author_id as "authorId",p.name as "authorName",case when m.deleted then '' else m.body end as body,m.deleted,m.created_at as "createdAt" from dartflow_private.community_messages m join dartflow_private.profile_labels p on p.id=m.author_id where m.scope_kind=$1 and m.scope_id=$2 and ($3=0 or m.sequence>$3) and ($5=0 or m.sequence<$5) and not exists(select 1 from dartflow_private.platform_relationships b where b.kind='block' and ((b.source_id=$4 and b.target_id=m.author_id) or(b.target_id=$4 and b.source_id=m.author_id))) order by case when $3=0 then -m.sequence else m.sequence end limit 101) recent order by sequence`,[kind,id,after,actor,before]);
+  const hasMoreBefore=after===0&&result.rows.length>100,messages=after===0?result.rows.slice(-100):result.rows.slice(0,100);return {scope,messages,cursor:messages.at(-1)?.sequence??after,hasMoreBefore,nextBefore:hasMoreBefore?messages[0].sequence:null};
  });
 }
 export async function revalidateCommunityCommand(client:Client,actor:string,command:PlatformCommand):Promise<void>{
@@ -135,7 +138,8 @@ export async function communityAction(client:Client,actor:string,command:Platfor
  if(kind==='platform')throw new DomainError('invalid_scope','Gebruik de platformfeed.');
  if(a.type==='community.message'){
   if(!scope.canWrite)throw new DomainError('chat_muted','Je kunt tijdelijk geen bericht plaatsen.',403);
-  const id=randomUUID();await client.query('insert into dartflow_private.community_messages(id,scope_kind,scope_id,author_id,body) values($1,$2,$3,$4,$5)',[id,kind,scopeId,actor,text(a.body,2000)]);return {ok:true,id};
+  const id=randomUUID();await client.query('insert into dartflow_private.community_messages(id,scope_kind,scope_id,author_id,body) values($1,$2,$3,$4,$5)',[id,kind,scopeId,actor,text(a.body,2000)]);
+  if(kind==='match'){const match=(await client.query<{state:{players:{id:string}[]}}>('select state from dartflow_private.matches where id=$1',[scopeId])).rows[0];await enqueueAuditedNotification(client,{eventId:`chat:${id}`,templateId:'chat-message',actorId:actor,recipientIds:match?.state.players.map(p=>p.id)??[],source:{kind:'chat-message',store:'community',messageId:id},href:`/wedstrijd/${scopeId}`});}return {ok:true,id};
  }
  if(a.type==='community.message.delete'){
   const row=await client.query('select author_id from dartflow_private.community_messages where id=$1 and scope_kind=$2 and scope_id=$3 for update',[uuid(a.messageId),kind,scopeId]);

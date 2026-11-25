@@ -14,7 +14,7 @@ test('scoreboard names trim Unicode whitespace, reject placeholders/empty/contro
   assert.equal(normalizeDisplayName('  Zoë\u00a0  de Groot  '),'Zoë de Groot');
   for(const name of ['Zoë de Groot','李明','محمد','Darter 42'])assert.equal(validDisplayName(name),true);
   assert.equal(requiresDisplayName({name:'Google voorstel',displayNameConfirmed:false}),true);
-  assert.equal(requiresDisplayName({name:'Bestaande speler'}),false);
+  assert.equal(requiresDisplayName({name:'Bestaande speler',username:'bestaandespeler',displayNameConfirmed:true}),false);
 });
 
 try{process.loadEnvFile('.env.local');}catch{/* Explicit CI loopback config. */}
@@ -23,9 +23,10 @@ const configured=process.env.DARTFLOW_DATA_MODE==='local'&&loopback(process.env.
 test('email/Google proposals require explicit confirmation and placeholder repair preserves account, rights and match scores',{skip:!configured},async t=>{
   const owner=new pg.Client({connectionString:process.env.DARTFLOW_DATABASE_ADMIN_URL});await owner.connect();
   const actor=randomUUID(),other=randomUUID(),google=randomUUID(),club=randomUUID(),event=randomUUID(),matchId=randomUUID(),people=[actor,other,google];
-  const command=(id:string,name:unknown)=>executePlatformCommand(id,{requestId:randomUUID(),action:{type:'profile.update',name}});
+  const command=(id:string,name:unknown,displayName?:string)=>executePlatformCommand(id,{requestId:randomUUID(),action:{type:'profile.update',name,...(displayName?{displayName}:{})}});
   try{
     await owner.query('insert into dartflow_private.profiles(id,name,display_name_confirmed) values($1,$2,false),($3,$4,true)',[actor,'Nieuwe speler',other,'Tegenstander']);
+    await owner.query('update dartflow_private.profiles set display_name=$2 where id=$1',[other,'Tegenstander']);
     await owner.query('insert into dartflow_private.clubs(id,name) values($1,$2)',[club,'Name repair fixture']);
     await owner.query("insert into dartflow_private.club_memberships(club_id,user_id,role) values($1,$2,'organizer'),($1,$3,'player')",[club,actor,other]);
     await owner.query('insert into dartflow_private.events(id,club_id,name,date,capacity) values($1,$2,$3,current_date,10)',[event,club,'Name repair fixture']);
@@ -40,7 +41,7 @@ test('email/Google proposals require explicit confirmation and placeholder repai
       await assert.rejects(executeMatchCommand(actor,{matchId,requestId:randomUUID(),expectedRevision:4,action:{type:'score',score:60}}),{code:'display_name_required'});
     });
     await t.test('repair confirms exactly one account and updates active match name without changing game/history/club rights',async()=>{
-      await command(actor,'  Zoë\u00a0 de Groot ');
+      await command(actor,'zoedegroot','Zoë de Groot');
       const profile=await getProfile(actor);assert.equal(profile.name,'Zoë de Groot');assert.equal(profile.displayNameConfirmed,true);assert.equal(profile.id,actor);
       const current=(await owner.query('select state from dartflow_private.matches where id=$1',[matchId])).rows[0].state;
       assert.equal(current.players[0].name,'Zoë de Groot');assert.equal(current.players[1].name,'Tegenstander');assert.deepEqual(current.game,state.game);assert.equal(current.revision,5);
@@ -50,17 +51,17 @@ test('email/Google proposals require explicit confirmation and placeholder repai
     });
     await t.test('verified Google name is only a proposal and metadata cannot assert confirmation; repeat login retains chosen name',async()=>{
       const identity={id:google,user_metadata:{full_name:'Google voorstel',display_name_confirmed:true,role:'owner'}};
-      await ensureAuthProfile(identity);const proposal=await getProfile(google);assert.equal(proposal.name,'Google voorstel');assert.equal(proposal.displayNameConfirmed,false);
+      await ensureAuthProfile(identity);const proposal=await getProfile(google);assert.equal(proposal.name,'Speler');assert.equal(proposal.fullName,'Google voorstel');assert.equal(proposal.displayNameConfirmed,false);
       await assert.rejects(executePlatformCommand(google,{requestId:randomUUID(),action:{type:'lobby.create',setup:'hybrid'}}),{code:'display_name_required'});
-      await command(google,'Eigen bevestigde naam');await ensureAuthProfile(identity);
+      await command(google,'eigenbevestigdenaam','Eigen bevestigde naam');await ensureAuthProfile(identity);
       assert.equal((await getProfile(google)).name,'Eigen bevestigde naam');assert.equal((await getProfile(google)).displayNameConfirmed,true);
       assert.equal((await owner.query('select 1 from dartflow_private.platform_roles where user_id=$1',[google])).rowCount,0);
     });
     await t.test('verified email identity without metadata needs the same name confirmation',async()=>{
       await ensureAuthProfile({id:actor,user_metadata:{}});assert.equal((await getProfile(actor)).name,'Zoë de Groot');
       await owner.query('delete from dartflow_private.platform_receipts where actor_id=$1',[google]);await owner.query('delete from dartflow_private.platform_audit where actor_id=$1',[google]);await owner.query('delete from dartflow_private.profiles where id=$1',[google]);
-      await ensureAuthProfile({id:google,user_metadata:{}});assert.equal((await getProfile(google)).name,'Nieuwe speler');assert.equal((await getProfile(google)).displayNameConfirmed,false);
-      await command(google,'E-mail speler');assert.equal((await getProfile(google)).name,'E-mail speler');
+      await ensureAuthProfile({id:google,user_metadata:{}});assert.equal((await getProfile(google)).name,'Speler');assert.equal((await getProfile(google)).displayNameConfirmed,false);
+      await command(google,'emailspeler','E-mail speler');assert.equal((await getProfile(google)).name,'E-mail speler');
     });
   }finally{
     await owner.query('delete from dartflow_private.platform_receipts where actor_id=any($1::uuid[])',[people]);

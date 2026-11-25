@@ -12,9 +12,11 @@ export function appConfig() {
 
 export function safeNext(value: unknown): string {
   if (typeof value !== 'string' || value.length > 240 || /[%\\\r\n#]/.test(value)) return '/';
-  if(value==='/account-verwijderen')return value;
+  if(value==='/account-verwijderen'||value==='/speelsessie'||value==='/handleiding'||/^\/handleiding\/[a-z0-9-]+$/.test(value)||/^\/(?:spelen|leg)\/[a-f0-9-]{36}$/.test(value))return value;
   const [pathname,query,...extra]=value.split('?');
   const id='[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}';
+  if(['/app/reports','/app/support','/app/support/new','/app/whats-new','/app/notifications','/app/settings/notifications','/app/admin/support','/app/admin/releases','/app/admin/notifications'].includes(value))return value;
+  if(new RegExp(`^/app/(?:support|admin/support|whats-new|platform-messages|notifications)/${id}$`).test(value))return value;
   if(query!==undefined) {
     if(extra.length)return '/';
     if((pathname==='/app/settings'||pathname==='/app/profiel')&&query==='pin=reset')return value;

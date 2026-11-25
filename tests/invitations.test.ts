@@ -28,7 +28,7 @@ test('short invitations persist unique live codes, retain historical links and e
  const run=(actor:string,action:PlatformCommand['action'],requestId=randomUUID())=>executePlatformCommand(actor,{requestId,action});
  const unavailable=async(action:()=>Promise<unknown>)=>assert.rejects(action,{code:'invalid_invitation',status:404,message:'Deze uitnodiging is ongeldig of niet beschikbaar.'});
  try{
-  for(const [i,id]of people.entries())await owner.query('insert into dartflow_private.profiles(id,name) values($1,$2)',[id,`Invitation fixture ${i}`]);
+  for(const [i,id]of people.entries())await owner.query('insert into dartflow_private.profiles(id,name,display_name) values($1,$2,$3)',[id,`invitation${id.slice(0,8)}`,`Invitation fixture ${i}`]);
   const club=(await run(host,{type:'club.create',name:'Short invitation fixture club'})).id!;
   const lobby=await run(host,{type:'lobby.create',name:'Short invitation fixture lobby',setup:'localtwo'});
   assert.match(lobby.code!,/^[A-Z0-9]{4}$/);

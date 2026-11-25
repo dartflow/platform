@@ -1,3 +1,5 @@
+import{applyPublishedWizardFixtureSchedule}from'./competition-wizard-domain';
+import type{WizardSeasonState}from'./competition-wizard-types';
 import {randomUUID} from 'node:crypto';
 import {DomainError} from './domain';
 import {advanceFixtures,knockout} from './platform-domain';
@@ -73,7 +75,7 @@ export function refreshCup(s:SeasonState):void{
  for(const f of s.fixtures){const graph=s.cup.fixtures.find(g=>g.id===f.bracketFixtureId);if(!graph)continue;const slot=f.slots[0];if(['confirmed','administrative'].includes(f.status)){const winner=f.administrative?f.administrative.score[0]===f.administrative.score[1]?null:f.administrative.score[0]>f.administrative.score[1]?f.homeId:f.awayId:slot?.winnerId??null;if(!winner)throw new DomainError('cup_draw','Een bekervak vereist een winnaar.',409);graph.status='confirmed';graph.winnerId=winner;graph.score=slot?.score;graph.matchId=slot?.matchId;graph.administrative=Boolean(f.administrative||slot?.administrative);}else{graph.status=slot?.matchId?'live':'scheduled';delete graph.winnerId;delete graph.score;}}
  advanceFixtures(s.cup.fixtures);
  for(const f of s.fixtures){const g=s.cup.fixtures.find(g=>g.id===f.bracketFixtureId);if(g&&g.players.some(id=>!id)&&!f.slots.some(slot=>slot.matchId)){f.status='canceled';f.slots[0].players=[null,null];}}
- for(const graph of s.cup.fixtures.filter(g=>g.status!=='bye'&&g.players.every(Boolean))){let f=s.fixtures.find(f=>f.bracketFixtureId===graph.id);if(f){if(!f.slots.some(slot=>slot.matchId)&&f.status!=='administrative'&&f.status!=='confirmed'){if(f.status==='canceled')f.status='scheduled';f.homeId=graph.players[0]!;f.awayId=graph.players[1]!;f.slots[0].players=[f.homeId,f.awayId];}continue;}f=singleFixture(s,graph.players[0]!,graph.players[1]!,graph.round);f.bracketFixtureId=graph.id;s.fixtures.push(f);}
+ for(const graph of s.cup.fixtures.filter(g=>g.status!=='bye'&&g.players.every(Boolean))){let f=s.fixtures.find(f=>f.bracketFixtureId===graph.id);if(f){if(!f.slots.some(slot=>slot.matchId)&&f.status!=='administrative'&&f.status!=='confirmed'){if(f.status==='canceled')f.status='scheduled';f.homeId=graph.players[0]!;f.awayId=graph.players[1]!;f.slots[0].players=[f.homeId,f.awayId];}continue;}f=singleFixture(s,graph.players[0]!,graph.players[1]!,graph.round);f.bracketFixtureId=graph.id;applyPublishedWizardFixtureSchedule(s as WizardSeasonState,f);s.fixtures.push(f);}
 }
 export function assertCupCorrection(s:SeasonState,f:SeasonFixture):void{
  if(!s.cup||!f.bracketFixtureId)return;const affected=new Set([f.bracketFixtureId]);for(const graph of s.cup.fixtures)if(graph.sources?.some(source=>source.fixtureId&&affected.has(source.fixtureId)))affected.add(graph.id);

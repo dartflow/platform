@@ -10,6 +10,7 @@ import pg from "pg";
 import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import type { MatchView } from "../../lib/types";
+import type { CoreScoreQueue } from "../../lib/core-offline";
 
 try {
   process.loadEnvFile(".env.local");
@@ -349,24 +350,30 @@ test("two players, an organizer and independent screen complete the authoritativ
     path: "test-results/evidence/v15-sprint-long-scorecard.png",
     fullPage: true,
   });
-  // A lost request is retained with its original action ID and replayed once after reconnect.
+  // A real committed response is lost once; the durable queue retries the same action.
   // The independent phone must first receive the visits committed through the API.
   // Otherwise this scenario exercises a valid stale-revision conflict instead of recovery.
   await expect(b.locator(".revision-label")).toContainText(
     `revisie ${state.revision}`,
   );
+  const queueKey = `dartflow-core-queue-v1:${ids.p2}:${matchId}`;
+  await expect.poll(() => b.evaluate((key) => {
+    const saved = localStorage.getItem(key);
+    return saved ? (JSON.parse(saved) as CoreScoreQueue).base.revision : null;
+  }, queueKey)).toBe(state.revision);
   const scoreAttempts: { requestId: string; expectedRevision: number }[] = [];
+  const replayPath = `/api/platform/matches/${matchId}/replay`;
   const trackOfflineScore = (outgoing: Request) => {
     if (
       outgoing.method() !== "POST" ||
-      !outgoing.url().endsWith(`/api/matches/${matchId}/actions`)
+      !outgoing.url().endsWith(replayPath)
     )
       return;
     const body = outgoing.postDataJSON();
-    if (body.action?.type === "score" && body.action.score === 81)
+    for (const command of body.commands ?? []) if (command.action?.type === "score" && command.action.score === 81)
       scoreAttempts.push({
-        requestId: body.requestId,
-        expectedRevision: body.expectedRevision,
+        requestId: command.requestId,
+        expectedRevision: command.expectedRevision,
       });
   };
   b.on("request", trackOfflineScore);
@@ -374,22 +381,45 @@ test("two players, an organizer and independent screen complete the authoritativ
   await b.getByRole("textbox", { name: "Bezoekscore" }).fill("81");
   await b.getByRole("button", { name: "Score invoeren", exact: true }).click();
   await expect(
-    b.getByText("Actie bewaard op dit toestel", { exact: true }),
+    b.getByText("Wacht op verbinding (1)", { exact: true }),
   ).toBeVisible();
-  const queueKey = `dartflow-action:${ids.p2}:${matchId}`;
-  const pendingScore = await b.evaluate((key) => {
-    const saved = sessionStorage.getItem(key);
-    return saved ? JSON.parse(saved) : null;
+  const pendingQueue = await b.evaluate((key) => {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) as CoreScoreQueue : null;
   }, queueKey);
+  expect(pendingQueue?.commands).toHaveLength(1);
+  const pendingScore = pendingQueue!.commands[0];
   expect(pendingScore).toMatchObject({
     matchId,
     expectedRevision: state.revision,
     action: { type: "score", score: 81 },
   });
+  let serverScoreAttempts = 0, lostAcknowledgement = false;
+  await b.route(`**${replayPath}`, async route => {
+    const body = route.request().postDataJSON();
+    if (!body.commands?.some((command: {requestId:string}) => command.requestId === pendingScore.requestId)) return route.continue();
+    // Fetch the actual server result first. Aborting only its first delivery
+    // simulates a lost ACK after commit, without inventing state or responses.
+    const response = await route.fetch();
+    expect(response.status(), await response.text()).toBe(200);
+    expect((await response.json()).accepted).toContain(pendingScore.requestId);
+    serverScoreAttempts++;
+    if (!lostAcknowledgement) {lostAcknowledgement = true;return route.abort('failed');}
+    return route.fulfill({response});
+  });
   await p2.setOffline(false);
+  await b.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect.poll(() => serverScoreAttempts).toBeGreaterThanOrEqual(2);
+  await expect.poll(() => b.evaluate((key) => {
+    const saved = localStorage.getItem(key);
+    return saved ? (JSON.parse(saved) as CoreScoreQueue).commands.length : null;
+  }, queueKey)).toBe(0);
   await expect(b.locator(".remaining").first()).toHaveText("40");
   await expect(display.locator(".sprint-number").first()).toHaveText("40");
   b.off("request", trackOfflineScore);
+  await b.unroute(`**${replayPath}`);
+  expect(lostAcknowledgement).toBe(true);
+  expect(serverScoreAttempts).toBeGreaterThanOrEqual(2);
   expect(scoreAttempts.length).toBeGreaterThanOrEqual(2);
   expect([
     ...new Set(scoreAttempts.map((attempt) => attempt.requestId)),
@@ -398,13 +428,14 @@ test("two players, an organizer and independent screen complete the authoritativ
     ...new Set(scoreAttempts.map((attempt) => attempt.expectedRevision)),
   ]).toEqual([state.revision]);
   expect(
-    await b.evaluate((key) => sessionStorage.getItem(key), queueKey),
-  ).toBeNull();
+    await b.evaluate((key) => (JSON.parse(localStorage.getItem(key)!) as CoreScoreQueue).commands, queueKey),
+  ).toEqual([]);
   const recovered = (await (
     await p2.request.get(`/api/matches/${matchId}`)
   ).json()) as MatchView;
   expect(recovered.revision).toBe(state.revision + 1);
   expect(recovered.visits).toHaveLength(state.visits.length + 1);
+  expect(recovered.visits.filter(visit => visit.score === 81)).toHaveLength(1);
   const receipt = await owner.query(
     "select count(*)::int n from dartflow_private.action_receipts where match_id=$1 and actor_id=$2 and request_id=$3",
     [matchId, ids.p2, pendingScore.requestId],
@@ -665,9 +696,15 @@ test("a club membership and room message are shared between separate accounts", 
   await b
     .getByRole("button", { name: "Aanvraag versturen", exact: true })
     .click();
-  await a.getByRole("navigation", { name: "Verenigingsonderdelen" }).getByRole("button", { name: "Aanvragen", exact: true }).click();
+  await a.getByRole("navigation", { name: "Verenigingsonderdelen" }).getByRole("link", { name: "Leden", exact: true }).click();
   await a.getByRole("button", { name: "Accepteren", exact: true }).click();
-  await expect(b.locator(".club-workspace .pill")).toHaveText("Clublid");
+  await expect.poll(async () => {
+    const platform = await (await member.request.get('/api/platform')).json();
+    return platform.clubs.find((club: {id:string}) => club.id === clubPath.split('/').at(-1))?.clubAccess.isMember;
+  }).toBe(true);
+  await b.reload();
+  await expect(b.locator('.ch-workspace')).toBeVisible();
+  await expect(b.getByRole('heading',{name:clubName,exact:true})).toBeVisible();
   await a.goto("/app/community");
   const roomName = `V15 browserkamer ${randomUUID().slice(0, 8)}`;
   const createRoom = a.locator("form").filter({

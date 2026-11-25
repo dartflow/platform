@@ -1,0 +1,109 @@
+{
+  "recordedAt": "2026-11-19T19:52:39.571806+00:00",
+  "scope": "Local identity mail and backend native push only",
+  "tests": {
+    "command": "npx tsx --test --test-concurrency=1 tests/club-v17-db.test.ts tests/community-db.test.ts tests/db.test.ts tests/google-proof.test.ts tests/integrations-db.test.ts tests/invitations.test.ts tests/locations.test.ts tests/per-player-scoring.test.ts tests/platform-db.test.ts tests/platform-snapshot.test.ts tests/play-review.test.ts tests/player-experience.test.ts tests/player-pin-db.test.ts tests/player-statistics-db.test.ts tests/social-mail-identity-db.test.ts tests/native-push-current-device-db.test.ts tests/native-push.test.ts tests/integrations.test.ts tests/faq.test.ts",
+    "passed": 169,
+    "failed": 0,
+    "skipped": 0,
+    "log": "docs/evidence/identity-social-mail-push-local-2026-11-19.tap.txt",
+    "sha256": "baefeeb0d9e9431bf2305bf05fb2781de15df918c6cacd02f7eebad1078c3d9b"
+  },
+  "typecheck": {
+    "command": "npx tsc --noEmit --pretty false",
+    "passed": true
+  },
+  "focusedLint": {
+    "passed": true
+  },
+  "proof": [
+    "Real friend.request and friend.accept preserve actor_id and public recipient/actor roles, including HTML escaping",
+    "Unsent legacy preview uses unique audit linkage; ambiguous actor produces complete neutral text without a person block",
+    "An unclaimed profile/private full_name never becomes a greeting; username fallback is public",
+    "All personal templates use absolute PNG and public source identities",
+    "Real PostgreSQL division-by-zero during push enqueue does not roll back the friend relation, mail source, outbox or receipt; parallel recovery creates one inbox and one marker",
+    "Explicit FID target encrypted under version two authenticated binding; legacy version-one token decrypts",
+    "Current-device test enforces account/environment/package/installation binding, request replay, preferences and bounded rate",
+    "HTTP-v1 provider mock uses message.fid; ordinary404/invalid-payload400 keep device enabled, structured UNREGISTERED disables it",
+    "Provider acceptance, authenticated client receipt, and opening are separate; premature ACK is ignored",
+    "Native dispatcher remains bounded to three parallel requests and retained/account-deletion behavior is covered",
+    "A deletion-requested recipient immediately fails the same source eligibility check and a new event has no deliverable email address"
+  ],
+  "preview": {
+    "directory": "docs/evidence/identity-social-mail-previews-2026-11-19",
+    "synthetic": true,
+    "html": 10,
+    "text": 10,
+    "screenshots": [
+      {
+        "file": "docs/evidence/identity-social-mail-previews-2026-11-19/mobile.png",
+        "sha256": "0116d00a9526d4d1c76256d705ccf8e311b5af884cca2303db05578d53c002f2",
+        "viewportWidth": 360,
+        "horizontalOverflow": false,
+        "logoLoaded": true,
+        "logoWidth": 148
+      },
+      {
+        "file": "docs/evidence/identity-social-mail-previews-2026-11-19/desktop.png",
+        "sha256": "fd6bd7a3a922db6eb1fa6b5afbea4be3bbf3e269c74f6b37aaab9044f23d9200",
+        "viewportWidth": 900,
+        "horizontalOverflow": false,
+        "logoLoaded": true,
+        "logoWidth": 148
+      }
+    ]
+  },
+  "externalMessagesSent": 0,
+  "hostedDatabaseMutations": 0,
+  "limits": [
+    "No FCM device receipt, cold/background Android delivery, Play installation or production sender authorization is proven",
+    "Firebase Management403 and missing runtime provider configuration remain external blockers",
+    "Existing accepted mail is not changed or resent",
+    "Current PNG URL is healthy; historical broken-image cause was not established"
+  ],
+  "sourceHashes": {
+    "lib/mail-identity.ts": "4d1e89c122eef08f9ff8ecdbd6670914d699df6f31e31db9d370665458a8304a",
+    "lib/integrations-mail.ts": "20cba7739cfd88aae04a85f5d095b30028e24fcc7c96cfb5aec0bd0ffecdac41",
+    "lib/native-push.ts": "5264d6d62c982e64dcc54414a07b2f7bd64608697a1435ef6c4a7221b855bf81",
+    "lib/native-push-config.ts": "bcb02c94b4db6f404a402f270cd992efc6a5dc387145aea1f3aeaf6fe31e0d77",
+    "lib/platform-social.ts": "b47d13f74d6b303b6a95ebc7c8d0955b94185cec9509f2a154d7e17630a6d13e",
+    "lib/platform-competitions.ts": "065bc543f3edbfd3810d358229557aab5f9b7fa132e3d8561b7066b2d3045523",
+    "lib/platform-boards.ts": "c9e5efa59525997e48869a7166e71d0a6953e9140668f89528d5335760e04a03",
+    "lib/club-domain.ts": "e1e1aca26e077d237e91b4cfb18b99b1bfc40943fef6adcd10973f25f5eacbb1",
+    "lib/integrations-domain.ts": "a6c3189ea59389d5dfe9ac06f1cab840590007fc0198ead0d2f1b9713ae14c1a",
+    "tests/social-mail-identity-db.test.ts": "bf2bedbb81056c088d7de3f75acb869e7b801346de9fb0208e9b1e078ef57c26",
+    "tests/native-push-current-device-db.test.ts": "27ca83f27d8eedb6035c12fd547df83e9d6b2b1a36a38e6ab5f0e30e2c5d2a4c",
+    "tests/native-push.test.ts": "314c2d41b9fc0f7ce7f5b74c40ac9f9596ac72e809d5a6d880cf3a477c8f0617",
+    "tests/integrations.test.ts": "96995fdf2aef7c8c309c6a3c776ebd2f976b06cd9a4663b5872c85b31eb250ea",
+    "lib/content/faq.nl.json": "2bf84328b9025258cc750c3b8a2dfa68a57f48154b52865289ef88195376ac30",
+    "tests/per-player-scoring.test.ts": "d18737a10bf4c0d47dcafc728043a7d50f34d09205b542b9889ac07b44090b29",
+    "tests/google-proof.test.ts": "006c762ca11f8fb0204b17cd3084a6bff8925eef08017209f520e787a9a74da5",
+    "tests/player-statistics-db.test.ts": "4ce2dc3cf8d94e4434af2fd1578fed6dc3d2f5e302fa9d1711df034a289a01d8",
+    "tests/faq.test.ts": "5a5bad9a164ec7865e77778abac224b277a30a0645c5fb828ba55c1834d56a94",
+    "tests/platform-db.test.ts": "45b94f6b211cc21b766c8d7e33fc0d1a15af70e259dc575c4f2a6428de22a946",
+    "tests/player-experience.test.ts": "351f5a60043e3b334ba2a2004015088f75210a3294180d3b675f0df5461ed9a0",
+    "tests/integrations-db.test.ts": "55c81e6741670655e3537fa3830d2001636b6750b87574c34f2df5c898870e94",
+    "tests/club-v17-db.test.ts": "0fe80d9967c538e8ebaea2fe1e12ab0844ae5dfe482474fde0677a41b3609a3e",
+    "tests/community-db.test.ts": "3dbb50bfcd2be28b2f8083c6969fe4456262abe2b5f3b747e4cc1174f8c5e93d",
+    "tests/player-pin-db.test.ts": "9239d91243118b61f3f26e98163de46802e598546de22aee6a7bfbd0beb9d104",
+    "tests/invitations.test.ts": "8becdf1bb9600ee8fc93958b0339233fac72480422ab54b237be12332cb4c4eb",
+    "tests/db.test.ts": "216cdecb0bdc92e4d2bd2fe145c892ee8124f133ddcd0d9a5da51588fd42b857",
+    "tests/play-review.test.ts": "305306fe5448185aa66c1a005191f7339140d4a9bbada9fb47c02a86420feed7",
+    "tests/platform-snapshot.test.ts": "821cdd3e923bffb9cc16a1829598f0bb031c27c836a4f48a666c85149450efa7",
+    "tests/locations.test.ts": "2e493646e123e3da451d35ec400e3ca914168e1f91cfad7245dd5e403ec059a7",
+    "tests/e2e/player-flows.spec.ts": "46e5cc4e9ba30b42f0084e9d3e9dac1c24974bebc2f07d2c7510b300f452325a"
+  },
+  "legacyFixtures": "Only test data changed: canonical whitespace-free immutable handles are separate from the original display labels; the PIN Unicode test claims a fresh real profile per canonical variant instead of renaming an existing handle. No production guard was weakened.",
+  "browserFlow": {
+    "file": "tests/e2e/player-flows.spec.ts",
+    "status": "passed",
+    "command": "npx playwright test tests/e2e/player-flows.spec.ts --reporter=line",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 13.3,
+    "log": "docs/evidence/identity-player-flow-browser-2026-11-19.log",
+    "sha256": "9507ec3e256ce7928509f0eed9fbe5f3593a00fa74ee76da1f58312b7ae142d0",
+    "scope": "Real onboarding in two browser contexts; first immutable claims, stale availability conflict rejected by real API, private Google name proposal, three real remote/hybrid/local shared-writer matches; exact profile/lock/PIN/receipt/rate-limit fixture restoration asserted privately"
+  }
+}

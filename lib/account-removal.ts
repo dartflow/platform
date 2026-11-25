@@ -43,6 +43,7 @@ export async function requestAccountDeletion(actor:string,input:Record<string,un
   }
   const sessions=await client.query<{id:string}>("select id from dartflow_private.board_activity_sessions where $1=any(actor_ids) and status='active' order by id",[actor]);
   for(const session of sessions.rows)await releaseBoardActivity(client,{sessionId:session.id,reason:'forced',actorId:actor});
+  const {releaseAccountPlaySessions}=await import('./play-sessions');await releaseAccountPlaySessions(client,actor);
   const created=(await client.query('insert into dartflow_private.account_deletion_jobs(id,actor_id,request_id) values($1,$2,$3) returning requested_at',[randomUUID(),actor,input.requestId])).rows[0];
   await client.query('update dartflow_private.profiles set deletion_requested_at=clock_timestamp() where id=$1',[actor]);
   await client.query('commit');

@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['android/player/**', '.github/workflows/player-android-ci.yml', 'lib/native-player*', 'lib/auth.ts', 'app/api/**', 'app/auth/**']
+    paths: ['android/player/**', 'android/ci/**', '.github/workflows/player-android-ci.yml', 'lib/native-player*', 'lib/auth.ts', 'app/api/**', 'app/auth/**']
   pull_request:
     branches: [main]
-    paths: ['android/player/**', '.github/workflows/player-android-ci.yml', 'lib/native-player*', 'lib/auth.ts', 'app/api/**', 'app/auth/**']
+    paths: ['android/player/**', 'android/ci/**', '.github/workflows/player-android-ci.yml', 'lib/native-player*', 'lib/auth.ts', 'app/api/**', 'app/auth/**']
 
 permissions:
   contents: read
@@ -40,7 +40,15 @@ jobs:
             "$sdk_manager" 'platforms;android-36' 'build-tools;36.0.0'
           fi
       - name: Controleer omgevingsscheiding, bouw en test
-        run: ./gradlew --no-daemon --max-workers=2 :app:lintDevelopmentDebug :app:testDevelopmentDebugUnitTest :app:assembleDevelopmentDebug :app:lintStagingDebug :app:testStagingDebugUnitTest :app:assembleStagingDebug :app:lintProductionDebug :app:testProductionDebugUnitTest :app:bundleProductionRelease
+        run: |
+          python3 -B ../ci/test_verify_native_tests.py
+          python3 -B ../ci/test_diagnose_maven.py
+          ./gradlew --no-daemon --info --max-workers=2 :app:lintDevelopmentDebug :app:testDevelopmentDebugUnitTest :app:assembleDevelopmentDebug :app:lintStagingDebug :app:testStagingDebugUnitTest :app:assembleStagingDebug :app:lintProductionDebug :app:testProductionDebugUnitTest :app:bundleProductionRelease
+          python3 -B ../ci/verify_native_tests.py --app player --kind unit
+      - name: Diagnose publieke Maven-POMs na mislukte controle
+        if: failure()
+        working-directory: android/player
+        run: python3 -B ../ci/diagnose_maven.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: dartflow-player-build-${{ github.sha }}
@@ -79,6 +87,10 @@ jobs:
           working-directory: android/player
           disable-animations: true
           script: bash ci/run-native-ui-tests.sh
+      - name: Diagnose publieke Maven-POMs na mislukte telefoonproef
+        if: failure()
+        working-directory: android/player
+        run: python3 -B ../ci/diagnose_maven.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:

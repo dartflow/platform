@@ -1,0 +1,1533 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-23T04:05:10.545699+00:00",
+  "status": "released_and_independently_verified",
+  "version": "0.7.0",
+  "androidVersionCode": 11,
+  "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+  "sourceTree": "816bb96eb2dc15210cd0737f73395a7dea5e8092",
+  "pullRequest": {
+    "number": 29,
+    "url": "https://github.com/dartflow/platform/pull/29",
+    "headSha": "5cd5d44472c82cedca55f27f6cae10ba5e12c4b0",
+    "mergeSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+    "mergedAt": "2026-11-23T03:23:51Z",
+    "sameTreeAsFinalPr": true
+  },
+  "previous": {
+    "version": "0.6.1",
+    "androidVersionCode": 10,
+    "sourceCommit": "d1adf84c08061f606ccbd11b5abaec5c5bda5289",
+    "evidence": "docs/evidence/release-0.6.1-2026-11-22.json",
+    "evidenceSha256": "c3ad10dc31135e32c9ed85239447e61631c4828a798d4f4613cfac3d0a1a60d6",
+    "configurationHistorical": {
+      "staging": "staging-2026-11-18-play-safety-1",
+      "production": "production-2026-11-20-firebase-fcm-1",
+      "newFirebaseConfiguration": false,
+      "newMigrations": [],
+      "previousBackupAndMigrationEvidenceIsHistorical": true
+    }
+  },
+  "prAndBranchWeb": {
+    "receipt": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/ci-pr-web/5cd5d44472c82cedca55f27f6cae10ba5e12c4b0/completed-receipt.json",
+    "sha256": "ddd5ff903b9645803db8226ab1d6e7083d58423079fc8712dc38daeec21934db",
+    "runs": [
+      {
+        "scope": "pr",
+        "runId": 45103729611,
+        "url": "https://github.com/dartflow/platform/actions/runs/45103729611",
+        "attempt": 1,
+        "event": "pull_request",
+        "branch": "codex/ui-ux-redesign-20261123",
+        "workflow": ".github/workflows/ci.yml",
+        "headSha": "5cd5d44472c82cedca55f27f6cae10ba5e12c4b0",
+        "producer": {
+          "jobId": 137460246101,
+          "name": "Verify",
+          "actualAttempt": 1,
+          "headSha": "5cd5d44472c82cedca55f27f6cae10ba5e12c4b0",
+          "startedAt": "2026-11-23T03:04:17Z",
+          "completedAt": "2026-11-23T03:20:46Z",
+          "actualCheckoutSha": "92b6793f146b4ad5f4b2b9e7901924e88ae03148",
+          "sourceTreeSha": "816bb96eb2dc15210cd0737f73395a7dea5e8092",
+          "sameTreeAsRequestedHead": true,
+          "runLogSHA256": "e8df7f17ab3b3f186f00433098e2a0ae4eac27783a2b8d6f2dd4628f209667ba"
+        },
+        "counts": {
+          "server": {
+            "tests": 909,
+            "pass": 909,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 236962.242202
+          },
+          "prototype": {
+            "tests": 47,
+            "pass": 47,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 358.371338
+          },
+          "feedChat": {
+            "scheduled": 5,
+            "passed": 5,
+            "failed": 0,
+            "skipped": 0,
+            "retries": 0,
+            "uniquePassedCases": 5,
+            "duration": "32.7s"
+          },
+          "browser": {
+            "scheduled": 139,
+            "passed": 139,
+            "failed": 0,
+            "skipped": 0,
+            "retries": 0,
+            "uniquePassedCases": 139,
+            "duration": "9.8m"
+          }
+        },
+        "artifact": {
+          "id": 14786563555,
+          "name": "ci-92b6793f146b4ad5f4b2b9e7901924e88ae03148",
+          "bytes": 20264542,
+          "githubDigest": "sha256:31aa1fc6763312d87f349cd3b86b4ff0dff63bf7e00bf02093b747665b28cd56",
+          "downloadedByThisCollector": false
+        },
+        "verificationReceipt": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/ci-pr-web/5cd5d44472c82cedca55f27f6cae10ba5e12c4b0/pr-45103729611/verification.json",
+        "verificationSHA256": "212ab1f39c0ff2dc9d8e365a82050484cdd9d2c64fed1e4fcfb1a84c56667ea8",
+        "files": [
+          {
+            "file": "pr-45103729611/artifacts.json",
+            "bytes": 940,
+            "sha256": "f29b1a02d64ad48c8662d50c43636df58c0b3937f8362f681f8f5eee62a0e6f6"
+          },
+          {
+            "file": "pr-45103729611/jobs.json",
+            "bytes": 7851,
+            "sha256": "9c33294046fa554f5d119d3d7df64a292275b92e384411e29ff8c5d9b3f65605"
+          },
+          {
+            "file": "pr-45103729611/run.json",
+            "bytes": 13855,
+            "sha256": "bc716afc19413f065abc042218d29568775484c8f250b9fb6a5c9686c838c66f"
+          },
+          {
+            "file": "pr-45103729611/run.log",
+            "bytes": 311766,
+            "sha256": "e8df7f17ab3b3f186f00433098e2a0ae4eac27783a2b8d6f2dd4628f209667ba"
+          },
+          {
+            "file": "pr-45103729611/verification.json",
+            "bytes": 1511,
+            "sha256": "212ab1f39c0ff2dc9d8e365a82050484cdd9d2c64fed1e4fcfb1a84c56667ea8"
+          }
+        ]
+      },
+      {
+        "scope": "branch",
+        "runId": 45103723641,
+        "url": "https://github.com/dartflow/platform/actions/runs/45103723641",
+        "attempt": 1,
+        "event": "push",
+        "branch": "codex/ui-ux-redesign-20261123",
+        "workflow": ".github/workflows/ci.yml",
+        "headSha": "5cd5d44472c82cedca55f27f6cae10ba5e12c4b0",
+        "producer": {
+          "jobId": 137460230786,
+          "name": "Verify",
+          "actualAttempt": 1,
+          "headSha": "5cd5d44472c82cedca55f27f6cae10ba5e12c4b0",
+          "startedAt": "2026-11-23T03:04:14Z",
+          "completedAt": "2026-11-23T03:20:58Z",
+          "actualCheckoutSha": "5cd5d44472c82cedca55f27f6cae10ba5e12c4b0",
+          "sourceTreeSha": "816bb96eb2dc15210cd0737f73395a7dea5e8092",
+          "sameTreeAsRequestedHead": true,
+          "runLogSHA256": "a2078f76f54e5db66141a93a53b334d39908ee950b0157c8d4353e7b7a4ad4ff"
+        },
+        "counts": {
+          "server": {
+            "tests": 909,
+            "pass": 909,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 241546.193809
+          },
+          "prototype": {
+            "tests": 47,
+            "pass": 47,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 361.581864
+          },
+          "feedChat": {
+            "scheduled": 5,
+            "passed": 5,
+            "failed": 0,
+            "skipped": 0,
+            "retries": 0,
+            "uniquePassedCases": 5,
+            "duration": "34.1s"
+          },
+          "browser": {
+            "scheduled": 139,
+            "passed": 139,
+            "failed": 0,
+            "skipped": 0,
+            "retries": 0,
+            "uniquePassedCases": 139,
+            "duration": "9.9m"
+          }
+        },
+        "artifact": {
+          "id": 14787057351,
+          "name": "ci-5cd5d44472c82cedca55f27f6cae10ba5e12c4b0",
+          "bytes": 20264467,
+          "githubDigest": "sha256:ab3b9df6dc89415e6d3257ea93b964a35ee489aadc6db68c64503f039934ec68",
+          "downloadedByThisCollector": false
+        },
+        "verificationReceipt": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/ci-pr-web/5cd5d44472c82cedca55f27f6cae10ba5e12c4b0/branch-45103723641/verification.json",
+        "verificationSHA256": "5a5597e66cb12ef020d644cd509a5a0c761abbf0af5a2bbbfcfe784df1490805",
+        "files": [
+          {
+            "file": "branch-45103723641/artifacts.json",
+            "bytes": 940,
+            "sha256": "2dc535a5d888e84eda75ca159e317113f194b7ae6be145a789448353ca92a147"
+          },
+          {
+            "file": "branch-45103723641/jobs.json",
+            "bytes": 7851,
+            "sha256": "d88c758852059ae8b9c7977df8dabf459f594e5588bdd322d4f3172fc73c1a4e"
+          },
+          {
+            "file": "branch-45103723641/run.json",
+            "bytes": 13867,
+            "sha256": "1fb2d3bb242d00a5e57a59c6280dee1709fa9d00f0699459610f299c04fbb843"
+          },
+          {
+            "file": "branch-45103723641/run.log",
+            "bytes": 310376,
+            "sha256": "a2078f76f54e5db66141a93a53b334d39908ee950b0157c8d4353e7b7a4ad4ff"
+          },
+          {
+            "file": "branch-45103723641/verification.json",
+            "bytes": 1515,
+            "sha256": "5a5597e66cb12ef020d644cd509a5a0c761abbf0af5a2bbbfcfe784df1490805"
+          }
+        ]
+      }
+    ]
+  },
+  "mainGates": {
+    "web": {
+      "runId": 45105737612,
+      "source": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "status": "completed",
+      "conclusion": "success",
+      "actualAttempt": 1,
+      "actualProducerAttempts": [
+        {
+          "jobId": 137466471011,
+          "name": "Verify",
+          "actualExecutionAttempt": 1,
+          "actualCheckout": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "conclusion": "success",
+          "startedAt": "2026-11-23T03:23:56Z",
+          "completedAt": "2026-11-23T03:40:44Z"
+        }
+      ],
+      "actualTests": {
+        "server": {
+          "tests": 909,
+          "pass": 909,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "duration_ms": 237918.728968
+        },
+        "prototype": {
+          "tests": 47,
+          "pass": 47,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "duration_ms": 368.086881
+        },
+        "scopedFeedChat": {
+          "scheduled": 5,
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "retries": 0,
+          "uniquePassedCases": 5,
+          "duration": "33.3s"
+        },
+        "fullBrowser": {
+          "scheduled": 139,
+          "passed": 139,
+          "failed": 0,
+          "skipped": 0,
+          "retries": 0,
+          "uniquePassedCases": 139,
+          "duration": "10.0m"
+        }
+      },
+      "receipt": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/ci-main-web/e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88/45105737612/verification.json",
+      "sha256": "14d93e5ef72dd6f3201a00a058320f16e274b8a762e8c63517b10edf20702245",
+      "sourceTree": "816bb96eb2dc15210cd0737f73395a7dea5e8092",
+      "artifactMetadata": {
+        "id": 14788012141,
+        "name": "ci-e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+        "bytes": 20265493,
+        "githubDigest": "sha256:6ea722d3d0db38b6799a45ff69191d24c228700552aeaef0869306456747fe48",
+        "downloadedByThisCollector": false
+      },
+      "rawLogSHA256": "580f6f673faf97e24f4274380116f618872544b10187df53d892e0ecd08637e8"
+    },
+    "player": {
+      "runId": 45105737673,
+      "source": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "status": "completed",
+      "conclusion": "success",
+      "actualAttempt": 1,
+      "actualProducerAttempts": [
+        {
+          "kind": "build",
+          "jobId": 137466471212,
+          "attempt": 1,
+          "actualCheckoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "log": "job-player-build-137466471212.log",
+          "sha256": "a41f58e09628107ac8ac7555830745a5dd5396a10b4bdeb83a29f1e2fe63c5ea"
+        },
+        {
+          "kind": "ui",
+          "jobId": 137469351943,
+          "attempt": 1,
+          "actualCheckoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "log": "job-player-ui-137469351943.log",
+          "sha256": "e44b5f4e18b0453d4d2aeb5bae5bd873d42242f34e23028136241ebf69db4ace"
+        }
+      ],
+      "actualTests": {
+        "unit": {
+          "Development": {
+            "tests": 163,
+            "actualUniqueMethods": 163,
+            "failures": 0,
+            "skipped": 0,
+            "reportSha256": "343e2bf7a096114a251e2edcd5fc0a765216d8a6eb10c276812cdf675e4a24a9",
+            "classReportSha256": {
+              "nl.dartflow.app.PlayerAuthorizationRaceTest.html": "bac15b2e39ab02432ed77313ea539118fe1d23c6b7fa1447325942f0e5c95707",
+              "nl.dartflow.app.PlayerClubhouseTest.html": "2134d9d514b06e75a6b0bc0131dce6db776614a6f98e7a6542bb5607d6eef2a6",
+              "nl.dartflow.app.PlayerCommunicationsTest.html": "4520532e688b711ae440e944b7a94c327926e917181496b9681139445444650f",
+              "nl.dartflow.app.PlayerDataTest.html": "9b938564faba314b7603f3b2a3ab676276737180fc60f996c9a9e2a6da6517cf",
+              "nl.dartflow.app.PlayerHomeFeedTest.html": "028e3c0acc4fb20ec9f4eea468ab5431113e2dae656068ece7e4234c5b45ff61",
+              "nl.dartflow.app.PlayerIdentityPushTest.html": "c8532cf7139f1e0565b5aafd9515cb6b6b7b8af76e724b7ff40e2c075fc7abbb",
+              "nl.dartflow.app.PlayerMatchProjectionTest.html": "e656d88c915ffcd32fdd2bb413c94e77711b75f00e1e03adc44d6895bdaf8afd",
+              "nl.dartflow.app.PlayerMediaReadinessTest.html": "6404a0bff0e3edee624108bc3b3ee7e4eb91c4bc08c876bb8125f5a7628c85e1",
+              "nl.dartflow.app.PlayerMediaSafetyTest.html": "0a0f7e8980d1196cac1422b5a107f0c19d448d19aea877362a685906cccd895d",
+              "nl.dartflow.app.PlayerOrganizerTest.html": "6390a272a71bdde7d1e8f68cccfbe59a47f7194b6ded069d200ce76fa01e7651",
+              "nl.dartflow.app.PlayerPlayEngineTest.html": "7d34ef8827b745f199001d8189df03e0b7a166183f67d440d4c2db386377b6c6",
+              "nl.dartflow.app.PlayerPlaySafetyTest.html": "3a37fea5cad8a1d1c2f0b92b6826506d3465bc5fea2fb07eba6d5d63eecf292e",
+              "nl.dartflow.app.PlayerRedesignTest.html": "2937fca577a1ec93dedf6e875cb73beaec3bf680571a786bd334f18519fa5308",
+              "nl.dartflow.app.PlayerReleaseControlTest.html": "2509c13ae12f555a07e8829fc10812d77587aa1238994e0aa5c99def68982f5e",
+              "nl.dartflow.app.PlayerSafetyTest.html": "6c0c0bcbfa781f978a7532a56f6cee1afb173c6817eb8b58589a6266a5930a83",
+              "nl.dartflow.app.PlayerScoreSnapshotsTest.html": "6d20a7fe4fcf8532664e73c73f9e042d1e002199f095c4fecc3b2d4712d69337"
+            }
+          },
+          "Staging": {
+            "tests": 163,
+            "actualUniqueMethods": 163,
+            "failures": 0,
+            "skipped": 0,
+            "reportSha256": "0e293fda43073bb87c996d656481f9542784cf927051472507fd603f3a76555c",
+            "classReportSha256": {
+              "nl.dartflow.app.PlayerAuthorizationRaceTest.html": "0ab14d2a384c2362d0c8526c87f2bf446d59895d48a29c0a59de8abfaa8b62bf",
+              "nl.dartflow.app.PlayerClubhouseTest.html": "dbdea395ebfd5707e501e5df2363afb395053eb528f7bb1f26f028c027911d50",
+              "nl.dartflow.app.PlayerCommunicationsTest.html": "72fbab0285bcc1689c582ecfae23746df08199ac9e39d6b355bddb36491041bf",
+              "nl.dartflow.app.PlayerDataTest.html": "2e120cda626eac44db9a871cbafbaba6118f0c81e8db9a1c315324a38103a590",
+              "nl.dartflow.app.PlayerHomeFeedTest.html": "26a60551efbe04fca5aa0d962cf69e58449f15c9258ed9cee272558f9362f005",
+              "nl.dartflow.app.PlayerIdentityPushTest.html": "55c1c8d0ae03cf7d3340015c6ba929cfc3bb3752cca9906e874c16a2da81cb62",
+              "nl.dartflow.app.PlayerMatchProjectionTest.html": "97fb453b41fb9b33fb7402180f489f05f9b6ad89848d511d1f1e75a356ee268f",
+              "nl.dartflow.app.PlayerMediaReadinessTest.html": "c50b30fc6930d5abde7db4d872e441d40fb387afc99541e41e22112b0eed3d9f",
+              "nl.dartflow.app.PlayerMediaSafetyTest.html": "c4cd21c2f0651712cc4abeae61deefff0e5613b1ef739ae05321b0b3e68fe713",
+              "nl.dartflow.app.PlayerOrganizerTest.html": "851dd89be48d8f6869b2290b54a66627322c0e6d56bdba02be77a86ea5406bc4",
+              "nl.dartflow.app.PlayerPlayEngineTest.html": "cc16653866473ed3926b8d47bfe2e01239834b61f53d2d769bb68ee21ceeea46",
+              "nl.dartflow.app.PlayerPlaySafetyTest.html": "b21bf9e50270a1fbf2f778608fa8d56cc5f8f9f4375bd9241ec002d2aaec51ed",
+              "nl.dartflow.app.PlayerRedesignTest.html": "27a2bc890f0fd54f9985867a25b0b0943534c616679318fb5bd92bf42072399f",
+              "nl.dartflow.app.PlayerReleaseControlTest.html": "1ac3f60222e04816d2d2b7c01abf8f4ff19b4425c9cb6bf0f3a4fa72b15475ff",
+              "nl.dartflow.app.PlayerSafetyTest.html": "908b1388ecc61e2e27819cd9e2e45305b0c64ecef271e840c929f8c697bd52a8",
+              "nl.dartflow.app.PlayerScoreSnapshotsTest.html": "34f90e20810418199397bcd7c8d40a910e1e800e18f3f55c2a01bddefc9f9822"
+            }
+          },
+          "Production": {
+            "tests": 163,
+            "actualUniqueMethods": 163,
+            "failures": 0,
+            "skipped": 0,
+            "reportSha256": "ebf60245e18e2ddc1571c4d45a5261a9e3230c9a6b9f9ebfb7e680ee629f0005",
+            "classReportSha256": {
+              "nl.dartflow.app.PlayerAuthorizationRaceTest.html": "7d2b7dba8b8c6dbb764e1095ef86dfa784a4bcd38cb2a9abbaf31c94c29d3c9f",
+              "nl.dartflow.app.PlayerClubhouseTest.html": "4319280e5892637989303960632a4d08cbe0561fac35b0d0f25b9a33745684e6",
+              "nl.dartflow.app.PlayerCommunicationsTest.html": "14887e4ec964543113fe5fbf2f668aaf7b89285d467314ee9e35131c56f5fe07",
+              "nl.dartflow.app.PlayerDataTest.html": "387966c5985a7f737a26dfa0cf6e8ca10f02eccc134ec2eac760cf66cb3ba675",
+              "nl.dartflow.app.PlayerHomeFeedTest.html": "783c9f3fafdab81cbda0a8360eb371c88ab306af922a2fe012bfe4bf1f81920c",
+              "nl.dartflow.app.PlayerIdentityPushTest.html": "0cadb7cc2c9bea2a313cd58fc29b71b05b8223fc9feddf7405094423654e8bd2",
+              "nl.dartflow.app.PlayerMatchProjectionTest.html": "2ac0f190f5a83ef643e16ca3492d42088b9ef6af11de9a2c5a7dc974f605510e",
+              "nl.dartflow.app.PlayerMediaReadinessTest.html": "645915c00a23caded3bef8dc36c578fa8be90e8a9eb700cb0cb5422bc0a14b40",
+              "nl.dartflow.app.PlayerMediaSafetyTest.html": "733862d7b5c646b094aa2d088bba29290b99f8e938b6c42f5fcbfb8830e07c7c",
+              "nl.dartflow.app.PlayerOrganizerTest.html": "6e940e6ffd1fcb8d1f592f3e529812b66514c2894f26f2fa13a5639e9ca15421",
+              "nl.dartflow.app.PlayerPlayEngineTest.html": "4c682c1d4db798ab1fd79dda6118aafb9f1ab2be9f995d5ed4ce8e7febd47b4f",
+              "nl.dartflow.app.PlayerPlaySafetyTest.html": "a8ea01f087dcf0adb4e01ed313938e315ddcf2e716a91afcba43247c2f33a1e0",
+              "nl.dartflow.app.PlayerRedesignTest.html": "9aa2109958fcc9d0a98db566230ce4c30bee798d56534a654657fa71d391260e",
+              "nl.dartflow.app.PlayerReleaseControlTest.html": "976a6d3a26104e7754d1c3b068e98418dfbae986aeec71652564326d6db506ce",
+              "nl.dartflow.app.PlayerSafetyTest.html": "1582cf17fe0325de21d89902bcef6b1f50e86d6dc2bc05ec0937415cd72e9aed",
+              "nl.dartflow.app.PlayerScoreSnapshotsTest.html": "da6d1c8eee484cbd24efc27c8f7ac69f409ff0425de8d03c0a0fe4c1e22e8ac5"
+            }
+          }
+        },
+        "ui": {
+          "executed": true,
+          "tests": 97,
+          "failures": 0,
+          "skipped": 0,
+          "actualPreviousReleaseTestsPreserved": 90
+        }
+      },
+      "receipt": "/home/codex/.codex/artifacts/dartflow-player-0.7.0-11-e20d8f4bec4f/unsigned-native-review.json",
+      "sha256": "be2dc365caf1da36f75a8703c56aea0e8c52563bfec6fbd813de755b08b20854",
+      "sourceTree": "816bb96eb2dc15210cd0737f73395a7dea5e8092",
+      "githubArtifacts": [
+        {
+          "id": 14787611798,
+          "name": "dartflow-player-build-e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "archiveSha256": "e39358ec2380ec9eb6af580d0b70fcf6e8836917e889040f1c3b1b1bd11bea46",
+          "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "runId": 45105737673,
+          "extractedFilesVerified": 69
+        },
+        {
+          "id": 14787599612,
+          "name": "dartflow-player-ui-e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "archiveSha256": "bf1adb03e584c8972f9d9ec1a5d7cbc606b4651b6a068937f76248e87426b17a",
+          "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "runId": 45105737673,
+          "extractedFilesVerified": 45
+        }
+      ],
+      "sourceFilesVerified": 150,
+      "ciGateFilesVerified": 5
+    },
+    "oche": {
+      "runId": 45105737663,
+      "source": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "status": "completed",
+      "conclusion": "success",
+      "actualAttempt": 1,
+      "actualProducerAttempts": [
+        {
+          "id": 137466471570,
+          "name": "Android lint, tests en debugbuild",
+          "executionAttempt": 1,
+          "validationAttempt": 1,
+          "checkoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "logSha256": "194245240548fbf9ad4352bfb982342f223030e8e962e071583ebf8253e21dfd"
+        },
+        {
+          "id": 137468133032,
+          "name": "Android UI · google_apis",
+          "executionAttempt": 1,
+          "validationAttempt": 1,
+          "checkoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "logSha256": "38920b68b055f14cfb9e8e10ae90ca766aad1cc3d460f247d92d6c1d51507fc5"
+        },
+        {
+          "id": 137468133195,
+          "name": "Android UI · android-tv",
+          "executionAttempt": 1,
+          "validationAttempt": 1,
+          "checkoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "logSha256": "15a3c3dedf65c4a1ebda8942b4fac73502a6f45becfca1e263dd13661b45951a"
+        }
+      ],
+      "actualTests": {
+        "unit": {
+          "testStagingDebugUnitTest": {
+            "tests": 34,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "baselineMethodsPreserved": 32
+          },
+          "testProductionDebugUnitTest": {
+            "tests": 34,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "baselineMethodsPreserved": 32
+          }
+        },
+        "phone": {
+          "tests": 16,
+          "failures": 0,
+          "skipped": 0,
+          "baselineMethodsPreserved": 15
+        },
+        "tv": {
+          "tests": 16,
+          "failures": 0,
+          "skipped": 0,
+          "baselineMethodsPreserved": 15
+        }
+      },
+      "receipt": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/ci-main-oche/e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88/45105737663/attempt-1/observations/20261123T033531726745Z/oche-main-verification.json",
+      "sha256": "92093a0fbb2ffd44508ffae9e9d3dbe0c554763e8140b6fe2c7622aa975fb3e9",
+      "sourceInventory": {
+        "files": 49,
+        "inventorySha256": "c782812153dca02a964bb5813b57e7eee9468bddd2a0a090f9d119bab665f314",
+        "baselineVersion": "0.6.1",
+        "baselineSourceSha": "d1adf84c08061f606ccbd11b5abaec5c5bda5289",
+        "all49FilesByteEqualToBaseline": true,
+        "baselineReceiptsHistoricalOnly": {
+          "oche-main-verification.json": "4ae66d5ac075d21e9d1b13bec75f6476888f6ad3a598bc0f88d08c7a1dc26e5c",
+          "main-checkout-no-publication.json": "57075cd8531c6be568f875e5cc1bdeab44e9a2b369daf43f366ca8f7f9eb01a1"
+        },
+        "sourceTreeSha": "816bb96eb2dc15210cd0737f73395a7dea5e8092",
+        "ocheTreeSha": "5c11a0a076bc23b11fe7e21c39971750507d85f5",
+        "baselineUnitMethodsPreserved": 32,
+        "baselineUiMethodsPreserved": 15
+      },
+      "artifactDigests": [
+        {
+          "id": 14787457994,
+          "name": "oche-android-unit-tests-e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "bytes": 5397,
+          "sha256": "ba2c5c7ab5db84c53dd95bf18ec9cd5312b87673838e5c1ce6c5b3a0b8c14233",
+          "producerJobId": 137466471570,
+          "producerExecutionAttempt": 1,
+          "validationRunAttempt": 1,
+          "actualCheckoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "artifactCreatedAt": "2026-11-23T03:29:11Z",
+          "downloadedAndDigestVerified": true,
+          "reportFiles": 6
+        },
+        {
+          "id": 14787836944,
+          "name": "oche-android-ui-google_apis",
+          "bytes": 7921,
+          "sha256": "52af00fde62c3bcb4e94103aeed65b41a5f21dc4b078b24452325a9c93355d4f",
+          "producerJobId": 137468133032,
+          "producerExecutionAttempt": 1,
+          "validationRunAttempt": 1,
+          "actualCheckoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "artifactCreatedAt": "2026-11-23T03:35:11Z",
+          "downloadedAndDigestVerified": true,
+          "reportFiles": 8
+        },
+        {
+          "id": 14786889742,
+          "name": "oche-android-ui-android-tv",
+          "bytes": 593603,
+          "sha256": "55b31c6f757535d02031aa51a3af141230612ff8bf96d0f5df3302fa320049bd",
+          "producerJobId": 137468133195,
+          "producerExecutionAttempt": 1,
+          "validationRunAttempt": 1,
+          "actualCheckoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "artifactCreatedAt": "2026-11-23T03:35:10Z",
+          "downloadedAndDigestVerified": true,
+          "reportFiles": 15
+        }
+      ],
+      "signingPublication": {
+        "jobId": 137470004896,
+        "conclusion": "skipped",
+        "stepsExecuted": 0,
+        "producerAttempt": 1
+      },
+      "autoPublicationVariable": {
+        "name": "OCHE_PLAY_ENABLED",
+        "value": "false",
+        "created_at": "2026-11-13T16:30:15Z",
+        "updated_at": "2026-11-13T16:30:15Z"
+      }
+    }
+  },
+  "localChecks": {
+    "completeBrowser": {
+      "source": "2149ddc9f85574f022bce452f5b339ed4e08cb90",
+      "build": 9,
+      "passed": 139,
+      "failed": 0,
+      "skipped": 0,
+      "retries": 0,
+      "uiuxPngs": 32,
+      "individuallyViewedUiuxPngs": 32,
+      "review": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/workspaces/visual-review-full-browser-attempt3.json",
+      "sha256": "aa79ed6eb76283d89947513325683db1cf0396d026e3bb2ad6222ecc0eeb9fb3",
+      "scope": "Pre-final score CSS; not full regression proof for e20."
+    },
+    "finalScoreSubset": {
+      "sourceCommitAtExecution": "2149ddc9f85574f022bce452f5b339ed4e08cb90",
+      "dirtyFinalChangesLaterCommittedIn": "5cd5d44472c82cedca55f27f6cae10ba5e12c4b0",
+      "build": 11,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "retries": 0,
+      "receipt": {
+        "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/local/final-score-regressions-attempt1.json",
+        "sha256": "6c4e6d549a5ad18415cf133a1f69ca03fa319ae4bded74e0d66bbda8fed6246c"
+      },
+      "scope": "Actual later dirty build11 targeted score execution. Separate from earlier build9 full139 and final exact-source MAIN full139; not combined into one local full run."
+    }
+  },
+  "environments": {
+    "staging": {
+      "status": "accepted",
+      "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "deployRun": 45107585337,
+      "actualAttempt": 1,
+      "releaseId": "45107585337-1",
+      "configId": "staging-2026-11-18-play-safety-1",
+      "acceptedAt": "2026-11-23T03:50:09.519561+00:00",
+      "acceptanceReceipt": {
+        "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/release-execution/staging-accepted.json",
+        "sha256": "098362bfa57bc33d0129ec92a0a823b26c7fa26ae3f4fbf13aeb429304704329"
+      },
+      "proofs": [
+        {
+          "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/deploy-staging-e20d8f4-45107585337/verification.json",
+          "sha256": "b38c30c2b436d02f1aa83bdc0041416f9ede6d374f7d6a1ca6c73c7106181615"
+        },
+        {
+          "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/host-staging-e20d8f4-45107585337/verification.json",
+          "sha256": "d08724c59d94f66555d0f27ad038097f8b03d0fbae127cf0db5f71e8706800a2"
+        },
+        {
+          "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/postdeploy-staging-e20d8f4bec4f-2026-11-23T03-46-39-800Z/receipt.json",
+          "sha256": "09340dd5d8e6ac9733eab542ff9e321ab5531fb1991e70a98f7d7c13b4568ed7"
+        },
+        {
+          "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/postdeploy-staging-e20d8f4bec4f-2026-11-23T03-46-39-800Z/visual-review.json",
+          "sha256": "03bdc4f888f6914eff40ee04ff8eabdcd2b67cee360c1be403ea279ef634b7c7"
+        },
+        {
+          "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/release-execution/post-staging-host-isolation.json",
+          "sha256": "036de235398d928825b1c6e4d78e31b562d117368a1e2d824a8c029b7987fd51"
+        }
+      ],
+      "scope": "Completed normal deployment plus fresh public and loopback identity, existing protected review-account GETs, public browser acceptance and12 individual PNG reviews; physical device acceptance remains separate.",
+      "individualPublicBrowserPngsReviewed": 12,
+      "physicalDeviceAcceptanceProven": false
+    },
+    "production": {
+      "status": "accepted",
+      "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "deployRun": 45108285309,
+      "actualAttempt": 1,
+      "releaseId": "45108285309-1",
+      "configId": "production-2026-11-20-firebase-fcm-1",
+      "acceptedAt": "2026-11-23T03:55:39.340631+00:00",
+      "acceptanceReceipt": {
+        "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/release-execution/production-accepted.json",
+        "sha256": "012e527b6fa617cf1ceb7487956c8db82abb3f971d8b7db66d9dc8fcc46420bb"
+      },
+      "proofs": [
+        {
+          "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/deploy-production-e20d8f4-45108285309/verification.json",
+          "sha256": "279d9fc16b454fb646063d8cdf1ad39348b59fa913cfeb4f1dee3779ae217211"
+        },
+        {
+          "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/host-production-e20d8f4-45108285309/verification.json",
+          "sha256": "470c7ae13754619882df6ff17362a6eca8167ccec965ed3554fa4e342a336fc2"
+        },
+        {
+          "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/postdeploy-production-e20d8f4bec4f-2026-11-23T03-54-11-233Z/receipt.json",
+          "sha256": "fd9a1283765d5aa67e92b7ff148a2b3f2b0f32965ad5430e0c19218ea4659642"
+        },
+        {
+          "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/postdeploy-production-e20d8f4bec4f-2026-11-23T03-54-11-233Z/visual-review.json",
+          "sha256": "a70be0e24effa46278a139f731f4bc9992e893f2d87563d8f91537ec3c36872b"
+        },
+        {
+          "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/release-execution/post-production-host-isolation.json",
+          "sha256": "3cd993e4c54340e70638f66c7296a154f4b8928f0f6de75ba46fe2c4744ebb9e"
+        }
+      ],
+      "scope": "Completed normal deployment plus fresh public and loopback identity, existing protected review-account GETs, public browser acceptance and12 individual PNG reviews; physical device acceptance remains separate.",
+      "individualPublicBrowserPngsReviewed": 12,
+      "physicalDeviceAcceptanceProven": false
+    }
+  },
+  "android": {
+    "package": "nl.dartflow.app",
+    "versionName": "0.7.0",
+    "versionCode": 11,
+    "actualMainUi": {
+      "tests": 97,
+      "failures": 0,
+      "skipped": 0,
+      "previous90Preserved": true
+    },
+    "actualMainVisualReview": {
+      "path": "/home/codex/.codex/artifacts/dartflow-player-0.7.0-11-e20d8f4bec4f/player-ci-visual-review.json",
+      "sha256": "1620da328676dd82de8e23562cff35fa936629d4ffad796baa41603ca87e3bc7",
+      "imagesIndividuallyReviewed": 31,
+      "blockingFindings": 0
+    },
+    "stagingApkVerification": {
+      "path": "/home/codex/.codex/artifacts/dartflow-player-0.7.0-11-e20d8f4bec4f/staging-validation-20261124T0344Z/receipt.json",
+      "sha256": "46435485e4b1d14e1c600bb17c5228f087919ac00563e517eaf843baffaa2672",
+      "apkSha256": "2739d4f14f437d89917c67fb28f42eeaf2b2699642667036ce1481102551c6d5",
+      "compiledDefaultBackendVerified": true,
+      "signatureVerified": true,
+      "zipalign16KbVerified": true
+    },
+    "signing": {
+      "receipt": {
+        "path": "/home/codex/.codex/artifacts/dartflow-player-0.7.0-11-e20d8f4bec4f/delivery/release-receipt.json",
+        "sha256": "fc7cb87edad0348fffaf588aead2bbea29664e3dfcbcb2c3141f918e2ea8d373"
+      },
+      "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "package": "nl.dartflow.app",
+      "versionName": "0.7.0",
+      "versionCode": 11,
+      "releaseTag": "android-player-0.7.0-11",
+      "uploadCertificateSha256": "97:C8:A2:78:FF:67:14:BD:E4:F1:BC:B5:4E:BA:15:12:28:D4:2E:83:8F:11:D4:3B:CF:6E:71:C7:DE:08:A0:09",
+      "artifacts": [
+        {
+          "file": "app-production-release.aab",
+          "bytes": 28871717,
+          "sha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58"
+        },
+        {
+          "file": "app-production-release.apk",
+          "bytes": 50968504,
+          "sha256": "7b5fc7931132f7a8121b9e0638206f0d9afb6f86e59b6c61098e2c889f6d6b36"
+        }
+      ],
+      "evidence": {
+        "path": "/home/codex/.codex/artifacts/dartflow-player-0.7.0-11-e20d8f4bec4f/delivery/release-evidence.json",
+        "sha256": "e3e197c33bcd2e708e6d231a365d70501673bc9d376f4380f23badc971f936b9"
+      },
+      "verifiedFlags": {
+        "signed": true,
+        "ciPayloadBytePreserved": true,
+        "bundleValidation": true,
+        "aabSignatureVerified": true,
+        "apkSignatureVerified": true,
+        "apkZipalign16KB": true
+      },
+      "precheck": {
+        "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/release-execution/signing-precheck.json",
+        "sha256": "3cacd77f81f1d35d67151bf5f030e2b571c7e6ef9950392f41fc2083d18577ca"
+      }
+    },
+    "githubPublication": {
+      "releaseId": 454969459,
+      "releaseUrl": "https://github.com/dartflow/platform/releases/tag/android-player-0.7.0-11",
+      "publishedAt": "2026-11-23T03:57:39Z",
+      "sourceSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "tag": "android-player-0.7.0-11",
+      "assetCount": 11
+    },
+    "freshElevenAssetDownloadVerification": {
+      "receipt": {
+        "path": "/home/codex/.codex/artifacts/dartflow-player-0.7.0-11-e20d8f4bec4f/github-publication-download-verification.json",
+        "sha256": "cb409370420dad0d1fa990de7ba7d8d8595cbe84f110d4a590384df541a72551"
+      },
+      "verifiedAt": "2026-11-23T03:57:56.286118+00:00",
+      "releaseUrl": "https://github.com/dartflow/platform/releases/tag/android-player-0.7.0-11",
+      "sourceSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "tag": "android-player-0.7.0-11",
+      "releaseId": 454969459,
+      "publishedAt": "2026-11-23T03:57:39Z",
+      "exactTargetAndTagVerified": true,
+      "assetCount": 11,
+      "allDownloadedBytesMatch": true,
+      "freshDownloadDirectory": "/home/codex/.codex/artifacts/dartflow-player-0.7.0-11-e20d8f4bec4f/github-published-downloads/2026-11-23T03-57-51.918435+00-00-454969459",
+      "assets": [
+        {
+          "file": "app-production-release.aab",
+          "bytes": 28871717,
+          "sha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58",
+          "downloadBytesMatch": true
+        },
+        {
+          "file": "app-production-release.apk",
+          "bytes": 50968504,
+          "sha256": "7b5fc7931132f7a8121b9e0638206f0d9afb6f86e59b6c61098e2c889f6d6b36",
+          "downloadBytesMatch": true
+        },
+        {
+          "file": "app-staging-debug.apk",
+          "bytes": 63901837,
+          "sha256": "2739d4f14f437d89917c67fb28f42eeaf2b2699642667036ce1481102551c6d5",
+          "downloadBytesMatch": true
+        },
+        {
+          "file": "bundle-config.json",
+          "bytes": 1183,
+          "sha256": "07fc9810c82d6d5d167f266ffd20380cdb1d023dd191b906da17082f39299e83",
+          "downloadBytesMatch": true
+        },
+        {
+          "file": "main-player-preflight-verified.json",
+          "bytes": 30572,
+          "sha256": "7287ffeed04999215c8bba5869255b8fa6a9d0663e16f89a5a1f2405143a7dac",
+          "downloadBytesMatch": true
+        },
+        {
+          "file": "player-ci-visual-review.json",
+          "bytes": 14314,
+          "sha256": "1620da328676dd82de8e23562cff35fa936629d4ffad796baa41603ca87e3bc7",
+          "downloadBytesMatch": true
+        },
+        {
+          "file": "production-manifest.xml",
+          "bytes": 10357,
+          "sha256": "9c6afbb01ad8c82711460b65424a52db185870c611c79678077e938146a817af",
+          "downloadBytesMatch": true
+        },
+        {
+          "file": "release-evidence.json",
+          "bytes": 32757,
+          "sha256": "e3e197c33bcd2e708e6d231a365d70501673bc9d376f4380f23badc971f936b9",
+          "downloadBytesMatch": true
+        },
+        {
+          "file": "release-receipt.json",
+          "bytes": 711,
+          "sha256": "fc7cb87edad0348fffaf588aead2bbea29664e3dfcbcb2c3141f918e2ea8d373",
+          "downloadBytesMatch": true
+        },
+        {
+          "file": "release-source-files.json",
+          "bytes": 23273,
+          "sha256": "710e8c0cfe2ea16ebb40629ab3490f4eb764d5d6d64089cd215a503bc1afbf69",
+          "downloadBytesMatch": true
+        },
+        {
+          "file": "staging-apk-verification.json",
+          "bytes": 4431,
+          "sha256": "46435485e4b1d14e1c600bb17c5228f087919ac00563e517eaf843baffaa2672",
+          "downloadBytesMatch": true
+        }
+      ],
+      "playPublicationPerformed": false,
+      "localDownloadedElevenHashesRecheckedByDocsReviewer": true
+    },
+    "physicalDeviceInstallationProven": false,
+    "unsignedDelivery": {
+      "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/release-execution/unsigned-assembly-e20d8f4-1/unsigned-delivery.json",
+      "sha256": "c5e4bedf21e67dd87db62aa6cc1cef9d90d4ed36e49d83187774faf95716e78e",
+      "preflight": {
+        "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/release-execution/unsigned-assembly-e20d8f4-1/delivery-attachments/main-player-preflight-verified.json",
+        "sha256": "7287ffeed04999215c8bba5869255b8fa6a9d0663e16f89a5a1f2405143a7dac"
+      }
+    },
+    "sourceFilesVerified": 150,
+    "ciGateFilesVerified": 5,
+    "jvmUniqueMethodsPerVariant": 163,
+    "executedUiMethods": 97,
+    "actualPngs": 31,
+    "individuallyReviewedPngs": 31
+  },
+  "play": {
+    "package": "nl.dartflow.app",
+    "versionCode": 11,
+    "releaseTag": "android-player-0.7.0-11",
+    "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58",
+    "accessBeforeUpload": {
+      "capturedAt": "2026-11-23T03:59:03.751866+00:00",
+      "runId": 45109017097,
+      "attempt": 1,
+      "action": "check-access",
+      "sourceSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "releaseTag": "android-player-0.7.0-11",
+      "package": "nl.dartflow.app",
+      "versionCode": 11,
+      "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58",
+      "workflowConclusion": "success",
+      "url": "https://github.com/dartflow/platform/actions/runs/45109017097",
+      "actualBundleReceipt": {
+        "package": "nl.dartflow.app",
+        "versionName": "0.7.0",
+        "versionCode": 11,
+        "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+        "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58"
+      },
+      "freshBackendReadiness": {
+        "package": "nl.dartflow.app",
+        "sha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+        "productionAndStagingReady": true,
+        "appLinks": true,
+        "legalPages": true,
+        "readOnly": true
+      },
+      "publisherResult": {
+        "alpha": [],
+        "beta": [],
+        "internal": [
+          {
+            "status": "completed",
+            "versionCodes": [
+              "10"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "status": "completed",
+            "versionCodes": [
+              "10"
+            ]
+          }
+        ]
+      },
+      "logSha256": "e72682118b9464bc52031b29a37f42aed98fca4367468311a3d1b646de2a8e1f",
+      "physicalDeviceInstallationProven": false,
+      "physicalPushDeliveryProven": false,
+      "verificationReceipt": {
+        "file": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/play-release-e20d8f4-0.7.0-11/01-access/verification.json",
+        "sha256": "1810ddc57fb3aa850a271e6be8db6e3e82ecfc3f5b5d58470aaea1f0404dde27"
+      },
+      "historicalBeforeUpload": true,
+      "scope": "Historical pre-upload10/10 snapshot only; final current code11 state is finalAccess."
+    },
+    "internal": {
+      "capturedAt": "2026-11-23T04:00:40.538930+00:00",
+      "runId": 45109107843,
+      "attempt": 1,
+      "action": "upload-internal",
+      "sourceSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "releaseTag": "android-player-0.7.0-11",
+      "package": "nl.dartflow.app",
+      "versionCode": 11,
+      "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58",
+      "workflowConclusion": "success",
+      "url": "https://github.com/dartflow/platform/actions/runs/45109107843",
+      "actualBundleReceipt": {
+        "package": "nl.dartflow.app",
+        "versionName": "0.7.0",
+        "versionCode": 11,
+        "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+        "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58"
+      },
+      "freshBackendReadiness": {
+        "package": "nl.dartflow.app",
+        "sha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+        "productionAndStagingReady": true,
+        "appLinks": true,
+        "legalPages": true,
+        "readOnly": true
+      },
+      "publisherResult": {
+        "commitConfirmed": true,
+        "versionCode": 11,
+        "tracks": [
+          "internal"
+        ],
+        "actualMessage": "Edit gecommit bij Google Play. VersionCode 11, tracks internal.",
+        "bundleDigestVerifiedByNormalWorkflowAndPublisher": true
+      },
+      "logSha256": "093d4cbf791b539996a68ee2bcc1cfe0b72c03f981074e86e6912c9defa9c07e",
+      "physicalDeviceInstallationProven": false,
+      "physicalPushDeliveryProven": false,
+      "verificationReceipt": {
+        "file": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/play-release-e20d8f4-0.7.0-11/02-internal/verification.json",
+        "sha256": "50f9c6b84cbdd34ed22bbb271ad69dfaa5627125b46681091755c63164a47b7c"
+      }
+    },
+    "production": {
+      "capturedAt": "2026-11-23T04:02:06.184143+00:00",
+      "runId": 45109259993,
+      "attempt": 1,
+      "action": "promote-production",
+      "sourceSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "releaseTag": "android-player-0.7.0-11",
+      "package": "nl.dartflow.app",
+      "versionCode": 11,
+      "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58",
+      "workflowConclusion": "success",
+      "url": "https://github.com/dartflow/platform/actions/runs/45109259993",
+      "actualBundleReceipt": {
+        "package": "nl.dartflow.app",
+        "versionName": "0.7.0",
+        "versionCode": 11,
+        "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+        "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58"
+      },
+      "freshBackendReadiness": {
+        "package": "nl.dartflow.app",
+        "sha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+        "productionAndStagingReady": true,
+        "appLinks": true,
+        "legalPages": true,
+        "readOnly": true
+      },
+      "publisherResult": {
+        "commitConfirmed": true,
+        "versionCode": 11,
+        "tracks": [
+          "production"
+        ],
+        "actualMessage": "Edit gecommit bij Google Play. VersionCode 11, tracks production.",
+        "bundleDigestVerifiedByNormalWorkflowAndPublisher": true
+      },
+      "logSha256": "c08a56bae88c9adbe6c381f040279e45b853dc6e51b28bd8c99e69055324458c",
+      "physicalDeviceInstallationProven": false,
+      "physicalPushDeliveryProven": false,
+      "verificationReceipt": {
+        "file": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/play-release-e20d8f4-0.7.0-11/03-production/verification.json",
+        "sha256": "50fcdfd9efa1c2d46d757315bdb4e8a3d3cdd9b94c80d31183467cb22e9943fb"
+      }
+    },
+    "finalAccess": {
+      "capturedAt": "2026-11-23T04:03:13.659233+00:00",
+      "runId": 45109404605,
+      "attempt": 1,
+      "action": "check-access",
+      "sourceSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "releaseTag": "android-player-0.7.0-11",
+      "package": "nl.dartflow.app",
+      "versionCode": 11,
+      "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58",
+      "workflowConclusion": "success",
+      "url": "https://github.com/dartflow/platform/actions/runs/45109404605",
+      "actualBundleReceipt": {
+        "package": "nl.dartflow.app",
+        "versionName": "0.7.0",
+        "versionCode": 11,
+        "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+        "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58"
+      },
+      "freshBackendReadiness": {
+        "package": "nl.dartflow.app",
+        "sha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+        "productionAndStagingReady": true,
+        "appLinks": true,
+        "legalPages": true,
+        "readOnly": true
+      },
+      "publisherResult": {
+        "alpha": [],
+        "beta": [],
+        "internal": [
+          {
+            "status": "completed",
+            "versionCodes": [
+              "11"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "status": "completed",
+            "versionCodes": [
+              "11"
+            ]
+          }
+        ]
+      },
+      "logSha256": "1980e6ca66d55b2084fb6ef99d46ef815848675423af38d3eae710f0bd3d8037",
+      "physicalDeviceInstallationProven": false,
+      "physicalPushDeliveryProven": false,
+      "verificationReceipt": {
+        "file": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/play-release-e20d8f4-0.7.0-11/04-verify/verification.json",
+        "sha256": "aa7e29fba28f09822d7bd2953c7b996d0f63502d3e4f36985de179abb396e6da"
+      }
+    },
+    "tracks": {
+      "alpha": [],
+      "beta": [],
+      "internal": [
+        {
+          "status": "completed",
+          "versionCodes": [
+            "11"
+          ]
+        }
+      ],
+      "production": [
+        {
+          "status": "completed",
+          "versionCodes": [
+            "11"
+          ]
+        }
+      ]
+    },
+    "physicalDeviceInstallationProven": false,
+    "physicalPushDeliveryProven": false,
+    "independentLocalAudit": {
+      "receipt": {
+        "file": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/play-release-e20d8f4-0.7.0-11/final-verification.json",
+        "sha256": "346fb3ce8aa0f111a4533dbe8a370dc4431e8457b54ece2b7acdd549b25e1300"
+      },
+      "allSixteenProofHashesRecheckedByDocsReviewer": true,
+      "actualProducerSequence": [
+        {
+          "order": 1,
+          "directory": "01-access",
+          "action": "check-access",
+          "runId": 45109017097,
+          "attempt": 1,
+          "url": "https://github.com/dartflow/platform/actions/runs/45109017097",
+          "sourceSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "sourceTree": "816bb96eb2dc15210cd0737f73395a7dea5e8092",
+          "runCreatedAt": "2026-11-23T03:58:07Z",
+          "jobId": 137476848148,
+          "jobStartedAt": "2026-11-23T03:58:10Z",
+          "jobCompletedAt": "2026-11-23T03:58:42Z",
+          "receiptCapturedAt": "2026-11-23T03:59:03.751866+00:00",
+          "workflowConclusion": "success",
+          "all16JobStepsSuccessful": true,
+          "actualCheckoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "actualCheckoutLogLine": 129,
+          "bundleReceiptFromRawLog": {
+            "package": "nl.dartflow.app",
+            "versionName": "0.7.0",
+            "versionCode": 11,
+            "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+            "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58"
+          },
+          "bundleReceiptLogLine": 225,
+          "freshBackendReadinessFromRawLog": {
+            "package": "nl.dartflow.app",
+            "sha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+            "productionAndStagingReady": true,
+            "appLinks": true,
+            "legalPages": true,
+            "readOnly": true
+          },
+          "backendReadinessLogLine": 297,
+          "publisherResultIndependentlyParsedFromRawLog": {
+            "tracks": {
+              "alpha": [],
+              "beta": [],
+              "internal": [
+                {
+                  "status": "completed",
+                  "versionCodes": [
+                    "10"
+                  ]
+                }
+              ],
+              "production": [
+                {
+                  "status": "completed",
+                  "versionCodes": [
+                    "10"
+                  ]
+                }
+              ]
+            },
+            "rawOutputFirstLine": 368,
+            "rawOutputLastLine": 387,
+            "readResponseStartedAt": "2026-11-23T03:58:39.3411980Z",
+            "readResponseFinishedAt": "2026-11-23T03:58:39.3414915Z"
+          },
+          "proofFiles": [
+            {
+              "file": "01-access/run.json",
+              "sha256": "785c3f535e9055826f1017ad8f70068f784fb3735174973e78503a982fec905a",
+              "bytes": 13566
+            },
+            {
+              "file": "01-access/jobs.json",
+              "sha256": "7b7b591d6a083422a1569a83df27e2348f7ba36aa41195b191a214cd86fb28ba",
+              "bytes": 5679
+            },
+            {
+              "file": "01-access/run.log",
+              "sha256": "e72682118b9464bc52031b29a37f42aed98fca4367468311a3d1b646de2a8e1f",
+              "bytes": 74608
+            },
+            {
+              "file": "01-access/verification.json",
+              "sha256": "1810ddc57fb3aa850a271e6be8db6e3e82ecfc3f5b5d58470aaea1f0404dde27",
+              "bytes": 1445
+            }
+          ]
+        },
+        {
+          "order": 2,
+          "directory": "02-internal",
+          "action": "upload-internal",
+          "runId": 45109107843,
+          "attempt": 1,
+          "url": "https://github.com/dartflow/platform/actions/runs/45109107843",
+          "sourceSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "sourceTree": "816bb96eb2dc15210cd0737f73395a7dea5e8092",
+          "runCreatedAt": "2026-11-23T03:59:07Z",
+          "jobId": 137477139004,
+          "jobStartedAt": "2026-11-23T03:59:11Z",
+          "jobCompletedAt": "2026-11-23T04:00:22Z",
+          "receiptCapturedAt": "2026-11-23T04:00:40.538930+00:00",
+          "workflowConclusion": "success",
+          "all16JobStepsSuccessful": true,
+          "actualCheckoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "actualCheckoutLogLine": 129,
+          "bundleReceiptFromRawLog": {
+            "package": "nl.dartflow.app",
+            "versionName": "0.7.0",
+            "versionCode": 11,
+            "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+            "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58"
+          },
+          "bundleReceiptLogLine": 225,
+          "freshBackendReadinessFromRawLog": {
+            "package": "nl.dartflow.app",
+            "sha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+            "productionAndStagingReady": true,
+            "appLinks": true,
+            "legalPages": true,
+            "readOnly": true
+          },
+          "backendReadinessLogLine": 297,
+          "publisherResultIndependentlyParsedFromRawLog": {
+            "commitConfirmed": true,
+            "versionCode": 11,
+            "tracks": [
+              "internal"
+            ],
+            "actualMessage": "Edit gecommit bij Google Play. VersionCode 11, tracks internal.",
+            "rawOutputLine": 368,
+            "commitAcknowledgedAt": "2026-11-23T04:00:18.4965044Z"
+          },
+          "proofFiles": [
+            {
+              "file": "02-internal/run.json",
+              "sha256": "6f742504eeb8e4b0bffa16dbed986811a6a3a71e6bb05d5f105a42759453334a",
+              "bytes": 13566
+            },
+            {
+              "file": "02-internal/jobs.json",
+              "sha256": "af66b45d1b4e4586977eea11a1f88a0f491f59b9740a9d17905010b26c0c2a73",
+              "bytes": 5679
+            },
+            {
+              "file": "02-internal/run.log",
+              "sha256": "093d4cbf791b539996a68ee2bcc1cfe0b72c03f981074e86e6912c9defa9c07e",
+              "bytes": 72153
+            },
+            {
+              "file": "02-internal/verification.json",
+              "sha256": "50f9c6b84cbdd34ed22bbb271ad69dfaa5627125b46681091755c63164a47b7c",
+              "bytes": 1409
+            }
+          ]
+        },
+        {
+          "order": 3,
+          "directory": "03-production",
+          "action": "promote-production",
+          "runId": 45109259993,
+          "attempt": 1,
+          "url": "https://github.com/dartflow/platform/actions/runs/45109259993",
+          "sourceSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "sourceTree": "816bb96eb2dc15210cd0737f73395a7dea5e8092",
+          "runCreatedAt": "2026-11-23T04:00:43Z",
+          "jobId": 137477609503,
+          "jobStartedAt": "2026-11-23T04:00:48Z",
+          "jobCompletedAt": "2026-11-23T04:01:23Z",
+          "receiptCapturedAt": "2026-11-23T04:02:06.184143+00:00",
+          "workflowConclusion": "success",
+          "all16JobStepsSuccessful": true,
+          "actualCheckoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "actualCheckoutLogLine": 129,
+          "bundleReceiptFromRawLog": {
+            "package": "nl.dartflow.app",
+            "versionName": "0.7.0",
+            "versionCode": 11,
+            "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+            "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58"
+          },
+          "bundleReceiptLogLine": 225,
+          "freshBackendReadinessFromRawLog": {
+            "package": "nl.dartflow.app",
+            "sha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+            "productionAndStagingReady": true,
+            "appLinks": true,
+            "legalPages": true,
+            "readOnly": true
+          },
+          "backendReadinessLogLine": 297,
+          "publisherResultIndependentlyParsedFromRawLog": {
+            "commitConfirmed": true,
+            "versionCode": 11,
+            "tracks": [
+              "production"
+            ],
+            "actualMessage": "Edit gecommit bij Google Play. VersionCode 11, tracks production.",
+            "rawOutputLine": 368,
+            "commitAcknowledgedAt": "2026-11-23T04:01:20.6996422Z"
+          },
+          "proofFiles": [
+            {
+              "file": "03-production/run.json",
+              "sha256": "215ffc5fed161afa84ad0798fd11ea334fd3e131285d8b8767a7b6102d48a2bd",
+              "bytes": 13566
+            },
+            {
+              "file": "03-production/jobs.json",
+              "sha256": "55cd6eda5b32d2887163c15057050cd0021f3bdcff5f9930103f6695bad5f6bb",
+              "bytes": 5679
+            },
+            {
+              "file": "03-production/run.log",
+              "sha256": "c08a56bae88c9adbe6c381f040279e45b853dc6e51b28bd8c99e69055324458c",
+              "bytes": 72187
+            },
+            {
+              "file": "03-production/verification.json",
+              "sha256": "50fcdfd9efa1c2d46d757315bdb4e8a3d3cdd9b94c80d31183467cb22e9943fb",
+              "bytes": 1416
+            }
+          ]
+        },
+        {
+          "order": 4,
+          "directory": "04-verify",
+          "action": "check-access",
+          "runId": 45109404605,
+          "attempt": 1,
+          "url": "https://github.com/dartflow/platform/actions/runs/45109404605",
+          "sourceSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "sourceTree": "816bb96eb2dc15210cd0737f73395a7dea5e8092",
+          "runCreatedAt": "2026-11-23T04:02:09Z",
+          "jobId": 137478061150,
+          "jobStartedAt": "2026-11-23T04:02:12Z",
+          "jobCompletedAt": "2026-11-23T04:02:44Z",
+          "receiptCapturedAt": "2026-11-23T04:03:13.659233+00:00",
+          "workflowConclusion": "success",
+          "all16JobStepsSuccessful": true,
+          "actualCheckoutSha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+          "actualCheckoutLogLine": 129,
+          "bundleReceiptFromRawLog": {
+            "package": "nl.dartflow.app",
+            "versionName": "0.7.0",
+            "versionCode": 11,
+            "sourceCommit": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+            "bundleSha256": "db4981c7d8958ee81d04473df32024487966affb769a2ec5d6122f70281e1a58"
+          },
+          "bundleReceiptLogLine": 225,
+          "freshBackendReadinessFromRawLog": {
+            "package": "nl.dartflow.app",
+            "sha": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+            "productionAndStagingReady": true,
+            "appLinks": true,
+            "legalPages": true,
+            "readOnly": true
+          },
+          "backendReadinessLogLine": 297,
+          "publisherResultIndependentlyParsedFromRawLog": {
+            "tracks": {
+              "alpha": [],
+              "beta": [],
+              "internal": [
+                {
+                  "status": "completed",
+                  "versionCodes": [
+                    "11"
+                  ]
+                }
+              ],
+              "production": [
+                {
+                  "status": "completed",
+                  "versionCodes": [
+                    "11"
+                  ]
+                }
+              ]
+            },
+            "rawOutputFirstLine": 368,
+            "rawOutputLastLine": 387,
+            "readResponseStartedAt": "2026-11-23T04:02:42.2368571Z",
+            "readResponseFinishedAt": "2026-11-23T04:02:42.2374104Z"
+          },
+          "proofFiles": [
+            {
+              "file": "04-verify/run.json",
+              "sha256": "86085b02f9832085435008ca523ba99c520aeadce086ee4805ffb2c829020bd7",
+              "bytes": 13566
+            },
+            {
+              "file": "04-verify/jobs.json",
+              "sha256": "be8f8ac3b37c91b37a2f172958c61d6e57324fb9a3fe3f0447ccc8721631742b",
+              "bytes": 5679
+            },
+            {
+              "file": "04-verify/run.log",
+              "sha256": "1980e6ca66d55b2084fb6ef99d46ef815848675423af38d3eae710f0bd3d8037",
+              "bytes": 74606
+            },
+            {
+              "file": "04-verify/verification.json",
+              "sha256": "aa7e29fba28f09822d7bd2953c7b996d0f63502d3e4f36985de179abb396e6da",
+              "bytes": 1445
+            }
+          ]
+        }
+      ],
+      "finalTrackObservation": {
+        "readRunId": 45109404605,
+        "attempt": 1,
+        "receiptCapturedAt": "2026-11-23T04:03:13.659233+00:00",
+        "rawReadResponseStartedAt": "2026-11-23T04:02:42.2368571Z",
+        "rawReadResponseFinishedAt": "2026-11-23T04:02:42.2374104Z",
+        "tracks": {
+          "alpha": [],
+          "beta": [],
+          "internal": [
+            {
+              "status": "completed",
+              "versionCodes": [
+                "11"
+              ]
+            }
+          ],
+          "production": [
+            {
+              "status": "completed",
+              "versionCodes": [
+                "11"
+              ]
+            }
+          ]
+        },
+        "internalVersion11Completed": true,
+        "productionVersion11Completed": true
+      },
+      "claims": {
+        "normalPlayInternalCommitConfirmed": true,
+        "normalPlayProductionCommitConfirmed": true,
+        "subsequentReadShowsInternalAndProduction11Completed": true,
+        "physicalDeviceInstallationProven": false,
+        "physicalPushDeliveryProven": false,
+        "reviewApprovalOrAvailabilityProven": false,
+        "publicStoreVisibilityProven": false,
+        "allUsersUpdateAvailabilityProven": false,
+        "freshRemoteReadPerformedByIndependentReviewer": false,
+        "bundleBytesRehashedByIndependentReviewer": false
+      },
+      "scope": "Independent local read-only cross-verification of four normal Google Play workflow captures, their raw run/job metadata and raw log outputs. No remote calls or mutations were performed by this review."
+    },
+    "providerResponseFinishedAt": "2026-11-23T04:02:42.2374104Z",
+    "receiptCapturedAt": "2026-11-23T04:03:13.659233+00:00"
+  },
+  "ocheAndroid": {
+    "sourceChanged": false,
+    "existingGithubVersion": "1.4.0",
+    "existingGithubVersionCode": 1063,
+    "regressionOnly": true,
+    "regressionReceipt": {
+      "path": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/ci-main-oche/e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88/45105737663/attempt-1/observations/20261123T033531726745Z/oche-main-verification.json",
+      "sha256": "92093a0fbb2ffd44508ffae9e9d3dbe0c554763e8140b6fe2c7622aa975fb3e9"
+    },
+    "newSigningPerformed": false,
+    "newPlayUploadPerformed": false,
+    "currentOchePlayTrackChecked": false,
+    "scope": "App source unchanged; existing GitHub delivery only. No new Oche store publication or current Oche-track check for0.7.0."
+  },
+  "communication": {
+    "hostedEditorialReleasePublishedByThisTask": false,
+    "hostedCampaignOrTestMessageSentByThisTask": false,
+    "physicalPushReceivedOrOpenedMeasured": false,
+    "specificPhoneInstallationProven": false,
+    "googleReviewApprovalOrSpecificPhoneAvailabilityIndependentlyMeasured": false
+  },
+  "configuration": {
+    "actualStagingConfigId": "staging-2026-11-18-play-safety-1",
+    "actualProductionConfigId": "production-2026-11-20-firebase-fcm-1",
+    "previousReleaseConfigIdsAreHistoricalOnly": true,
+    "newFirebaseConfiguration": false,
+    "newMigrations": []
+  },
+  "verificationLimits": [
+    "Hosted acceptance covers public/loopback health and readiness,existing protected ordinary review-account GETs,and separate logged-out public browser flows. No full authenticated hosted browser scoring/ticket/campaign mutation or new provider login was performed.",
+    "Native Compose semantics,keyboard/back,large-text and coordinator recreation proof is limited to the actual local/emulator automation and its synthetic API fixtures.",
+    "Physical TalkBack,hardware and two-device tests were not rerun for this release.",
+    "No new physical OTP/Google,app-link,push,camera/QR,microphone/video or process-kill/recovery test is claimed.",
+    "Play upload,promotion,provider completed state,Google review and specific-device delivery are separate; emulator or provider state is not physical receipt.",
+    "These known test-environment limits do not add a new blocker to the authorized normal publication."
+  ],
+  "historicalAttempts": {
+    "scope": "Original failed or incomplete results remain historical. Point-in-time wording does not describe the final release status. No failed attempt was counted as successful or combined into one full run.",
+    "attempts": [
+      {
+        "name": "Mislukte lokale browserproeven",
+        "sourceAndAttempt": "Lokaal 501 en menu-touchhelper",
+        "originalPointInTimeResult": "Eerste naamassertie was strijdig met de server die de ingelogde speler bepaalt. CDP synthetic-touch scrolde niet; directe touch-events scrollden wel. De gecorrigeerde naamassertie en echte touch-events met extra verplaatsing na loslaten slaagden in poging 2.",
+        "evidenceAndThenNextStep": "Geen mislukte case als groen geteld"
+      },
+      {
+        "name": "Lokale bouwpoging 2",
+        "sourceAndAttempt": "TypeScript van nieuwe presentatiefixture",
+        "originalPointInTimeResult": "**Mislukt**: verplicht `PlatformState.name` ontbrak; fixture gecorrigeerd, typecheck daarna geslaagd",
+        "evidenceAndThenNextStep": "De daaropvolgende lokale productiebuild en de negen gerichte cases slaagden; latere bronwijzigingen vereisen een eigen finale bouw"
+      },
+      {
+        "name": "Eerste lokale volledige browserpoging",
+        "sourceAndAttempt": "Bouwpoging 4, lokale database v1",
+        "originalPointInTimeResult": "**Onvolledig beëindigd met exit 143 (SIGTERM)**; oorzaak van de beëindiging niet vastgesteld. Vier oorspronkelijke faalcontexts bewaard; geen totaalaantal geslaagde cases afgeleid.",
+        "evidenceAndThenNextStep": "`local/full-browser-attempt1-partial-receipt.json` en volledige bewaarde partial-bijlagen"
+      },
+      {
+        "name": "Tweede lokale volledige browserpoging",
+        "sourceAndAttempt": "Bouwpoging 5, verse lokale database v2",
+        "originalPointInTimeResult": "**136/139 geslaagd**, drie werkelijke CSS-fouten, nul skips/retries. Twee core-totaalconsoles liepen 21 px verticaal over; de vrije X01-totaalinvoer 4 px. Herstel verplaatst correctie-opties naar de header en verkleint tussenruimte met behoud van 44/48px-bediening.",
+        "evidenceAndThenNextStep": "`local/full-browser-attempt2-receipt.json`; alle oorspronkelijke faalbijlagen afzonderlijk bewaard. Finale herhaling vereist."
+      },
+      {
+        "name": "Oude Android PR-kandidaat",
+        "sourceAndAttempt": "`05421c24`, Player-run `45099425629`, poging 1",
+        "originalPointInTimeResult": "**94/97 UI geslaagd**, nul skips; **30/31 PNG's**. Drie testfixtures hersteld voor dubbele tekst en UI-threadmeting. Alle 30 aanwezige beelden individueel bekeken; actieve tabstreep daarna hersteld. Geen finale acceptatie.",
+        "evidenceAndThenNextStep": "`native-pr-05421-review/review.json`; finale bron krijgt eigen CI-run."
+      },
+      {
+        "name": "Original05421 Web push and PR failures",
+        "source": "05421c24b85c10167f04bb609693bcdd53ccdcc6",
+        "pushRun": 45099369028,
+        "prRun": 45099425703,
+        "attempt": 1,
+        "actualBrowserPassed": 132,
+        "actualBrowserFailed": 7,
+        "actualBrowserSkipped": 0,
+        "actualBrowserRetries": 0,
+        "serverPassed": 909,
+        "prototypePassed": 47,
+        "feedChatPassed": 5,
+        "receipt": "/home/codex/.codex/artifacts/dartflow-uiux-redesign-20261123/ci-pr-web/05421c24b85c10167f04bb609693bcdd53ccdcc6/failure-evidence.json",
+        "sha256": "f8f187f91e070dcb59fdf1f13a78f255db0ffb10cef779d52e727b9f6eb20591",
+        "scope": "Historical failure only; not relabeled by later successful5cd/e20 runs."
+      }
+    ],
+    "laterResolution": {
+      "fullLocal139Source": "2149ddc9f85574f022bce452f5b339ed4e08cb90",
+      "fullLocalBuild": 9,
+      "lateScoreSubsetBuild": 11,
+      "separateFinalPrSource": "5cd5d44472c82cedca55f27f6cae10ba5e12c4b0",
+      "finalMainSource": "e20d8f4bec4fe49cc5c4d9a73e0c11ae13c4fb88",
+      "finalMainWebPassed": 139,
+      "allMainSourceAndActualProducerAttemptsAreRecordedAbove": true
+    }
+  },
+  "documentationPublication": {
+    "scope": "docs-only",
+    "productSourceUnchanged": true,
+    "noProductRedeployment": true
+  }
+}
