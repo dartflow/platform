@@ -1,0 +1,304 @@
+{
+  "deployment": {
+    "releaseId": "45665117304-1",
+    "configId": "staging-2026-11-18-play-safety-1"
+  },
+  "origin": "https://staging.dartflow.nl",
+  "expectedSha": "715832822f284f91f5ea043922d1605abb4269f3",
+  "startedAt": "2026-11-25T17:33:27.323Z",
+  "measurements": [
+    {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "left": {
+        "x": 23.75,
+        "y": 23.765625,
+        "width": 580.765625,
+        "height": 1032.46875
+      },
+      "right": {
+        "x": 1315.484375,
+        "y": 23.765625,
+        "width": 580.765625,
+        "height": 1032.46875
+      },
+      "rail": {
+        "x": 657.5703125,
+        "y": 54,
+        "width": 604.859375,
+        "height": 972
+      }
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "left": {
+        "x": 16,
+        "y": 16,
+        "width": 387,
+        "height": 688
+      },
+      "right": {
+        "x": 877,
+        "y": 16,
+        "width": 387,
+        "height": 688
+      },
+      "rail": {
+        "x": 438.203125,
+        "y": 36,
+        "width": 403.59375,
+        "height": 648
+      }
+    },
+    {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "left": {
+        "x": 23.75,
+        "y": 23.765625,
+        "width": 580.765625,
+        "height": 1032.46875
+      },
+      "right": {
+        "x": 1315.484375,
+        "y": 23.765625,
+        "width": 580.765625,
+        "height": 1032.46875
+      },
+      "rail": {
+        "x": 657.5703125,
+        "y": 54,
+        "width": 604.859375,
+        "height": 972
+      }
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "left": {
+        "x": 16,
+        "y": 16,
+        "width": 387,
+        "height": 688
+      },
+      "right": {
+        "x": 877,
+        "y": 16,
+        "width": 387,
+        "height": 688
+      },
+      "rail": {
+        "x": 438.203125,
+        "y": 36,
+        "width": 403.59375,
+        "height": 648
+      }
+    },
+    {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "left": {
+        "x": 23.75,
+        "y": 23.765625,
+        "width": 580.765625,
+        "height": 1032.46875
+      },
+      "right": {
+        "x": 1315.484375,
+        "y": 23.765625,
+        "width": 580.765625,
+        "height": 1032.46875
+      },
+      "rail": {
+        "x": 657.5703125,
+        "y": 54,
+        "width": 604.859375,
+        "height": 972
+      }
+    },
+    {
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "left": {
+        "x": 23.75,
+        "y": 23.765625,
+        "width": 580.765625,
+        "height": 1032.46875
+      },
+      "right": {
+        "x": 1315.484375,
+        "y": 23.765625,
+        "width": 580.765625,
+        "height": 1032.46875
+      },
+      "rail": {
+        "x": 657.5703125,
+        "y": 54,
+        "width": 604.859375,
+        "height": 972
+      }
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "left": {
+        "x": 16,
+        "y": 16,
+        "width": 387,
+        "height": 688
+      },
+      "right": {
+        "x": 877,
+        "y": 16,
+        "width": 387,
+        "height": 688
+      },
+      "rail": {
+        "x": 438.203125,
+        "y": 36,
+        "width": 403.59375,
+        "height": 648
+      }
+    }
+  ],
+  "passed": true,
+  "checks": [
+    {
+      "name": "first start landscape, back, dual choice, full-screen pairing QR, persistent restart",
+      "passed": true
+    },
+    {
+      "name": "first start portrait, D-pad confirmation, no count step, persistent restart",
+      "passed": true
+    },
+    {
+      "name": "mixed and both-live portrait cards, fixed central QR, independent scores",
+      "passed": true
+    },
+    {
+      "name": "two canonical QR links and lane statuses remain independent",
+      "passed": true
+    },
+    {
+      "name": "canonical Around and X01 share published club theme without cross-pane score changes",
+      "passed": true
+    },
+    {
+      "name": "single portrait and landscape stay saved across viewport changes",
+      "passed": true
+    },
+    {
+      "name": "legacy active Play waits until completion before setup",
+      "passed": true
+    },
+    {
+      "name": "all displayed assets are deployed responses and no browser/API mutation escaped mocks",
+      "passed": true
+    }
+  ],
+  "screenshots": [
+    "docs/evidence/oche-splitscreen/postdeployment-staging/wizard-landscape.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/wizard-two-scoreboards.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/pairing-landscape.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/wizard-portrait.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/pairing-portrait.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/left-live-right-free-1920x1080.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/left-live-right-free-1280x720.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/both-live-1920x1080.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/both-live-1280x720.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/both-free-qr-1920x1080.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/club-around-x01-1920x1080.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/club-around-x01-1280x720.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/single-portrait-1920x1080.png",
+    "docs/evidence/oche-splitscreen/postdeployment-staging/single-landscape-1920x1080.png"
+  ],
+  "browserErrors": [],
+  "unexpectedRequests": [],
+  "mockedApi": {
+    "GET /api/oche/v1/snapshot": 13,
+    "POST /api/oche/v1/refresh": 4,
+    "GET /api/oche/v1/status": 4,
+    "POST /api/oche/v1/start": 2,
+    "GET /api/oche/v1/events": 10
+  },
+  "assets": [
+    {
+      "path": "/_next/static/css/6d13329be12bebcf.css",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/css/24fe06a40ecc1914.css",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/css/9bc4d89f78dcb46a.css",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/css/3685e88bd5ebd58e.css",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/css/171007330847a988.css",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/chunks/webpack-6cf189392f71e855.js",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/chunks/main-app-cbd05a3bb47f9f80.js",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/chunks/app/layout-5ec7ca5a907b90b2.js",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/chunks/5332-4fcf2d315a9d35b6.js",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/chunks/app/oche-live/page-4636f1e949942e00.js",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-e199e788e58acf79.js",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/chunks/1846-d7b14d88f88fb377.js",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/chunks/3794-5f961eeeccc20c84.js",
+      "status": 200
+    },
+    {
+      "path": "/_next/static/chunks/768.ea6949f54131a3b6.js",
+      "status": 200
+    }
+  ],
+  "limitations": [
+    "Chromium with deployed JS/CSS and synthetic API responses; no hosted account, pairing, board or match mutation.",
+    "No physical 55-inch television, physical D-pad or optical QR scans with phones."
+  ],
+  "runtimeSha": "715832822f284f91f5ea043922d1605abb4269f3",
+  "runtimeShaAfter": "715832822f284f91f5ea043922d1605abb4269f3",
+  "finishedAt": "2026-11-25T17:33:53.591Z"
+}

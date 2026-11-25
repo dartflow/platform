@@ -1,0 +1,2278 @@
+{
+  "format": "dartflow-oche-splitscreen-release-v1",
+  "status": "web-and-databases-deployed-android-internal-uploaded-production-blocked-by-google-review",
+  "updatedAt": "2026-11-25T18:36:14.134037Z",
+  "repository": "dartflow/platform",
+  "referenceCommit": "07e2d64d97d9ffa2c85d10b074a0747fa3ab789f",
+  "sourceCommit": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+  "integrationBranch": "main",
+  "pullRequest": "https://github.com/dartflow/platform/pull/34",
+  "authorization": "The user explicitly authorized the staging, production and Android rollout.",
+  "rolloutOrder": [
+    "staging database",
+    "production database",
+    "exact-source web CI",
+    "staging web/backend",
+    "production web/backend of the accepted staging source",
+    "Google Play publication of the verified signed Android bundle after backend readiness"
+  ],
+  "database": {
+    "status": "passed",
+    "evidence": "database-rollout-2026-11-25.json",
+    "sourceMigration": "supabase/migrations/20261125154720_oche_screen_layout.sql",
+    "sourceMigrationSha256": "99ca107588b3e872b355c80463663697c6b9d9fd942f394c779579a471060df6",
+    "staging": {
+      "projectRef": "dsnqnvbckkqpzadblshu",
+      "migrationVersion": "20261125162837",
+      "migrationName": "oche_screen_layout",
+      "verified": true
+    },
+    "production": {
+      "projectRef": "wlrnowuownakqqgjxnbb",
+      "migrationVersion": "20261125162926",
+      "migrationName": "oche_screen_layout",
+      "verified": true
+    },
+    "checks": [
+      "Eight additive private columns and the feature version are present.",
+      "Layout, home single-board, distinct-board and active same-location constraints are validated.",
+      "Private Oche RLS, runtime grants and denied Data API access are preserved.",
+      "Primary assignments, physical board IDs, reservations and screen capacity fingerprints are unchanged.",
+      "Thirty-six historical sport table fingerprints are unchanged in each environment.",
+      "Security advisors are unchanged from the recorded baseline."
+    ],
+    "backup": {
+      "consistentPreMigrationSnapshots": true,
+      "protectedArchiveAndConfigurationReadbackVerified": true,
+      "freshRestoreDrill": false,
+      "scope": "Runtime-readable private application data and exact runtime/release configuration; excludes Supabase Auth, protected unreadable tables, signing keys and external provider recovery."
+    },
+    "hostedFixtureMutations": false
+  },
+  "localValidation": {
+    "evidence": "validation.json",
+    "scope": "Merged local source before the final release merge; exact release-source CI is recorded separately below.",
+    "typecheck": "passed",
+    "lint": "passed",
+    "productionBuild": "passed",
+    "unitDatabaseContract": {
+      "command": "npm test",
+      "passed": 918,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 307783.306124,
+      "environment": "Fresh migrated and seeded isolated local PostgreSQL database.",
+      "logSha256": "d0b8aa92c353f3e15bc6d417d2841773929d584a589608aec5cf8b5097804abe"
+    },
+    "browser": {
+      "passed": 35,
+      "failed": 0,
+      "environment": "Chromium against a local production build.",
+      "execution": "Thirty-one display/management tests and four real API pairing/branding tests passed across the recorded final runs.",
+      "viewports": [
+        [
+          1920,
+          1080
+        ],
+        [
+          1280,
+          720
+        ],
+        [
+          1080,
+          1920
+        ]
+      ]
+    },
+    "android": {
+      "lint": "passed",
+      "build": "passed",
+      "unitTestsPerVariant": 44,
+      "unitTestVariants": [
+        "stagingDebug",
+        "productionDebug",
+        "productionRelease"
+      ],
+      "unitTestFailures": 0,
+      "instrumentationSourceMethods": 24,
+      "instrumentationApkCompiled": true,
+      "localInstrumentationExecuted": false,
+      "unitTestSkipped": 0
+    },
+    "publicationAudit": {
+      "provenanceTestsPassed": 11,
+      "playTransitionTestsPassed": 20,
+      "yamlParse": "passed",
+      "existingPlayerJob": "Verified identical except the explicit action-routing condition.",
+      "deploymentGateNegativeCasesRejected": 6,
+      "fixedOchePackage": "nl.dartflow.ochelive",
+      "checks": [
+        "Exact main source, successful signing run and all required native jobs.",
+        "Forty-four JVM tests per variant and twenty-four UI methods per target with zero failures or skips.",
+        "Exact artifact IDs, ZIP members, immutable bundle bytes and identical GitHub release assets.",
+        "Separate Oche upload certificate, protected version tag and exact tag commit.",
+        "Explicit healthy backend SHA, database/auth readiness, layout capability and App Links."
+      ]
+    },
+    "followUpPlayProjectionFix": {
+      "commit": "d9e520d",
+      "change": "For active Play projections only, skip the legacy score-event query whose output is overwritten by Play sessionKey and empty scoreEvents.",
+      "files": [
+        "lib/board-screens.ts",
+        "lib/club-boards.ts"
+      ],
+      "deadlineChanged": false,
+      "grantChanged": false,
+      "sqlBindingsChanged": false,
+      "regressionTests": [
+        "Club X01 remains available when the unused legacy event query would fail.",
+        "Direct tactics remains available when the unused legacy event query would fail.",
+        "Club canonical match retains its accepted 180 event.",
+        "Direct canonical match retains its accepted 180 event."
+      ],
+      "scratchValidation": {
+        "passed": 74,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "durationMs": 38463.34148,
+        "logSha256": "29730c87c8447db99b253fd7307c4330ff538396bdbd335bb24703ef4ba08a0b"
+      },
+      "rootValidation": {
+        "typecheck": "passed",
+        "lint": "passed",
+        "diffCheck": "passed"
+      },
+      "newExactSourceCiAndStagingPilot": "passed on accepted final source 0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277"
+    },
+    "projectionLatencyAudit": {
+      "status": "passed",
+      "sourceCommit": "3fc9ff096c60731f9b5ebf52e0848a239a6716e0",
+      "evidenceSha256": "5530bdefbf1c49d3439e0786efd231ace25bd8051a0cf26ac48c0abc41966b15",
+      "finishedAt": "2026-11-25T17:53:25.682Z",
+      "scope": "Local real device snapshots on an isolated migrated database; 25 ms injected per client query including statement-timeout configuration, plus one baseline.",
+      "scenariosPassed": 6,
+      "allPanelsReady": true,
+      "sourceDeadlineMs": 1000,
+      "sourceDeadlineChanged": false,
+      "clientDeadlineMs": 2500,
+      "maximumPanelDurationMs": 866.3602569999994,
+      "scenarios": [
+        {
+          "name": "left club Play / right physical standby: baseline",
+          "injectedRoundtripMs": 0,
+          "durationMs": 37.92085500000002,
+          "queryCount": 74,
+          "passed": true
+        },
+        {
+          "name": "left club Play / right physical standby: 25ms roundtrip",
+          "injectedRoundtripMs": 25,
+          "durationMs": 1939.480035,
+          "queryCount": 74,
+          "passed": true
+        },
+        {
+          "name": "left club Play / right physical Play: 25ms roundtrip",
+          "injectedRoundtripMs": 25,
+          "durationMs": 1894.7448099999997,
+          "queryCount": 72,
+          "passed": true
+        },
+        {
+          "name": "two canonical physical X01 matches before activity: 25ms roundtrip",
+          "injectedRoundtripMs": 25,
+          "durationMs": 1828.0996960000002,
+          "queryCount": 70,
+          "passed": true
+        },
+        {
+          "name": "canonical X01 left with activity / right before activity: 25ms roundtrip",
+          "injectedRoundtripMs": 25,
+          "durationMs": 1887.2868270000008,
+          "queryCount": 72,
+          "passed": true
+        },
+        {
+          "name": "two canonical physical X01 matches with real activity: 25ms roundtrip",
+          "injectedRoundtripMs": 25,
+          "durationMs": 1931.8101040000001,
+          "queryCount": 74,
+          "passed": true
+        }
+      ],
+      "cleanup": {
+        "passed": true,
+        "error": null,
+        "remainingRecords": {
+          "profiles": 0,
+          "boards": 0,
+          "installations": 0,
+          "sessions": 0,
+          "activities": 0,
+          "activity_links": 0
+        }
+      },
+      "physicalOrHostedLatencyEstablished": false
+    },
+    "projectionContextRegression": {
+      "sourceCommit": "3fc9ff096c60731f9b5ebf52e0848a239a6716e0",
+      "passed": 90,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationMs": 43728.414614,
+      "logSha256": "74590e42a29095c41d03196dbe7328f1caa9d7db9a13775a53abfb2787a4f727",
+      "environment": "Same isolated migrated local scratch database; sequential test entrance.",
+      "typecheck": "passed",
+      "lint": "passed",
+      "diffCheck": "passed",
+      "sourceDeadlineChanged": false,
+      "checks": [
+        "Skip unused leases only after an authorized canonical match was projected.",
+        "Reuse exact source-bound published match labels; empty sets deny labels and mismatched sources follow normal reads.",
+        "Generic club displays avoid duplicate activity reads while keeping canExtend false.",
+        "Legacy paired display extension capability remains available under its existing rules."
+      ]
+    }
+  },
+  "releaseCi": {
+    "workflow": ".github/workflows/ci.yml",
+    "runId": 45669736963,
+    "url": "https://github.com/dartflow/platform/actions/runs/45669736963",
+    "event": "push",
+    "branch": "main",
+    "headSha": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+    "requiredJob": "Verify",
+    "status": "completed",
+    "conclusion": "success",
+    "logSha256": "163dcbeb9fb49f46d4083e7fe7a1825655747af6e6ca4babc7dc0f467206deb7",
+    "allRequiredStepsPassed": true,
+    "standaloneCandidatePackaged": true,
+    "testGates": {
+      "unitDatabaseContract": {
+        "passed": 924,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "durationMs": 241509.900464
+      },
+      "fullBrowser": {
+        "passed": 155,
+        "failed": 0,
+        "skipped": 0,
+        "duration": "10.6m"
+      },
+      "scopedFeedChat": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "duration": "33.0s"
+      }
+    }
+  },
+  "webRuntime": {
+    "staging": {
+      "status": "accepted",
+      "workflowRunId": 45672807175,
+      "workflowUrl": "https://github.com/dartflow/platform/actions/runs/45672807175",
+      "expectedReleaseId": "45672807175-1",
+      "expectedSourceCommit": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+      "configId": "staging-2026-11-18-play-safety-1",
+      "sourceCommit": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+      "releaseId": "45672807175-1",
+      "publicAndLoopbackHealthReadyVerified": true,
+      "database": "ok",
+      "auth": "reachable",
+      "layoutCapability": {
+        "version": 1,
+        "dualLocation": true
+      },
+      "managementBrowserEvidence": "postdeployment-staging/report.json",
+      "managementBrowser": {
+        "passed": 8,
+        "failed": 0,
+        "screenshots": 14,
+        "jsCssAssets200": 14,
+        "browserErrors": 0,
+        "mutations": 0,
+        "apiSource": "Locally mocked contract fixtures; actual deployed staging application assets and source/release/config verified before and after."
+      },
+      "functionalPilotPassed": true,
+      "checksPassed": 18,
+      "cleanupChecksPassed": 6,
+      "revocationChainMs": 1211
+    },
+    "production": {
+      "status": "ready-verified",
+      "workflowRunId": 45674661367,
+      "workflowUrl": "https://github.com/dartflow/platform/actions/runs/45674661367",
+      "expectedReleaseId": "45674661367-1",
+      "expectedSourceCommit": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+      "configId": "production-2026-11-20-firebase-fcm-1",
+      "releaseId": "45674661367-1",
+      "sourceCommit": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+      "publicAndLoopbackHealthReadyVerified": true,
+      "httpStatus": 200,
+      "database": "ok",
+      "auth": "reachable",
+      "layoutCapability": {
+        "version": 1,
+        "dualLocation": true
+      },
+      "permissions": {
+        "read": true,
+        "score": false,
+        "extend": false
+      },
+      "pollMs": 2000,
+      "revocationBudgetMs": 5000,
+      "nativeReleaseReadinessPreflight": "passed",
+      "ocheAppLinksVerified": true,
+      "productionAccountFixtureMutations": false,
+      "managementBrowserEvidence": "postdeployment-production/report.json",
+      "managementBrowser": {
+        "passed": 8,
+        "failed": 0,
+        "screenshots": 14,
+        "jsCssAssets200": 14,
+        "browserErrors": 0,
+        "unexpectedRequests": 0,
+        "mutations": 0,
+        "apiSource": "Locally mocked contract fixtures; actual deployed application JS/CSS and production source/release/config verified before and after.",
+        "evidenceSha256": "a41e48354ad9f0d6a9f89776fd5b85ff3ae99ed9fc10c0abd107fa9f22bd161f"
+      }
+    }
+  },
+  "androidPublication": {
+    "package": "nl.dartflow.ochelive",
+    "sourceCommit": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+    "versionName": "1.5.1",
+    "status": "blocked-by-existing-google-review",
+    "googlePlayUploaded": true,
+    "googlePlayPromoted": false,
+    "githubReleasePublished": true,
+    "signingRunId": 45669780864,
+    "signingRunUrl": "https://github.com/dartflow/platform/actions/runs/45669780864",
+    "versionCode": 1105,
+    "runtimeTests": {
+      "sourceCommit": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+      "reportedBy": "Native release agent; signing run 45669780864",
+      "unitTests": {
+        "staging": 44,
+        "production": 44,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "instrumentation": {
+        "androidTv": 24,
+        "phone": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "durations": {
+        "verifyGradle": "3m53s",
+        "androidTvGradle": "2m51s",
+        "phoneGradle": "4m12s"
+      }
+    },
+    "bundleBytes": 2900908,
+    "bundleSha256": "02b77cfa35dea8ef802e9c35bae1ea4254a65a70623a32a9569a64406aac2b54",
+    "uploadCertificateSha256": "91:55:1C:31:71:01:D4:D2:57:56:41:8C:FA:AC:93:50:0D:29:9F:66:61:D2:93:B3:6E:B4:A8:7F:67:0F:ED:9B",
+    "artifacts": {
+      "oche-signed-aab": 15048884410,
+      "oche-signing-receipt": 15050446275
+    },
+    "artifactZipSha256": {
+      "oche-signed-aab": "30c403bedc75cfc6cb1cdcdb961fe5e0bb645c829fc3603088c8a28d1bdc6fac",
+      "oche-signing-receipt": "4aaf965e4046ded8e1eb6c79c29bf57c2421646e9950f541659f105b43eeac93"
+    },
+    "receiptBytes": 585,
+    "receiptSha256": "b24573d018e1fe511db14a8ff6e8a75bdc0a7c2093cad871467b5cb41e1091e6",
+    "signedArtifactChecks": {
+      "artifactZipDigests": true,
+      "exactZipMembers": true,
+      "bundleDigestAndBytes": true,
+      "jarsignerVerified": true,
+      "uploadCertificateMatches": true
+    },
+    "signingEvidenceSha256": "74b34b163416f22539a6fab7e44eed00f6f41db47ac95f51f8a56d6814a2fc95",
+    "signingGradleDuration": "2m43s",
+    "signingReceiptSha256": "b24573d018e1fe511db14a8ff6e8a75bdc0a7c2093cad871467b5cb41e1091e6",
+    "githubRelease": {
+      "url": "https://github.com/dartflow/platform/releases/tag/oche-v1.5.1",
+      "releaseId": 458484641,
+      "publishedAt": "2026-11-25T18:23:34Z",
+      "tag": "oche-v1.5.1",
+      "targetCommit": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+      "draft": false,
+      "prerelease": false,
+      "bundleBytes": 2900908,
+      "bundleSha256": "02b77cfa35dea8ef802e9c35bae1ea4254a65a70623a32a9569a64406aac2b54",
+      "receiptBytes": 585,
+      "receiptSha256": "b24573d018e1fe511db14a8ff6e8a75bdc0a7c2093cad871467b5cb41e1091e6",
+      "evidenceSha256": "ad667e35b65d5a51eae9af686d195499a642bc27340acd5015fd889228b2bc4c",
+      "assets": {
+        "aab": 792643193,
+        "receipt": 792643190
+      },
+      "restEvidenceSha256": "14c8b539bbdb036d18466b06444e3a56f59687bfe59b51581a9372bdcd8de771"
+    },
+    "actualGithubProvenanceVerifier": true,
+    "actualGithubProvenanceScope": "Live GitHub run/attempt-1 jobs, exact artifact metadata, protected tag/ruleset, release assets and original 1105 bundle/receipt.",
+    "protectedTagRuleset": {
+      "id": 27694342,
+      "adminReadBypassActors": []
+    },
+    "playPublication": {
+      "access": {
+        "runId": 45675401074,
+        "url": "https://github.com/dartflow/platform/actions/runs/45675401074",
+        "status": "success",
+        "provenanceAndProductionReadinessVerified": true,
+        "playerJobSkipped": true
+      },
+      "internalUpload": {
+        "runId": 45675591714,
+        "url": "https://github.com/dartflow/platform/actions/runs/45675591714",
+        "status": "success",
+        "committedAt": "2026-11-25T18:30:20Z",
+        "versionCode": 1105,
+        "track": "internal",
+        "releaseStatus": "completed",
+        "receiptArtifactId": 15052475837,
+        "productionVersionUnchangedAtUpload": 1063,
+        "alphaBetaVersionUnchanged": 1009,
+        "appSigningCertificateVerified": true,
+        "playerJobSkipped": true,
+        "receiptBytes": 712,
+        "receiptSha256": "04cbf4ec9f12c02fa76f55350fc2a2989c3fc686235b498288d9b68688c0e06e"
+      },
+      "productionPromotion": {
+        "runId": 45675970535,
+        "url": "https://github.com/dartflow/platform/actions/runs/45675970535",
+        "status": "blocked-by-existing-google-review",
+        "versionCode": 1105,
+        "sameVerifiedBundle": true,
+        "httpStatus": 400,
+        "guard": "ERROR_IF_IN_REVIEW",
+        "reason": "Google Play is already reviewing changes; the existing guard rejected production promotion.",
+        "guardBypassed": false,
+        "provenanceSigningAndWebGatesPassed": true,
+        "googleErrorCode": "CHANGES_ALREADY_IN_REVIEW",
+        "committed": false,
+        "failedJobId": 139423493471,
+        "resume": "After Google review is confirmed complete, rerun only failed Oche job 139423493471 in run 45675970535, keeping version 1105 and the same verified source/bundle. Do not bypass the review guard."
+      },
+      "postFailureTrackReadback": {
+        "runId": 45676222410,
+        "url": "https://github.com/dartflow/platform/actions/runs/45676222410",
+        "status": "success",
+        "readOnly": true,
+        "verifiedAt": "2026-11-25T18:33:11Z",
+        "internal": {
+          "versionCode": 1105,
+          "releaseStatus": "completed"
+        },
+        "production": {
+          "versionName": "1.4.0",
+          "versionCode": 1063,
+          "releaseStatus": "completed"
+        },
+        "alpha": {
+          "versionCode": 1009,
+          "unchanged": true
+        },
+        "beta": {
+          "versionCode": 1009,
+          "unchanged": true
+        },
+        "version1105AppSigningCertificateVerified": true
+      },
+      "cleanup": {
+        "scope": "own_uncommitted_failed_edit_only",
+        "codePath": "Edit.__exit__ deletes own edit when commit returns non-transient HTTP400",
+        "noCleanupErrorLogged": true,
+        "existingReviewCancelled": false
+      },
+      "resume": {
+        "runId": 45675970535,
+        "jobId": 139423493471,
+        "condition": "Google review demonstrably finished; then rerun normal guarded job",
+        "command": "gh run rerun 45675970535 --repo dartflow/platform --job 139423493471",
+        "sourceMayRemainAncestorOfMain": true,
+        "replaceBundle": false,
+        "newSigningRequired": false
+      },
+      "review": {
+        "sourceNotExposedByExistingReadOnlyRoute": true,
+        "internalCommitSubmitsForReview": true,
+        "reference": "https://developers.google.com/android-publisher/api-ref/rest/v3/edits/commit",
+        "noBlindRetry": true
+      },
+      "resultEvidenceSha256": "0993baa8b5d5990c7241be975375250e4479439e5de21511bce41673b4fda5c7",
+      "playerReleaseJob": "skipped_in_all_runs",
+      "playerTracksChanged": false,
+      "iamChanged": false
+    },
+    "productionVersionName": "1.4.0",
+    "productionVersionCode": 1063,
+    "storeInstallAvailabilityVerified": false
+  },
+  "visualEvidence": [
+    "left-live-right-free-1920x1080.png",
+    "left-live-right-free-1280x720.png",
+    "both-live-1920x1080.png",
+    "both-live-1280x720.png"
+  ],
+  "physicalHardware": {
+    "horizontal55InchTv": "not tested",
+    "simultaneousQrScansFromThrowPosition": "not tested",
+    "multiplePhonesIndividually": "not tested",
+    "physicalAndroidTvDpad": "not tested",
+    "physicalTvBrowserOrHdmiBrowser": "not tested",
+    "scope": "Local Chromium and compiled Android checks do not establish physical TV readability, D-pad operation or real phone scanning performance."
+  },
+  "credentialsOrPrivateRowDataIncluded": false,
+  "stagingFunctionalPilot": {
+    "status": "passed-accepted-by-release-coordinator",
+    "scope": "Existing private review venue/account; ordinary review password grant and account/device/play APIs only.",
+    "expectedSha": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+    "hostedDomainMutationsPerformed": true,
+    "authGrantPerformed": true,
+    "credentialHandling": "Protected existing host runtime and encrypted review credential read only; credentials remain in process memory and are never emitted or written.",
+    "plannedChecks": [
+      "Existing private venue ownership and unchanged baseline",
+      "One physical screen slot with two independent sources",
+      "Left live / right standby, both live, left standby / right live and source-preserving resume",
+      "Accepted X01 scores, independent activity deadlines, a right 180 and a left undo",
+      "Atomic swap, stale revision HTTP 409, and 2 \u2192 1 \u2192 2 without implicit right assignment restoration",
+      "Device revocation within 5 seconds",
+      "Local Auth logout for the new session only and exact finally cleanup"
+    ],
+    "diagnostics": "Retain sanitized per-panel state/mode/remaining and duration plus one timed legacy primary projection comparison. The 1000 ms source deadline remains unchanged.",
+    "plannedCleanup": "Interrupt only newly created guest sessions; revoke only the new display; soft-archive only its temporary second QA board; verify original board state and screen capacity.",
+    "previousAttemptsCleanupPassed": true,
+    "priorAttemptsRetainedTotals": {
+      "interruptedGuestSessions": 2,
+      "archivedTemporaryBoards": 2,
+      "revokedDisplays": 2,
+      "ordinaryAuditAndReceiptRecords": true,
+      "authSignInAndLocalLogoutAudit": true
+    },
+    "hostHelperSha256": "87dcd92f70012e434538f92e03b2bf26c43f5ad93aef67774328097f98e54169",
+    "expectedReleaseId": "45672807175-1",
+    "cleanupPassed": true,
+    "originalBoardCapacityAndOtherDevicesUnchanged": true,
+    "newAuthSessionOnlyLocallyLoggedOut": true,
+    "attempts": [
+      {
+        "attemptOrdinal": 1,
+        "startedAt": "2026-11-25T18:16:43.191Z",
+        "finishedAt": "2026-11-25T18:17:54.938Z",
+        "sourceCommit": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+        "releaseId": "45672807175-1",
+        "passed": false,
+        "checks": [
+          {
+            "name": "protected_existing_staging_review_fixture_verified_without_outputting_credentials",
+            "passed": true
+          },
+          {
+            "name": "explicit_healthy_staging_release_and_layout_backend",
+            "passed": true
+          },
+          {
+            "name": "two_panel_sources_use_one_physical_screen_slot",
+            "passed": true,
+            "detail": {
+              "positions": [
+                "left",
+                "right"
+              ]
+            }
+          },
+          {
+            "name": "left_live_right_standby",
+            "passed": true
+          },
+          {
+            "name": "both_live_have_independent_initial_scores",
+            "passed": true
+          },
+          {
+            "name": "left_60_changes_only_left_148_to_88",
+            "passed": true
+          },
+          {
+            "name": "left_scoring_updates_only_its_own_server_activity_deadline",
+            "passed": true
+          },
+          {
+            "name": "right_180_changes_only_right_and_keeps_left_readable",
+            "passed": true
+          },
+          {
+            "name": "left_undo_does_not_change_right",
+            "passed": true
+          },
+          {
+            "name": "left_standby_right_live_is_independent",
+            "passed": true
+          },
+          {
+            "name": "left_resume_preserves_both_accepted_scores",
+            "passed": true
+          },
+          {
+            "name": "atomic_swap_preserves_each_source_and_score",
+            "passed": true
+          },
+          {
+            "name": "stale_configuration_revision_is_visible",
+            "passed": true
+          },
+          {
+            "name": "two_to_one_keeps_current_left_and_ends_right",
+            "passed": true
+          },
+          {
+            "name": "one_to_two_does_not_restore_the_old_right_assignment",
+            "passed": true
+          },
+          {
+            "name": "explicit_right_reassignment_restores_only_confirmed_sources",
+            "passed": true
+          },
+          {
+            "name": "revocation_rejects_both_projections_within_five_seconds",
+            "passed": false,
+            "detail": {
+              "elapsedMs": 1016,
+              "status": 401
+            }
+          }
+        ],
+        "displayObservations": [
+          {
+            "phase": "pairing",
+            "elapsedMs": 2022,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "standby",
+                "hasMatch": false,
+                "hasPlay": false,
+                "playMode": null,
+                "gameMode": null,
+                "progressMode": null,
+                "remaining": null
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "standby",
+                "hasMatch": false,
+                "hasPlay": false,
+                "playMode": null,
+                "gameMode": null,
+                "progressMode": null,
+                "remaining": null
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1962,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "standby",
+                "hasMatch": false,
+                "hasPlay": false,
+                "playMode": null,
+                "gameMode": null,
+                "progressMode": null,
+                "remaining": null
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1924,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  271,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1919,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  88,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  271,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1909,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  88,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1912,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1960,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "standby",
+                "hasMatch": false,
+                "hasPlay": false,
+                "playMode": null,
+                "gameMode": null,
+                "progressMode": null,
+                "remaining": null
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1911,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "configuration",
+            "elapsedMs": 2528,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 1,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "configuration",
+            "elapsedMs": 1681,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 1
+            },
+            "configurationRevision": 2,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "configuration",
+            "elapsedMs": 1671,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 3,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              },
+              {
+                "position": "right",
+                "status": "unassigned",
+                "source": "none",
+                "state": null,
+                "hasMatch": false,
+                "hasPlay": false,
+                "playMode": null,
+                "gameMode": null,
+                "progressMode": null,
+                "remaining": null
+              }
+            ]
+          },
+          {
+            "phase": "configuration",
+            "elapsedMs": 2515,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 4,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          }
+        ],
+        "legacyDiagnostic": {
+          "phase": "independent_play",
+          "elapsedMs": 679,
+          "state": "live",
+          "hasMatch": false,
+          "hasPlay": true,
+          "playMode": "x01",
+          "gameMode": "x01",
+          "progressMode": "x01",
+          "remaining": [
+            148,
+            188
+          ]
+        },
+        "failure": {
+          "phase": "revocation",
+          "code": "revocation_rejects_both_projections_within_five_seconds"
+        },
+        "diagnosis": "The helper incorrectly required immediate HTTP 410 on revocation. The existing access/refresh contract returns terminal HTTP 401 for revoked device credentials; the full client refresh-denial chain has not yet been measured by this helper.",
+        "cleanupPassed": true,
+        "cleanupChecks": 6,
+        "safeReportSha256": "5855360f228ee5e22830f0851984d157a82a997977b022c35b46f1d508268354",
+        "hostHelperSha256": "8358e3ad1e7586d68ec159270ff154f831eba5ff19f08371593b9da228b9f4f2"
+      },
+      {
+        "attemptOrdinal": 2,
+        "startedAt": "2026-11-25T18:21:37.162Z",
+        "finishedAt": "2026-11-25T18:22:48.663Z",
+        "sourceCommit": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+        "releaseId": "45672807175-1",
+        "passed": true,
+        "checks": [
+          {
+            "name": "protected_existing_staging_review_fixture_verified_without_outputting_credentials",
+            "passed": true
+          },
+          {
+            "name": "explicit_healthy_staging_release_and_layout_backend",
+            "passed": true
+          },
+          {
+            "name": "two_panel_sources_use_one_physical_screen_slot",
+            "passed": true,
+            "detail": {
+              "positions": [
+                "left",
+                "right"
+              ]
+            }
+          },
+          {
+            "name": "left_live_right_standby",
+            "passed": true
+          },
+          {
+            "name": "both_live_have_independent_initial_scores",
+            "passed": true
+          },
+          {
+            "name": "left_60_changes_only_left_148_to_88",
+            "passed": true
+          },
+          {
+            "name": "left_scoring_updates_only_its_own_server_activity_deadline",
+            "passed": true
+          },
+          {
+            "name": "right_180_changes_only_right_and_keeps_left_readable",
+            "passed": true
+          },
+          {
+            "name": "left_undo_does_not_change_right",
+            "passed": true
+          },
+          {
+            "name": "left_standby_right_live_is_independent",
+            "passed": true
+          },
+          {
+            "name": "left_resume_preserves_both_accepted_scores",
+            "passed": true
+          },
+          {
+            "name": "atomic_swap_preserves_each_source_and_score",
+            "passed": true
+          },
+          {
+            "name": "stale_configuration_revision_is_visible",
+            "passed": true
+          },
+          {
+            "name": "two_to_one_keeps_current_left_and_ends_right",
+            "passed": true
+          },
+          {
+            "name": "one_to_two_does_not_restore_the_old_right_assignment",
+            "passed": true
+          },
+          {
+            "name": "explicit_right_reassignment_restores_only_confirmed_sources",
+            "passed": true
+          },
+          {
+            "name": "revocation_rejects_both_projections_within_five_seconds",
+            "passed": true,
+            "detail": {
+              "elapsedMs": 1211,
+              "status": 401,
+              "code": "device_unauthorized",
+              "refreshStatus": 401,
+              "refreshCode": "device_unauthorized",
+              "projectionsReturned": false,
+              "tokensReturned": false
+            }
+          },
+          {
+            "name": "staging_source_and_release_remain_the_same_after_functional_pilot",
+            "passed": true
+          }
+        ],
+        "displayObservations": [
+          {
+            "phase": "pairing",
+            "elapsedMs": 2043,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "standby",
+                "hasMatch": false,
+                "hasPlay": false,
+                "playMode": null,
+                "gameMode": null,
+                "progressMode": null,
+                "remaining": null
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "standby",
+                "hasMatch": false,
+                "hasPlay": false,
+                "playMode": null,
+                "gameMode": null,
+                "progressMode": null,
+                "remaining": null
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1975,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "standby",
+                "hasMatch": false,
+                "hasPlay": false,
+                "playMode": null,
+                "gameMode": null,
+                "progressMode": null,
+                "remaining": null
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1926,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  271,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1907,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  88,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  271,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1919,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  88,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1911,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1966,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "standby",
+                "hasMatch": false,
+                "hasPlay": false,
+                "playMode": null,
+                "gameMode": null,
+                "progressMode": null,
+                "remaining": null
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "independent_play",
+            "elapsedMs": 1923,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 0,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "configuration",
+            "elapsedMs": 2539,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 1,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "configuration",
+            "elapsedMs": 1683,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 1
+            },
+            "configurationRevision": 2,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          },
+          {
+            "phase": "configuration",
+            "elapsedMs": 1683,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 3,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              },
+              {
+                "position": "right",
+                "status": "unassigned",
+                "source": "none",
+                "state": null,
+                "hasMatch": false,
+                "hasPlay": false,
+                "playMode": null,
+                "gameMode": null,
+                "progressMode": null,
+                "remaining": null
+              }
+            ]
+          },
+          {
+            "phase": "configuration",
+            "elapsedMs": 2527,
+            "layout": {
+              "orientation": "landscape",
+              "scoreboards": 2
+            },
+            "configurationRevision": 4,
+            "panels": [
+              {
+                "position": "left",
+                "status": "ready",
+                "source": "original",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  148,
+                  188
+                ]
+              },
+              {
+                "position": "right",
+                "status": "ready",
+                "source": "temporary",
+                "state": "live",
+                "hasMatch": false,
+                "hasPlay": true,
+                "playMode": "x01",
+                "gameMode": "x01",
+                "progressMode": "x01",
+                "remaining": [
+                  91,
+                  94
+                ]
+              }
+            ]
+          }
+        ],
+        "legacyDiagnostic": {
+          "phase": "independent_play",
+          "elapsedMs": 683,
+          "state": "live",
+          "hasMatch": false,
+          "hasPlay": true,
+          "playMode": "x01",
+          "gameMode": "x01",
+          "progressMode": "x01",
+          "remaining": [
+            148,
+            188
+          ]
+        },
+        "cleanupPassed": true,
+        "cleanupChecks": 6,
+        "hostHelperSha256": "87dcd92f70012e434538f92e03b2bf26c43f5ad93aef67774328097f98e54169",
+        "safeReportSha256": "f59d4421c799f99ed897072df961e3a342147f71a857a7f565ded99afca355bd"
+      }
+    ],
+    "retainedTotals": {
+      "interruptedGuestSessions": 4,
+      "archivedTemporaryBoards": 2,
+      "revokedDisplays": 2,
+      "ordinaryAuditAndReceiptRecords": true,
+      "authSignInAndLocalLogoutAudit": true
+    },
+    "passed": true,
+    "checksPassed": 18,
+    "revocation": {
+      "elapsedMs": 1211,
+      "status": 401,
+      "code": "device_unauthorized",
+      "refreshStatus": 401,
+      "refreshCode": "device_unauthorized",
+      "projectionsReturned": false,
+      "tokensReturned": false
+    },
+    "normalSnapshotDurationMs": {
+      "minimum": 1683,
+      "maximum": 2043
+    },
+    "configurationRefreshCyclesMs": [
+      2539,
+      2527
+    ],
+    "durationScope": "Each recorded configuration cycle includes access denial, refresh and its snapshot; these aggregate measurements are separate from a single normal device read.",
+    "helperCorrection": "The initial assertion required HTTP 410; only the helper was corrected to verify the existing events 401 \u2192 terminal refresh 401 contract within five seconds, without tokens or projections."
+  },
+  "candidateHistory": [
+    {
+      "sourceCommit": "df56231f702c5c78ed94e9616507a09694d6a939",
+      "runId": 45657212519,
+      "testGates": {
+        "unitDatabaseContract": {
+          "passed": 918,
+          "failed": 0,
+          "skipped": 0,
+          "cancelled": 0,
+          "durationMs": 350467.463825
+        },
+        "fullBrowser": {
+          "passed": 155,
+          "failed": 0,
+          "skipped": 0,
+          "duration": "12.2m"
+        },
+        "scopedFeedChat": {
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "duration": "33.8s"
+        }
+      },
+      "conclusion": "failure",
+      "failedStep": "Package standalone candidate",
+      "packagingFixCommit": "348198e",
+      "note": "Test-output path correction only; its next exact-source CI passed, then real staging findings led to the accepted final source recorded above.",
+      "signedBundle": {
+        "sourceCommit": "df56231f702c5c78ed94e9616507a09694d6a939",
+        "versionName": "1.5.0",
+        "versionCode": 1096,
+        "bundleBytes": 2900903,
+        "bundleSha256": "9f19933859b50969f6fc5dfcb638ad9e455d6141121b151deb7fe2e90ea8e3bf",
+        "signingRunId": 45657261047,
+        "published": false
+      },
+      "logSha256": "0caaad7aa0768a0f8369891b889362503194348b88e4a0affc76cb52a6410063",
+      "failureMessage": "AssertionError [ERR_ASSERTION]: Release SHA must identify the clean checked-out source"
+    },
+    {
+      "sourceCommit": "715832822f284f91f5ea043922d1605abb4269f3",
+      "pullRequest": "https://github.com/dartflow/platform/pull/32",
+      "releaseCi": {
+        "workflow": ".github/workflows/ci.yml",
+        "runId": 45661536621,
+        "url": "https://github.com/dartflow/platform/actions/runs/45661536621",
+        "event": "push",
+        "branch": "main",
+        "headSha": "715832822f284f91f5ea043922d1605abb4269f3",
+        "requiredJob": "Verify",
+        "status": "completed",
+        "conclusion": "success",
+        "logSha256": "6ec7e0a197f9918cd2ba084cb83daabb0def6473aa6b3f2ac71e53740e3268e1",
+        "testGates": {
+          "unitDatabaseContract": {
+            "passed": 918,
+            "failed": 0,
+            "skipped": 0,
+            "cancelled": 0,
+            "durationMs": 304554.864226
+          },
+          "fullBrowser": {
+            "passed": 155,
+            "failed": 0,
+            "skipped": 0,
+            "duration": "11.2m"
+          },
+          "scopedFeedChat": {
+            "passed": 5,
+            "failed": 0,
+            "skipped": 0,
+            "duration": "33.2s"
+          }
+        },
+        "allRequiredStepsPassed": true,
+        "standaloneCandidatePackaged": true
+      },
+      "cleanPackagingAudit": {
+        "status": "passed",
+        "sourceCommit": "715832822f284f91f5ea043922d1605abb4269f3",
+        "completedAt": "2026-11-25T17:15:05.958049+00:00",
+        "evidenceSha256": "9c44a0bfd3883b4cea745bbb040afd9b3eef6497b37e1773fa278944cd786c71",
+        "scope": "Independent clean temporary worktree; one browser capture case and the standalone packager; exact source verified.",
+        "browserCasesPassed": 1,
+        "gitCleanBeforeCapture": true,
+        "gitCleanAfterCapture": true,
+        "gitCleanAfterPackage": true,
+        "archive": {
+          "bytes": 19164506,
+          "sha256": "0491c266bfc9efe56771e148c6d53c34b2d3c402d9da20d459ecba8e0db250f6",
+          "entryCount": 2922,
+          "sourceVerified": true,
+          "serverEntry": true,
+          "ocheLiveRouteEntry": true,
+          "staticFileCount": 64,
+          "publicFileCount": 59,
+          "forbiddenEnvironmentOrPrivatePaths": []
+        }
+      },
+      "stagingRuntime": {
+        "status": "ready-browser-pilot-passed-api-live-panel-pilot-failed",
+        "workflowRunId": 45665117304,
+        "workflowUrl": "https://github.com/dartflow/platform/actions/runs/45665117304",
+        "expectedReleaseId": "45665117304-1",
+        "expectedSourceCommit": "715832822f284f91f5ea043922d1605abb4269f3",
+        "configId": "staging-2026-11-18-play-safety-1",
+        "releaseId": "45665117304-1",
+        "sourceCommit": "715832822f284f91f5ea043922d1605abb4269f3",
+        "publicAndLoopbackHealthReadyVerified": true,
+        "database": "ok",
+        "auth": "reachable",
+        "layoutCapability": {
+          "version": 1,
+          "dualLocation": true
+        },
+        "managementBrowserEvidence": "candidate-7158328-staging/report.json",
+        "managementBrowser": {
+          "passed": 8,
+          "failed": 0,
+          "screenshots": 14,
+          "jsCssAssets200": 14,
+          "browserErrors": 0,
+          "mutations": 0
+        }
+      },
+      "stagingFunctionalPilot": {
+        "status": "failed-live-panel-budget-diagnosis-cleanup-passed",
+        "scope": "Existing private review venue/account; ordinary review password grant and account/device/play APIs only.",
+        "credentialHandling": "Protected existing host runtime and encrypted review credential read only; credentials remain in process memory and are never emitted or written.",
+        "prepareOnlyPassed": true,
+        "hostedDomainMutationsPerformed": true,
+        "plannedCleanup": "Interrupt only newly created guest sessions; revoke only the new display; soft-archive only its temporary second QA board; verify original board state and screen capacity.",
+        "hostHelperSha256": "540575a6dfdf4c5137fd06869b629951aa023ee83952741c87b69e4169fbaac5",
+        "authGrantPerformed": true,
+        "expectedSha": "715832822f284f91f5ea043922d1605abb4269f3",
+        "plannedChecks": [
+          "Existing private venue ownership and unchanged baseline",
+          "One physical screen slot with two independent sources",
+          "Left live / right standby, both live, left standby / right live and source-preserving resume",
+          "Accepted X01 scores, independent activity deadlines, a right 180 and a left undo",
+          "Atomic swap, stale revision HTTP 409, and 2 \u2192 1 \u2192 2 without implicit right assignment restoration",
+          "Device revocation within 5 seconds",
+          "Local Auth logout for the new session only and exact finally cleanup"
+        ],
+        "attempts": [
+          {
+            "startedAt": "2026-11-25T17:32:20.730Z",
+            "finishedAt": "2026-11-25T17:32:47.291Z",
+            "sourceCommit": "715832822f284f91f5ea043922d1605abb4269f3",
+            "releaseId": "45665117304-1",
+            "passed": false,
+            "checksPassed": 3,
+            "failure": {
+              "phase": "independent_play",
+              "code": "pilot_scope_guard"
+            },
+            "diagnosis": "Two scores were accepted as 148/188; the first panel assertion then failed. Initial response fields were not retained, so a strictly diagnostic repeat was authorized.",
+            "cleanupPassed": true,
+            "cleanupChecks": 5,
+            "originalBoardCapacityAndOtherDevicesUnchanged": true,
+            "newAuthSessionOnlyLocallyLoggedOut": true,
+            "retained": {
+              "interruptedGuestSessions": 1,
+              "archivedTemporaryBoards": 1,
+              "revokedDisplays": 1,
+              "ordinaryAuditAndReceiptRecords": true
+            },
+            "safeReportSha256": "c4f6c08d48d6be4075b2fb1a4e81c0056098cd99aae40308ca0c5050d3ca6b7a",
+            "attemptOrdinal": 1
+          },
+          {
+            "startedAt": "2026-11-25T17:35:35.892Z",
+            "finishedAt": "2026-11-25T17:36:02.808Z",
+            "sourceCommit": "715832822f284f91f5ea043922d1605abb4269f3",
+            "releaseId": "45665117304-1",
+            "passed": false,
+            "checksPassed": 3,
+            "failure": {
+              "phase": "independent_play",
+              "code": "display_left_not_ready"
+            },
+            "displayObservations": [
+              {
+                "phase": "pairing",
+                "elapsedMs": 2054,
+                "layout": {
+                  "orientation": "landscape",
+                  "scoreboards": 2
+                },
+                "configurationRevision": 0,
+                "panels": [
+                  {
+                    "position": "left",
+                    "status": "ready",
+                    "source": "original",
+                    "state": "standby",
+                    "hasMatch": false,
+                    "hasPlay": false,
+                    "playMode": null,
+                    "gameMode": null,
+                    "progressMode": null,
+                    "remaining": null
+                  },
+                  {
+                    "position": "right",
+                    "status": "ready",
+                    "source": "temporary",
+                    "state": "standby",
+                    "hasMatch": false,
+                    "hasPlay": false,
+                    "playMode": null,
+                    "gameMode": null,
+                    "progressMode": null,
+                    "remaining": null
+                  }
+                ]
+              },
+              {
+                "phase": "independent_play",
+                "elapsedMs": 2201,
+                "layout": {
+                  "orientation": "landscape",
+                  "scoreboards": 2
+                },
+                "configurationRevision": 0,
+                "panels": [
+                  {
+                    "position": "left",
+                    "status": "error",
+                    "source": "original",
+                    "state": null,
+                    "hasMatch": false,
+                    "hasPlay": false,
+                    "playMode": null,
+                    "gameMode": null,
+                    "progressMode": null,
+                    "remaining": null
+                  },
+                  {
+                    "position": "right",
+                    "status": "ready",
+                    "source": "temporary",
+                    "state": "standby",
+                    "hasMatch": false,
+                    "hasPlay": false,
+                    "playMode": null,
+                    "gameMode": null,
+                    "progressMode": null,
+                    "remaining": null
+                  }
+                ]
+              }
+            ],
+            "legacyDiagnostic": {
+              "phase": "independent_play",
+              "elapsedMs": 801,
+              "state": "live",
+              "hasMatch": false,
+              "hasPlay": true,
+              "playMode": "x01",
+              "gameMode": "x01",
+              "progressMode": "x01",
+              "remaining": [
+                148,
+                188
+              ]
+            },
+            "diagnosis": "The bounded dual response returned a left error while the legacy primary projection returned the accepted live X01 scores in 801 ms; repeated SET LOCAL roundtrips within the 1000 ms panel budget require investigation.",
+            "cleanupPassed": true,
+            "cleanupChecks": 5,
+            "originalBoardCapacityAndOtherDevicesUnchanged": true,
+            "newAuthSessionOnlyLocallyLoggedOut": true,
+            "retained": {
+              "interruptedGuestSessions": 1,
+              "archivedTemporaryBoards": 1,
+              "revokedDisplays": 1,
+              "ordinaryAuditAndReceiptRecords": true
+            },
+            "safeReportSha256": "50354bfeb6079810d4266dd87f47ebbfe5e7d3506560238e1115f120c2c26545",
+            "attemptOrdinal": 2
+          }
+        ],
+        "diagnosticHelperSha256": "146860496e7ee34ccbb9b17466a1c5857023be5b393d0be03f35fc2b3274c962",
+        "retainedTotals": {
+          "interruptedGuestSessions": 2,
+          "archivedTemporaryBoards": 2,
+          "revokedDisplays": 2,
+          "ordinaryAuditAndReceiptRecords": true,
+          "authSignInAndLocalLogoutAudit": true
+        },
+        "followUpFix": {
+          "commit": "d9e520d",
+          "change": "For active Play projections only, skip the legacy score-event query whose output is overwritten by Play sessionKey and empty scoreEvents.",
+          "files": [
+            "lib/board-screens.ts",
+            "lib/club-boards.ts"
+          ],
+          "deadlineChanged": false,
+          "grantChanged": false,
+          "sqlBindingsChanged": false,
+          "regressionTests": [
+            "Club X01 remains available when the unused legacy event query would fail.",
+            "Direct tactics remains available when the unused legacy event query would fail.",
+            "Club canonical match retains its accepted 180 event.",
+            "Direct canonical match retains its accepted 180 event."
+          ],
+          "scratchValidation": {
+            "passed": 74,
+            "failed": 0,
+            "skipped": 0,
+            "cancelled": 0,
+            "durationMs": 38463.34148,
+            "logSha256": "29730c87c8447db99b253fd7307c4330ff538396bdbd335bb24703ef4ba08a0b"
+          },
+          "rootValidation": {
+            "typecheck": "passed",
+            "lint": "passed",
+            "diffCheck": "passed"
+          },
+          "newExactSourceCiAndStagingPilot": "superseded by the fully validated final source 0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277"
+        }
+      },
+      "androidPublication": {
+        "package": "nl.dartflow.ochelive",
+        "sourceCommit": "715832822f284f91f5ea043922d1605abb4269f3",
+        "signingRunId": 45661581501,
+        "signingRunUrl": "https://github.com/dartflow/platform/actions/runs/45661581501",
+        "versionName": "1.5.0",
+        "versionCode": 1099,
+        "status": "github-release-published-superseded-before-google-play",
+        "googlePlayUploaded": false,
+        "googlePlayPromoted": false,
+        "runtimeTests": {
+          "sourceCommit": "715832822f284f91f5ea043922d1605abb4269f3",
+          "reportedBy": "Native release agent; signing run 45661581501",
+          "unitTests": {
+            "staging": 44,
+            "production": 44,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "instrumentation": {
+            "androidTv": 24,
+            "phone": 24,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "durations": {
+            "verify": "4m01s",
+            "androidTvGradle": "2m59s",
+            "phoneGradle": "2m58s"
+          }
+        },
+        "bundleBytes": 2900909,
+        "bundleSha256": "12941bd3da1b0b2078362f83982c9f3658063f5131bb09a97a0edd456abd9ab3",
+        "uploadCertificateSha256": "91:55:1C:31:71:01:D4:D2:57:56:41:8C:FA:AC:93:50:0D:29:9F:66:61:D2:93:B3:6E:B4:A8:7F:67:0F:ED:9B",
+        "artifacts": {
+          "oche-signed-aab": 15046577661,
+          "oche-signing-receipt": 15045244220
+        },
+        "signedArtifactChecks": {
+          "artifactZipDigests": true,
+          "exactZipMembers": true,
+          "bundleDigestAndBytes": true,
+          "jarsignerVerified": true,
+          "uploadCertificateMatches": true
+        },
+        "signingEvidenceSha256": "ffc6f54078a6622c3a7a3881d8d3708b828f3a5a4855789a8b8c3e3f2fcd73e5",
+        "signingReceiptSha256": "b16991887917937556fbefa0e07298e735d0800becac7a6e88570f26588d8df7",
+        "signingGradleDuration": "2m49s",
+        "githubReleasePublished": true,
+        "githubRelease": {
+          "url": "https://github.com/dartflow/platform/releases/tag/oche-v1.5.0",
+          "releaseId": 458425636,
+          "publishedAt": "2026-11-25T17:28:54Z",
+          "tag": "oche-v1.5.0",
+          "targetCommit": "715832822f284f91f5ea043922d1605abb4269f3",
+          "bundleBytes": 2900909,
+          "bundleSha256": "12941bd3da1b0b2078362f83982c9f3658063f5131bb09a97a0edd456abd9ab3",
+          "receiptBytes": 584,
+          "receiptSha256": "b16991887917937556fbefa0e07298e735d0800becac7a6e88570f26588d8df7",
+          "evidenceSha256": "07d752a4914731f22d8ebc6799a9d30d3559443657954a89c83cf095ce84e06b",
+          "prerelease": true,
+          "quarantinedUnacceptedCandidate": true,
+          "protectedTagTargetAndAssetsUnchanged": true
+        },
+        "supersededByVersion": "1.5.1",
+        "immutableTagAndAssetsPreserved": true
+      },
+      "acceptedForProduction": false,
+      "googlePlayPublished": false,
+      "reason": "The real staging pilot exposed live Play projection deadline exhaustion caused by unused legacy score-event reads. Both attempts completed every cleanup check. Immutable 1.5.0 tag and release assets remain as history."
+    },
+    {
+      "sourceCommit": "1a1b6a040902b9be8740b91b271c5d2566cccb5b",
+      "pullRequest": "https://github.com/dartflow/platform/pull/33",
+      "releaseCi": {
+        "workflow": ".github/workflows/ci.yml",
+        "runId": 45667541615,
+        "url": "https://github.com/dartflow/platform/actions/runs/45667541615",
+        "event": "push",
+        "branch": "main",
+        "headSha": "1a1b6a040902b9be8740b91b271c5d2566cccb5b",
+        "requiredJob": "Verify",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "reason": "Candidate stopped after the local latency audit exposed a valid canonical projection exceeding the unchanged source deadline; optimized source 3fc9ff0 awaits integration."
+      },
+      "androidPublication": {
+        "package": "nl.dartflow.ochelive",
+        "sourceCommit": "1a1b6a040902b9be8740b91b271c5d2566cccb5b",
+        "versionName": "1.5.1",
+        "status": "cancelled-unpublished-superseded-by-final-source",
+        "googlePlayUploaded": false,
+        "googlePlayPromoted": false,
+        "githubReleasePublished": false,
+        "signingRunId": 45667665043,
+        "signingRunUrl": "https://github.com/dartflow/platform/actions/runs/45667665043",
+        "versionCode": 1102
+      },
+      "acceptedForProduction": false,
+      "stagingDeployed": false,
+      "reason": "A local injected-latency audit exposed valid canonical projections exceeding the unchanged 1000 ms source deadline. Candidate CI and signing were deliberately stopped before publication.",
+      "localLatencyFinding": {
+        "injectedRoundtripMs": 25,
+        "bothCanonicalPanels": "error",
+        "durationMs": 2422,
+        "leftSourceMs": 1083,
+        "rightSourceMs": 1073,
+        "fixtureActivityInitiallyPresent": false,
+        "evidenceSha256": "e51365f91f2ad7c8475c1b73ab2c05bdfc46764e5d82247ac468b0427e5ef14a"
+      },
+      "followUpFixCommit": "3fc9ff096c60731f9b5ebf52e0848a239a6716e0"
+    }
+  ],
+  "sharedHostPreservation": {
+    "status": "passed",
+    "baselineAt": "2026-11-25T17:15:00Z",
+    "reportedBy": "Root release coordinator; protected host preflight",
+    "before": {
+      "miloStaging": {
+        "pid": 1449078,
+        "startedAt": "2026-11-22 19:41:13 CET",
+        "healthPort": 4173,
+        "revision": "d7d14958afe1b000d6da4f4310c0aab02c88da36",
+        "releaseId": "45056211553-1"
+      },
+      "miloProduction": {
+        "pid": 1705858,
+        "startedAt": "2026-11-23 19:00:38 CET"
+      },
+      "sharedDeployHelper": {
+        "path": "/usr/local/bin/dg-site-deploy",
+        "sha256": "aee3e1e2e76f05d99f668ed7c756802da82033c4983216b90d7ea50de9f49bc7"
+      }
+    },
+    "after": {
+      "miloStaging": {
+        "pid": 1449078,
+        "startedAt": "2026-11-22 19:41:13 CET",
+        "healthPort": 4173,
+        "revision": "d7d14958afe1b000d6da4f4310c0aab02c88da36",
+        "releaseId": "45056211553-1"
+      },
+      "miloProduction": {
+        "pid": 1705858,
+        "startedAt": "2026-11-23 19:00:38 CET"
+      },
+      "sharedDeployHelper": {
+        "path": "/usr/local/bin/dg-site-deploy",
+        "sha256": "aee3e1e2e76f05d99f668ed7c756802da82033c4983216b90d7ea50de9f49bc7"
+      }
+    },
+    "preflight": {
+      "protectedConfigDirectoryMode": "0700",
+      "availableGigabytes": 49,
+      "oldDartFlowSourcePrefix": "e20",
+      "stagingReadyForNewRelease": false
+    },
+    "intermediateRecheck": {
+      "at": "2026-11-25T18:20:00Z",
+      "reportedBy": "Root release coordinator",
+      "miloProcessesAndSharedBrokerUnchanged": true
+    },
+    "verifiedAt": "2026-11-25T18:27:52Z",
+    "checks": {
+      "miloStagingProcessUnchanged": true,
+      "miloProductionProcessUnchanged": true,
+      "miloStagingHealthRevisionAndReleaseUnchanged": true,
+      "sharedDeployHelperHashUnchanged": true,
+      "miloRestarted": false,
+      "sharedDeployHelperModified": false
+    }
+  },
+  "stagingQaResidueAcrossAllCandidates": {
+    "interruptedGuestSessions": 6,
+    "archivedTemporaryBoards": 4,
+    "revokedDisplays": 4,
+    "ordinaryAuthSignInAndLocalLogoutAudit": true,
+    "ordinaryApiAuditReceiptsAndInternalBoardContainers": true,
+    "reason": "Normal recovery and soft-archive retention; cleanup uses ordinary APIs and does not delete audit history.",
+    "originalBoardCapacityAndOtherDevicesRestored": true,
+    "credentialsPersistedInReports": false
+  },
+  "remainingWork": [
+    {
+      "item": "Google Play production promotion of verified version 1.5.1 (1105)",
+      "status": "blocked-by-existing-google-review",
+      "reason": "Google Play returned HTTP 400 CHANGES_ALREADY_IN_REVIEW; no production edit was committed.",
+      "resumeRunId": 45675970535,
+      "resumeFailedJobId": 139423493471,
+      "sameVerifiedBundleRequired": true
+    },
+    {
+      "item": "Physical 55-inch TV, real D-pad and phone QR scans from the throwing position",
+      "status": "not-tested",
+      "scope": "Separate on-location hardware checks remain outside browser and emulator evidence."
+    }
+  ]
+}
