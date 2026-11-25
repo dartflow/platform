@@ -12,7 +12,7 @@ import {createHash,randomBytes,randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {database,eventAccess,consumeRateLimit} from './db';
 import {getClubBoardScreen} from './club-boards';
-import {readBoardScoreEvents} from './score-events';
+import {readBoardScoreEvents,type MatchEventContext} from './score-events';
 import {checkout,DomainError,matchView} from './domain';
 import {boardLease} from './platform-locks';
 import {readBoardActivity,publicBoardActivity,boardDeviceCanExtend} from './board-activity';
@@ -166,14 +166,16 @@ export async function projectBoardScreenForDevice(client:PoolClient,boardId:stri
 }
 async function readBoardScreen(client:PoolClient,boardId:string,deviceToken?:string,authorizedDevice=false):Promise<ClubBoardScreenView>{
  const row=await board(client,boardId);if(!authorizedDevice)await authorizeScreen(row,deviceToken,client);
+ if(row.club_screen&&authorizedDevice)return getClubBoardScreen(row.id,client);
  const rawActivity=await readBoardActivity(client,row.id);
  const deviceCanExtend=Boolean(rawActivity&&await boardDeviceCanExtend(client,row.id,deviceToken));
  const activity=publicBoardActivity(rawActivity,deviceCanExtend);
  if(row.club_screen){const projection=await getClubBoardScreen(row.id,client);if(activity)projection.snapshot.boardActivity=activity;return projection;}
  row.state=await assignedBoardMatch(client,row.id);
- const lease=await boardLease(client,row.id),location=await locationScreenContext(client,row.id,row.state?.id??lease?.id);let match:PublicSnapshot['match']=null;
+ const lease=row.state?null:await boardLease(client,row.id),location=await locationScreenContext(client,row.id,row.state?.id??lease?.id);let match:PublicSnapshot['match']=null,eventContext:MatchEventContext|undefined;
  if(row.state){
   const labels=await client.query<{id:string;name:string}>('select id,name from dartflow_private.profile_labels where id=any($1::uuid[])',[matchParticipants(row.state).map(p=>p.id)]);
+  eventContext={sourceId:row.state.id,participantNames:labels.rows.map(p=>p.name)};
   row.state=currentPlayerProfiles(row.state,labels.rows);
   const view=matchView(row.state,'',false);
   match={id:`board-${row.id}`,revision:view.revision,status:view.status,...publicMatchSides(view),...publicBullStart(view),...(view.cricket?{cricket:view.cricket}:{}),...(view.tactics?{tactics:publicTactics(view.tactics)}:{}),players:view.players.map((p,i)=>({id:`player-${i+1}`,name:p.name})),remaining:view.remaining,legs:view.legs,sets:view.sets,turn:view.turn,checkout:view.checkout,visits:(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit)),currentLegVisits:(view.currentLegVisits??[]).map(visit=>publicMatchVisit(view,visit)),currentLegStartScore:view.currentLegStartScore,scoringMode:view.scoringMode,winnerId:view.winnerId?`player-${view.players.findIndex(p=>p.id===view.winnerId)+1}`:null,resultPublished:view.resultPublished,settings:publicMatchSettings(view.settings),writerId:'',stats:displayStats(view.stats),legNumber:view.legNumber,setNumber:view.setNumber,paused:Boolean(view.paused)};
@@ -187,5 +189,5 @@ async function readBoardScreen(client:PoolClient,boardId:string,deviceToken?:str
  const closed=Boolean(location?.physical.closed_at),closePending=Boolean(location?.physical.close_after_session);
  const blocked=row.blocked||Boolean(location?.physical.archived_at),eventName=location?.reservation?.label??location?.physical.location_name??row.event_name;
  const statistics=await getOcheStatistics(client,{boardId:row.id,state:row.state,lobbyId:lease?.kind==='lobby'?lease.id:null,allowRecap:!row.state&&!lease&&!play&&!blocked&&!closed&&!closePending&&!location?.reservation});
- return {board:{id:row.id,name:row.name,clubName:location?.physical.location_name??row.event_name,access:location?.physical.kind==='venue'?'all':'club',blocked,occupied,closed,closePending,publicScan:row.public_screen&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${row.id}`,screenUrl:`/baanscherm/${row.id}`,...(location?{locationKind:location.physical.kind}:{})},status:match||play?'playing':blocked?'blocked':closed||closePending?'closed':lease?'waiting':location?.reservation?'reserved':'available',snapshot:{board:{id:row.id,name:row.name},event:{name:[eventName,await matchEventNotice(client,row.state?.id)].filter(Boolean).join(' · ')},match,...await readSeasonDisplay(client,row.state?.id),...await readPublicPrecall(client,row.id,row.state?.eventId??row.event_id),...(statistics?{statistics}:{}),...(activity?{boardActivity:activity}:{}),...(play?{play,sessionKey:play.sessionKey,scoreEvents:[]}:await readBoardScoreEvents(client,row.id,row.state?.id??lease?.id,match?.revision))},...(location?.reservation?{reservation:location.reservation}:{})};
+ return {board:{id:row.id,name:row.name,clubName:location?.physical.location_name??row.event_name,access:location?.physical.kind==='venue'?'all':'club',blocked,occupied,closed,closePending,publicScan:row.public_screen&&!blocked&&!closed&&!closePending&&!location?.reservation,playUrl:`/baan/${row.id}`,screenUrl:`/baanscherm/${row.id}`,...(location?{locationKind:location.physical.kind}:{})},status:match||play?'playing':blocked?'blocked':closed||closePending?'closed':lease?'waiting':location?.reservation?'reserved':'available',snapshot:{board:{id:row.id,name:row.name},event:{name:[eventName,await matchEventNotice(client,row.state?.id)].filter(Boolean).join(' · ')},match,...await readSeasonDisplay(client,row.state?.id),...await readPublicPrecall(client,row.id,row.state?.eventId??row.event_id),...(statistics?{statistics}:{}),...(activity?{boardActivity:activity}:{}),...(play?{play,sessionKey:play.sessionKey,scoreEvents:[]}:await readBoardScoreEvents(client,row.id,row.state?.id??lease?.id,match?.revision,eventContext))},...(location?.reservation?{reservation:location.reservation}:{})};
 }
