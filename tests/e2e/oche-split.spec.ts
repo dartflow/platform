@@ -1,6 +1,9 @@
 import {test,expect,type Page} from '@playwright/test';
 import {readFile,mkdir} from 'node:fs/promises';
 import type {OcheDisplaySnapshot,OchePairing} from '../../lib/oche-device-types';
+import type {PublicPlaySession} from '../../lib/play-session-types';
+import {newPlayState,normalizePlayRules} from '../../lib/play-rules';
+import {deriveThemeTokens} from '../../lib/clubhouse-theme-domain';
 
 const fixture=async(name:string)=>JSON.parse(await readFile(`contracts/fixtures/oche-display-v1-panels/${name}.json`,'utf8')) as OcheDisplaySnapshot;
 async function display(page:Page,read:()=>OcheDisplaySnapshot){
@@ -78,4 +81,35 @@ test('a paired proposal keeps effective layout until server confirmation and sin
  await page.getByRole('button',{name:'Schermmenu'}).click();await page.getByRole('button',{name:'Schermindeling wijzigen'}).click();await page.getByRole('button',{name:/Verticaal 9:16/}).click();await page.getByRole('button',{name:'Opslaan en doorgaan'}).click();await expect(page.getByRole('heading',{name:'Bevestig op je telefoon'})).toBeVisible();expect(proposals).toBe(1);await expect(page.locator('.oche-device-display')).toHaveAttribute('data-layout','dual');
  snapshot={...snapshot,layout:{orientation:'portrait',scoreboards:1},configurationRevision:(snapshot.configurationRevision??0)+1};await expect(page.locator('.oche-device-display')).toHaveAttribute('data-layout','portrait');await expect(page.locator('.oche-layout-confirm')).toHaveCount(0);
  snapshot={...snapshot,display:null,panels:[{position:'left',sourceId:snapshot.board!.id,status:'unavailable',snapshot:null}]};await expect(page.getByRole('heading',{name:'Baan niet beschikbaar'})).toBeVisible();await expect(page.locator('.sprint-number')).toHaveCount(0);
+});
+
+
+function aroundPlay(serverNow:number):PublicPlaySession{
+ const game=newPlayState('split-around',[{id:'side-left',playerIds:['around-player']}],normalizePlayRules({mode:'around'}));
+ return{id:'split-around',sessionKey:'split-around-session',version:1,revision:1,status:'active',mode:'around',rules:game.rules,game,participants:[{id:'around-player',name:'Speler links'}],writerName:'Schrijver links',serverNow,activityAt:serverNow,warningAt:serverNow+120000,deadlineAt:serverNow+180000,extensionsUsed:0,maxExtensions:2};
+}
+
+test('split retains canonical Play beside X01 and applies the device club style to both panes',async({page})=>{
+ const snapshot=await fixture('both-live'),now=Date.now(),play=aroundPlay(now);
+ const theme={id:'club' as const,version:1 as const,name:'Clubstijl splitscreen',logoData:null,brandingRevision:1,validUntil:new Date(now+300000).toISOString(),tokens:{light:deriveThemeTokens({primary:'#1558cc',secondary:'#c2185b'},false),dark:deriveThemeTokens({primary:'#1558cc',secondary:'#c2185b'},true)}};
+ snapshot.serverNow=now;snapshot.theme=theme;
+ for(const panel of snapshot.panels!){panel.snapshot!.serverNow=now;panel.snapshot!.display!.snapshot.theme=theme;}
+ const first=snapshot.panels![0].snapshot!.display!.snapshot;first.match=null;first.play=play;
+ await display(page,()=>snapshot);
+ const left=page.getByRole('region',{name:'Baan links',exact:true}),right=page.getByRole('region',{name:'Baan rechts',exact:true});
+ await expect(left.locator('.oche-play')).toHaveAttribute('data-mode','around');await expect(left.locator('.oche-play-number')).toHaveText('1');await expect(right.locator('.sprint-number')).toHaveText(['271','94']);
+ await expect(page.locator('.oche-screen-theme')).toHaveAttribute('data-oche-theme','club');
+ expect(await left.locator('.oche-play').evaluate(node=>getComputedStyle(node).getPropertyValue('--play-gold').trim())).toBe(theme.tokens.dark.primary);
+ expect(await right.locator('.sprint-frame').evaluate(node=>getComputedStyle(node).getPropertyValue('--sprint-ink').trim())).toBe(theme.tokens.dark.text);
+ await expect(left.getByText('Scan deze baan',{exact:true})).toHaveCount(0);await expect(left.getByRole('button',{name:/Volledig scherm/})).toHaveCount(0);await expect(page.locator('.oche-layout-wizard')).toHaveCount(0);
+ if(play.game.progress.mode!=='around')throw new Error('Expected Around progress');play.game.progress.targetIndex[0]=1;play.revision++;
+ await expect(left.locator('.oche-play-number')).toHaveText('2');await expect(right.locator('.sprint-number')).toHaveText(['271','94']);
+ for(const [width,height]of [[1920,1080],[1280,720]]){await page.setViewportSize({width,height});const card=await left.locator('.oche-device-panel-content').boundingBox(),game=await left.locator('.oche-play').boundingBox();expect(game!.x).toBeGreaterThanOrEqual(card!.x);expect(game!.y+game!.height).toBeLessThanOrEqual(card!.y+card!.height+1);}
+});
+
+test('legacy active Play delays the layout wizard until the session is complete',async({page})=>{
+ const snapshot=await fixture('both-live'),play=aroundPlay(Date.now());delete snapshot.layout;delete snapshot.panels;snapshot.serverNow=play.serverNow;snapshot.display!.snapshot.match=null;snapshot.display!.snapshot.play=play;
+ await display(page,()=>snapshot);await expect(page.locator('.oche-play')).toHaveAttribute('data-mode','around');await expect(page.locator('.oche-layout-wizard')).toHaveCount(0);
+ play.status='completed';play.game.status='finished';snapshot.state='result';snapshot.eventId='completed-play';
+ await expect(page.getByRole('heading',{name:'Hoe staat dit scherm?'})).toBeVisible();
 });

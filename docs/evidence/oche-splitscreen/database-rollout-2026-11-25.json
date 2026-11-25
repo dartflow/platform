@@ -17,6 +17,8 @@
     "Android after web backend"
   ],
   "backupMethod": "Existing protected identity-backup-db3e728a6949134d.mjs --execute and --compare, serialized using the existing host build lock. No application credentials or row data emitted.",
+  "backupHelperSha256": "db3e728a6949134d3e2217c5f98f7b92a916e46e167d29b0d1051905b74b80dd",
+  "backupHelperOwnershipAndMode": "root:root 0700",
   "productionFixtureMutations": false,
   "syntheticAccountsCreated": false,
   "newDevicePairingsCreated": false,
