@@ -1,0 +1,23 @@
+{
+  "sourceSha": "715832822f284f91f5ea043922d1605abb4269f3",
+  "releaseId": "45665117304-1",
+  "status": "candidate-history",
+  "reason": "Read-only asset fixture pilot passed; separate real API pilot found a Play-pane projection deadline issue. Production was not deployed from this candidate.",
+  "originalReportPreserved": true,
+  "screenshots": [
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/wizard-landscape.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/wizard-two-scoreboards.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/pairing-landscape.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/wizard-portrait.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/pairing-portrait.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/left-live-right-free-1920x1080.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/left-live-right-free-1280x720.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/both-live-1920x1080.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/both-live-1280x720.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/both-free-qr-1920x1080.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/club-around-x01-1920x1080.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/club-around-x01-1280x720.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/single-portrait-1920x1080.png",
+    "docs/evidence/oche-splitscreen/candidate-7158328-staging/single-landscape-1920x1080.png"
+  ]
+}
