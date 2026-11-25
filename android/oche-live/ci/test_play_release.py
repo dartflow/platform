@@ -160,6 +160,15 @@ class SigningCertificates(unittest.TestCase):
 
 
 class Readiness(unittest.TestCase):
+    def test_layout_publication_requires_explicit_healthy_web_sha_and_same_release(self):
+        sha='a'*40
+        capabilities={'layouts':{'version':1,'dualLocation':True}}
+        health={'sha':sha,'status':'ok','mode':'supabase','releaseId':'12-1','buildConfigId':'config1','runtimeConfigId':'config1'}
+        ready_value={**health,'status':'ready','database':'ok','auth':'reachable'}
+        ready.validate_deployment(capabilities,health,ready_value,sha)
+        for caps,left,right,source in [({},health,ready_value,sha),(capabilities,{**health,'sha':'b'*40},ready_value,sha),(capabilities,health,{**ready_value,'database':'error'},sha),(capabilities,health,{**ready_value,'releaseId':'other'},sha),(capabilities,health,{**ready_value,'runtimeConfigId':'different'},sha),(capabilities,health,ready_value,'main')]:
+            with self.assertRaises(ValueError):ready.validate_deployment(caps,left,right,source)
+
     def test_real_public_association_and_read_only_contract_are_required(self):
         fingerprint=':'.join(['A1']*32)
         capabilities={'apiVersion':1,'origin':'https://dartflow.nl','permissions':{'read':True,'score':False,'extend':False}}

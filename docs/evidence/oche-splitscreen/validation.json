@@ -1,23 +1,23 @@
 {
-  "status": "local-unreleased",
-  "checkedAt": "2026-11-25T16:15:18.842Z",
+  "status": "local-verified-databases-migrated",
+  "checkedAt": "2026-11-25T16:42:50.195072+00:00",
   "referenceCommit": "07e2d64d97d9ffa2c85d10b074a0747fa3ab789f",
   "workBranch": "codex/full-release-20261119",
-  "headCommit": "0cc1fe8d7d6daa54257d6d59f6df3e1f9e8c8f6c",
+  "headCommit": "52a105c66cbc3a7cc75f04a557dac60c931158da",
   "web": {
     "build": "passed",
     "typecheck": "passed",
     "lint": "passed",
     "unitDatabaseContract": {
       "command": "npm test",
-      "passed": 664,
+      "passed": 918,
       "failed": 0,
       "skipped": 0,
       "environment": "fresh seeded isolated local PostgreSQL audit database",
-      "note": "The existing shared local database has older account-removal jobs and an additional booking trigger outside the repository; the clean audit database and HEAD/current A/B checks isolate that drift."
+      "note": "Full merged-source regression on a fresh migrated and seeded local audit database. Exact release-SHA CI remains required before web rollout."
     },
     "browser": {
-      "passed": 32,
+      "passed": 35,
       "failed": 0,
       "environment": "local production build in Chromium",
       "viewports": [
@@ -43,6 +43,17 @@
         "revocation clears both views",
         "portrait geometry and central direction strip",
         "legacy cast rotation, scorecards and club themes"
+      ],
+      "note": "31 display/management browser tests passed; the four real API pairing/branding tests passed across final runs. Capacity UI retries preserve the same claim and requestId while honoring the existing server Retry-After.",
+      "commands": [
+        "npx playwright test tests/e2e/oche-split.spec.ts tests/e2e/oche-device-management.spec.ts tests/e2e/oche-display-v18.spec.ts tests/e2e/oche-statistics.spec.ts tests/e2e/oche-live.spec.ts tests/e2e/oche-cast.spec.ts tests/e2e/release-oche-theme.spec.ts",
+        "node --env-file=.local/oche-layout-merged-scratch.env node_modules/@playwright/test/cli.js test tests/e2e/oche-device.spec.ts tests/e2e/oche-club-branding.spec.ts",
+        "node --env-file=.local/oche-layout-merged-scratch.env node_modules/@playwright/test/cli.js test tests/e2e/oche-device.spec.ts"
+      ],
+      "initialMergeFailuresResolved": [
+        "Restored the current-main shared profile redemption lock.",
+        "Updated the club-style acceptance flow to confirm the first-start layout.",
+        "The capacity test now honors real rate limiting and retries the identical operation instead of assuming an unlimited request budget."
       ]
     }
   },
@@ -52,7 +63,7 @@
     "instrumentationExecuted": false,
     "physicalTvTested": false,
     "physicalQrScansTested": false,
-    "unitTestsPerVariant": 36,
+    "unitTestsPerVariant": 44,
     "unitTestVariants": [
       "stagingDebug",
       "productionDebug",
@@ -63,7 +74,9 @@
     "build": "passed",
     "lint": "passed",
     "releaseBundle": "unsigned local AAB built",
-    "publicLobbyQrParity": "verified by unit regression; Compose regression compiled"
+    "publicLobbyQrParity": "verified by unit regression; Compose regression compiled",
+    "instrumentationSourceMethods": 24,
+    "nativeTestInventoryVerification": "passed exact JVM count and no skips"
   },
   "visuals": [
     "left-live-right-free-1920x1080.png",
@@ -86,6 +99,7 @@
       "database migration",
       "web/backend",
       "Android update"
-    ]
+    ],
+    "hostedDatabaseEvidence": "database-rollout-2026-11-25.json"
   }
 }

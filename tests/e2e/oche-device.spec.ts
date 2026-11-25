@@ -18,9 +18,25 @@ async function api<T>(context:BrowserContext,path:string,body?:unknown):Promise<
  }
 }
 async function command(context:BrowserContext,action:Record<string,unknown>,revision?:number){const response=await context.request.post('/api/platform/actions',{headers:{Origin:origin},data:{requestId:randomUUID(),action,...(revision===undefined?{}:{expectedRevision:revision})}});expect(response.status(),await response.text()).toBe(200);return response.json();}
+async function submitClaim(page:Page){
+ let waited=0,claim:unknown;
+ for(let retry=0;;retry++){
+  const [response]=await Promise.all([
+   page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).pathname==='/api/oche/v1/claim'),
+   page.getByRole('button',{name:'Dit scherm koppelen',exact:true}).click(),
+  ]);
+  const submitted=response.request().postDataJSON();
+  if(claim===undefined)claim=submitted;else expect(submitted,'A rate-limited UI retry must retain the complete claim and requestId.').toEqual(claim);
+  if(response.status()===429&&retry<2){
+   const header=response.headers()['retry-after'],seconds=Number(header);
+   if(header&&Number.isFinite(seconds)&&seconds>=0&&seconds<=60&&waited+seconds<=60){waited+=seconds;await page.waitForTimeout(Math.ceil(seconds*1000)+100);continue;}
+  }
+  expect(response.ok(),await response.text()).toBe(true);return;
+ }
+}
 async function setup(page:Page){await expect(page.getByRole('heading',{name:'Hoe staat dit scherm?',exact:true})).toBeVisible({timeout:60000});await page.getByRole('button',{name:/Horizontaal/}).click();await page.getByRole('button',{name:'Doorgaan',exact:true}).click();await page.getByRole('button',{name:/Eén scorebord/}).click();await page.getByRole('button',{name:'Opslaan en doorgaan',exact:true}).click();}
 async function pending(page:Page){await expect(page.locator('.oche-device-code')).toBeVisible({timeout:60000});return page.locator('.oche-device-code').innerText();}
-async function confirm(page:Page,code:string,name:string,locationId?:string,boardId?:string){await page.bringToFront();await page.goto(`/koppel-scherm#code=${encodeURIComponent(code)}`);await expect(page).toHaveURL('/koppel-scherm');await page.getByLabel('Koppelcode',{exact:true}).fill(code);await page.getByLabel('Schermnaam',{exact:true}).fill(name);if(locationId)await page.getByLabel('Waar gebruik je dit scherm?').selectOption(locationId);if(boardId)await page.getByLabel('Baan',{exact:true}).selectOption(boardId);await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Dit scherm koppelen',exact:true}).click();await expect(page.getByRole('heading',{name:'Koppeling bevestigd',exact:true})).toBeVisible();}
+async function confirm(page:Page,code:string,name:string,locationId?:string,boardId?:string){await page.bringToFront();await page.goto(`/koppel-scherm#code=${encodeURIComponent(code)}`);await expect(page).toHaveURL('/koppel-scherm');await page.getByLabel('Koppelcode',{exact:true}).fill(code);await page.getByLabel('Schermnaam',{exact:true}).fill(name);if(locationId)await page.getByLabel('Waar gebruik je dit scherm?').selectOption(locationId);if(boardId)await page.getByLabel('Baan',{exact:true}).selectOption(boardId);await page.getByRole('checkbox').check();await submitClaim(page);await expect(page.getByRole('heading',{name:'Koppeling bevestigd',exact:true})).toBeVisible();}
 
 test.beforeEach(async({baseURL})=>{if(!baseURL||!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Device acceptance uses local development accounts only.');});
 
@@ -37,7 +53,7 @@ test('two clean browser tabs reuse one installation; QR survives login, lost red
   // Hold the real browser lock: an approved display must queue before it can create a nonce.
   await first.evaluate(()=>new Promise<void>(held=>{void navigator.locks.request('dartflow-oche-redeem',()=>new Promise<void>(release=>{(window as unknown as {releaseTestRedeemLock:()=>void}).releaseTestRedeemLock=release;held();}));}));
   try{
-   await manager.getByLabel('Schermnaam',{exact:true}).fill(prefix);await manager.getByRole('checkbox').check();await manager.getByRole('button',{name:'Dit scherm koppelen',exact:true}).click();await expect(manager.getByRole('heading',{name:'Koppeling bevestigd'})).toBeVisible();await first.bringToFront();
+   await manager.getByLabel('Schermnaam',{exact:true}).fill(prefix);await manager.getByRole('checkbox').check();await submitClaim(manager);await expect(manager.getByRole('heading',{name:'Koppeling bevestigd'})).toBeVisible();await first.bringToFront();
    await expect.poll(()=>first.evaluate(async()=>(await navigator.locks.query()).pending?.filter(lock=>lock.name==='dartflow-oche-redeem').length??0)).toBeGreaterThan(0);
    expect(redeemNonces.length).toBe(0);
   }finally{await first.evaluate(()=>{(window as unknown as {releaseTestRedeemLock:()=>void}).releaseTestRedeemLock();});}
@@ -65,7 +81,7 @@ test('location selection, shared capacity, central override and above-limit mana
   await api(owner,'limits',{locationId,maximum:2,requestId:randomUUID()});await manager.bringToFront();await manager.goto('/app/schermen');await expect(manager.getByText('Boven limiet · ontkoppel schermen voordat je opnieuw koppelt of vervangt.',{exact:true})).toBeVisible();
   const fourth=await browser.newContext({serviceWorkers:'block'});screens.push(fourth);const fourthPage=await fourth.newPage();await fourthPage.goto('/oche-live');await setup(fourthPage);await manager.goto(`/koppel-scherm#code=${encodeURIComponent(await pending(fourthPage))}`);await manager.getByLabel('Waar gebruik je dit scherm?').selectOption(locationId);await expect(manager.getByText('Boven limiet',{exact:true})).toBeVisible();await expect(manager.getByLabel('Bestaand scherm vervangen')).toHaveCount(0);await expect(manager.getByRole('button',{name:'Dit scherm koppelen'})).toBeDisabled();
   const current=await api<OcheManagement>(owner,'context');const linked=current.devices.filter(device=>!device.revoked&&device.locationId===locationId);expect(linked).toHaveLength(3);await api(owner,`devices/${linked[2].id}`,{action:'revoke',requestId:randomUUID()});
-  await manager.reload();await manager.getByLabel('Waar gebruik je dit scherm?').selectOption(locationId);await expect(manager.getByText('Limiet bereikt',{exact:true})).toBeVisible();await expect(manager.getByLabel('Bestaand scherm vervangen')).toBeVisible();await manager.getByLabel('Schermnaam',{exact:true}).fill(`${prefix} vervanging`);await manager.getByLabel('Bestaand scherm vervangen').selectOption(linked[1].id);await manager.getByRole('checkbox').check();await manager.getByRole('button',{name:'Dit scherm koppelen'}).click();await expect(manager.getByRole('heading',{name:'Koppeling bevestigd'})).toBeVisible();await fourthPage.bringToFront();await expect(fourthPage.getByRole('heading',{name:'Wacht op een baan'})).toBeVisible();const after=await api<OcheManagement>(owner,'context');expect(after.locations.find(item=>item.locationId===locationId)?.active).toBe(2);expect(after.devices.find(item=>item.id===linked[1].id)?.revoked).toBe(true);
+  await manager.reload();await manager.getByLabel('Waar gebruik je dit scherm?').selectOption(locationId);await expect(manager.getByText('Limiet bereikt',{exact:true})).toBeVisible();await expect(manager.getByLabel('Bestaand scherm vervangen')).toBeVisible();await manager.getByLabel('Schermnaam',{exact:true}).fill(`${prefix} vervanging`);await manager.getByLabel('Bestaand scherm vervangen').selectOption(linked[1].id);await manager.getByRole('checkbox').check();await submitClaim(manager);await expect(manager.getByRole('heading',{name:'Koppeling bevestigd'})).toBeVisible();await fourthPage.bringToFront();await expect(fourthPage.getByRole('heading',{name:'Wacht op een baan'})).toBeVisible();const after=await api<OcheManagement>(owner,'context');expect(after.locations.find(item=>item.locationId===locationId)?.active).toBe(2);expect(after.devices.find(item=>item.id===linked[1].id)?.revoked).toBe(true);
  }finally{const current=await api<OcheManagement>(owner,'context').catch(()=>null);for(const device of current?.devices.filter(item=>!item.revoked&&item.locationId===locationId)??[])await api(owner,`devices/${device.id}`,{action:'revoke',requestId:randomUUID()});if(locationId)await api(owner,'limits',{locationId,maximum:2,requestId:randomUUID()}).catch(()=>{});await owner.close();for(const screen of screens)await screen.close();}
 });
 

@@ -2,7 +2,7 @@
 
 De algemene Oche Live-route `/oche-live` en de Android-app ondersteunen een opgeslagen schermindeling. Een horizontale 55-inch-tv tussen twee fysieke dartbanen toont links en rechts een eigen verticaal scorebord, met een gestylede middenstrook voor baannamen, status en speel-QR’s. Iedere baan behoudt zijn eigen wedstrijd en inactiviteitstimer. De bestaande schermkoppeling, accountrechten, wedstrijdprojecties, huisstijlen en fonts blijven de basis.
 
-Dit document beschrijft de bediening en de lokale oplevering van 25 november 2026. Het is geen bevestiging van een staging-, productie- of Play-publicatie. Het technische contract staat in [contracts/README.md](../contracts/README.md); de bestaande Android-instructies staan in [android/oche-live/README.md](../android/oche-live/README.md).
+Dit document beschrijft de bediening en verificatie van 25 november 2026. De additieve databasewijziging is op staging en productie toegepast; zie [database-uitrolbewijs](evidence/oche-splitscreen/database-rollout-2026-11-25.json). Web- en Play-publicatie volgen hun afzonderlijke releasecontroles. Het technische contract staat in [contracts/README.md](../contracts/README.md); de bestaande Android-instructies staan in [android/oche-live/README.md](../android/oche-live/README.md).
 
 ## Eerste start op de tv
 
@@ -86,7 +86,7 @@ De lokale Chromium-captures gebruiken vaste contractfixtures en testnamen. Ze to
 | Links live, rechts vrij met speel-QR | [Beeld](evidence/oche-splitscreen/left-live-right-free-1920x1080.png) | [Beeld](evidence/oche-splitscreen/left-live-right-free-1280x720.png) |
 | Beide banen live | [Beeld](evidence/oche-splitscreen/both-live-1920x1080.png) | [Beeld](evidence/oche-splitscreen/both-live-1280x720.png) |
 
-De productiebuild, typecheck en lint slagen. De volledige bestaande `npm test` slaagt met **664/664 tests** op een verse, gezaaide lokale auditdatabase. De definitieve Chromium-ronde tegen de productiebuild slaagt met **32/32 browserproeven**, inclusief de nieuwe 9:16-indeling en de bestaande Cast-route, pairing, schermlimieten, intrekking, statistieken en clubhuisstijl. De vastgelegde resultaten en hardwaregrenzen staan in [validation.json](evidence/oche-splitscreen/validation.json).
+De productiebuild, typecheck en lint slagen. De volledige bestaande `npm test` slaagt met **918/918 tests** op een verse, gezaaide lokale auditdatabase. De actuele Chromium-ronde tegen de productiebuild slaagt met **35/35 browserproeven**, inclusief de nieuwe 9:16-indeling en de bestaande Cast-route, pairing, schermlimieten, intrekking, statistieken en clubhuisstijl. De vastgelegde resultaten en hardwaregrenzen staan in [validation.json](evidence/oche-splitscreen/validation.json).
 
 De bestaande gedeelde lokale database bevat oudere accountverwijderjobs en een aanvullende reserveringstrigger buiten de repo. Die veroorzaken daar fouten in de brede suite. De ongewijzigde en huidige bronnen zijn voor de betrokken tests ook op de schone auditdatabase vergeleken. Er zijn geen productgegevens of bestaande jobs verwijderd om tests te laten slagen. De relevante ingangen zijn:
 
@@ -97,7 +97,7 @@ npm test
 npx playwright test tests/e2e/oche*.spec.ts tests/e2e/release-oche-theme.spec.ts
 ```
 
-De lokale Android-controle is op de laatste bron geslaagd: builds en lint voor staging en productie, met **36 geslaagde unitcases per variant** (`stagingDebug`, `productionDebug` en `productionRelease`). De bestaande Play-releaseproeven zijn **19/19 geslaagd**. Ook de AndroidTest-APK is gecompileerd. De gebruikte Gradle-taken zijn:
+De lokale Android-controle is op de laatste bron geslaagd: builds en lint voor staging en productie, met **44 geslaagde unitcases per variant** (`stagingDebug`, `productionDebug` en `productionRelease`). De bestaande Play-releaseproeven zijn **19/19 geslaagd**. Ook de AndroidTest-APK met 24 instrumentatiemethoden is gecompileerd. De exacte testinventaris is gecontroleerd; geen cases zijn overgeslagen. De gebruikte Gradle-taken zijn:
 
 ```sh
 cd android/oche-live
