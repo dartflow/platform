@@ -1,0 +1,91 @@
+{
+  "status": "local-unreleased",
+  "checkedAt": "2026-11-25T16:15:18.842Z",
+  "referenceCommit": "07e2d64d97d9ffa2c85d10b074a0747fa3ab789f",
+  "workBranch": "codex/full-release-20261119",
+  "headCommit": "0cc1fe8d7d6daa54257d6d59f6df3e1f9e8c8f6c",
+  "web": {
+    "build": "passed",
+    "typecheck": "passed",
+    "lint": "passed",
+    "unitDatabaseContract": {
+      "command": "npm test",
+      "passed": 664,
+      "failed": 0,
+      "skipped": 0,
+      "environment": "fresh seeded isolated local PostgreSQL audit database",
+      "note": "The existing shared local database has older account-removal jobs and an additional booking trigger outside the repository; the clean audit database and HEAD/current A/B checks isolate that drift."
+    },
+    "browser": {
+      "passed": 32,
+      "failed": 0,
+      "environment": "local production build in Chromium",
+      "viewports": [
+        [
+          1920,
+          1080
+        ],
+        [
+          1280,
+          720
+        ],
+        [
+          1080,
+          1920
+        ]
+      ],
+      "coverage": [
+        "first-start persistence and back navigation",
+        "account pairing and home reduction",
+        "atomic assignments and revision conflicts",
+        "independent scores, events and event baselines",
+        "fixed canonical play QR per lane, hidden while offline",
+        "revocation clears both views",
+        "portrait geometry and central direction strip",
+        "legacy cast rotation, scorecards and club themes"
+      ]
+    }
+  },
+  "android": {
+    "status": "passed",
+    "instrumentationApkCompiled": true,
+    "instrumentationExecuted": false,
+    "physicalTvTested": false,
+    "physicalQrScansTested": false,
+    "unitTestsPerVariant": 36,
+    "unitTestVariants": [
+      "stagingDebug",
+      "productionDebug",
+      "productionRelease"
+    ],
+    "unitTestFailures": 0,
+    "playWorkflowTestsPassed": 19,
+    "build": "passed",
+    "lint": "passed",
+    "releaseBundle": "unsigned local AAB built",
+    "publicLobbyQrParity": "verified by unit regression; Compose regression compiled"
+  },
+  "visuals": [
+    "left-live-right-free-1920x1080.png",
+    "left-live-right-free-1280x720.png",
+    "both-live-1920x1080.png",
+    "both-live-1280x720.png"
+  ],
+  "hardware": {
+    "horizontal55InchTv": "not tested",
+    "simultaneousQrScansFromThrowPosition": "not tested",
+    "multiplePhonesIndividually": "not tested",
+    "physicalAndroidTvDpad": "not tested",
+    "emulator": "not run: no attached adb device and no /dev/kvm"
+  },
+  "rollout": {
+    "migration": "20261125154720_oche_screen_layout.sql",
+    "migrationAppliedLocally": true,
+    "published": false,
+    "order": [
+      "database migration",
+      "web/backend",
+      "Android update"
+    ]
+  }
+}

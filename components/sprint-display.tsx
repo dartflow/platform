@@ -7,7 +7,7 @@ import {buildOcheScorecard, ocheScorecardScroll, ochePlayerInitials, type OcheSc
 import {OcheFullscreen} from './oche-live-standby';
 import {OcheHeadToHead,OcheMatchRecap} from './oche-statistics';
 
-export default function SprintDisplay({snapshot, stale, qr, scanInstruction, overlay, activityOverlay, controls}: {
+export default function SprintDisplay({snapshot, stale, qr, scanInstruction, overlay, activityOverlay, controls, compact=false, automatic=false}: {
   snapshot: PublicSnapshot;
   stale: boolean;
   qr: ReactNode;
@@ -15,6 +15,8 @@ export default function SprintDisplay({snapshot, stale, qr, scanInstruction, ove
   overlay?: ReactNode;
   activityOverlay?: ReactNode;
   controls?: ReactNode;
+  compact?: boolean;
+  automatic?: boolean;
 }) {
   const source=snapshot.match!;
   const match={...source,players:source.players.map((player,index)=>({...player,name:source.sideNames?.[index]??(source.sideParticipants?.[index].map(member=>member.name).join(" / ")||player.name)}))};
@@ -42,7 +44,7 @@ export default function SprintDisplay({snapshot, stale, qr, scanInstruction, ove
     if (bottom > node.scrollTop + node.clientHeight + .5) node.scrollTop = bottom - node.clientHeight;
     else if (top < node.scrollTop + heading - .5) node.scrollTop = Math.max(0, top - heading);
   }, [card, stale]);
-  return <main className="sprint-display bf-display oche-match-display" data-theme={snapshot.theme?.id??'dartflow'} data-precall={Boolean(snapshot.pendingCall)} aria-label="Oche Live-baanscherm">
+  return <main className="sprint-display bf-display oche-match-display" data-compact={compact} data-theme={snapshot.theme?.id??'dartflow'} data-precall={Boolean(snapshot.pendingCall)} aria-label="Oche Live-baanscherm">
     <div className="bf-display__frame sprint-frame">
       <div className="sprint-atmosphere" aria-hidden="true"><i className="sprint-target"/><i className="sprint-streaks"/></div>
       {overlay}
@@ -53,11 +55,12 @@ export default function SprintDisplay({snapshot, stale, qr, scanInstruction, ove
           <div className="sprint-roster" aria-label="Spelers en resterende scores">{match.players.map((player,index) => {const stats = match.stats?.[index],projected=snapshot.statistics?.players.find(item=>item.playerIndex===index),average=projected?projected.live.average:stats?.measurementComplete===false?null:stats?.average??(stats?.darts?stats.total/stats.darts*3:null);return <div className="sprint-player" key={player.id} data-turn={index === match.turn && !finished}>
             <div className="sprint-identity"><span className="sprint-avatar" aria-hidden="true">{ochePlayerInitials(player.name)}</span><div className="sprint-player-label"><h2 className="sprint-player-name" title={player.name}>{player.name}</h2><small className="sprint-history-average" aria-label={projected?.last50?`Historisch gemiddelde ${player.name}`:undefined}>{projected?.last50?`Laatste 50 · ${projected.last50.average.toFixed(1).replace('.',',')}`:'\u00a0'}</small></div></div>
             <div className="sprint-score" data-active={index === match.turn && !finished} aria-label={player.name}><span className="sprint-caption">{match.cricket?'Punten':'Resterend'}</span><strong className="sprint-number">{match.remaining[index]}</strong><span className="sprint-turn">{finished ? 'Uitgespeeld' : index === match.turn ? match.currentThrower?.name??'Aan de beurt' : 'Wacht'}</span></div>
+            {compact&&<p className="oche-panel-tally">{match.legs[index]} legs{match.settings.bestOfSets>1?` · ${match.sets[index]} sets`:''}</p>}
             {!match.cricket&&<dl className="sprint-stats" aria-label={`Statistieken ${player.name}`}><div><dt title="Live 3-dartsgemiddelde">Live AVG</dt><dd>{average==null?'–':average.toFixed(1).replace('.',',')}</dd></div><div><dt title="Hoogste finish">H. FIN</dt><dd>{projected?.live.highestFinish||stats?.highestFinish||'–'}</dd></div><div><dt>180’s</dt><dd>{projected?.live.oneEighties??stats?.oneEighties??0}</dd></div></dl>}
           </div>;})}</div>
           {match.cricket?<CricketCard cricket={match.cricket} names={match.players.map(player=>player.name)}/>:<section className="sprint-countdown" aria-labelledby="sprint-scorecard-title">
             <header className="sprint-card-heading"><h2 id="sprint-scorecard-title">Scorekaart</h2><p>Set {card.setNumber} · Leg {card.legNumber}</p></header>
-            <div className="sprint-scroll" ref={scroll} tabIndex={0} role="region" aria-label="Beurten in deze leg" data-leg-key={card.legKey}>
+            <div className="sprint-scroll" ref={scroll} tabIndex={automatic?-1:0} role="region" aria-label="Beurten in deze leg" data-leg-key={card.legKey}>
               <table className="sprint-table" aria-label={`Scorekaart van ${match.players.map(player => player.name).join(' en ')}`}>
                 <colgroup><col className="sprint-col-throw"/><col className="sprint-col-rest"/>{match.players.length > 1 && <><col className="sprint-col-rest"/><col className="sprint-col-throw"/></>}</colgroup>
                 <thead><tr className="sprint-labels"><th scope="col">Worp</th><th scope="col">Rest</th>{match.players.length > 1 && <><th scope="col">Rest</th><th scope="col">Worp</th></>}</tr><tr className="sprint-start" aria-label="Startscore"><td>–</td><td>{card.startScores[0]}</td>{match.players.length > 1 && <><td>{card.startScores[1]}</td><td>–</td></>}</tr></thead>
@@ -67,7 +70,7 @@ export default function SprintDisplay({snapshot, stale, qr, scanInstruction, ove
           </section>}
           {!['live','result','confirmed','disputed'].includes(match.status)&&snapshot.statistics?.headToHead?<OcheHeadToHead statistics={snapshot.statistics}/>:<aside className="sprint-insight"><span>{finished ? 'Wedstrijduitslag' : match.checkout ? 'Finishroute' : last?.score === 180 && !last.bust ? 'Maximum' : 'Laatste beurt'}</span><strong>{finished ? match.players.find(player => player.id === match.winnerId)?.name || 'Gelijkspel' : match.checkout || (last ? `${match.sideParticipants?.flat().find(player=>player.id===last.throwerId)?.name??match.players[last.playerIndex]?.name??'Speler'} · ${last.score} punten${last.bust ? ' · bust' : ''}` : 'Nog geen worpen')}</strong></aside>}
         </div>{finished&&<OcheMatchRecap statistics={snapshot.statistics}/>}</div>
-        {snapshot.pendingCall&&<aside className="oche-precall" aria-label="Vooroproep"><b>{snapshot.pendingCall.label}</b><span>{snapshot.pendingCall.players.join(' · ')}{snapshot.pendingCall.writerName?` · Schrijver: ${snapshot.pendingCall.writerName}`:''}</span></aside>}<footer className="sprint-foot"><span className="sprint-format">Powered by DartFlow</span><div className="sprint-foot-controls"><details className="sprint-info"><summary aria-label="Wedstrijdinformatie" title="Wedstrijdinformatie"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg></summary><div><h2>Wedstrijdinformatie</h2><p>{match.settings.startScore} · {match.settings.inRule==='double'?'Double in':'Open in'} · {match.settings.outRule==='master'?'Master out':match.settings.outRule==='straight'?'Straight out':'Dubbel uit'} · Best of {match.settings.bestOfLegs} legs</p><div className="sprint-tally" aria-label="Set- en legstand">{match.players.map((player,index) => <p key={player.id}>{player.name}: <b>{match.legs[index]}</b> legs{match.settings.bestOfSets > 1 && <> · <b>{match.sets[index]}</b> sets</>}</p>)}</div><p className="sprint-writer">{scanInstruction || (match.writerId ? `${match.players.find(player=>player.id===match.writerId)?.name || 'Schrijver'} voert in` : 'Score-invoer via telefoon')}</p><div className="sprint-qr">{qr}</div></div></details>{controls}<OcheFullscreen/></div></footer>
+        {snapshot.pendingCall&&<aside className="oche-precall" aria-label="Vooroproep"><b>{snapshot.pendingCall.label}</b><span>{snapshot.pendingCall.players.join(' · ')}{snapshot.pendingCall.writerName?` · Schrijver: ${snapshot.pendingCall.writerName}`:''}</span></aside>}<footer className="sprint-foot"><span className="sprint-format">Powered by DartFlow</span>{!automatic&&<div className="sprint-foot-controls"><details className="sprint-info"><summary aria-label="Wedstrijdinformatie" title="Wedstrijdinformatie"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg></summary><div><h2>Wedstrijdinformatie</h2><p>{match.settings.startScore} · {match.settings.inRule==='double'?'Double in':'Open in'} · {match.settings.outRule==='master'?'Master out':match.settings.outRule==='straight'?'Straight out':'Dubbel uit'} · Best of {match.settings.bestOfLegs} legs</p><div className="sprint-tally" aria-label="Set- en legstand">{match.players.map((player,index) => <p key={player.id}>{player.name}: <b>{match.legs[index]}</b> legs{match.settings.bestOfSets > 1 && <> · <b>{match.sets[index]}</b> sets</>}</p>)}</div><p className="sprint-writer">{scanInstruction || (match.writerId ? `${match.players.find(player=>player.id===match.writerId)?.name || 'Schrijver'} voert in` : 'Score-invoer via telefoon')}</p><div className="sprint-qr">{qr}</div></div></details>{controls}<OcheFullscreen/></div>}</footer>
       </section>
     </div>
   </main>;

@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 import {codeDigest,createOcheAccess,decryptOcheReceipt,encryptOcheReceipt,formatOcheCode,newOcheCode,normalizedOcheCode,readOcheAccess,secretHash} from '../lib/oche-device-crypto';
-import {ocheName} from '../lib/oche-device-store';
+import {parseOcheLayout,ocheName} from '../lib/oche-device-store';
 import {buildOcheScorecard} from '../lib/oche-scorecard';
 import type {OcheDisplaySnapshot} from '../lib/oche-device-types';
 
@@ -27,5 +27,20 @@ test('shared Android/browser display fixtures use one privacy allowlist and stab
   assert.equal(snapshot.display?.screen?.paired??false,false);assert.equal(snapshot.display?.snapshot.boardActivity?.canExtend??false,false);
   if(snapshot.display?.snapshot.match){const match=snapshot.display.snapshot.match,card=buildOcheScorecard(match);assert.ok(card.rows.length>=5);assert.equal(card.startScore,501);for(const player of match.players){assert.match(player.id,/^player-[12]$/);assert.equal('email'in player,false);}}
   for(const privateField of ['refreshToken','installationSecret','token_hash','secret_hash','privateNote'])assert.equal(JSON.stringify(snapshot).includes(privateField),false);
+ }
+});
+
+test('explicit Oche layout accepts only supported physical compositions',()=>{
+ for(const layout of [{orientation:'portrait',scoreboards:1},{orientation:'landscape',scoreboards:1},{orientation:'landscape',scoreboards:2}])assert.deepEqual(parseOcheLayout(layout),layout);
+ for(const layout of [null,{},'portrait',{orientation:'portrait',scoreboards:2},{orientation:'landscape',scoreboards:'2'},{orientation:'landscape',scoreboards:3}])assert.throws(()=>parseOcheLayout(layout),{code:'invalid_layout'});
+});
+test('panel contract fixtures retain stable independent lane identities and primary v1 projection',async()=>{
+ const root=new URL('../contracts/fixtures/oche-display-v1-panels/',import.meta.url);
+ for(const file of await readdir(root)){
+  const snapshot=JSON.parse(await readFile(new URL(file,root),'utf8')) as OcheDisplaySnapshot;
+  assert.deepEqual(snapshot.layout,{orientation:'landscape',scoreboards:2});assert.deepEqual(snapshot.panels?.map(panel=>panel.position),['left','right']);
+  const [left,right]=snapshot.panels!;assert.notEqual(left.sourceId,right.sourceId);assert.notEqual(left.snapshot?.display?.snapshot.sessionKey,right.snapshot?.display?.snapshot.sessionKey);assert.deepEqual(snapshot.display,left.snapshot?.display);
+  assert.deepEqual(left.snapshot?.display?.snapshot.match?.remaining,[148,188]);assert.notEqual(right.snapshot?.display?.board.playUrl,left.snapshot?.display?.board.playUrl);
+  for(const panel of snapshot.panels!){assert.equal(panel.status,'ready');assert.deepEqual(panel.snapshot?.permissions,{read:true,score:false,extend:false});const match=panel.snapshot?.display?.snapshot.match;if(match)for(const [index,remaining]of match.remaining.entries())assert.equal(match.currentLegVisits?.filter(visit=>visit.playerIndex===index).at(-1)?.remainingAfter,remaining);}
  }
 });

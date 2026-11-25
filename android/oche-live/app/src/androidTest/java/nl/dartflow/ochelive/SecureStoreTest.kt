@@ -6,6 +6,20 @@ import org.junit.Test
 import org.junit.Assert.*
 
 class SecureStoreTest {
+    @Test fun confirmedLayoutSurvivesNewStoreInstanceAndCredentialRotation() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val store = SecureStore(context)
+        store.write(JSONObject().put("layoutChoice", DisplayLayout("landscape", 2).json()).put("layoutPromptShown", true))
+        val restored = SecureStore(context).read()
+        assertEquals(DisplayLayout("landscape", 2), DisplayLayout.parse(restored.optJSONObject("layoutChoice")))
+        restored.put("refreshToken", "rotated-refresh").put("accessToken", "rotated-access")
+        store.write(restored)
+        assertEquals(DisplayLayout("landscape", 2), DisplayLayout.parse(SecureStore(context).read().optJSONObject("layoutChoice")))
+        store.write(revokedInstallation(restored))
+        val revoked = SecureStore(context).read()
+        assertFalse(revoked.has("refreshToken")); assertFalse(revoked.has("accessToken"))
+        assertEquals(DisplayLayout("landscape", 2), DisplayLayout.parse(revoked.optJSONObject("layoutChoice")))
+    }
     @Test fun credentialsAreEncryptedAuthenticatedAndRecoverable() {
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         val store=SecureStore(context)

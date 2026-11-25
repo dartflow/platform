@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dartflow.nl/contracts/oche-display-v1-panels.schema.json",
+  "title": "Oche Display v1 opt-in panels",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "serverNow",
+    "state",
+    "scope",
+    "device",
+    "location",
+    "board",
+    "display",
+    "eventId",
+    "revision",
+    "pollAfterMs",
+    "permissions",
+    "layout",
+    "configurationRevision",
+    "panels"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": 1
+    },
+    "serverNow": {
+      "type": "number"
+    },
+    "state": {
+      "enum": [
+        "unassigned",
+        "waiting",
+        "standby",
+        "reserved",
+        "closed",
+        "blocked",
+        "live",
+        "warning",
+        "result"
+      ]
+    },
+    "scope": {
+      "enum": [
+        "home",
+        "location"
+      ]
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "platform",
+        "grantVersion"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "platform": {
+          "enum": [
+            "browser",
+            "android",
+            "android-tv"
+          ]
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "location": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "board": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "display": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Existing ClubBoardScreenView allowlist; only pseudonymous player IDs. No writer authority, account secrets or private profile fields."
+    },
+    "eventId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pollAfterMs": {
+      "const": 2000
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "read",
+        "score",
+        "extend"
+      ],
+      "properties": {
+        "read": {
+          "const": true
+        },
+        "score": {
+          "const": false
+        },
+        "extend": {
+          "const": false
+        }
+      }
+    },
+    "layout": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "orientation",
+            "scoreboards"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "orientation": {
+              "enum": [
+                "portrait",
+                "landscape"
+              ]
+            },
+            "scoreboards": {
+              "enum": [
+                1,
+                2
+              ]
+            }
+          },
+          "if": {
+            "properties": {
+              "orientation": {
+                "const": "portrait"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scoreboards": {
+                "const": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "configurationRevision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "panels": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "position",
+          "sourceId",
+          "status",
+          "snapshot"
+        ],
+        "properties": {
+          "position": {
+            "enum": [
+              "left",
+              "right"
+            ]
+          },
+          "sourceId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "unassigned",
+              "unavailable",
+              "error"
+            ]
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "oche-display-v1.schema.json"
+              }
+            ]
+          }
+        }
+      },
+      "prefixItems": [
+        {
+          "properties": {
+            "position": {
+              "const": "left"
+            }
+          }
+        },
+        {
+          "properties": {
+            "position": {
+              "const": "right"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "layout": {
+            "type": "object",
+            "properties": {
+              "scoreboards": {
+                "const": 2
+              }
+            },
+            "required": [
+              "scoreboards"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "panels": {
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "panels": {
+            "minItems": 1,
+            "maxItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

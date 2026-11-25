@@ -12,7 +12,7 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const scanInstruction = "Scan om te registreren of aan te melden en mee te spelen";
 
 /** The QR always identifies the physical board, never a session or writer grant. */
-export function ClubBoardQr({ boardId, label = "Registreren, aanmelden en spelen", variant }: { boardId: string; label?: string;variant?:"oche" }) {
+export function ClubBoardQr({ boardId, label = "Registreren, aanmelden en spelen", variant, automatic=false }: { boardId: string; label?: string;variant?:"oche";automatic?:boolean }) {
   const path = `/baan/${encodeURIComponent(boardId)}`;
   const [image, setImage] = useState("");
   useEffect(() => {
@@ -25,7 +25,7 @@ export function ClubBoardQr({ boardId, label = "Registreren, aanmelden en spelen
     return () => { cancelled = true; };
   }, [path,variant]);
   return <div className="qr-block club-board-qr">
-    <a href={path} aria-label={label} title={scanInstruction}>
+    <a href={path} aria-label={label} title={scanInstruction} tabIndex={automatic?-1:undefined}>
       {image ? <img className="qr-image" src={image} width={160} height={160} alt={`QR-code: ${scanInstruction}`} /> : <span className="qr-placeholder" aria-label="QR-code laden">QR</span>}
     </a>
     <div><strong>{label}</strong><p>{scanInstruction}.</p><a className="text-link" href={path}>Open deze baan ↗</a></div>
