@@ -47,7 +47,14 @@ export default function OcheDeviceDisplay(){
     try{status=await ocheDeviceRequest<OchePairingStatus>('status',undefined,request.signal);}catch(cause){if(cause instanceof OcheClientError&&cause.status===401){if(mode==='pending'){clearPrivate();setState('expired');setOffline(false);mode='terminal';return;}busy=false;clearTimeout(timeout);await start();return;}throw cause;}
     if(stopped)return;setClock({server:status.serverNow,received:Date.now()});setOffline(false);setError('');
     if(status.state==='pending'){if(!browserLayout()){mode='terminal';setState('setup');setWizard('initial');return;}if(status.pairing){pair.current=status.pairing;setPairing(status.pairing);}setState('pending');mode='pending';}
-    else if(status.state==='approved'||status.state==='redeemed'){await ocheDeviceRequest('redeem',{nonce:publicNonce(nonceKey)},request.signal);accept(await loadSnapshot(request.signal));}
+    else if(status.state==='approved'||status.state==='redeemed'){
+     const next=await withOcheProfileLock('redeem',async()=>{
+      // Another tab may have installed the shared HttpOnly session while this one waited.
+      try{return await ocheDeviceRequest<OcheDisplaySnapshot>('snapshot?panels=1',undefined,request!.signal);}catch(cause){if(!(cause instanceof OcheClientError)||cause.status!==401)throw cause;}
+      await ocheDeviceRequest('redeem',{nonce:publicNonce(nonceKey)},request!.signal);
+      return loadSnapshot(request!.signal);
+     });accept(next);
+    }
     else{clearPrivate();setState(status.state==='expired'?'expired':'revoked');mode='terminal';}
    }catch(cause){if(stopped)return;if(cause instanceof OcheClientError&&[401,403,404,410].includes(cause.status)){
      let denial=cause;

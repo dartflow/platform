@@ -143,12 +143,24 @@ test("a physical manager explicitly chooses a published club style; browser fram
     grantRevision = grant.grant.revision;
     const display = await screen.newPage();
     await display.goto("/oche-live");
+    await expect(
+      display.getByRole("heading", { name: "Hoe staat dit scherm?" }),
+    ).toBeVisible();
+    await display
+      .getByRole("button", { name: "Horizontaal 16:9", exact: true })
+      .click();
+    await display.getByRole("button", { name: "Doorgaan", exact: true }).click();
+    await display
+      .getByRole("button", { name: /^Eén scorebord/ })
+      .click();
+    await display.getByRole("button", { name: "Opslaan en doorgaan" }).click();
     await expect(display.locator(".oche-device-code")).toBeVisible();
     await post(owner, "/api/oche/v1/claim", {
       code: await display.locator(".oche-device-code").innerText(),
       scope: "location",
       locationId: location.id,
       boardId: board.id,
+      layout: { orientation: "landscape", scoreboards: 1 },
       name: `Ochescherm ${suffix}`,
       requestId: randomUUID(),
     });
