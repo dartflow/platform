@@ -16,14 +16,15 @@ const endpoint = '/api/blog/admin';
 const blankHero = {src:'', assetId:'', alt:'', x:.5, y:.5, ratio:'4:5'};
 const defaultImage = '/assets/marketing-share.jpg';
 const links = /^(?:https?:\/\/[^\s]+|mailto:[^\s<>@]+@[^\s<>@]+|\/(?!\/)[^\s]*|#[a-z0-9-]+)$/i;
-const states = {draft:'Concept', published:'Gepubliceerd', scheduled:'Ingepland', revision:'Live met concept'};
-const stateOf = post => post?.status === 'scheduled' ? 'scheduled'
+const states = {draft:'Concept', published:'Gepubliceerd', scheduled:'Ingepland', revision:'Live met concept',publishing:'Publicatie controleren'};
+const pendingPublication = post => post?.publicationCheck?.state === 'pending';
+const stateOf = post => pendingPublication(post) ? 'publishing' : post?.status === 'scheduled' ? 'scheduled'
   : post?.hasUnpublishedChanges ? 'revision'
   : post?.status === 'published' ? 'published' : 'draft';
 const dateFormat = new Intl.DateTimeFormat('nl-NL', {dateStyle:'medium', timeStyle:'short', timeZone:'Europe/Amsterdam'});
 const dateParts = new Intl.DateTimeFormat('sv-SE', {dateStyle:'short', timeStyle:'short', timeZone:'Europe/Amsterdam'});
 const fieldNames = ['title','excerpt','slug','type','locale','author','category','tags','hero-alt','ratio','focus-x','focus-y','seo-title','seo-description','noindex'];
-let posts = [], current, hero, social, dirty = false, busy = false;
+let posts = [], authors = [], categories = [], current, hero, social, dirty = false, busy = false;
 let slugEdited = false, loadingPost = false, mediaTarget = '', savedTime, slash, slashDismissedAt = null;
 let bubbleFrame = 0;
 
@@ -268,7 +269,10 @@ function changed() {
 function listPosts() {
   const query = $('search').value.trim().toLowerCase();
   const filter = $('status-filter').value;
-  const matching = posts.filter(post => (filter === 'all' || filter === stateOf(post)) && [post.title,post.slug,post.category].some(value => value?.toLowerCase().includes(query)));
+  const category = $('category-filter').value, author = $('author-filter').value;
+  const categoryName = post => categories.find(item=>item.id===post.category)?.name||post.categoryName||post.category;
+  const authorName = post => authors.find(item=>item.id===post.author)?.name||post.authorName||post.author;
+  const matching = posts.filter(post => (filter === 'all' || filter === stateOf(post)) && (!category || post.category === category) && (!author || post.author === author) && [post.title,post.slug,categoryName(post),authorName(post)].some(value => value?.toLowerCase().includes(query)));
   $('post-count').textContent = posts.length;
   $('post-list').replaceChildren(...matching.map(post => {
     const button = makeButton('', 'studio-post');
@@ -277,8 +281,8 @@ function listPosts() {
     const status = stateOf(post);
     const meta = create('small');
     const badge = create('span','studio-badge',states[status]);
-    badge.dataset.state = status;
-    meta.append(badge,create('span','',post.category));
+    badge.dataset.state = status === 'publishing' ? 'scheduled' : status;
+    meta.append(badge,create('span','',categoryName(post)),create('span','',authorName(post)));
     button.append(create('strong','',post.title),meta);
     return button;
   }));
@@ -295,7 +299,7 @@ function openPost(post, allowBusy = false, preserveHistory = false) {
   savedTime = null;
   dirty = false;
   for (const field of ['title','excerpt','slug','type','locale','author','category']) {
-    if (field === 'category' && current.category && !Array.from($(field).options).some(option => option.value === current.category)) $(field).append(new Option(current.category));
+    if (['category','author'].includes(field) && current[field] && !Array.from($(field).options).some(option => option.value === current[field])) $(field).append(new Option(current[`${field}Name`]||current[field],current[field]));
     $(field).value = current[field] || '';
   }
   $('tags').value = current.tags?.join(', ') || '';
@@ -341,9 +345,9 @@ function renderFields() {
   const status = stateOf(current);
   $('current-title').textContent = title || 'Nieuw artikel';
   $('post-status').textContent = states[status];
-  $('post-status').dataset.state = status;
+  $('post-status').dataset.state = status === 'publishing' ? 'scheduled' : status;
   $('save-state').textContent = dirty ? 'Niet-opgeslagen wijzigingen' : savedTime ? `Opgeslagen om ${savedTime}` : current.id ? 'Opgeslagen' : 'Niet opgeslagen';
-  $('publish').textContent = status === 'scheduled' ? 'Planning wijzigen' : status === 'published' || status === 'revision' ? 'Revisie publiceren' : 'Publiceren';
+  $('publish').textContent = status === 'scheduled' ? 'Planning wijzigen' : ['published','revision','publishing'].includes(status) ? 'Revisie publiceren' : 'Publiceren';
   $('url').textContent = url.href;
   $('redirect').hidden = !current.liveSlug || !slug || current.liveSlug === slug;
   $('word-count').textContent = `${words} ${words === 1 ? 'woord' : 'woorden'}`;
@@ -378,8 +382,16 @@ function renderPublishMeta() {
   const parent = $('publish-meta');
   parent.replaceChildren();
   if (!current?.id) return;
-  if (current.publishedAt) parent.append(create('p','',`Voor het eerst gepubliceerd op ${dateFormat.format(new Date(current.publishedAt))}.`));
-  if (current.publicUrl) parent.append(anchor('Open live artikel ↗',current.publicUrl));
+  if (pendingPublication(current)) {
+    const message = current.publicationCheck.lastError
+      ? 'De verwachte versie is nog niet openbaar bevestigd. De controle is niet gelukt en wordt automatisch opnieuw geprobeerd.'
+      : 'Publicatie wordt gecontroleerd. De verwachte versie is nog niet bevestigd op de openbare pagina.';
+    const feedback = create('p','studio-help',message);feedback.setAttribute('role','status');parent.append(feedback);
+    if (current.publicationCheck.checkedAt) parent.append(create('p','studio-help',`Laatst gecontroleerd op ${dateFormat.format(new Date(current.publicationCheck.checkedAt))}.`));
+    const refresh=makeButton('Publicatiestatus vernieuwen','studio-text-button');
+    refresh.addEventListener('click',()=>execute(refreshPublicationStatus));parent.append(refresh);
+  } else if (current.publishedAt) parent.append(create('p','',`Voor het eerst gepubliceerd op ${dateFormat.format(new Date(current.publishedAt))}.`));
+  if (current.publicUrl) parent.append(anchor(pendingPublication(current)?'Open openbare pagina ter controle ↗':'Open live artikel ↗',current.publicUrl));
   if (current.scheduledAt) {
     parent.append(create('p','',`Gepland op ${dateFormat.format(new Date(current.scheduledAt))} (Nederlandse tijd).`));
     const button = makeButton('Planning annuleren','studio-text-button');
@@ -392,6 +404,19 @@ function renderPublishMeta() {
   const archive = makeButton('Artikel archiveren','studio-text-button');
   archive.addEventListener('click', archiveDialog);
   parent.append(archive);
+}
+
+async function refreshPublicationStatus() {
+  const selectedId=current?.id;if(!selectedId)return;
+  const latest=await api();posts=latest.posts;
+  const saved=posts.find(post=>post.id===selectedId);
+  if(saved&&current?.id===selectedId){
+    // Refresh only publication metadata; entered text and its revision stay in place.
+    current={...current,publicationCheck:saved.publicationCheck,status:saved.status,liveRevision:saved.liveRevision,liveSlug:saved.liveSlug,publicUrl:saved.publicUrl,publishedAt:saved.publishedAt,scheduledAt:saved.scheduledAt,hasUnpublishedChanges:saved.liveRevision!==null&&saved.liveRevision!==current.revision};
+    renderFields();renderPublishMeta();
+    notice(pendingPublication(current)?'De openbare controle loopt nog. Je invoer blijft behouden.':'De publicatiestatus is bijgewerkt. Je invoer blijft behouden.');
+  }
+  listPosts();
 }
 
 function acceptPost(post) {
@@ -636,7 +661,7 @@ function changePublication(action, scheduledAt) {
       renderPublishMeta();
       listPosts();
     } else acceptPost(post);
-    if (action === 'publish') notice('Het artikel is gepubliceerd.',false,post.publicUrl && {label:'Open live artikel',href:post.publicUrl});
+    if (action === 'publish') notice(pendingPublication(post)?'De publicatie is opgeslagen en wordt op de openbare pagina gecontroleerd.':'Het artikel is gepubliceerd.',false,!pendingPublication(post)&&post.publicUrl && {label:'Open live artikel',href:post.publicUrl});
     if (action === 'schedule') notice(`Publicatie ingepland op ${dateFormat.format(new Date(scheduledAt))} (Nederlandse tijd).`);
     if (action === 'unschedule') notice('De publicatieplanning is geannuleerd.');
   });
@@ -690,6 +715,8 @@ function initListeners() {
   $('slug').addEventListener('blur',() => { $('slug').value = slugify($('slug').value); });
   $('search').addEventListener('input',listPosts);
   $('status-filter').addEventListener('change',listPosts);
+  $('category-filter').addEventListener('change',listPosts);
+  $('author-filter').addEventListener('change',listPosts);
   $('new').addEventListener('click',() => {
     if (dirty && !confirm('Niet-opgeslagen wijzigingen laten vervallen?')) return;
     openPost();
@@ -729,9 +756,11 @@ async function boot() {
   initListeners();
   try {
     const initial = await api();
-    ({posts} = initial);
-    $('category').replaceChildren(...initial.categories.map(item=>new Option(item.name,item.id)));
-    $('author').replaceChildren(...initial.authors.map(item=>new Option(item.name,item.id)));
+    ({posts,authors,categories} = initial);
+    $('category').replaceChildren(...categories.map(item=>new Option(item.name,item.id)));
+    $('author').replaceChildren(...authors.map(item=>new Option(item.name,item.id)));
+    $('category-filter').replaceChildren(new Option('Alle categorieën',''),...categories.map(item=>new Option(item.name,item.id)));
+    $('author-filter').replaceChildren(new Option('Alle auteurs',''),...authors.map(item=>new Option(item.name,item.id)));
     $('grid').hidden = false;
     $('new').disabled = false;
     openPost(posts[0]);

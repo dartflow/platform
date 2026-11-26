@@ -1,12 +1,13 @@
 /** Contract/transport primitives: no dependency on DartFlow's database, editor or router. */
 import {createCipheriv,createDecipheriv,randomBytes} from 'node:crypto';
 import {isIP} from 'node:net';
+import type {SocialHeroPairingClaim} from './socialhero-contract';
 
 export class SocialHeroError extends Error {
  constructor(readonly code:string,message:string,readonly status=422,readonly retryAfter?:number){super(message);}
 }
 export type SocialHeroTransport={fetch?:typeof fetch};
-export type PairingClaim={connectionId:string;destinationId:string;accessToken:string;expiresAt:string};
+export type PairingClaim=SocialHeroPairingClaim;
 const object=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==='object'&&!Array.isArray(value);
 export function socialHeroOrigin(value:string){
  try{
