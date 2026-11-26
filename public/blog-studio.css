@@ -18,6 +18,33 @@
 .studio-grid { display:grid; grid-template-columns:minmax(12.75rem,.29fr) minmax(0,1fr); align-items:start; gap:1rem; }
 .studio-workspace { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(16.25rem,.48fr); align-items:start; gap:1rem; }
 .studio-panel { min-width:0; background:var(--studio-panel); border:1px solid var(--studio-border); border-radius:.65rem; }
+.socialhero-settings { padding:1.1rem; margin-bottom:1.25rem; scroll-margin-top:1rem; }
+.socialhero-heading { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; }
+.socialhero-heading h2 { font-size:1.9rem; line-height:1.1; }
+.socialhero-heading p { margin-top:.3rem; font-size:.87rem; color:var(--studio-dim); }
+.socialhero-grid { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:1.5rem; }
+.socialhero-facts { display:grid; gap:.35rem; margin:0 0 .8rem; font-size:.82rem; }
+.socialhero-facts > div { display:flex; gap:.75rem; }
+.socialhero-facts dt { color:var(--studio-dim); min-width:4.5rem; }
+.socialhero-facts dd { margin:0; overflow-wrap:anywhere; }
+.socialhero-pairing { display:grid; gap:.55rem; margin-bottom:.85rem; }
+.socialhero-pairing .studio-field { margin:0; }
+.socialhero-help { margin:.5rem 0; font-size:.8rem; line-height:1.5; color:var(--studio-dim); }
+.socialhero-actions { display:flex; flex-wrap:wrap; gap:.5rem; }
+.socialhero-settings .button { width:fit-content; max-width:100%; }
+.socialhero-settings button:disabled { opacity:.5; cursor:not-allowed; }
+.socialhero-policy { border-left:1px solid var(--studio-border); padding-left:1.5rem; }
+.socialhero-policy h3 { font-size:1.35rem; margin:0 0 .55rem; }
+.socialhero-permissions { padding-left:1.1rem; margin:0 0 .6rem; color:#d2d7d4; font-size:.82rem; line-height:1.65; }
+.socialhero-policy .studio-checkbox { margin:.85rem 0; }
+.socialhero-confirm { margin-top:.9rem; padding:.8rem; border:1px solid #7a6650; border-radius:.4rem; background:#29261f; }
+.socialhero-confirm p { margin:0 0 .6rem; font-size:.83rem; }
+@media(max-width:650px) {
+  .socialhero-heading { align-items:flex-start; flex-direction:column; gap:.65rem; }
+  .socialhero-grid { grid-template-columns:minmax(0,1fr); gap:1rem; }
+  .socialhero-policy { border-left:0; border-top:1px solid var(--studio-border); padding:1rem 0 0; }
+  .socialhero-settings { padding:.9rem; }
+}
 .studio-library { overflow:hidden; }
 .studio-library-head { padding:1rem; display:grid; gap:.7rem; border-bottom:1px solid var(--studio-border); }
 .studio-panel-title { display:flex; align-items:center; gap:.6rem; }

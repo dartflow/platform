@@ -100,6 +100,8 @@ De v15-broker accepteert alleen deze runtimevelden en weigert onbekende of dubbe
 | `DARTFLOW_DATABASE_URL` | Eigen beperkte databasegebruiker en project; verplichte TLS-verificatie |
 | `DARTFLOW_ENV` | Exact de eigen omgeving |
 | `DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY` | Eigen base64-gecodeerde 32-byte sleutel, gegenereerd op de doelhost |
+| `DARTFLOW_SOCIALHERO_ORIGIN` | Optioneel; vaste vertrouwde canonieke HTTPS-origin van SocialHero voor deze omgeving, zonder afsluitende slash |
+| `DARTFLOW_SOCIALHERO_SITE_ID` | Optioneel; stabiele installatie-ID, standaard `dartflow`; 1–128 letters/cijfers/punt/underscore/dubbele punt/koppelteken |
 | `DARTFLOW_MAIL_WORKER_TOKEN` | Eigen willekeurig token van 64 hextekens, gegenereerd op de doelhost |
 | `DARTFLOW_MAIL_ALLOWED_FROM` | Exact toegestane afzenderadressen; providerverificatie blijft daarnaast nodig |
 | `DARTFLOW_MAIL_ALLOWED_REPLY_TO` | Optionele extra exacte Reply-To-adressen; verruimt From en testontvangers niet |
