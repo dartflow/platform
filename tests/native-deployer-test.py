@@ -218,6 +218,41 @@ class NativeBoundaries(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr.decode())
 
 
+class SocialHeroRuntimeBoundaries(unittest.TestCase):
+    def setUp(self):
+        self.database = f'DARTFLOW_DATABASE_URL=postgresql://dartflow_app:synthetic-only@db.{REF}.supabase.co:5432/postgres?sslmode=verify-full\n'
+
+    def test_connector_is_optional_server_only_and_preserves_the_stable_site_id(self):
+        self.assertEqual(set(deploy.runtime_values(self.database, public())), {'DARTFLOW_DATABASE_URL'})
+        for environment in ['staging', 'production']:
+            with self.subTest(environment=environment), patch.object(deploy, 'SITE', 'dartflow-' + environment):
+                parsed = deploy.runtime_values(self.database + f'DARTFLOW_ENV={environment}\nDARTFLOW_SOCIALHERO_ORIGIN=https://socialhero.example.com\nDARTFLOW_SOCIALHERO_SITE_ID=dartflow\n', public())
+                self.assertEqual(parsed['DARTFLOW_SOCIALHERO_ORIGIN'], 'https://socialhero.example.com')
+                self.assertEqual(parsed['DARTFLOW_SOCIALHERO_SITE_ID'], 'dartflow')
+        for key in ['DARTFLOW_SOCIALHERO_ORIGIN', 'DARTFLOW_SOCIALHERO_SITE_ID']:
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                deploy.public_values({**public(), key: 'synthetic-only'})
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                deploy.runtime_values(self.database + 'NEXT_PUBLIC_' + key + '=synthetic-only\n', public())
+
+    def test_untrusted_and_noncanonical_origins_and_unstable_ids_are_refused(self):
+        invalid_origins = ['http://socialhero.example.com', 'https://socialhero.example.com/',
+                           'https://socialhero.example.com/path', 'https://socialhero.example.com?code=private',
+                           'https://socialhero.example.com#private', 'https://user:private@socialhero.example.com',
+                           'https://127.0.0.1', 'https://[::1]', 'https://169.254.169.254',
+                           'https://localhost', 'https://socialhero.local', 'https://socialhero.internal',
+                           'https://SocialHero.example.com', 'https://socialhero.example.com:443',
+                           'https://socialhero.example.com:0', 'https://socialhero.example.com:65536']
+        for origin in invalid_origins:
+            with self.subTest(origin=origin), self.assertRaises(ValueError):
+                deploy.runtime_values(self.database + 'DARTFLOW_SOCIALHERO_ORIGIN=' + origin + '\n', public())
+        for site_id in ['../other', '-leading', 'site/other', 'x' * 129]:
+            with self.subTest(site_id=site_id), self.assertRaises(ValueError):
+                deploy.runtime_values(self.database + 'DARTFLOW_SOCIALHERO_SITE_ID=' + site_id + '\n', public())
+        parsed = deploy.runtime_values(self.database + 'DARTFLOW_SOCIALHERO_ORIGIN=https://socialhero.example.com:8443\nDARTFLOW_SOCIALHERO_SITE_ID=next-site:stable.v1\n', public())
+        self.assertEqual(parsed['DARTFLOW_SOCIALHERO_SITE_ID'], 'next-site:stable.v1')
+
+
 class FirebaseRuntimeBoundaries(unittest.TestCase):
     def setUp(self):
         self.database = f'DARTFLOW_DATABASE_URL=postgresql://dartflow_app:synthetic-only@db.{REF}.supabase.co:5432/postgres?sslmode=verify-full\n'

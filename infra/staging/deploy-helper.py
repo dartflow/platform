@@ -351,7 +351,8 @@ def runtime_values(text, public):
     allowed = {'DARTFLOW_DATABASE_URL', 'DARTFLOW_ENV', 'DARTFLOW_INTEGRATIONS_ENCRYPTION_KEY',
                'DARTFLOW_MAIL_ALLOWED_FROM', 'DARTFLOW_MAIL_ALLOWED_REPLY_TO', 'DARTFLOW_MAIL_TEST_RECIPIENTS', 'DARTFLOW_MAIL_MAX_MODE',
                'DARTFLOW_MAIL_WORKER_TOKEN', 'DARTFLOW_ADMIN_REQUIRE_MFA', 'SUPABASE_MANAGEMENT_TOKEN',
-               'DARTFLOW_TURN_SECRET', 'DARTFLOW_TURN_URLS'} | PLAYER_PIN_RUNTIME_KEYS | FIREBASE_RUNTIME_KEYS
+               'DARTFLOW_TURN_SECRET', 'DARTFLOW_TURN_URLS',
+               'DARTFLOW_SOCIALHERO_ORIGIN', 'DARTFLOW_SOCIALHERO_SITE_ID'} | PLAYER_PIN_RUNTIME_KEYS | FIREBASE_RUNTIME_KEYS
     result = {}
     for line in text.splitlines():
         line = line.strip()
@@ -392,6 +393,23 @@ def runtime_values(text, public):
             require(all(re.fullmatch(r'[^@,\s<>]+@[^@,\s<>]+\.[^@,\s<>]+', address) for address in result[key].split(',')), 'Invalid mail boundary')
     if 'DARTFLOW_TURN_URLS' in result:
         require(all(re.fullmatch(r'turns?:[A-Za-z0-9.\[\]:-]+(?:\?transport=(?:udp|tcp))?', url) for url in result['DARTFLOW_TURN_URLS'].split(',')), 'Invalid TURN endpoint')
+    if 'DARTFLOW_SOCIALHERO_ORIGIN' in result:
+        origin = result['DARTFLOW_SOCIALHERO_ORIGIN']
+        parsed = urlsplit(origin)
+        try:
+            port = parsed.port
+        except ValueError:
+            raise ValueError('Invalid SocialHero HTTPS origin') from None
+        host = parsed.hostname or ''
+        require(parsed.scheme == 'https' and not parsed.username and not parsed.password
+                and not parsed.path and not parsed.query and not parsed.fragment
+                and re.fullmatch(r'(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}', host)
+                and not host.endswith(('.local', '.localhost', '.internal', '.home', '.lan', '.test'))
+                and (port is None or 0 < port <= 65535 and port != 443)
+                and origin == 'https://' + host + (':' + str(port) if port is not None else ''),
+                'Invalid SocialHero HTTPS origin')
+    if 'DARTFLOW_SOCIALHERO_SITE_ID' in result:
+        require(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,127}', result['DARTFLOW_SOCIALHERO_SITE_ID']), 'Invalid SocialHero site ID')
     validate_player_pin_runtime(result)
     validate_firebase_runtime(result, expected_environment)
     return result

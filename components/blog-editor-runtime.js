@@ -23,7 +23,7 @@ const stateOf = post => post?.status === 'scheduled' ? 'scheduled'
 const dateFormat = new Intl.DateTimeFormat('nl-NL', {dateStyle:'medium', timeStyle:'short', timeZone:'Europe/Amsterdam'});
 const dateParts = new Intl.DateTimeFormat('sv-SE', {dateStyle:'short', timeStyle:'short', timeZone:'Europe/Amsterdam'});
 const fieldNames = ['title','excerpt','slug','type','locale','author','category','tags','hero-alt','ratio','focus-x','focus-y','seo-title','seo-description','noindex'];
-let posts = [], current, connection, capabilities, hero, social, dirty = false, busy = false;
+let posts = [], current, hero, social, dirty = false, busy = false;
 let slugEdited = false, loadingPost = false, mediaTarget = '', savedTime, slash, slashDismissedAt = null;
 let bubbleFrame = 0;
 
@@ -656,36 +656,6 @@ function archiveDialog() {
     });
 }
 
-function renderConnection(message) {
-  const box = $('connection');
-  if (message) { box.textContent = message; return; }
-  const ready = Boolean(connection?.configured && connection?.enabled);
-  const badge = create('strong','',ready ? 'Website-API actief' : connection?.configured ? 'Website-API gepauzeerd' : 'Website-API wacht op configuratie');
-  badge.dataset.ready = String(ready);
-  box.replaceChildren(badge);
-  if (connection?.environment) box.append(create('p','',`Omgeving · ${connection.environment}`));
-  if (capabilities?.blogPath) box.append(create('p','',`Blogpad · ${capabilities.blogPath}`));
-  if (connection?.endpoint) {
-    const label = create('p','',connection.endpoint);
-    const copy = makeButton('Kopieer API-adres','studio-text-button');
-    copy.addEventListener('click',async () => {
-      try { await navigator.clipboard.writeText(connection.endpoint); copy.textContent = 'API-adres gekopieerd'; }
-      catch { copy.textContent = 'Selecteer het API-adres hierboven'; }
-    });
-    box.append(label,copy);
-  }
-}
-
-async function readConnection() {
-  $('test-connection').disabled = true;
-  renderConnection('Website-API controleren…');
-  try {
-    ({socialHero:connection,capabilities} = await api('?action=capabilities'));
-    renderConnection();
-  } catch (error) { renderConnection(error.message); }
-  finally { $('test-connection').disabled = false; }
-}
-
 function chooseTab(tab, focus = false) {
   root.querySelectorAll('[data-tab]').forEach(button => {
     const selected = button.dataset.tab === tab;
@@ -741,7 +711,6 @@ function initListeners() {
   $('hero-clear').addEventListener('click',() => { hero = {...blankHero}; $('hero-alt').value = ''; changed(); });
   $('og-clear').addEventListener('click',() => { social = null; changed(); });
   $('file').addEventListener('change',handleMedia);
-  $('test-connection').addEventListener('click',readConnection);
   const tabs = [...root.querySelectorAll('[data-tab]')];
   tabs.forEach((button,index) => {
     button.addEventListener('click',() => chooseTab(button.dataset.tab));
@@ -760,10 +729,9 @@ async function boot() {
   initListeners();
   try {
     const initial = await api();
-    ({posts,socialHero:connection} = initial);
+    ({posts} = initial);
     $('category').replaceChildren(...initial.categories.map(item=>new Option(item.name,item.id)));
     $('author').replaceChildren(...initial.authors.map(item=>new Option(item.name,item.id)));
-    renderConnection();
     $('grid').hidden = false;
     $('new').disabled = false;
     openPost(posts[0]);

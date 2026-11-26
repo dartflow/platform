@@ -3,7 +3,8 @@ import {actorId} from './auth';
 import {appConfig} from './config';
 import {consumeRateLimit} from './db';
 import {BlogError,BLOG_AUTHORS,BLOG_CATEGORIES,type BlogArticle} from './blog-types';
-import {archiveBlogArticle,blogRuntime,getBlogDraft,listBlogAdmin,listBlogTokens,publishBlogRevision,requireBlogAdmin,saveBlogDraft,scheduleBlogRevision,unscheduleBlogRevision,listBlogRevisions,restoreBlogRevision} from './blog-store';
+import {archiveBlogArticle,getBlogDraft,listBlogAdmin,publishBlogRevision,requireBlogAdmin,saveBlogDraft,scheduleBlogRevision,unscheduleBlogRevision,listBlogRevisions,restoreBlogRevision} from './blog-store';
+import {socialHeroStatus} from './socialhero-connection';
 import {randomUUID} from 'node:crypto';
 
 const json=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{'Cache-Control':'private, no-store','X-Robots-Tag':'noindex, nofollow'}});
@@ -31,10 +32,9 @@ export async function handleBlogAdminApi(request:NextRequest,parts:string[]):Pro
     if(!rate.allowed)return NextResponse.json({error:{code:'RATE_LIMITED',message:`Wacht ${rate.retryAfter} seconden en probeer opnieuw.`}},{status:429,headers:{'Retry-After':String(rate.retryAfter),'Cache-Control':'private, no-store'}});
     if(request.method!=='GET'&&(request.headers.get('origin')!==appConfig().origin||request.headers.get('sec-fetch-site')==='cross-site'))throw new BlogError('PERMISSION_DENIED','Ververs de pagina en probeer opnieuw.',403);
     if(request.method==='GET'){
-      const tokens=await listBlogTokens(actor),runtime=blogRuntime();
       if(request.nextUrl.searchParams.get('action')==='revisions')return json({revisions:await listBlogRevisions(actor,String(request.nextUrl.searchParams.get('id')))});
       return json({posts:await Promise.all((await listBlogAdmin(actor)).filter(p=>p.status!=='archived').map(post=>editorPost(post,actor))),authors:BLOG_AUTHORS,categories:BLOG_CATEGORIES,
-        socialHero:{configured:tokens.some(t=>!t.revokedAt&&new Date(t.expiresAt)>new Date()),enabled:tokens.some(t=>!t.revokedAt&&new Date(t.expiresAt)>new Date()),environment:runtime.environment,endpoint:`${runtime.origin}/api/socialhero/v1`},
+        socialHero:await socialHeroStatus(actor),
         capabilities:{blogPath:'/blog',contentTypes:['blog','article']}});
     }
     if(request.method!=='POST')throw new BlogError('METHOD_NOT_ALLOWED','Deze methode is niet beschikbaar.',405);

@@ -24,6 +24,7 @@ import {cleanupOcheDevices} from '@/lib/oche-device-store';
 import {handleBlogAdminApi} from '@/lib/blog-admin-api';
 import {handleBlogApi} from '@/lib/blog-api';
 import {processScheduledBlogPublications,processBlogInvalidations} from '@/lib/blog-store';
+import {expireSocialHeroProvisioning} from '@/lib/socialhero-connection';
 import {revalidatePath} from 'next/cache';
 import { createGoogleAttempt, GOOGLE_ATTEMPT_COOKIE } from '@/lib/google-proof';
 import { googleSignInOptions,hasRecentVerifiedAuthentication } from '@/lib/reauth';
@@ -131,6 +132,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
     if (!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host) || forwarded.some(value=>!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(value))) throw new DomainError('forbidden','Geen toegang.',403);
     if(method==='POST' && workerTokenMatches(request)) {
       await cleanupOcheDevices();
+      await expireSocialHeroProvisioning();
       await processScheduledBlogPublications();
       await processBlogInvalidations(revalidatePath);
       await processBoardActivityBatch();

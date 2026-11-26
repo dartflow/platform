@@ -27,6 +27,8 @@ export function browserBlocksAnalytics(browser: {doNotTrack?: string | null; glo
 
 export function analyticsAllowedOnPath(path: string): boolean {
   return !/^\/(?:oche-live|koppel-scherm|baanscherm|scorebord|wedstrijd)(?:\/|$)/.test(path)
+    && !/^\/blog\/beheer(?:\/|$)/.test(path)
+    && path!=='/app/blog'
     && path!=='/app/schermen'
     && !/^\/app\/(?:match|training)(?:\/|$)/.test(path);
 }

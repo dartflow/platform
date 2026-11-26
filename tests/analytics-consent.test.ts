@@ -40,5 +40,5 @@ test('browser privacy and immersive screen routes retain analytics exclusion', (
   assert.equal(browserBlocksAnalytics({doNotTrack: '1'}), true);
   assert.equal(browserBlocksAnalytics({globalPrivacyControl: true}), true);
   for (const path of ['/', '/speler', '/inloggen', '/app', '/app/feed']) assert.equal(analyticsAllowedOnPath(path), true);
-  for (const path of ['/oche-live/id/', '/baanscherm/id', '/scorebord', '/wedstrijd/id', '/app/match/id', '/app/training/id']) assert.equal(analyticsAllowedOnPath(path), false);
+  for (const path of ['/oche-live/id/', '/baanscherm/id', '/scorebord', '/wedstrijd/id', '/app/match/id', '/app/training/id', '/blog/beheer', '/blog/beheer/voorbeeld/id', '/app/blog']) assert.equal(analyticsAllowedOnPath(path), false);
 });
