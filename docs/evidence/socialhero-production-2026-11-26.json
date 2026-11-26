@@ -1,0 +1,726 @@
+{
+  "format": "dartflow-socialhero-production-deployment-v1",
+  "date": "2026-11-26",
+  "status": "production_deployed_verified_live_pairing_deferred_by_user",
+  "scope": {
+    "environment": "production",
+    "origin": "https://dartflow.nl",
+    "providerOrigin": "https://socialhero.dgwebservices.nl",
+    "siteId": "dartflow",
+    "contractVersion": 1,
+    "secretsCodesAndPrivateUserContentIncluded": false
+  },
+  "source": {
+    "sha": "d3ab020b225530e95f6101623e233591aa1dd472",
+    "implementationPullRequest": "https://github.com/dartflow/platform/pull/37",
+    "exactShaCi": "https://github.com/dartflow/platform/actions/runs/45842607259",
+    "stagingDeployment": "https://github.com/dartflow/platform/actions/runs/45845688188",
+    "automatedTests": {
+      "applicationAndDatabase": 969,
+      "browser": 159,
+      "nativeDeployer": 74,
+      "prototype": 47,
+      "separateFeedAndChat": 5
+    },
+    "applicationSourceChangedDuringProductionRollout": false
+  },
+  "backup": {
+    "directory": "/var/backups/dartflow/identity-production-20261126T151552030Z",
+    "createdAt": "2026-11-26T15:15:57.746Z",
+    "scope": "Runtime-visible dartflow_private application rows and exact active runtime/release configuration only. Excludes Supabase Auth, unreadable private tables, signing keys, external providers and schema/role restoration. Verified file readback is not a restore drill.",
+    "consistent": true,
+    "applicationFile": {
+      "name": "application.json.gz",
+      "bytes": 371681,
+      "sha256": "23332b4fe9c483a92fa9a0b4183b197a733bd9bf8bdfa096ec8a5e3949a8644a"
+    },
+    "readbackVerified": true,
+    "restoreDrill": false
+  },
+  "database": {
+    "projectRef": "wlrnowuownakqqgjxnbb",
+    "migrationMethod": "Official Supabase apply_migration with lock_timeout 10s and statement_timeout 90s in each migration transaction.",
+    "migrations": [
+      {
+        "file": "supabase/migrations/20261126000000_socialhero_connector.sql",
+        "sha256": "3babe1dfb23ab68ba9d82c6aaba1964f05e9263699d34e751e68ceceb1514ee4",
+        "feature": "socialhero_connector",
+        "featureVersion": 1,
+        "applied": true
+      },
+      {
+        "file": "supabase/migrations/20261126010000_socialhero_permissions.sql",
+        "sha256": "8fa4259fa463a90155fe3f1b787bb2972a86dab32cf3e603c690ceb0d9d5098e",
+        "feature": "socialhero_permissions",
+        "featureVersion": 1,
+        "applied": true
+      },
+      {
+        "file": "supabase/migrations/20261126020000_blog_taxonomy.sql",
+        "sha256": "8bbf31f8decadd9fd1908baaed9b037fec76c0d804e339b4da820291c4fd380b",
+        "feature": "blog_taxonomy",
+        "featureVersion": 1,
+        "applied": true
+      },
+      {
+        "file": "supabase/migrations/20261126030000_blog_publication_checks.sql",
+        "sha256": "d95f89587b789a3122b90b270f1f056d9ba4a93ea848505fc4b9ae5cbda27cc7",
+        "feature": "blog_publication_checks",
+        "featureVersion": 1,
+        "applied": true
+      }
+    ],
+    "independentRuntimeReadOnlyVerification": {
+      "observedAt": "2026-11-26T15:21:47.774Z",
+      "passed": true,
+      "legacyCountsAndFingerprints": [
+        {
+          "posts": 2,
+          "revisions": 2,
+          "routes": 2,
+          "media": 4,
+          "tokens": 1,
+          "receipts": 8,
+          "posts_hash": "78fa303d91387cfc8c9772826e9ca63d",
+          "revisions_hash": "aed6db0a2bc627a58154c4a642908e43",
+          "routes_hash": "bc37b7a1a23f35ab99a5cfdf21707e85",
+          "legacy_tokens_hash": "485035e66228ea4cbd8c0d08f851dc99",
+          "receipts_hash": "f68cc70f4c561b41d0d0e08ea0e775bb"
+        }
+      ],
+      "featureVersions": [
+        {
+          "name": "blog_publication",
+          "version": 1
+        },
+        {
+          "name": "blog_publication_checks",
+          "version": 1
+        },
+        {
+          "name": "blog_taxonomy",
+          "version": 1
+        },
+        {
+          "name": "socialhero_connector",
+          "version": 1
+        },
+        {
+          "name": "socialhero_permissions",
+          "version": 1
+        }
+      ],
+      "rls": [
+        {
+          "relname": "blog_media",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "blog_posts",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "blog_publication_checks",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "blog_receipts",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "blog_revisions",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "blog_routes",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "blog_taxonomy",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "blog_tokens",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "socialhero_connections",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "socialhero_destination_policies",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "socialhero_permission_events",
+          "relrowsecurity": true,
+          "relkind": "r"
+        },
+        {
+          "relname": "socialhero_settings",
+          "relrowsecurity": true,
+          "relkind": "r"
+        }
+      ],
+      "browserTableGrants": [],
+      "browserSequenceGrants": [],
+      "runtimeRole": [
+        {
+          "rolname": "dartflow_app",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false
+        }
+      ],
+      "checks": {
+        "readOnly": true,
+        "legacyBaselineUnchanged": true,
+        "fourFeatureMarkersPresent": true,
+        "rlsEnabled": true,
+        "browserTableAndSequenceGrantsEmpty": true,
+        "runtimeRoleRestricted": true,
+        "runtimeGrantsCorrect": true,
+        "constraintsValidated": true,
+        "taxonomyDefaultsCorrect": true,
+        "revisionsHaveTaxonomy": true,
+        "legacyTokenDefaultsCorrect": true,
+        "newOperationalTablesEmpty": true,
+        "legacyDestinationsUnchanged": true
+      },
+      "legacyBaselineChecks": {
+        "posts": true,
+        "revisions": true,
+        "routes": true,
+        "media": true,
+        "tokens": true,
+        "receipts": true,
+        "posts_hash": true,
+        "revisions_hash": true,
+        "routes_hash": true,
+        "legacy_tokens_hash": true,
+        "receipts_hash": true
+      },
+      "mediaBaselineComparison": "Count only; media bytes were not compared by a baseline content fingerprint."
+    },
+    "localDetailedEvidence": ".local/socialhero-production-20261126/database-after.json"
+  },
+  "hostPreparation": {
+    "environment": "production",
+    "validated": true,
+    "changesApplied": true,
+    "newConfigId": "production-2026-11-26-socialhero-1",
+    "servicesRestarted": false,
+    "productionChanged": true,
+    "stagingChanged": false,
+    "existingBundleChanged": false,
+    "secretsPrinted": false,
+    "sourceRelease": "0a7d5d628d7a-45674661367-1",
+    "controlFiles": [
+      "/usr/local/libexec/dg-dartflow-production-deploy-helper",
+      "/usr/local/bin/dg-dartflow-production-deploy",
+      "/etc/sudoers.d/dartflow-production",
+      "/etc/dg-sites/dartflow-production/deploy.json"
+    ],
+    "backup": "/root/dartflow-socialhero-production-20261126/control-backups/socialhero-production-host-20261126T152615526180Z",
+    "helperSha256": "3d26e1e844e584c71dafa4dad5443575514cad172ef9f00cbdbcb796ddff7afa",
+    "reviewedScript": "/root/dartflow-socialhero-production-20261126/prepare-production.py",
+    "reviewedScriptSha256": "bf4782d1ff4cc16fbd7bbde7a76b9d9b79b112aeae976284a430ce5ce590b465",
+    "reviewPlanSha256": "f621d65b598198b98b955420f0da1562f906b10a87d2910ed820db84527e5db6",
+    "postBootSiteLockInitialization": {
+      "performed": true,
+      "method": "Digest-pinned existing native helper definitions, global lock before site lock; O_CREAT without truncation/unlink.",
+      "existingInodesReplaced": false
+    }
+  },
+  "deployment": {
+    "mechanism": "Existing GitHub production workflow, dedicated native runner and independently verifying root-owned broker.",
+    "url": "https://github.com/dartflow/platform/actions/runs/45849102420",
+    "runId": 45849102420,
+    "attempt": 1,
+    "workflowSha": "09cc5281a6cb9df0dca75db756342bf61ba50a26",
+    "sourceSha": "d3ab020b225530e95f6101623e233591aa1dd472",
+    "releaseId": "45849102420-1",
+    "configId": "production-2026-11-26-socialhero-1",
+    "status": "completed",
+    "conclusion": "success",
+    "createdAt": "2026-11-26T15:26:22Z",
+    "completedAt": "2026-11-26T15:29:47Z",
+    "jobs": [
+      {
+        "name": "Verify immutable release",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-11-26T15:26:26Z",
+        "completedAt": "2026-11-26T15:26:45Z"
+      },
+      {
+        "name": "Build and activate on target VPS",
+        "status": "completed",
+        "conclusion": "success",
+        "startedAt": "2026-11-26T15:26:47Z",
+        "completedAt": "2026-11-26T15:29:46Z"
+      }
+    ],
+    "log": ".local/socialhero-production-20261126/production-deploy-complete.log"
+  },
+  "livePairing": {
+    "attempted": false,
+    "verified": false,
+    "conceptCreated": false,
+    "testPublicationCreated": false,
+    "deferredByUser": true,
+    "note": "User chose to perform the real pairing test later. Production deployment does not provision a connection or publish test content. Use a distinct production code in the authenticated website wizard."
+  },
+  "rollback": {
+    "preserveMigrationsAndHistory": true,
+    "limitation": "After custom taxonomy or destination-scoped posts/idempotency results are created, use a feature-compatible application rollback. The pre-feature app does not understand those records."
+  },
+  "preDeploymentHttp": {
+    "observedAt": "2026-11-26T15:15:12.241Z",
+    "reports": [
+      {
+        "origin": "https://dartflow.nl",
+        "healthStatus": 200,
+        "health": {
+          "status": "ok",
+          "mode": "supabase",
+          "sha": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+          "releaseId": "45674661367-1",
+          "buildConfigId": "production-2026-11-20-firebase-fcm-1",
+          "runtimeConfigId": "production-2026-11-20-firebase-fcm-1",
+          "configId": "production-2026-11-20-firebase-fcm-1"
+        },
+        "readyStatus": 200,
+        "ready": {
+          "status": "ready",
+          "database": "ok",
+          "schemaVersion": 1,
+          "auth": "reachable",
+          "sha": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+          "releaseId": "45674661367-1",
+          "buildConfigId": "production-2026-11-20-firebase-fcm-1",
+          "runtimeConfigId": "production-2026-11-20-firebase-fcm-1",
+          "configId": "production-2026-11-20-firebase-fcm-1"
+        }
+      },
+      {
+        "origin": "https://staging.dartflow.nl",
+        "healthStatus": 200,
+        "health": {
+          "status": "ok",
+          "mode": "supabase",
+          "sha": "d3ab020b225530e95f6101623e233591aa1dd472",
+          "releaseId": "45845688188-1",
+          "buildConfigId": "staging-2026-11-26-socialhero-1",
+          "runtimeConfigId": "staging-2026-11-26-socialhero-1",
+          "configId": "staging-2026-11-26-socialhero-1"
+        },
+        "readyStatus": 200,
+        "ready": {
+          "status": "ready",
+          "database": "ok",
+          "schemaVersion": 1,
+          "auth": "reachable",
+          "sha": "d3ab020b225530e95f6101623e233591aa1dd472",
+          "releaseId": "45845688188-1",
+          "buildConfigId": "staging-2026-11-26-socialhero-1",
+          "runtimeConfigId": "staging-2026-11-26-socialhero-1",
+          "configId": "staging-2026-11-26-socialhero-1"
+        }
+      }
+    ]
+  },
+  "postDeploymentHttp": {
+    "observedAt": "2026-11-26T15:29:57.494Z",
+    "origin": "https://dartflow.nl",
+    "expectedSha": "d3ab020b225530e95f6101623e233591aa1dd472",
+    "checks": [
+      {
+        "path": "/api/health",
+        "status": 200,
+        "location": null,
+        "cacheControl": "private, no-store",
+        "robots": null,
+        "body": {
+          "status": "ok",
+          "mode": "supabase",
+          "sha": "d3ab020b225530e95f6101623e233591aa1dd472",
+          "releaseId": "45849102420-1",
+          "buildConfigId": "production-2026-11-26-socialhero-1",
+          "runtimeConfigId": "production-2026-11-26-socialhero-1",
+          "configId": "production-2026-11-26-socialhero-1"
+        },
+        "expectedSource": true
+      },
+      {
+        "path": "/api/ready",
+        "status": 200,
+        "location": null,
+        "cacheControl": "private, no-store",
+        "robots": null,
+        "body": {
+          "status": "ready",
+          "database": "ok",
+          "schemaVersion": 1,
+          "auth": "reachable",
+          "sha": "d3ab020b225530e95f6101623e233591aa1dd472",
+          "releaseId": "45849102420-1",
+          "buildConfigId": "production-2026-11-26-socialhero-1",
+          "runtimeConfigId": "production-2026-11-26-socialhero-1",
+          "configId": "production-2026-11-26-socialhero-1"
+        },
+        "expectedSource": true
+      },
+      {
+        "path": "/blog",
+        "status": 200,
+        "location": null,
+        "cacheControl": "private, no-store",
+        "robots": null,
+        "h1Count": 1,
+        "containsDartFlow": true,
+        "noindex": false,
+        "firstArticle": "/blog/dartscompetitie-plannen-checklist"
+      },
+      {
+        "path": "/blog/beheer",
+        "status": 307,
+        "location": "/inloggen?next=%2Fblog%2Fbeheer",
+        "cacheControl": "private, no-store",
+        "robots": "noindex, nofollow, noarchive"
+      },
+      {
+        "path": "/app/platform/integraties",
+        "status": 200,
+        "location": null,
+        "cacheControl": "private, no-store",
+        "robots": null
+      },
+      {
+        "path": "/api/socialhero/v1/capabilities",
+        "status": 401,
+        "location": null,
+        "cacheControl": "private, no-store",
+        "robots": "noindex, nofollow",
+        "code": "INVALID_CREDENTIAL",
+        "controlledError": true
+      },
+      {
+        "path": "/api/blog/socialhero",
+        "status": 401,
+        "location": null,
+        "cacheControl": "private, no-store",
+        "robots": "noindex, nofollow",
+        "code": "UNAUTHENTICATED",
+        "controlledError": true
+      },
+      {
+        "path": "/api/blog/taxonomy",
+        "status": 401,
+        "location": null,
+        "cacheControl": "private, no-store",
+        "robots": "noindex, nofollow",
+        "code": "UNAUTHENTICATED",
+        "controlledError": true
+      },
+      {
+        "path": "/sitemap.xml",
+        "status": 200,
+        "location": null,
+        "cacheControl": "private, no-store",
+        "robots": null,
+        "publicUrlCount": 8
+      }
+    ]
+  },
+  "publicRevisionAndSeoChecks": {
+    "observedAt": "2026-11-26T15:29:57.790Z",
+    "checks": [
+      {
+        "observedAt": "2026-11-26T15:29:57.573Z",
+        "url": "https://dartflow.nl/blog/korte-dartscompetitie-organiseren",
+        "status": 200,
+        "postId": "a3da7fa9-a7c2-4bfb-93d4-60fba57d0b16",
+        "revision": 1,
+        "expectedMarker": "b2ad23cd3c3c0eac5103cfc8112c97832388190e0a071af7c41b29c987f8ab53",
+        "exactRevisionVisible": true,
+        "h1Count": 1,
+        "h2Count": 11,
+        "canonicalIsProduction": true,
+        "noindex": false,
+        "robotsHeader": null,
+        "absoluteOpenGraphImage": true,
+        "openGraphImageDimensions": true,
+        "twitterLargeCard": true,
+        "schemaType": "BlogPosting",
+        "authorPresent": true,
+        "publicationDatePresent": true,
+        "modificationDatePresent": true,
+        "heroAltPresent": true,
+        "focalPointStylePresent": true,
+        "sitemapContainsArticle": true
+      },
+      {
+        "observedAt": "2026-11-26T15:29:57.790Z",
+        "url": "https://dartflow.nl/blog/dartscompetitie-plannen-checklist",
+        "status": 200,
+        "postId": "d2e7804a-b89d-4a5d-ab7b-9839ac5a9a0c",
+        "revision": 1,
+        "expectedMarker": "580e34c159070c19b33e411027db8bb496d949b3c320f44a7fc3ff84e2e3563a",
+        "exactRevisionVisible": true,
+        "h1Count": 1,
+        "h2Count": 11,
+        "canonicalIsProduction": true,
+        "noindex": false,
+        "robotsHeader": null,
+        "absoluteOpenGraphImage": true,
+        "openGraphImageDimensions": true,
+        "twitterLargeCard": true,
+        "schemaType": "Article",
+        "authorPresent": true,
+        "publicationDatePresent": true,
+        "modificationDatePresent": true,
+        "heroAltPresent": true,
+        "focalPointStylePresent": true,
+        "sitemapContainsArticle": true
+      }
+    ]
+  },
+  "visualChecks": {
+    "observedAt": "2026-11-26T15:30:11.421Z",
+    "checks": [
+      {
+        "path": "/blog",
+        "width": 390,
+        "status": 200,
+        "viewport": 390,
+        "documentWidth": 390,
+        "h1Count": 1,
+        "heroLoaded": null,
+        "noHorizontalOverflow": true,
+        "image": ".local/socialhero-production-20261126/production-index-390.png"
+      },
+      {
+        "path": "/blog",
+        "width": 1440,
+        "status": 200,
+        "viewport": 1440,
+        "documentWidth": 1440,
+        "h1Count": 1,
+        "heroLoaded": null,
+        "noHorizontalOverflow": true,
+        "image": ".local/socialhero-production-20261126/production-index-1440.png"
+      },
+      {
+        "path": "/blog/dartscompetitie-plannen-checklist",
+        "width": 390,
+        "status": 200,
+        "viewport": 390,
+        "documentWidth": 390,
+        "h1Count": 1,
+        "heroLoaded": true,
+        "noHorizontalOverflow": true,
+        "image": ".local/socialhero-production-20261126/production-article-390.png"
+      },
+      {
+        "path": "/blog/dartscompetitie-plannen-checklist",
+        "width": 1440,
+        "status": 200,
+        "viewport": 1440,
+        "documentWidth": 1440,
+        "h1Count": 1,
+        "heroLoaded": true,
+        "noHorizontalOverflow": true,
+        "image": ".local/socialhero-production-20261126/production-article-1440.png"
+      }
+    ]
+  },
+  "hostVerification": {
+    "sourceSha": "d3ab020b225530e95f6101623e233591aa1dd472",
+    "releaseId": "45849102420-1",
+    "configId": "production-2026-11-26-socialhero-1",
+    "ciRunUrl": "https://github.com/dartflow/platform/actions/runs/45842607259",
+    "helperSha256": "3d26e1e844e584c71dafa4dad5443575514cad172ef9f00cbdbcb796ddff7afa",
+    "checks": {
+      "sourceSha": true,
+      "releaseId": true,
+      "configId": true,
+      "oldPublicBytesPreserved": true,
+      "oldRuntimeBytesPreservedAsPrefix": true,
+      "newBundlePrivate": true,
+      "stagingHelperUnchanged": true,
+      "sudoersValid": true
+    },
+    "passed": true,
+    "secretsPrinted": false
+  },
+  "stagingIsolationVerification": {
+    "observedAt": "2026-11-26T15:30:30.579Z",
+    "origin": "https://staging.dartflow.nl",
+    "passed": true,
+    "checks": [
+      {
+        "path": "/api/health",
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "mode": "supabase",
+          "sha": "d3ab020b225530e95f6101623e233591aa1dd472",
+          "releaseId": "45845688188-1",
+          "buildConfigId": "staging-2026-11-26-socialhero-1",
+          "runtimeConfigId": "staging-2026-11-26-socialhero-1",
+          "configId": "staging-2026-11-26-socialhero-1"
+        }
+      },
+      {
+        "path": "/api/ready",
+        "status": 200,
+        "body": {
+          "status": "ready",
+          "database": "ok",
+          "schemaVersion": 1,
+          "auth": "reachable",
+          "sha": "d3ab020b225530e95f6101623e233591aa1dd472",
+          "releaseId": "45845688188-1",
+          "buildConfigId": "staging-2026-11-26-socialhero-1",
+          "runtimeConfigId": "staging-2026-11-26-socialhero-1",
+          "configId": "staging-2026-11-26-socialhero-1"
+        }
+      },
+      {
+        "path": "/blog",
+        "status": 200,
+        "noindex": true
+      },
+      {
+        "path": "/sitemap.xml",
+        "status": 200,
+        "urlCount": 0
+      }
+    ]
+  },
+  "securityChecks": {
+    "origin": "https://dartflow.nl",
+    "expectedSha": "d3ab020b225530e95f6101623e233591aa1dd472",
+    "startedAt": "2026-11-26T15:30:05.257Z",
+    "credentialsUsed": false,
+    "pairingAttempted": false,
+    "results": [
+      {
+        "method": "GET",
+        "path": "/api/socialhero/v1/capabilities",
+        "status": 401,
+        "code": "INVALID_CREDENTIAL",
+        "controlledError": true,
+        "privateNoStore": true,
+        "passed": true
+      },
+      {
+        "method": "GET",
+        "path": "/api/socialhero/v1/posts/security-smoke-nonexistent-20261126",
+        "status": 401,
+        "code": "INVALID_CREDENTIAL",
+        "controlledError": true,
+        "privateNoStore": true,
+        "passed": true
+      },
+      {
+        "method": "PUT",
+        "path": "/api/socialhero/v1/posts/security-smoke-nonexistent-20261126",
+        "status": 401,
+        "code": "INVALID_CREDENTIAL",
+        "controlledError": true,
+        "privateNoStore": true,
+        "passed": true
+      },
+      {
+        "method": "POST",
+        "path": "/api/socialhero/v1/posts/security-smoke-nonexistent-20261126/publish",
+        "status": 401,
+        "code": "INVALID_CREDENTIAL",
+        "controlledError": true,
+        "privateNoStore": true,
+        "passed": true
+      },
+      {
+        "method": "POST",
+        "path": "/api/socialhero/v1/media",
+        "status": 401,
+        "code": "INVALID_CREDENTIAL",
+        "controlledError": true,
+        "privateNoStore": true,
+        "passed": true
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/socialhero/v1/connection",
+        "status": 401,
+        "code": "INVALID_CREDENTIAL",
+        "controlledError": true,
+        "privateNoStore": true,
+        "passed": true
+      },
+      {
+        "method": "GET",
+        "path": "/api/blog/socialhero",
+        "status": 401,
+        "code": "UNAUTHENTICATED",
+        "controlledError": true,
+        "privateNoStore": true,
+        "passed": true
+      },
+      {
+        "method": "GET",
+        "path": "/api/blog/taxonomy",
+        "status": 401,
+        "code": "UNAUTHENTICATED",
+        "controlledError": true,
+        "privateNoStore": true,
+        "passed": true
+      },
+      {
+        "method": "GET",
+        "path": "/blog/beheer/voorbeeld/a3da7fa9-a7c2-4bfb-93d4-60fba57d0b16",
+        "status": 404,
+        "expected": "404 concealment",
+        "headers": {
+          "cacheControl": "private, no-store",
+          "contentType": "text/html; charset=utf-8",
+          "robots": "noindex, nofollow, noarchive"
+        },
+        "privateNoStore": true,
+        "htmlResponse": true,
+        "bodyBytes": 10311,
+        "hasPreviewBanner": false,
+        "hasPrivateArticlePayload": false,
+        "hasRevisionMarker": false,
+        "passed": true
+      }
+    ],
+    "observedSha": "d3ab020b225530e95f6101623e233591aa1dd472",
+    "completedAt": "2026-11-26T15:31:34.671Z",
+    "passed": true,
+    "previousPreviewExpectation": {
+      "expected": "Redirect to login",
+      "observation": {
+        "method": "GET",
+        "path": "/blog/beheer/voorbeeld/a3da7fa9-a7c2-4bfb-93d4-60fba57d0b16",
+        "status": 404,
+        "redirectsToLogin": false,
+        "passed": false
+      }
+    },
+    "previewRecheckedAt": "2026-11-26T15:31:34.445Z"
+  }
+}
