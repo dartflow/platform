@@ -1,7 +1,7 @@
 {
   "format": "dartflow-socialhero-receiver-validation-v1",
   "date": "2026-11-26",
-  "status": "local_verification_complete_awaiting_exact_main_ci_and_staging",
+  "status": "receiver_staging_verified_live_pairing_deferred_by_user",
   "repository": "https://github.com/dartflow/platform",
   "scope": {
     "environment": "staging",
@@ -92,8 +92,8 @@
   },
   "currentPhase": {
     "branch": "codex/socialhero-policy-and-publication",
-    "sourceCommit": null,
-    "pullRequest": null,
+    "sourceCommit": "62726910972df02186e5fd3bbfd2d6f67348abd8",
+    "pullRequest": "https://github.com/dartflow/platform/pull/37",
     "permissions": {
       "newDestinationDraftDefault": true,
       "newDestinationPublishDefault": true,
@@ -138,20 +138,39 @@
         "noFinalTestCountClaimed": true
       },
       "previousBuildPassed": true,
-      "buildStatus": "completed"
+      "buildStatus": "completed",
+      "prototypeTests": {
+        "passed": 47,
+        "failed": 0
+      }
     },
     "exactMainCi": {
-      "status": "pending",
-      "runId": null,
-      "url": null,
-      "sourceSha": null,
-      "conclusion": null
+      "status": "completed",
+      "runId": 45842607259,
+      "url": "https://github.com/dartflow/platform/actions/runs/45842607259",
+      "sourceSha": "d3ab020b225530e95f6101623e233591aa1dd472",
+      "conclusion": "success",
+      "browserTests": {
+        "passed": 159,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scopedFeedAndChatTests": {
+        "passed": 5,
+        "failed": 0
+      },
+      "nativeDeployerTests": {
+        "passed": 74,
+        "failed": 0
+      },
+      "log": ".local/socialhero-20261126/exact-main-ci-complete.log"
     },
     "primaryAdministrationEntry": {
       "path": "/app/platform/integraties",
       "action": "SocialHero beheren",
       "target": "/blog/beheer#studio-socialhero-mount"
-    }
+    },
+    "mergedMainCommit": "d3ab020b225530e95f6101623e233591aa1dd472"
   },
   "stagingDatabase": {
     "applied": true,
@@ -254,22 +273,214 @@
     "note": "The new schema and host preparation were present, while the application still served its previous release."
   },
   "stagingDeployment": {
-    "status": "pending",
+    "status": "completed",
     "mechanism": "Existing dedicated staging runner and root-owned native broker, after exact-main-SHA CI.",
-    "runId": null,
-    "url": null,
-    "conclusion": null,
-    "sourceSha": null,
-    "releaseId": null,
-    "configId": null,
-    "postDeploymentHttpCheck": null,
-    "applicationStillServingSha": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277"
+    "runId": 45845688188,
+    "url": "https://github.com/dartflow/platform/actions/runs/45845688188",
+    "conclusion": "success",
+    "sourceSha": "d3ab020b225530e95f6101623e233591aa1dd472",
+    "releaseId": "45845688188-1",
+    "configId": "staging-2026-11-26-socialhero-1",
+    "postDeploymentHttpCheck": {
+      "observedAt": "2026-11-26T15:10:59.228Z",
+      "origin": "https://staging.dartflow.nl",
+      "expectedSha": "d3ab020b225530e95f6101623e233591aa1dd472",
+      "checks": [
+        {
+          "path": "/api/health",
+          "status": 200,
+          "location": null,
+          "cacheControl": "private, no-store",
+          "robots": null,
+          "body": {
+            "status": "ok",
+            "mode": "supabase",
+            "sha": "d3ab020b225530e95f6101623e233591aa1dd472",
+            "releaseId": "45845688188-1",
+            "buildConfigId": "staging-2026-11-26-socialhero-1",
+            "runtimeConfigId": "staging-2026-11-26-socialhero-1",
+            "configId": "staging-2026-11-26-socialhero-1"
+          },
+          "expectedSource": true
+        },
+        {
+          "path": "/api/ready",
+          "status": 200,
+          "location": null,
+          "cacheControl": "private, no-store",
+          "robots": null,
+          "body": {
+            "status": "ready",
+            "database": "ok",
+            "schemaVersion": 1,
+            "auth": "reachable",
+            "sha": "d3ab020b225530e95f6101623e233591aa1dd472",
+            "releaseId": "45845688188-1",
+            "buildConfigId": "staging-2026-11-26-socialhero-1",
+            "runtimeConfigId": "staging-2026-11-26-socialhero-1",
+            "configId": "staging-2026-11-26-socialhero-1"
+          },
+          "expectedSource": true
+        },
+        {
+          "path": "/blog",
+          "status": 200,
+          "location": null,
+          "cacheControl": "private, no-store",
+          "robots": null,
+          "h1Count": 1,
+          "containsDartFlow": true,
+          "noindex": true,
+          "firstArticle": "/blog/socialhero-integratietest-ac4ce38e"
+        },
+        {
+          "path": "/blog/beheer",
+          "status": 307,
+          "location": "/inloggen?next=%2Fblog%2Fbeheer",
+          "cacheControl": "private, no-store",
+          "robots": "noindex, nofollow, noarchive"
+        },
+        {
+          "path": "/app/platform/integraties",
+          "status": 200,
+          "location": null,
+          "cacheControl": "private, no-store",
+          "robots": null
+        },
+        {
+          "path": "/api/socialhero/v1/capabilities",
+          "status": 401,
+          "location": null,
+          "cacheControl": "private, no-store",
+          "robots": "noindex, nofollow",
+          "code": "INVALID_CREDENTIAL",
+          "controlledError": true
+        },
+        {
+          "path": "/api/blog/socialhero",
+          "status": 401,
+          "location": null,
+          "cacheControl": "private, no-store",
+          "robots": "noindex, nofollow",
+          "code": "UNAUTHENTICATED",
+          "controlledError": true
+        },
+        {
+          "path": "/api/blog/taxonomy",
+          "status": 401,
+          "location": null,
+          "cacheControl": "private, no-store",
+          "robots": "noindex, nofollow",
+          "code": "UNAUTHENTICATED",
+          "controlledError": true
+        },
+        {
+          "path": "/sitemap.xml",
+          "status": 200,
+          "location": null,
+          "cacheControl": "private, no-store",
+          "robots": null,
+          "publicUrlCount": 0
+        }
+      ]
+    },
+    "applicationStillServingSha": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+    "existingPublishedArticleCheck": {
+      "observedAt": "2026-11-26T15:10:59.158Z",
+      "url": "https://staging.dartflow.nl/blog/socialhero-integratietest-8f91da88",
+      "status": 200,
+      "postId": "3f2fe1e0-4115-4a96-85e2-615e58c7f3a3",
+      "revision": 1,
+      "expectedMarker": "456b34f99dbbc5a7e1847bb17d33f009d0734f78b024c943b8eb058fe11cbc06",
+      "exactRevisionVisible": true,
+      "h1Count": 1,
+      "h2Count": 6,
+      "canonicalIsStaging": true,
+      "noindex": true,
+      "robotsHeader": null,
+      "absoluteOpenGraphImage": true,
+      "openGraphImageDimensions": true,
+      "twitterLargeCard": true,
+      "schemaType": "BlogPosting",
+      "authorPresent": true,
+      "publicationDatePresent": true,
+      "modificationDatePresent": true,
+      "heroAltPresent": true,
+      "focalPointStylePresent": true,
+      "createdDuringThisTask": false
+    },
+    "log": ".local/socialhero-20261126/staging-deploy-complete.log",
+    "visualChecks": {
+      "observedAt": "2026-11-26T15:11:30.385Z",
+      "checks": [
+        {
+          "path": "/blog",
+          "width": 390,
+          "status": 200,
+          "viewport": 390,
+          "documentWidth": 390,
+          "h1Count": 1,
+          "noHorizontalOverflow": true,
+          "image": ".local/socialhero-20261126/staging-index-390.png"
+        },
+        {
+          "path": "/blog",
+          "width": 1440,
+          "status": 200,
+          "viewport": 1440,
+          "documentWidth": 1440,
+          "h1Count": 1,
+          "noHorizontalOverflow": true,
+          "image": ".local/socialhero-20261126/staging-index-1440.png"
+        },
+        {
+          "path": "/blog/socialhero-integratietest-8f91da88",
+          "width": 390,
+          "status": 200,
+          "viewport": 390,
+          "documentWidth": 390,
+          "h1Count": 1,
+          "noHorizontalOverflow": true,
+          "image": ".local/socialhero-20261126/staging-article-390.png"
+        },
+        {
+          "path": "/blog/socialhero-integratietest-8f91da88",
+          "width": 1440,
+          "status": 200,
+          "viewport": 1440,
+          "documentWidth": 1440,
+          "h1Count": 1,
+          "noHorizontalOverflow": true,
+          "image": ".local/socialhero-20261126/staging-article-1440.png"
+        }
+      ]
+    }
   },
   "livePairing": {
     "attempted": false,
     "verified": false,
     "conceptCreated": false,
     "testPublicationCreated": false,
-    "note": "Receiver deployment and provider pairing are tracked separately. A fresh one-time SocialHero code and authenticated website administrator flow are required for live pairing."
+    "note": "User chose to test the real connection later. No code was supplied, no live pairing was performed, and no new SocialHero concept or test publication was created in this task. Existing published staging content was checked after deployment.",
+    "deferredByUser": true
+  },
+  "providerVerification": {
+    "origin": "https://socialhero.dgwebservices.nl",
+    "emptyClaimValidation": {
+      "method": "POST",
+      "path": "/api/integrations/blog/v1/pairings/claim",
+      "body": "{}",
+      "status": 400,
+      "code": "INVALID_PAIRING_CODE",
+      "codeOrCredentialSupplied": false,
+      "pairingCreated": false
+    },
+    "sourceReview": {
+      "revision": "384db28a806911c6158bf40f813c88acb8d5c043",
+      "deployedRevisionVerified": false,
+      "v1PairingAndResponseFieldsPresent": true,
+      "automaticPublishDefaultPresent": true,
+      "knownDifference": "Provider activation requires read and draft. Receiver permits a read-only connection when both writing permissions are disabled. This all-writing-disabled pairing variant is not live verified."
+    }
   }
 }
