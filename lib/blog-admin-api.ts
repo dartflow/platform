@@ -2,15 +2,18 @@ import {NextRequest,NextResponse} from 'next/server';
 import {actorId} from './auth';
 import {appConfig} from './config';
 import {consumeRateLimit} from './db';
-import {BlogError,BLOG_AUTHORS,BLOG_CATEGORIES,type BlogArticle} from './blog-types';
+import {BlogError,type BlogArticle} from './blog-types';
 import {archiveBlogArticle,getBlogDraft,listBlogAdmin,publishBlogRevision,requireBlogAdmin,saveBlogDraft,scheduleBlogRevision,unscheduleBlogRevision,listBlogRevisions,restoreBlogRevision} from './blog-store';
 import {socialHeroStatus} from './socialhero-connection';
+import {listBlogTaxonomy} from './blog-taxonomy';
+import {database} from './db';
 import {randomUUID} from 'node:crypto';
 
 const json=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{'Cache-Control':'private, no-store','X-Robots-Tag':'noindex, nofollow'}});
 async function editorPost(post:BlogArticle,actor:string){
   const live=post.liveRevision?(post.revision===post.liveRevision?post:await getBlogDraft(actor,post.id,post.liveRevision)):null;
-  return {...post,status:post.scheduledAt?'scheduled':post.status,publishedAt:post.firstPublishedAt,publicUrl:live?.publicUrl??post.publicUrl,author:post.authorId,category:post.categoryId,seoTitle:post.seo.title,seoDescription:post.seo.description,
+  const publicationCheck=post.liveRevision?(await database().query('select state,last_error_code as \"lastError\",checked_at as \"checkedAt\" from dartflow_private.blog_publication_checks where post_id=$1 and revision=$2',[post.id,post.liveRevision])).rows[0]??null:null;
+  return {...post,authorName:post.author.name,categoryName:post.category.name,publicationCheck,status:post.scheduledAt?'scheduled':post.status,publishedAt:post.firstPublishedAt,publicUrl:live?.publicUrl??post.publicUrl,author:post.authorId,category:post.categoryId,seoTitle:post.seo.title,seoDescription:post.seo.description,
     liveSlug:live?.slug??null,
     hasUnpublishedChanges:post.liveRevision!==null&&post.liveRevision!==post.draftRevision,
     hero:{...post.hero,src:post.hero.url,x:post.hero.focalPoint.x,y:post.hero.focalPoint.y},
@@ -33,7 +36,7 @@ export async function handleBlogAdminApi(request:NextRequest,parts:string[]):Pro
     if(request.method!=='GET'&&(request.headers.get('origin')!==appConfig().origin||request.headers.get('sec-fetch-site')==='cross-site'))throw new BlogError('PERMISSION_DENIED','Ververs de pagina en probeer opnieuw.',403);
     if(request.method==='GET'){
       if(request.nextUrl.searchParams.get('action')==='revisions')return json({revisions:await listBlogRevisions(actor,String(request.nextUrl.searchParams.get('id')))});
-      return json({posts:await Promise.all((await listBlogAdmin(actor)).filter(p=>p.status!=='archived').map(post=>editorPost(post,actor))),authors:BLOG_AUTHORS,categories:BLOG_CATEGORIES,
+      return json({posts:await Promise.all((await listBlogAdmin(actor)).filter(p=>p.status!=='archived').map(post=>editorPost(post,actor))),...await listBlogTaxonomy(),
         socialHero:await socialHeroStatus(actor),
         capabilities:{blogPath:'/blog',contentTypes:['blog','article']}});
     }

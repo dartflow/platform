@@ -28,7 +28,7 @@ test('editor preserves drafts, publishes an explicit revision and refreshes serv
   await expect(page.locator('#studio-editor .tiptap')).toContainText('Nieuwe tekst uit Tiptap.');
   await page.locator('#studio-publish').click();await page.getByRole('button',{name:'Nu publiceren',exact:true}).click();
   await expect(page.locator('#studio-status')).toContainText('Het artikel is gepubliceerd.');
-  const html=await(await anonymous.request.get(`/blog/${slug}`)).text();expect(html).toContain('Nieuwe tekst uit Tiptap.');expect(html).toContain('application/ld+json');expect(html.split('</head>')[0]).toContain(`href="${origin}/blog/${slug}"`);expect(html).toContain(`href="${origin}/blog/${slug}"`);
+  const html=await(await anonymous.request.get(`/blog/${slug}`)).text();expect(html).toContain('Nieuwe tekst uit Tiptap.');expect(html).toContain('application/ld+json');expect(html.split('</head>')[0]).toContain(`href="${origin}/blog/${slug}"`);expect(html.split('</head>')[0]).toMatch(/<meta name="dartflow:publication" content="[a-f0-9]{64}"/);expect(html).toContain(`href="${origin}/blog/${slug}"`);
   const home=await(await anonymous.request.get('/')).text();expect(home).toContain('Een gewijzigde clubtoernooititel');expect(home.indexOf('id="community"')).toBeLessThan(home.indexOf('Laatste artikelen'));
   await page.locator('#studio-editor .tiptap').click();await page.keyboard.press('ControlOrMeta+End');await page.keyboard.type(' Dit blijft nog concept.');await page.locator('#studio-save').click();await expect(page.locator('#studio-status')).toContainText('Het concept is opgeslagen.');
   expect(await(await anonymous.request.get(`/blog/${slug}`)).text()).not.toContain('Dit blijft nog concept.');

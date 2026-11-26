@@ -25,6 +25,7 @@ import {handleBlogAdminApi} from '@/lib/blog-admin-api';
 import {handleBlogApi} from '@/lib/blog-api';
 import {processScheduledBlogPublications,processBlogInvalidations} from '@/lib/blog-store';
 import {expireSocialHeroProvisioning} from '@/lib/socialhero-connection';
+import {processSocialHeroPublicationChecks} from '@/lib/socialhero-publication';
 import {revalidatePath} from 'next/cache';
 import { createGoogleAttempt, GOOGLE_ATTEMPT_COOKIE } from '@/lib/google-proof';
 import { googleSignInOptions,hasRecentVerifiedAuthentication } from '@/lib/reauth';
@@ -135,6 +136,7 @@ async function handle(request:NextRequest,parts:string[],method:string) {
       await expireSocialHeroProvisioning();
       await processScheduledBlogPublications();
       await processBlogInvalidations(revalidatePath);
+      await processSocialHeroPublicationChecks();
       await processBoardActivityBatch();
       await reconcilePlatformResults();
       await reconcilePlatformCalls();

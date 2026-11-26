@@ -18,6 +18,7 @@ test('paired blog adapter isolates destinations and preserves durable results ac
  const runtime=blogRuntime(),key=()=>`${prefix}:${randomUUID()}`;
  const token=async(destinationId:string,scopes:BlogScope[]=['read','media:write','drafts:write'],state:'pending'|'active'='active')=>{
   const id=randomUUID(),secret=randomBytes(32).toString('base64url');tokenIds.push(id);
+  await owner.query("insert into dartflow_private.socialhero_destination_policies(site_id,environment,destination_id,draft_enabled,publish_enabled,decided_by,decision_source)values($1,$2,$3,$4,$5,$6,'pairing')on conflict(site_id,environment,destination_id)do nothing",[runtime.siteId,runtime.environment,destinationId,scopes.includes('drafts:write'),scopes.includes('drafts:write')&&scopes.includes('publish'),actor]);
   await owner.query("insert into dartflow_private.blog_tokens(id,site_id,environment,name,token_hash,prefix,scopes,expires_at,created_by,destination_id,connection_id,credential_state,provisioning_expires_at) values($1,$2,$3,'Adapter fixture',$4,'[redacted]',$5,clock_timestamp()+interval '1 day',$6,$7,$8,$9,clock_timestamp()+interval '10 minutes')",[id,runtime.siteId,runtime.environment,blogHash(secret),JSON.stringify(scopes),actor,destinationId,randomUUID(),state]);
   return {id,secret,credential:await authenticateBlogToken(secret)};
  };
@@ -55,6 +56,8 @@ test('paired blog adapter isolates destinations and preserves durable results ac
    await owner.query('update dartflow_private.blog_tokens set scopes=$2 where id=$1',[a.id,JSON.stringify(['read','publish'])]);
    await assert.rejects(publishBlog({credential:a.credential},first.id,1,publishKey),{code:'PERMISSION_DENIED'});
    await owner.query('update dartflow_private.blog_tokens set scopes=$2 where id=$1',[a.id,JSON.stringify(['read','media:write','drafts:write','publish'])]);
+   await assert.rejects(publishBlog({credential:a.credential},first.id,1,publishKey),{code:'PERMISSION_DENIED'});
+   await owner.query('update dartflow_private.socialhero_destination_policies set publish_enabled=true where site_id=$1 and environment=$2 and destination_id=$3',[runtime.siteId,runtime.environment,destinations[0]]);
    await assert.rejects(publishBlog({credential:a.credential},postIds[1],1,key()),{code:'POST_NOT_FOUND'});
    published=await publishBlog({credential:a.credential},first.id,1,publishKey);
    assert.equal(published.contractStatus?.state,'published');
@@ -89,6 +92,8 @@ test('paired blog adapter isolates destinations and preserves durable results ac
   await owner.query('delete from dartflow_private.blog_media where id=any($1::uuid[])',[mediaIds]);
   await owner.query('delete from dartflow_private.blog_tokens where id=any($1::uuid[])',[tokenIds]);
   await owner.query('delete from dartflow_private.blog_receipts where destination_id=any($1::text[]) or key like $2',[destinations,`${prefix}:%`]);
+  await owner.query('delete from dartflow_private.socialhero_permission_events where destination_id=any($1::text[])',[destinations]);
+  await owner.query('delete from dartflow_private.socialhero_destination_policies where destination_id=any($1::text[])',[destinations]);
   await owner.query('delete from dartflow_private.platform_roles where user_id=$1',[actor]);
   await owner.query('delete from dartflow_private.profiles where id=$1',[actor]);
   await owner.end();await closeDatabase();

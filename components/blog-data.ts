@@ -1,7 +1,7 @@
 import {cache} from 'react';
 import type {BlogArticle} from '@/lib/blog-types';
 import {renderBlogDocument} from '@/lib/blog-content';
-import {getLiveArticle,listLiveArticles} from '@/lib/blog-store';
+import {getLiveArticle,listLiveArticles,listLiveBlogPage} from '@/lib/blog-store';
 import type {PublicBlogPost} from './blog-public';
 
 export function publicBlogPost(article:BlogArticle):PublicBlogPost{
@@ -13,4 +13,5 @@ export function publicBlogPost(article:BlogArticle):PublicBlogPost{
 }
 // Request-scoped memoization keeps the body and metadata on the same accepted live revision.
 export const liveBlogPosts=cache(async()=> (await listLiveArticles({limit:1000})).map(publicBlogPost));
+export const liveBlogArchive=cache(async(page:string,category='',search='')=>{const result=await listLiveBlogPage({page,category,search});return {...result,posts:result.posts.map(publicBlogPost)};});
 export const liveBlogArticle=cache(async(slug:string)=>{const result=await getLiveArticle(slug);return {article:result.article?publicBlogPost(result.article):null,redirect:result.redirect};});

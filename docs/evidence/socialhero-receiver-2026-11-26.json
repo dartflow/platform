@@ -1,0 +1,275 @@
+{
+  "format": "dartflow-socialhero-receiver-validation-v1",
+  "date": "2026-11-26",
+  "status": "local_verification_complete_awaiting_exact_main_ci_and_staging",
+  "repository": "https://github.com/dartflow/platform",
+  "scope": {
+    "environment": "staging",
+    "origin": "https://staging.dartflow.nl",
+    "providerOrigin": "https://socialhero.dgwebservices.nl",
+    "siteId": "dartflow",
+    "contractVersion": 1,
+    "productionChanged": false,
+    "secretsCodesAndUserContentIncluded": false
+  },
+  "initialPhase": {
+    "pullRequest": "https://github.com/dartflow/platform/pull/36",
+    "implementationCommit": "6412805375fc1967c0ee333dada66566f4ef55c0",
+    "mergedMainCommit": "78589c1dc6c4ef55ef60f89b4cfa7992ed5316bf",
+    "localVerification": {
+      "fullApplicationAndDatabaseSuite": {
+        "passed": 941,
+        "failed": 0,
+        "skipped": 0,
+        "database": "New isolated loopback QA database; migrated and seeded independently from the persistent development database."
+      },
+      "connectorSuite": {
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0,
+        "databaseAndImageDecoder": "real local PostgreSQL and sharp",
+        "socialHeroProvider": "mocked claim and verification HTTP transport",
+        "coverage": [
+          "Claim persists pending credential hash and binding before provider verification",
+          "Pending capabilities available while other operations return PAIRING_IN_PROGRESS",
+          "Lost claim response reuses attempt ID and one-time reservation",
+          "Interrupted verification resumes and clears the temporary encrypted credential",
+          "Invalid, expired and differently bound codes return controlled errors",
+          "Draft retries preserve immutable results across re-pairing without duplicate posts",
+          "Local editor revision changes reject stale external updates",
+          "Destination isolation protects posts and media",
+          "Publication authorization and exact revision validation",
+          "Unpublished revisions preserve existing live content",
+          "Revoked old credential cannot disconnect its replacement",
+          "Machine and administrator disconnection are idempotent",
+          "Background provisioning expiry clears secrets and revokes the credential before any admin visit"
+        ]
+      },
+      "relatedBrowserTests": {
+        "passed": 7,
+        "failed": 0,
+        "scope": "SocialHero connection interface and existing related blog flows",
+        "environment": "Local Playwright preview with synthetic fixtures"
+      },
+      "nativeDeployerTests": {
+        "passed": 74,
+        "failed": 0,
+        "command": "python3 -B tests/native-deployer-test.py"
+      },
+      "prototypeTests": {
+        "passed": 47,
+        "failed": 0,
+        "skipped": 0
+      },
+      "typecheckPassed": true,
+      "lintPassed": true,
+      "buildPassed": true,
+      "persistentDevelopmentDatabaseAttempt": {
+        "failedChildTests": 4,
+        "cause": "Pre-existing global worker backlog: 2 older due privacy jobs and 737 older queued development mail jobs prevented bounded batches of 1 and 10 from reaching the new synthetic fixtures.",
+        "unchangedTestFiles": [
+          "tests/account-removal-db.test.ts",
+          "tests/notification-communications-db.test.ts"
+        ],
+        "targetedIsolatedRepeatPassed": 42,
+        "targetedIsolatedRepeatFailed": 0,
+        "supersededByFreshQaFullSuite": true,
+        "existingBacklogDeleted": false
+      },
+      "historicalTemporaryLogsAvailable": false,
+      "note": "Completed first-phase results, recorded before expansion of permission policy, taxonomy, pagination and public visibility confirmation. Temporary /tmp logs were later lost during the host reset."
+    },
+    "ci": {
+      "runId": 45810142269,
+      "url": "https://github.com/dartflow/platform/actions/runs/45810142269",
+      "statusAtInitialObservation": "in_progress",
+      "conclusionAtInitialObservation": null
+    },
+    "databaseBackup": {
+      "path": "/var/backups/dartflow/identity-staging-20261126T111925298Z",
+      "sha256": "58a4f123861328784803ee000f30fa72e1e7043703b1d42644878d66215081bc"
+    }
+  },
+  "currentPhase": {
+    "branch": "codex/socialhero-policy-and-publication",
+    "sourceCommit": null,
+    "pullRequest": null,
+    "permissions": {
+      "newDestinationDraftDefault": true,
+      "newDestinationPublishDefault": true,
+      "visiblePrePairConsentRequired": true,
+      "storedOptOutSurvivesPairing": true,
+      "reEnableAction": "Toestemmingen opslaan"
+    },
+    "localVerification": {
+      "nodeVersion": "24.18.0",
+      "typecheckPassed": true,
+      "lintPassed": true,
+      "buildPassed": true,
+      "buildLog": ".local/socialhero-20261126/final-build.log",
+      "relatedBrowserTests": {
+        "passed": 9,
+        "failed": 0,
+        "log": ".local/socialhero-20261126/final-e2e.log"
+      },
+      "realServerRenderedPublicationMarkerBrowserTest": {
+        "passed": 1,
+        "failed": 0,
+        "log": ".local/socialhero-20261126/public-marker-e2e.log"
+      },
+      "taxonomyDatabaseTests": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      },
+      "fullApplicationAndDatabaseSuite": {
+        "status": "completed",
+        "passed": 969,
+        "failed": 0,
+        "skipped": 0,
+        "database": "New isolated loopback QA database, migrated and seeded separately from persistent development data.",
+        "log": ".local/socialhero-20261126/final-isolated-qa.log",
+        "durationMs": 315419.290267
+      },
+      "previousExpandedQaAttempt": {
+        "status": "interrupted",
+        "reason": "Host reset",
+        "temporaryLogsAvailable": false,
+        "noFinalTestCountClaimed": true
+      },
+      "previousBuildPassed": true,
+      "buildStatus": "completed"
+    },
+    "exactMainCi": {
+      "status": "pending",
+      "runId": null,
+      "url": null,
+      "sourceSha": null,
+      "conclusion": null
+    },
+    "primaryAdministrationEntry": {
+      "path": "/app/platform/integraties",
+      "action": "SocialHero beheren",
+      "target": "/blog/beheer#studio-socialhero-mount"
+    }
+  },
+  "stagingDatabase": {
+    "applied": true,
+    "projectRef": "dsnqnvbckkqpzadblshu",
+    "followupAppliedDate": "2026-11-26",
+    "followupAppliedTimeUtc": "14:40",
+    "migrations": [
+      {
+        "file": "supabase/migrations/20261126000000_socialhero_connector.sql",
+        "sha256": "3babe1dfb23ab68ba9d82c6aaba1964f05e9263699d34e751e68ceceb1514ee4",
+        "feature": "socialhero_connector",
+        "featureVersion": 1,
+        "applied": true
+      },
+      {
+        "file": "supabase/migrations/20261126010000_socialhero_permissions.sql",
+        "sha256": "8fa4259fa463a90155fe3f1b787bb2972a86dab32cf3e603c690ceb0d9d5098e",
+        "feature": "socialhero_permissions",
+        "featureVersion": 1,
+        "applied": true
+      },
+      {
+        "file": "supabase/migrations/20261126020000_blog_taxonomy.sql",
+        "sha256": "8bbf31f8decadd9fd1908baaed9b037fec76c0d804e339b4da820291c4fd380b",
+        "feature": "blog_taxonomy",
+        "featureVersion": 1,
+        "applied": true
+      },
+      {
+        "file": "supabase/migrations/20261126030000_blog_publication_checks.sql",
+        "sha256": "d95f89587b789a3122b90b270f1f056d9ba4a93ea848505fc4b9ae5cbda27cc7",
+        "feature": "blog_publication_checks",
+        "featureVersion": 1,
+        "applied": true
+      }
+    ],
+    "backup": {
+      "directory": "/var/backups/dartflow/identity-staging-20261126T131723773Z",
+      "applicationFile": "/var/backups/dartflow/identity-staging-20261126T131723773Z/application.json.gz",
+      "applicationSha256": "a48588f64985015091c7c27a66e10f83dc34524aa0171416f8622b3e56592160",
+      "consistent": true,
+      "readbackVerified": true,
+      "restoreDrill": false
+    },
+    "checks": {
+      "observedBlogPostCount": 7,
+      "publicGrants": 0,
+      "initialConnectorTablesRlsEnabled": true,
+      "followupTables": {
+        "socialhero_destination_policies": {
+          "rlsEnabled": true,
+          "runtimeSelect": true,
+          "runtimeInsert": true
+        },
+        "socialhero_permission_events": {
+          "rlsEnabled": true,
+          "runtimeSelect": true,
+          "runtimeInsert": true
+        },
+        "blog_taxonomy": {
+          "rlsEnabled": true,
+          "runtimeSelect": true,
+          "runtimeInsert": true
+        },
+        "blog_publication_checks": {
+          "rlsEnabled": true,
+          "runtimeSelect": true,
+          "runtimeInsert": true
+        }
+      }
+    }
+  },
+  "stagingHostPreparation": {
+    "host": "dg-nxttrack-01",
+    "validated": true,
+    "changesApplied": true,
+    "servicesRestarted": false,
+    "existingBundleChanged": false,
+    "productionChanged": false,
+    "newConfigId": "staging-2026-11-26-socialhero-1",
+    "helperSha256": "95fb5ed32bd63718d56ac9a8060e05a29be2949e2355612d3c6e1f1c31730602",
+    "controlBackups": "/root/dartflow-socialhero-20261126/control-backups/socialhero-staging-host-20261126T112224960085Z",
+    "reviewedScript": "/root/dartflow-socialhero-20261126/prepare-staging.py",
+    "reviewPlan": "/root/dartflow-socialhero-20261126/review-plan.json"
+  },
+  "preDeploymentReadOnlyHttpCheck": {
+    "observedAt": "2026-11-26T11:23:41.663Z",
+    "healthStatus": 200,
+    "readyStatus": 200,
+    "database": "ok",
+    "auth": "reachable",
+    "sourceSha": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277",
+    "releaseId": "45672807175-1",
+    "configId": "staging-2026-11-18-play-safety-1",
+    "blogStatus": 200,
+    "blogAdminStatus": 307,
+    "blogAdminLocation": "/inloggen?next=%2Fblog%2Fbeheer",
+    "unauthenticatedCapabilitiesStatus": 401,
+    "unauthenticatedCapabilitiesCode": "UNAUTHENTICATED",
+    "note": "The new schema and host preparation were present, while the application still served its previous release."
+  },
+  "stagingDeployment": {
+    "status": "pending",
+    "mechanism": "Existing dedicated staging runner and root-owned native broker, after exact-main-SHA CI.",
+    "runId": null,
+    "url": null,
+    "conclusion": null,
+    "sourceSha": null,
+    "releaseId": null,
+    "configId": null,
+    "postDeploymentHttpCheck": null,
+    "applicationStillServingSha": "0a7d5d628d7ab56c5ac17a3bfc022a1e8e289277"
+  },
+  "livePairing": {
+    "attempted": false,
+    "verified": false,
+    "conceptCreated": false,
+    "testPublicationCreated": false,
+    "note": "Receiver deployment and provider pairing are tracked separately. A fresh one-time SocialHero code and authenticated website administrator flow are required for live pairing."
+  }
+}

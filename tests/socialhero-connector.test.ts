@@ -8,6 +8,7 @@ import {closeDatabase} from '../lib/db';
 import {getBlogDraft,getLiveArticle,saveBlogDraft} from '../lib/blog-store';
 import {checkSocialHero,disconnectSocialHero,expireSocialHeroProvisioning,pairSocialHero,setSocialHeroPublish,socialHeroStatus} from '../lib/socialhero-connection';
 import {handleSocialHeroApi} from '../lib/socialhero-api';
+import {blogPublicationMarker} from '../lib/blog-publication-marker';
 import {decryptSocialHeroSecret,encryptSocialHeroSecret,socialHeroOrigin,socialHeroRequest,validatePairingClaim,validateSocialHeroPost} from '../lib/socialhero-core';
 
 try{process.loadEnvFile('.env.local');}catch{/* CI supplies loopback credentials. */}
@@ -48,7 +49,8 @@ test('SocialHero pairing, recovery, scoped content and local publication policy 
  const sessions=new Map<string,{token:string;connectionId:string;destinationId:string;expiresAt:string}>();
  const api=async(path:string,{method='GET',data,key,token=latestToken,body}:{method?:string;data?:unknown;key?:string;token?:string;body?:BodyInit}={})=>{
   const headers=new Headers({Authorization:`Bearer ${token}`});if(data!==undefined)headers.set('Content-Type','application/json');if(key)headers.set('Idempotency-Key',key);
-  const response=await handleSocialHeroApi(new NextRequest(origin+`/api/socialhero/v1/${path}`,{method,headers,...(data!==undefined?{body:JSON.stringify(data)}:body?{body}:{})}),['socialhero','v1',...path.split('/')]);
+  const publicFetch:typeof fetch=async(url)=>{const slug=new URL(String(url)).pathname.split('/').at(-1)!;const {article}=await getLiveArticle(slug);return new Response(article?`<html><head><meta name="dartflow:publication" content="${blogPublicationMarker(origin,article.id,article.liveRevision!)}"></head></html>`:'',{status:article?200:404,headers:{'Content-Type':'text/html'}});};
+  const response=await handleSocialHeroApi(new NextRequest(origin+`/api/socialhero/v1/${path}`,{method,headers,...(data!==undefined?{body:JSON.stringify(data)}:body?{body}:{})}),['socialhero','v1',...path.split('/')],{fetch:publicFetch});
   assert.ok(response);return response;
  };
  const transport:typeof fetch=async(input,init)=>{
@@ -72,7 +74,7 @@ test('SocialHero pairing, recovery, scoped content and local publication policy 
   if(verifyFailures-->0)throw Error('interrupted verification with sensitive bearer');
   return Response.json({connectionId:session.connectionId,status:'verified'});
  };
- const pair=(code:string)=>pairSocialHero(actor,code,{fetch:transport});
+ const pair=(code:string)=>pairSocialHero(actor,code,{fetch:transport,draft:true,publish:false});
  const key=()=>`connector:${randomUUID()}`;
  try{
   for(const [id,name] of [[actor,'Connector admin'],[outsider,'Connector outsider']])await owner.query('insert into dartflow_private.profiles(id,name,display_name) values($1,$2,$2)',[id,name.replaceAll(' ','')]);
@@ -145,7 +147,7 @@ test('SocialHero pairing, recovery, scoped content and local publication policy 
    expiredClaim=true;await assert.rejects(pair('expired-response'),{code:'PAIRING_EXPIRED'});
   });
  }finally{
-  for(const table of ['socialhero_settings','socialhero_connections','blog_audit','blog_posts','blog_media','blog_tokens','blog_receipts'])await owner.query(`delete from dartflow_private.${table} where site_id=$1 and environment='staging'`,[siteId]);
+  for(const table of ['socialhero_permission_events','socialhero_destination_policies','socialhero_settings','socialhero_connections','blog_audit','blog_posts','blog_media','blog_tokens','blog_receipts'])await owner.query(`delete from dartflow_private.${table} where site_id=$1 and environment='staging'`,[siteId]);
   await owner.query('delete from dartflow_private.platform_roles where user_id=any($1::uuid[])',[[actor,outsider]]);await owner.query('delete from dartflow_private.profiles where id=any($1::uuid[])',[[actor,outsider]]);
   await owner.end();await closeDatabase();for(const key of keys){if(previous[key]===undefined)delete process.env[key];else process.env[key]=previous[key];}
  }
